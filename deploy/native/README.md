@@ -56,7 +56,7 @@ Este archivo es PHP: las contraseñas con comillas simples o barras deben escapa
 
 ## 4. Protección y usuario administrador
 
-**Si ya tienes un administrador y estás corrigiendo un fallo de conexión, no necesitas terminal:** sigue [la actualización 0.4.0](UPDATE-0.4.0.md). Conexiones comprueba la instalación y permite aplicar las tablas adicionales y preparar la protección inicial cuando es seguro. Copiar resultado permite compartir códigos de fallo sin claves ni rutas.
+**Si ya tienes un administrador y estás corrigiendo un fallo de conexión, no necesitas terminal:** sigue [la actualización 0.4.0](UPDATE-0.4.1.md). Conexiones comprueba la instalación y permite aplicar las tablas adicionales y preparar la protección inicial cuando es seguro. Copiar resultado permite compartir códigos de fallo sin claves ni rutas.
 
 Los siguientes comandos son para la primera instalación, antes de disponer de un usuario administrador.
 
@@ -105,7 +105,7 @@ Primero comprobar la conexión y probar **Bandeja conectada → Sincronizar ahor
 /usr/local/lsws/lsphp83/bin/php /home/nueva.agoradigital.app/agora-private/bin/sync-inbox.php >> /home/nueva.agoradigital.app/agora-private/var/sync-inbox.log 2>&1
 ```
 
-El script procesa sólo conexiones activadas y vencidas según su intervalo (120 segundos por defecto), con bloqueo global para no acumular procesos. No consulta GHL por cada móvil. Limita cada pasada a 20 conexiones y una llamada de listado por conexión. El log no incluye tokens ni cuerpos; mantenerlo privado y configurar rotación. El intervalo mínimo configurable es 60 segundos; cron por minuto no proporciona actualizaciones de 5 segundos. La app lee la instantánea al entrar o sincronizar manualmente; todavía no hay SSE o refresco automático en pantalla.
+El script procesa sólo conexiones activadas y vencidas según su intervalo (120 segundos por defecto), con bloqueo global para no acumular procesos. No consulta GHL por cada móvil. Limita cada pasada a 20 conexiones y una llamada de listado por conexión. El log no incluye tokens ni cuerpos; mantenerlo privado y configurar rotación. El intervalo mínimo configurable es 60 segundos; cron por minuto no proporciona actualizaciones de 5 segundos. La app actualiza automáticamente mientras la bandeja está abierta y visible al intervalo de la cuenta. El cron sigue siendo necesario cuando la app está cerrada; no hay SSE ni push.
 
 Las consultas comparten un presupuesto local conservador de 5.000 peticiones/día por conexión y un espaciado mínimo de un segundo; esto no define los límites reales del PIT. Se respetan pausas por 429 y cabeceras de cuota observadas. Un 401/403 pausa la programación hasta corregir y comprobar la credencial. El primer resultado es parcial si hay más conversaciones que el tamaño seleccionado: todavía no hay importación completa ni borrado/reconciliación de todo el CRM.
 

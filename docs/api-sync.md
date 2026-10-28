@@ -26,7 +26,7 @@ Tras comprobar una conexión con locations.readonly, habilitar conversations.rea
 
 ## Límites de esta entrega
 
-No es una importación inicial completa ni una sincronización incremental con historial. El cursor lastMessageId de mensajes se consume bajo demanda desde 0.3.0; se valida su formato, pertenencia a la página y avance. El cursor startAfterDate de búsqueda todavía no se consume: la lista continúa limitada al tamaño seleccionado de 20, 50 o 100 conversaciones. La búsqueda local indica expresamente ese alcance. No se detectan cambios fuera de la ventana reciente. El envío de texto está implementado desde 0.4.0, pendiente de validación por canal real (ver message-sending.md). No hay confirmación de lectura, adjuntos interactivos, SSE, actualización automática de la pantalla o FCM. El cron renueva la instantánea de conversaciones; no descarga todo el historial de cada una.
+No es una importación inicial completa ni una sincronización incremental con historial. El cursor lastMessageId de mensajes se consume bajo demanda desde 0.3.0; se valida su formato, pertenencia a la página y avance. El cursor startAfterDate de búsqueda todavía no se consume: la lista continúa limitada al tamaño seleccionado de 20, 50 o 100 conversaciones. La búsqueda local indica expresamente ese alcance. No se detectan cambios fuera de la ventana reciente. El envío de texto está implementado desde 0.4.0, pendiente de validación por canal real (ver message-sending.md). No hay confirmación de lectura, adjuntos interactivos, SSE o FCM. Desde 0.4.1 la pantalla visible se actualiza al intervalo de la cuenta y pausa al ocultarse o perder conexión. El cron renueva la instantánea de conversaciones; no descarga todo el historial de cada una.
 
 No se han usado tokens reales ni accedido al VPS. Las pruebas de GHL usan transporte inyectado **sólo desde código de prueba**, nunca desde parámetros HTTP. No hay un host/base URL configurable para evitar un proxy arbitrario o SSRF.
 
@@ -45,3 +45,7 @@ Nueve comprobaciones de contrato y validación de historial; Chromium a 390 y 14
 ## Tamaño de bandeja 0.4.0
 
 POST /api/admin/integrations/{id}/sync?limit=20|50|100. Se valida una lista cerrada. La preferencia se guarda en connection_preferences sólo al completar la consulta y se usa en cron. Un cambio explícito de tamaño puede adelantarse al siguiente ciclo programado, pero mantiene bloqueo, espaciado y presupuesto del gateway. La búsqueda sigue siendo local. Aplicar migración 004 desde Conexiones antes de usar esta versión.
+
+## Pantalla automática 0.4.1
+
+El navegador usa el POST autenticado de sincronización con CSRF al intervalo devuelto por el backend (mínimo 60 s). Los límites y bloqueos compartidos evitan multiplicar las consultas de listado por cada dispositivo. Al recibir una pausa se lee la instantánea existente, por si el cron u otra pestaña ya la renovaron. Se respeta Retry-After, se conserva selección, scroll y borrador, y sólo se refresca el chat seleccionado cuando cambia su actividad o estaba pendiente de leer. Cada navegador consulta su chat a través del presupuesto compartido; no hay todavía caché compartida de mensajes. Una respuesta tardía no cambia de cuenta/chat. Salir de sección, cerrar sesión o esconder la pestaña cancela temporizadores. El cron sigue siendo necesario sin la app abierta.

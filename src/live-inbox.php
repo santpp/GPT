@@ -15,7 +15,7 @@ $row=query('SELECT * FROM ghl_inbox_snapshots WHERE connection_id=?',[$id])->fet
 if(in_array($path,['/api/workspace/inbox','/api/ghl/inbox'],true) && $method==='GET') {
     $state=query('SELECT last_success_at,last_error,next_sync_at,request_not_before,enabled,requests_today,quota FROM ghl_sync_state WHERE connection_id=?',[$id])->fetch();
     $limit=(int)(query('SELECT inbox_limit FROM connection_preferences WHERE connection_id=?',[$id])->fetchColumn()?:20);
-    respond(['limit'=>$limit,'items'=>$row?json_decode($row['payload'],true):[],'total'=>$row?(int)$row['total']:0,'syncedAt'=>$row['synced_at']??null,'partial'=>$row?(int)$row['total']>count(json_decode($row['payload'],true)):false,'state'=>$state?:null]);
+    respond(['syncIntervalSeconds'=>max(60,(int)$connection['sync_interval_seconds']),'limit'=>$limit,'items'=>$row?json_decode($row['payload'],true):[],'total'=>$row?(int)$row['total']:0,'syncedAt'=>$row['synced_at']??null,'partial'=>$row?(int)$row['total']>count(json_decode($row['payload'],true)):false,'state'=>$state?:null]);
 }
 if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $method==='GET')||($path==='/api/workspace/send'&&$method==='POST')) {
     $conversation=$_GET['conversationId']??'';
@@ -34,6 +34,7 @@ if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $met
         $data=(new GhlGateway())->execute($connection,fn(GhlClient $client)=>$client->conversationMessages($conversation,$cursor));
         respond(MessageHistory::page($data,$conversation,$connection['location_id'],$cursor));
     } catch(GhlCooldown $e) {header('Retry-After: '.$e->retryAfter);respond(['error'=>'Consulta pausada para respetar la cuota. Vuelve a intentarlo más tarde.','retryAfter'=>$e->retryAfter],429);}
-    catch(Throwable $e) {respond(['error'=>'No se pudieron leer los mensajes. Revisa los permisos y el estado de la conexión.'],502);}
+    catch(GhlApiException $e){respond(['error'=>'No se pudieron leer los mensajes. Código del canal: '.$e->status.'. Revisa los permisos de lectura.','code'=>'messages_upstream_'.$e->status],502);}
+    catch(Throwable $e) {respond(['error'=>'El historial recibido no tiene el formato esperado. Código: messages_invalid_response.','code'=>'messages_invalid_response'],502);}
 }
 respond(['error'=>'Not found'],404);

@@ -49,7 +49,7 @@ final class MessageSender {
             }catch(GhlApiException $e){
                 if(in_array($e->status,[400,401,403,404,413,415,422,429],true)){
                     query("UPDATE message_send_attempts SET state='rejected',error_code=? WHERE connection_id=? AND request_id=?",['http_'.$e->status,$id,$request]);
-                    throw new SendProblem('send_rejected',422,'El canal rechazó el envío. Revisa los permisos de mensajes y las condiciones del canal; en mensajería social puede requerirse una conversación reciente o una plantilla.');
+                    throw new SendProblem('send_rejected',422,'El canal rechazó el envío (HTTP '.$e->status.'). '.(in_array($e->status,[401,403],true)?'Revisa la credencial y los permisos de escritura.':($channel==='Email'?'Revisa el remitente de correo configurado y los datos del mensaje.':'Revisa los datos y las condiciones del canal.')));
                 }
                 $this->markUnknown($id,$request);throw $this->unknown();
             }catch(Throwable $e){$this->markUnknown($id,$request);throw $this->unknown();}
