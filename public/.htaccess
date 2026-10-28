@@ -1,0 +1,15 @@
+# OpenLiteSpeed / Apache native deployment. Enable rewrite + Auto Load .htaccess
+# for this website in CyberPanel. PHP 8.3 must handle .php files.
+RewriteEngine On
+# Preserve CyberPanel ACME challenges for SSL renewal.
+RewriteRule ^\.well-known/ - [L]
+# API calls always enter PHP, even when a similar file exists.
+RewriteRule ^api/.*$ router.php [L,QSA]
+# Standalone entry point may only be reached through an internal API rewrite.
+RewriteCond %{THE_REQUEST} \s/+router\.php(?:[?\s]) [NC]
+RewriteRule ^router\.php$ - [F,L]
+# Conversation deep links load the shell.
+RewriteRule ^conversations/[A-Za-z0-9_-]+/?$ index.html [L]
+RewriteRule ^$ index.html [L]
+# Reject hidden resources (ACME was allowed above).
+RewriteRule (^|/)\. - [F,L]

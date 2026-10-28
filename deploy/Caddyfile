@@ -1,0 +1,31 @@
+{$APP_HOST} {
+    encode zstd gzip
+    root * /app/public
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy same-origin
+        X-Frame-Options DENY
+        -Server
+    }
+    request_body {
+        max_size 1MB
+    }
+    @api path /api/*
+    handle @api {
+        rewrite * /router.php
+        php_fastcgi api:9000
+    }
+    @php path *.php
+    handle @php {
+        respond 404
+    }
+    handle {
+        @shell path / /conversations/*
+        rewrite @shell /index.html
+        @release path /index.html /sw.js /manifest.webmanifest /assets/*
+        header @release Cache-Control "no-cache"
+        file_server {
+            hide .env .git
+        }
+    }
+}

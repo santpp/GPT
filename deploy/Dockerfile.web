@@ -1,0 +1,2 @@
+FROM caddy:2
+COPY --chmod=755 public/ /app/public/

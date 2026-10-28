@@ -1,0 +1,22 @@
+# REFERENCE ONLY. Merge into this domain's existing virtual-host configuration
+# after reviewing CyberPanel's generated config. Never replace the entire vhost.
+# Confirm 127.0.0.1:8080 is free before using it.
+extprocessor agora_workspace {
+  type                    proxy
+  address                 127.0.0.1:8080
+  maxConns                100
+  initTimeout             60
+  retryTimeout            0
+  respBuffer              0
+}
+
+# Add these rules to the existing rewrite block, preserving its other settings.
+# ACME requests stay on OpenLiteSpeed so CyberPanel can renew the certificate.
+# Disable LiteSpeed page caching for this application, especially /api/*.
+# rewrite {
+#   enable                1
+#   rules                 <<<END_rules
+# RewriteCond %{REQUEST_URI} !^/\.well-known/
+# RewriteRule ^/?(.*)$ http://agora_workspace/$1 [P,L]
+# END_rules
+# }

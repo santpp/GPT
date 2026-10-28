@@ -1,0 +1,36 @@
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const statusNames={untested:'Pendiente de comprobar',connected:'Conexión comprobada',error:'Revisar conexión'};
+let csrf='';
+async function api(path,method='GET',data){
+ const r=await fetch('/api/'+path,{method,cache:'no-store',headers:{'Content-Type':'application/json',...(method==='GET'?{}:{'X-CSRF-Token':csrf})},...(data?{body:JSON.stringify(data)}:{})});
+ let b;try{b=await r.json()}catch{throw Error('El backend no está disponible.')}
+ if(!r.ok){const e=Error(b.error||'No se ha podido completar la operación.');e.status=r.status;throw e}return b;
+}
+export async function renderIntegrations(container){
+ container.innerHTML='<p class="empty">Comprobando tu sesión…</p>';
+ let user;
+ try{const me=await api('me');user=me.user;csrf=me.csrf}catch(e){container.innerHTML=`<h2>Integraciones de GoHighLevel</h2><p class="settings-notice">${e.status===401?'Inicia sesión con tu usuario administrador para configurar las subcuentas.':'No se ha podido conectar con el backend. Comprueba su estado.'}</p><button id="settings-login" class="primary">Iniciar sesión</button>`;container.querySelector('#settings-login').onclick=()=>document.querySelector('#connect').click();return}
+ if(user.role!=='administrator'){container.innerHTML='<h2>Acceso restringido</h2><p class="settings-notice">Sólo el administrador puede gestionar las integraciones. Tu token nunca se muestra a vendedores ni supervisores.</p>';return}
+ try{
+ const {items}=await api('admin/integrations');
+ container.innerHTML=`<div class="integration-heading"><div><span class="eyebrow">ADMINISTRACIÓN</span><h2 style="margin-top:8px">Subcuentas de GoHighLevel</h2></div><button id="add-integration" class="primary">+ Añadir subcuenta</button></div><p class="settings-notice">Configura el Private Integration Token de cada subcuenta. Se guarda cifrado en el servidor y nunca se devuelve al navegador. No necesitas webhooks.<br><strong>Estado de desarrollo:</strong> puedes guardar credenciales y comprobar la conexión. La sincronización de datos y el envío de push todavía no están implementados. El intervalo guardado se utilizará cuando se active la sincronización.</p><div id="integration-cards">${items.map(i=>`<article class="card integration-card"><span class="integration-status">${statusNames[i.status]||'Pendiente'}</span><h3>${esc(i.name)}</h3><p>Location ID: ${esc(i.location_id)}<br>Token protegido · intervalo previsto: ${i.sync_interval_seconds} s<br>Última comprobación: ${esc(i.last_checked_at||'Sin comprobar')}</p><footer><button data-edit="${i.id}">Configurar / cambiar token</button><button data-test="${i.id}">Comprobar conexión</button><button data-remove="${i.id}" class="danger">Eliminar</button></footer></article>`).join('')||'<p class="empty">Aún no has configurado ninguna subcuenta.<br>Añade la primera con su Location ID y su token privado.</p>'}</div><p id="integration-feedback" class="dialog-copy" role="status"></p><button id="settings-logout" class="primary">Cerrar sesión</button>`;
+ container.querySelector('#add-integration').onclick=()=>edit(null,container);
+ container.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>edit(items.find(i=>String(i.id)===b.dataset.edit),container));
+ container.querySelectorAll('[data-test]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const r=await api(`admin/integrations/${b.dataset.test}/test`,'POST');await renderIntegrations(container);container.querySelector('#integration-feedback').textContent=r.message}catch(e){container.querySelector('#integration-feedback').textContent=e.message}finally{b.disabled=false}});
+ container.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>remove(b.dataset.remove,container));
+ container.querySelector('#settings-logout').onclick=async()=>{await api('logout','POST');csrf='';await renderIntegrations(container)};
+ }catch(e){container.innerHTML=`<h2>Integraciones</h2><p class="settings-notice">${esc(e.message)}</p>`}
+}
+function edit(item,container){
+ const dialog=document.querySelector('#action-dialog');
+ document.querySelector('#dialog-content').innerHTML=`<span class="eyebrow">PRIVATE INTEGRATION</span><h2 style="margin-top:12px">${item?'Configurar subcuenta':'Añadir subcuenta'}</h2><p class="dialog-copy">El token se introduce aquí una sola vez y viaja únicamente a tu backend. Para comprobar la conexión debe incluir el scope locations.readonly. Introduce las credenciales sólo en tu despliegue HTTPS de confianza.</p><form id="integration-form" class="dialog-form"><label>Nombre de referencia<input name="name" required maxlength="160" value="${esc(item?.name||'')}" autocomplete="off"></label><label>Location ID<input name="locationId" required maxlength="80" pattern="[A-Za-z0-9_-]+" value="${esc(item?.location_id||'')}" ${item?'readonly':''} autocomplete="off"></label><label>Private Integration Token ${item?'(dejar vacío para conservar)':''}<input name="token" type="password" ${item?'':'required'} maxlength="1024" autocomplete="new-password" spellcheck="false" autocapitalize="off"></label><label>Intervalo previsto de sincronización<select name="syncIntervalSeconds">${[60,120,300,900,3600].map(n=>`<option value="${n}" ${n===(Number(item?.sync_interval_seconds)||120)?'selected':''}>${n<3600?n/60+' minutos':'1 hora'}</option>`).join('')}</select></label><p id="save-feedback" class="dialog-copy" role="status"></p><button type="submit" class="primary">Guardar en el servidor</button></form>`;
+ dialog.showModal();const form=document.querySelector('#integration-form');
+ // No token goes to a URL, localStorage, IndexedDB, console or cached API response.
+ const clearToken=()=>{const field=form.elements.namedItem('token');if(field)field.value=''};
+ dialog.addEventListener('close',clearToken,{once:true});
+ form.onsubmit=async e=>{e.preventDefault();const b=form.querySelector('button[type="submit"]');b.disabled=true;const data=Object.fromEntries(new FormData(form));data.syncIntervalSeconds=Number(data.syncIntervalSeconds);try{await api('admin/integrations'+(item?'/'+item.id:''),item?'PUT':'POST',data);clearToken();dialog.close();await renderIntegrations(container)}catch(e){clearToken();document.querySelector('#save-feedback').textContent=e.message+' Vuelve a introducir el token si era nuevo.'}finally{data.token='';b.disabled=false}};
+}
+function remove(id,container){
+ const d=document.querySelector('#action-dialog');document.querySelector('#dialog-content').innerHTML='<h2>Eliminar la conexión</h2><p class="dialog-copy">Se eliminará el token guardado. Los datos en GoHighLevel no se modifican. Podrás volver a añadir la subcuenta.</p><button id="confirm-remove" class="primary">Eliminar conexión</button><p id="remove-error" class="dialog-copy" role="status"></p>';d.showModal();document.querySelector('#confirm-remove').onclick=async()=>{try{await api(`admin/integrations/${id}`,'DELETE');d.close();await renderIntegrations(container)}catch(e){document.querySelector('#remove-error').textContent=e.message}};
+}
+window.addEventListener('agora:login',()=>{const c=document.querySelector('#other-view');if(document.querySelector('[data-view="settings"]').classList.contains('active'))renderIntegrations(c)});

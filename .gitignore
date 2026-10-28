@@ -1,0 +1,10 @@
+.env
+node_modules/
+var/
+android/app/google-services.json
+*.jks
+
+deploy/.env.production
+deploy/secrets/
+
+config/local.php

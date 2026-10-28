@@ -1,0 +1,65 @@
+name: agora-production
+services:
+  api:
+    image: agora-php:release
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      APP_ORIGIN: https://${APP_HOST:?Set APP_HOST}
+      APP_KEY_FILE: /run/agora/integration.key
+      DB_DSN: mysql:host=db;dbname=workspace;charset=utf8mb4
+      DB_USER: workspace
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      GHL_LOCATION_ID: ${GHL_LOCATION_ID:?Set the initial tenant identifier}
+      GHL_WEBHOOKS_ENABLED: '0'
+    secrets: [integration_key]
+    tmpfs: ["/run/agora:mode=0700"]
+    volumes: ["sessions:/var/lib/php/sessions"]
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "try {new PDO(getenv('DB_DSN'),getenv('DB_USER'),getenv('DB_PASSWORD'));exit(0);} catch(Throwable $$e){exit(1);}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+  web:
+    image: agora-web:release
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    restart: unless-stopped
+    environment:
+      APP_HOST: ":80"
+    ports: ["127.0.0.1:8080:80"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      api:
+        condition: service_healthy
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: workspace
+      MARIADB_USER: workspace
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD}
+    volumes:
+      - database:/var/lib/mysql
+      - ../database/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+      - ../database/002-integrations.sql:/docker-entrypoint-initdb.d/002-integrations.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+secrets:
+  integration_key:
+    file: ./secrets/integration.key
+volumes:
+  database:
+  sessions:

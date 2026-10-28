@@ -1,0 +1,9 @@
+.git
+.env
+node_modules
+var
+
+deploy/.env.production
+deploy/secrets
+
+config/local.php

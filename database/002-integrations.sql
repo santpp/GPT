@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS ghl_connections (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ tenant_id BIGINT UNSIGNED NOT NULL,
+ name VARCHAR(160) NOT NULL,
+ location_id VARCHAR(80) NOT NULL,
+ token_ciphertext TEXT NOT NULL,
+ sync_interval_seconds INT UNSIGNED NOT NULL DEFAULT 120,
+ status ENUM('untested','connected','error') NOT NULL DEFAULT 'untested',
+ last_checked_at TIMESTAMP NULL,
+ created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ UNIQUE(tenant_id,location_id),
+ FOREIGN KEY (tenant_id) REFERENCES tenants(id)
+);
