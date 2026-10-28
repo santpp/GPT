@@ -122,4 +122,29 @@ with sync_playwright() as p:
     setup_page.wait_for_selector('#add-integration')
     print('PASS setup preflight blocks credential entry and allows safe initial preparation (mock API)')
 
+
+    # Direct URLs work without relying on a visible administrative menu.
+    login_page=browser.new_context(service_workers='block').new_page()
+    signed_in=[False]
+    def direct_mock(route):
+        import json
+        path=route.request.url.split('/api/')[1]
+        if path=='login':signed_in[0]=True;response={'csrf':'direct-test'};status=200
+        elif path=='me':response={'user':{'role':'administrator'},'csrf':'direct-test'} if signed_in[0] else {'error':'Inicia sesión'};status=200 if signed_in[0] else 401
+        elif path=='admin/diagnostics':response={'ready':True,'version':'0.2.2','checks':[]};status=200
+        else:response={'items':[]};status=200
+        route.fulfill(status=status,content_type='application/json',body=json.dumps(response))
+    login_page.route('**/api/**',direct_mock)
+    base=os.getenv('TEST_BASE_URL','http://127.0.0.1:8080/').rstrip('/')
+    login_page.goto(base+'/conexiones')
+    login_page.locator('#settings-login').click()
+    login_page.locator('[name="email"]').fill('admin@example.test')
+    login_page.locator('[name="password"]').fill('dummy-test-password')
+    login_page.locator('#login-form button').click()
+    login_page.wait_for_selector('#add-integration')
+    assert login_page.locator('#action-dialog').evaluate('(d)=>!d.open')
+    assert login_page.url.endswith('/conexiones')
+    login_page.reload();login_page.wait_for_selector('#add-integration')
+    login_page.goto(base+'/#conexiones');login_page.wait_for_selector('#add-integration')
+    print('PASS direct connections URL, login return, reload and hash fallback')
     browser.close()

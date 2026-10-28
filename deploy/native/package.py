@@ -16,7 +16,7 @@ for folder in ['src','bin','database']:
 for file in sorted((root/'public').rglob('*')):
     if file.is_file():files.append((file,'public_html/'+file.relative_to(root/'public').as_posix(),0o644))
 if update:
-    files.append((root/'deploy/native/UPDATE-0.2.1.md','ACTUALIZAR.md',0o644))
+    files.append((root/'deploy/native/UPDATE-0.2.2.md','ACTUALIZAR.md',0o644))
 else:
     files.extend([(root/'config/local.example.php','agora-private/config/local.example.php',0o600),
                   (root/'deploy/native/README.md','LEEME.md',0o644)])

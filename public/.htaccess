@@ -8,7 +8,8 @@ RewriteRule ^api/.*$ router.php [L,QSA]
 # Standalone entry point may only be reached through an internal API rewrite.
 RewriteCond %{THE_REQUEST} \s/+router\.php(?:[?\s]) [NC]
 RewriteRule ^router\.php$ - [F,L]
-# Conversation deep links load the shell.
+# Named screens and conversation deep links load the shell.
+RewriteRule ^(?:conexiones|bandeja)/?$ index.html [L]
 RewriteRule ^conversations/[A-Za-z0-9_-]+/?$ index.html [L]
 RewriteRule ^$ index.html [L]
 # Reject hidden resources (ACME was allowed above).

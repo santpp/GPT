@@ -20,7 +20,7 @@
         respond 404
     }
     handle {
-        @shell path / /conversations/*
+        @shell path / /conversations/* /conexiones /conexiones/ /bandeja /bandeja/
         rewrite @shell /index.html
         @release path /index.html /sw.js /manifest.webmanifest /assets/*
         header @release Cache-Control "no-cache"

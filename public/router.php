@@ -5,12 +5,12 @@ $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 if (!str_starts_with($path, '/api/')) {
     $file = realpath(__DIR__.$path);
     if ($file && str_starts_with($file, __DIR__.DIRECTORY_SEPARATOR) && is_file($file) && pathinfo($file, PATHINFO_EXTENSION) !== 'php') return false;
-    if ($path === '/' || preg_match('~^/conversations/[A-Za-z0-9_-]+$~', $path)) { readfile(__DIR__.'/index.html'); return true; }
+    if (in_array($path,['/','/conexiones','/conexiones/','/bandeja','/bandeja/'],true) || preg_match('~^/conversations/[A-Za-z0-9_-]+$~', $path)) { readfile(__DIR__.'/index.html'); return true; }
     http_response_code(404); exit;
 }
 require $appRoot.'/src/bootstrap.php';
 header('X-Content-Type-Options: nosniff');
-header('X-Agora-Version: 0.2.1');
+header('X-Agora-Version: 0.2.2');
 try {
     $method = $_SERVER['REQUEST_METHOD'];
     if ($path === '/api/health' && $method === 'GET') { query('SELECT 1'); respond(['status'=>'ok']); }

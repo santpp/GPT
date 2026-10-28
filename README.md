@@ -1,6 +1,8 @@
 # Ágora Digital · Workspace comercial
 
-**Corrección 0.2.1:** [ZIP de actualización sin configuración ni claves](releases/agora-update-0.2.1.zip) · [Pasos sin terminal](deploy/native/UPDATE-0.2.1.md).
+**Actualización 0.2.2:** [ZIP sin configuración ni claves](releases/agora-update-0.2.2.zip) · [Pasos sin terminal](deploy/native/UPDATE-0.2.2.md).
+
+Acceso directo a Conexiones: `https://nueva.agoradigital.app/conexiones`. Requiere sesión de administrador. Alternativa sin reglas rewrite: `https://nueva.agoradigital.app/#conexiones`.
 
 Interfaz móvil sobre GoHighLevel con identidad del manual Ágora. HTML5, CSS modular, JavaScript, PHP 8.3 y MariaDB. **Demo visual y base técnica, no versión funcional completa.**
 
