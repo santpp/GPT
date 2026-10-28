@@ -1,6 +1,8 @@
 # Ágora Digital · Workspace comercial
 
-**Actualización 0.2.2:** [ZIP sin configuración ni claves](releases/agora-update-0.2.2.zip) · [Pasos sin terminal](deploy/native/UPDATE-0.2.2.md).
+**Actualización 0.2.3:** [ZIP sin configuración ni claves](releases/agora-update-0.2.3.zip) · [Pasos sin terminal](deploy/native/UPDATE-0.2.3.md).
+
+Entrada directa sin depender del menú o de rewrites: `https://nueva.agoradigital.app/conexiones.html`. La URL `/version.json` identifica el paquete instalado.
 
 Acceso directo a Conexiones: `https://nueva.agoradigital.app/conexiones`. Requiere sesión de administrador. Alternativa sin reglas rewrite: `https://nueva.agoradigital.app/#conexiones`.
 

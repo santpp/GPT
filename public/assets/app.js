@@ -50,7 +50,7 @@ window.addEventListener('agora:login',refreshSession);window.addEventListener('a
 
 function openLocationView(){
  const path=location.pathname.replace(/\/$/,'')||'/';
- const requested=path==='/conexiones'||location.hash==='#conexiones'?'settings':path==='/bandeja'||location.hash==='#bandeja'?'live':'inbox';
+ const requested=['/conexiones','/conexiones.html'].includes(path)||location.hash==='#conexiones'?'settings':path==='/bandeja'||location.hash==='#bandeja'?'live':'inbox';
  fromLocation=true;document.querySelector(`[data-view="${requested}"]`).click();fromLocation=false;
 }
 window.addEventListener('popstate',openLocationView);window.addEventListener('hashchange',openLocationView);openLocationView();

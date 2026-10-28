@@ -55,7 +55,7 @@ Este archivo es PHP: las contraseñas con comillas simples o barras deben escapa
 
 ## 4. Protección y usuario administrador
 
-**Si ya tienes un administrador y estás corrigiendo un fallo de conexión, no necesitas terminal:** sigue [la actualización 0.2.2](UPDATE-0.2.2.md). Conexiones comprueba la instalación y permite aplicar las tablas adicionales y preparar la protección inicial cuando es seguro. Copiar resultado permite compartir códigos de fallo sin claves ni rutas.
+**Si ya tienes un administrador y estás corrigiendo un fallo de conexión, no necesitas terminal:** sigue [la actualización 0.2.3](UPDATE-0.2.3.md). Conexiones comprueba la instalación y permite aplicar las tablas adicionales y preparar la protección inicial cuando es seguro. Copiar resultado permite compartir códigos de fallo sin claves ni rutas.
 
 Los siguientes comandos son para la primera instalación, antes de disponer de un usuario administrador.
 
@@ -115,3 +115,5 @@ La ruta nativa de archivos, carga de configuración y acceso privado se validan 
 Si ya se instaló una versión anterior, ejecutar con PHP 8.3 `bin/migrate-integrations.php` desde agora-private antes de usar Inbox GHL; añade tablas con IF NOT EXISTS sin reinicializar la base.
 
 En actualizaciones, preservar `agora-private/config/local.php`, `agora-private/var/integration.key`, base y sesiones. No extraer un ZIP encima de esos archivos ni copiar claves del entorno de desarrollo. La variable de proceso, si existe, tiene prioridad sobre local.php para mantener compatibilidad con instalaciones gestionadas.
+
+Desde 0.2.3 el ZIP contiene conexiones.html y version.json, y cada build usa una carpeta nueva para sus módulos y estilos. Esto evita que un HTML actualizado importe módulos antiguos por reutilizar sus URLs. El código fuente de desarrollo sigue en public/assets; el ZIP ya viene construido y no requiere ejecutar Python en el VPS.
