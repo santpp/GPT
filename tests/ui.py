@@ -66,4 +66,27 @@ with sync_playwright() as p:
     assert 'pit-ui-test-not-a-real-token' not in admin.locator('body').inner_text()
     assert admin.evaluate('document.documentElement.scrollWidth')==390
     print('PASS admin settings form, CSRF header, cleared token and no localStorage (mock API; real API covered separately)')
+    context3=browser.new_context(viewport={'width':390,'height':844}, service_workers='block')
+    live=context3.new_page()
+    def live_mock(route):
+        import json
+        path=route.request.url.split('/api/')[1]
+        if path=='me':response={'user':{'role':'administrator'},'csrf':'test-csrf'}
+        elif path=='ghl/connections':response={'items':[{'id':1,'name':'Test location','location_id':'loc-test'}]}
+        elif path.startswith('ghl/inbox?'):response={'items':[{'id':'conv-test','contactName':'Contacto de prueba API','lastMessageBody':'<img src=x onerror=alert(1)>','unreadCount':2}],'total':25,'partial':True,'syncedAt':'2026-10-28 10:00:00','state':None}
+        elif path.startswith('ghl/messages?'):response={'items':[{'id':'message-1','body':'<script>window.injected=true</script>','direction':'inbound','dateAdded':'2026-10-28T10:00:00Z','status':'delivered'}],'hasMore':True}
+        else:response={'synced':{'count':1,'total':25,'partial':True}}
+        route.fulfill(status=200,content_type='application/json',body=json.dumps(response))
+    live.route('**/api/**',live_mock)
+    live.goto(os.getenv('TEST_BASE_URL', 'http://127.0.0.1:8080/'))
+    live.locator('[data-view="live"]').click()
+    live.wait_for_selector('[data-live-id]')
+    assert 'Mostrando 1 de 25' in live.locator('#live-feedback').inner_text()
+    assert live.locator('#live-list img').count()==0
+    live.locator('[data-live-id]').click()
+    live.wait_for_selector('.live-message-log')
+    assert live.locator('#live-messages script').count()==0
+    assert live.evaluate('window.injected === undefined')
+    assert live.evaluate('document.documentElement.scrollWidth')==390
+    print('PASS connected inbox, partial-state notice, messages and escaped upstream content (mock API)')
     browser.close()

@@ -43,6 +43,7 @@ Desde phpMyAdmin, seleccionar esa base NUEVA y vacía e importar en orden:
 
 1. `agora-private/database/schema.sql`
 2. `agora-private/database/002-integrations.sql`
+3. `agora-private/database/003-api-sync.sql`
 
 No importar el esquema base en una base con tablas de otra aplicación. Para una futura actualización, conservar la base y aplicar sólo las migraciones necesarias, nunca volver a inicializarla.
 
@@ -89,10 +90,24 @@ Si `/api/health` da 404, revisar las reglas rewrite. Si responde 503, comprobar 
 
 Entrar con tu administrador, abrir Integraciones y añadir nombre, Location ID y Private Integration Token. La comprobación requiere `locations.readonly`; sólo prueba acceso a esa subcuenta. El token se guarda cifrado y no se devuelve al navegador. Configurar sólo desde la URL HTTPS propia.
 
-La demo visual permanece identificada. Aún faltan sincronización REST, envío de mensajes, FCM y Android. No añadir cron jobs de sincronización: el planificador todavía no existe. No habilitar webhooks, ya que el usuario los descartó.
+La demo visual permanece identificada y separada. **Inbox GHL** muestra una primera ventana real de hasta 20 conversaciones y hasta 20 mensajes por conversación, a través del backend. En esta primera entrega sólo accede el administrador; faltan membresías por vendedor y location. Para sincronizar se requiere `conversations.readonly`; para leer mensajes, `conversations/message.readonly`. Los envíos, el historial completo, FCM y Android siguen pendientes. No habilitar webhooks.
+
+### Consultas periódicas opcionales
+
+Primero comprobar la conexión y probar **Inbox GHL → Sincronizar ahora**. Cuando esa lectura funcione, activar «Consultas» para la subcuenta en Integraciones y añadir desde CyberPanel una tarea cron **como usuario del sitio**, cada minuto, con este comando (confirmar ruta real y PHP):
+
+```sh
+/usr/local/lsws/lsphp83/bin/php /home/nueva.agoradigital.app/agora-private/bin/sync-inbox.php >> /home/nueva.agoradigital.app/agora-private/var/sync-inbox.log 2>&1
+```
+
+El script procesa sólo conexiones activadas y vencidas según su intervalo (120 segundos por defecto), con bloqueo global para no acumular procesos. No consulta GHL por cada móvil. Limita cada pasada a 20 conexiones y una llamada de listado por conexión. El log no incluye tokens ni cuerpos; mantenerlo privado y configurar rotación. El intervalo mínimo configurable es 60 segundos; cron por minuto no proporciona actualizaciones de 5 segundos. La app lee la instantánea al entrar o sincronizar manualmente; todavía no hay SSE o refresco automático en pantalla.
+
+Las consultas comparten un presupuesto local conservador de 5.000 peticiones/día por conexión y un espaciado mínimo de un segundo; esto no define los límites reales del PIT. Se respetan pausas por 429 y cabeceras de cuota observadas. Un 401/403 pausa la programación hasta corregir y comprobar la credencial. El primer resultado es parcial si hay más de 20 conversaciones: todavía no hay importación completa ni borrado/reconciliación de todo el CRM.
 
 ## Verificación y actualización
 
 La ruta nativa de archivos, carga de configuración y acceso privado se validan aquí con PHP 8.3. La ejecución real de .htaccess y LSAPI depende del OpenLiteSpeed del VPS y no se ha probado remotamente. La publicación y el certificado no se dan por confirmados hasta verificar el sitio real.
+
+Si ya se instaló una versión anterior, ejecutar con PHP 8.3 `bin/migrate-integrations.php` desde agora-private antes de usar Inbox GHL; añade tablas con IF NOT EXISTS sin reinicializar la base.
 
 En actualizaciones, preservar `agora-private/config/local.php`, `agora-private/var/integration.key`, base y sesiones. No extraer un ZIP encima de esos archivos ni copiar claves del entorno de desarrollo. La variable de proceso, si existe, tiene prioridad sobre local.php para mantener compatibilidad con instalaciones gestionadas.

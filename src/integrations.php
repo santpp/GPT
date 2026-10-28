@@ -3,32 +3,56 @@ declare(strict_types=1);
 // Included only after authentication. All object access is tenant scoped.
 if ($u['role'] !== 'administrator') respond(['error'=>'Sólo el administrador puede configurar integraciones'],403);
 require_once __DIR__.'/TokenVault.php';
-require_once __DIR__.'/GhlClient.php';
+require_once __DIR__.'/InboxSync.php';
 if ($path === '/api/admin/integrations' && $method === 'GET') {
-    $rows=query('SELECT id,name,location_id,sync_interval_seconds,status,last_checked_at FROM ghl_connections WHERE tenant_id=? ORDER BY id',[$u['tenant_id']])->fetchAll();
+    $rows=query('SELECT c.id,c.name,c.location_id,c.sync_interval_seconds,c.status,c.last_checked_at,COALESCE(s.enabled,0) AS sync_enabled,s.last_success_at,s.last_error,s.requests_today,s.quota FROM ghl_connections c LEFT JOIN ghl_sync_state s ON s.connection_id=c.id WHERE c.tenant_id=? ORDER BY c.id',[$u['tenant_id']])->fetchAll();
     foreach($rows as &$row)$row['tokenConfigured']=true;
-    respond(['items'=>$rows,'syncImplemented'=>false]);
+    respond(['items'=>$rows,'syncImplemented'=>true,'syncWindow'=>20]);
 }
-if (preg_match('~^/api/admin/integrations/(\d+)(/test)?$~',$path,$match)) {
+if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule)?$~',$path,$match)) {
     $row=query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$match[1],$u['tenant_id']])->fetch();
     if(!$row) respond(['error'=>'Integración no encontrada'],404);
-    if(isset($match[2]) && $method==='POST') {
+    if((!isset($match[2]) && in_array($method,['PUT','DELETE'],true)) || (($match[2]??'')==='/schedule' && $method==='POST')) {
+        $mutationKeys=['agora-sync:'.$row['id'],'agora-api:'.$row['id']];
+        foreach($mutationKeys as $mutationKey)if((int)query('SELECT GET_LOCK(?,0)',[$mutationKey])->fetchColumn()!==1)respond(['error'=>'Hay una operación en curso; vuelve a intentarlo'],409);
+        $row=query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$match[1],$u['tenant_id']])->fetch();
+        if(!$row)respond(['error'=>'Integración no encontrada'],404);
+        // Named locks are released when this non-persistent DB session closes.
+    }
+
+    if(($match[2]??'')==='/test' && $method==='POST') {
         $key='connection-test:'.$u['tenant_id'].':'.$row['id'];
         $lock=query('SELECT GET_LOCK(?,0)',[$key])->fetchColumn();
         if((int)$lock!==1)respond(['error'=>'Comprobación en curso'],429);
         try {
             if($row['last_checked_at'] && strtotime($row['last_checked_at']) > time()-30) respond(['error'=>'Espera 30 segundos entre comprobaciones'],429);
-            $token=TokenVault::fromEnvironment()->open($row['token_ciphertext'],(int)$u['tenant_id'],$row['location_id']);
-            $client=new GhlClient($token);
+            $gateway=new GhlGateway();
             try {
-                $client->checkLocation($row['location_id']);
-                query("UPDATE ghl_connections SET status='connected',last_checked_at=CURRENT_TIMESTAMP WHERE id=? AND tenant_id=?",[$row['id'],$u['tenant_id']]);
+                $gateway->execute($row,function(GhlClient $client)use($row):array {$client->checkLocation($row['location_id']);return [];});
+                $updated=query("UPDATE ghl_connections SET status='connected',last_checked_at=CURRENT_TIMESTAMP WHERE id=? AND tenant_id=? AND token_ciphertext=?",[$row['id'],$u['tenant_id'],$row['token_ciphertext']]);
+                if($updated->rowCount()===0)respond(['error'=>'La credencial cambió durante la comprobación; vuelve a comprobarla'],409);
                 respond(['status'=>'connected','message'=>'La subcuenta responde. Esto no valida todos los scopes ni activa la sincronización.']);
+            } catch (GhlCooldown $e) {header('Retry-After: '.$e->retryAfter);respond(['error'=>'Consulta pausada por presupuesto de API','retryAfter'=>$e->retryAfter],429);
             } catch (Throwable $e) {
-                query("UPDATE ghl_connections SET status='error',last_checked_at=CURRENT_TIMESTAMP WHERE id=? AND tenant_id=?",[$row['id'],$u['tenant_id']]);
+                query("UPDATE ghl_connections SET status='error',last_checked_at=CURRENT_TIMESTAMP WHERE id=? AND tenant_id=? AND token_ciphertext=?",[$row['id'],$u['tenant_id'],$row['token_ciphertext']]);
                 respond(['error'=>'No se pudo verificar la subcuenta. Revisa Location ID, token, scope locations.readonly y conectividad del servidor.'],502);
             }
         } finally {query('SELECT RELEASE_LOCK(?)',[$key]);}
+    }
+    if(($match[2]??'')==='/sync' && $method==='POST') {
+        session_write_close();
+        try {respond(['synced'=>(new InboxSync())->sync($row)]);}
+        catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'Sincronización pausada; espera antes de repetir','retryAfter'=>$e->retryAfter],429);}
+        catch(InvalidArgumentException $e){respond(['error'=>'Comprueba la conexión antes de sincronizar'],422);}
+        catch(Throwable $e){respond(['error'=>'Sincronización fallida. Revisa credenciales, scopes y estado de API.'],502);}
+    }
+    if(($match[2]??'')==='/schedule' && $method==='POST') {
+        $enabled=body()['enabled']??null;
+        if(!is_bool($enabled))respond(['error'=>'enabled debe ser booleano'],422);
+        $lastError=query('SELECT last_error FROM ghl_sync_state WHERE connection_id=?',[$row['id']])->fetchColumn();
+        if($enabled && ($row['status']!=='connected' || $lastError==='authentication_or_scope'))respond(['error'=>'Comprueba la conexión primero'],422);
+        query('INSERT INTO ghl_sync_state(connection_id,enabled) VALUES(?,?) ON DUPLICATE KEY UPDATE enabled=VALUES(enabled)',[$row['id'],(int)$enabled]);
+        respond(['enabled'=>$enabled,'requiresServerCron'=>true]);
     }
     if(!isset($match[2]) && $method==='DELETE') {query('DELETE FROM ghl_connections WHERE id=? AND tenant_id=?',[$row['id'],$u['tenant_id']]);respond(['ok'=>true]);}
 }
@@ -42,13 +66,16 @@ if (($path==='/api/admin/integrations' && $method==='POST') || (isset($row) && !
     $vault=TokenVault::fromEnvironment();
     $cipher=$token!==''?$vault->seal($token,(int)$u['tenant_id'],$location):$row['token_ciphertext'];
     try {
+        db()->beginTransaction();
         if(isset($row)) {
             query("UPDATE ghl_connections SET name=?,token_ciphertext=?,sync_interval_seconds=?,status=IF(?,'untested',status),last_checked_at=IF(?,NULL,last_checked_at) WHERE id=? AND tenant_id=?",[trim($name),$cipher,$interval,(int)($token!==''),(int)($token!==''),$row['id'],$u['tenant_id']]);
             $id=$row['id'];
+            if($token!==''){query('DELETE FROM ghl_inbox_snapshots WHERE connection_id=?',[$id]);query('UPDATE ghl_sync_state SET enabled=FALSE,last_success_at=NULL,last_error=NULL WHERE connection_id=?',[$id]);}
         } else {
             query('INSERT INTO ghl_connections(tenant_id,name,location_id,token_ciphertext,sync_interval_seconds) VALUES(?,?,?,?,?)',[$u['tenant_id'],trim($name),$location,$cipher,$interval]);$id=db()->lastInsertId();
         }
-    } catch(PDOException $e) {if($e->getCode()==='23000')respond(['error'=>'Esta subcuenta ya está configurada'],409);throw $e;}
+        db()->commit();
+    } catch(PDOException $e) {if(db()->inTransaction())db()->rollBack();if($e->getCode()==='23000')respond(['error'=>'Esta subcuenta ya está configurada'],409);throw $e;}
     // The plaintext credential is never returned or logged.
     respond(['id'=>$id,'saved'=>true,'tokenConfigured'=>true],isset($row)?200:201);
 }

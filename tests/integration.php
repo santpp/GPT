@@ -22,12 +22,25 @@ try {
  [$code,$login]=request('login','POST',['email'=>$email,'password'=>$password]);check($code===200 && isset($login['csrf']),'login and CSRF token');
  [$code,$inbox]=request('conversations');check($code===200 && count($inbox['items'])===1 && $inbox['items'][0]['id']==='own','seller assignment and tenant isolation');
  check(request('admin/integrations')[0]===403,'seller cannot read integration settings');
+ check(request('ghl/connections')[0]===403,'live inbox denies seller without per-location mapping');
  query("UPDATE users SET role='administrator' WHERE id=?",[$users[0]]);
  $token='pit-test-'.bin2hex(random_bytes(16));
  $headers=['X-CSRF-Token: '.$login['csrf']];
  [$code,$saved]=request('admin/integrations','POST',['name'=>'Test connection','locationId'=>'loc-'.$suffix,'token'=>$token,'syncIntervalSeconds'=>120],$headers);
  check($code===201 && !str_contains(json_encode($saved),$token),'administrator saves integration without token response');
  $id=$saved['id'];
+ check(request('admin/integrations/'.$id.'/schedule','POST',['enabled'=>true],$headers)[0]===422,'unverified connection cannot enable cron');
+ check(request('ghl/inbox?connectionId='.$id)[0]===200,'administrator can read own empty inbox snapshot');
+ query('INSERT INTO ghl_inbox_snapshots(connection_id,payload,total) VALUES(?,?,?)',[$id,'[]',0]);
+ check(request('ghl/messages?connectionId='.$id.'&conversationId=unknown')[0]===404,'unknown conversation cannot trigger arbitrary GHL lookup');
+ query('SELECT GET_LOCK(?,0)',['agora-sync:'.$id]);
+ check(request('admin/integrations/'.$id,'PUT',['name'=>'Busy','token'=>'','syncIntervalSeconds'=>120],$headers)[0]===409,'credential update waits for in-flight synchronization');
+ query('SELECT RELEASE_LOCK(?)',['agora-sync:'.$id]);
+ query("UPDATE ghl_connections SET status='connected' WHERE id=?",[$id]);
+ check(request('admin/integrations/'.$id.'/schedule','POST',['enabled'=>true],$headers)[0]===200,'verified administrator can enable scheduling');
+ check(request('admin/integrations/'.$id.'/schedule','POST',['enabled'=>false],$headers)[0]===200,'administrator can pause scheduling');
+
+
  $cipher=query('SELECT token_ciphertext FROM ghl_connections WHERE id=?',[$id])->fetchColumn();
  require_once __DIR__.'/../src/TokenVault.php';
  $vault=TokenVault::fromEnvironment();
@@ -48,6 +61,7 @@ try {
  query('INSERT INTO ghl_connections(tenant_id,name,location_id,token_ciphertext) VALUES(?,?,?,?)',[$tenants[1],'Foreign','foreign-'.$suffix,$vault->seal('fake',$tenants[1],'foreign-'.$suffix)]);
  $foreign=db()->lastInsertId();
  check(request('admin/integrations/'.$foreign,'DELETE',null,$headers)[0]===404,'administrator cannot modify another tenant integration');
+ check(request('ghl/inbox?connectionId='.$foreign)[0]===404,'live inbox isolates tenant connections');
  check(request('admin/integrations','POST',['name'=>'No CSRF','locationId'=>'x','token'=>$token])[0]===403,'CSRF protects token configuration');
  check(request('webhooks/ghl','POST',[])[0]===404,'webhooks disabled by default');
  check(request('admin/integrations/'.$id,'DELETE',null,$headers)[0]===200,'administrator deletes connection');

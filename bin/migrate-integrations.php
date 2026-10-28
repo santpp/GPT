@@ -1,5 +1,5 @@
 <?php
 declare(strict_types=1);
 require __DIR__.'/../src/bootstrap.php';
-db()->exec(file_get_contents(__DIR__.'/../database/002-integrations.sql'));
+foreach(['002-integrations.sql','003-api-sync.sql'] as $migration)db()->exec(file_get_contents(__DIR__.'/../database/'.$migration));
 echo "Integration schema ready\n";

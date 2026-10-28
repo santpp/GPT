@@ -2,8 +2,9 @@
 
 Interfaz móvil sobre GoHighLevel con identidad del manual Ágora. HTML5, CSS modular, JavaScript, PHP 8.3 y MariaDB. **Demo visual y base técnica, no versión funcional completa.**
 
-La integración usa el **Private Integration Token de cada subcuenta**, configurable por el administrador desde **Integraciones**. No requiere webhooks. Se pueden guardar, cifrar, sustituir y eliminar credenciales, y comprobar acceso a una subcuenta. La sincronización periódica, datos reales en el inbox, push y Android todavía están pendientes. El intervalo guardado no activa un planificador.
+La integración usa el **Private Integration Token de cada subcuenta**, configurable por el administrador desde **Integraciones**. No requiere webhooks. Se pueden guardar, cifrar, sustituir y eliminar credenciales, y comprobar acceso a una subcuenta. La primera vista **Inbox GHL** permite sincronizar hasta 20 conversaciones recientes por subcuenta y leer hasta 20 mensajes por conversación; es de sólo lectura y acceso administrador. Las consultas periódicas necesitan activar la subcuenta y configurar cron en CyberPanel. El historial completo, envíos, push y Android siguen pendientes.
 
+- [Descargar ZIP para CyberPanel](releases/agora-cyberpanel-php83.zip) — abrir el archivo en GitHub y pulsar **Download raw**.
 - [Arquitectura y alcance actual](docs/architecture.md)
 - [API GHL revisada](docs/ghl-api-review.md)
 - [Identidad del manual](docs/brand.md)
@@ -46,6 +47,7 @@ Cada administrador accede sólo a las conexiones de su empresa. La selección de
 ```sh
 docker compose exec -T api php tests/webhook.php
 docker compose exec -T api php tests/integration.php
+docker compose exec -T api php tests/sync.php
 # Con Playwright Python y Chromium disponibles:
 python3 tests/ui.py
 ```
@@ -56,4 +58,4 @@ La UI permite filtros, búsqueda, vistas de ejemplo, conversación, ficha móvil
 
 ## Notificaciones sin webhooks
 
-El PIT no transmite eventos por sí mismo. Para notificar con la app cerrada, el servidor tendrá que consultar GHL periódicamente, detectar diferencias y enviar FCM. Habrá retraso y consumo de API según el intervalo. La app móvil no debe ser responsable de mantener ese proceso en segundo plano.
+El PIT no transmite eventos por sí mismo. Para notificar con la app cerrada, el servidor tendrá que consultar GHL periódicamente, detectar diferencias y enviar FCM. Habrá retraso y consumo de API según el intervalo. La app móvil no debe ser responsable de mantener ese proceso en segundo plano. Ya existe `bin/sync-inbox.php` para importar la ventana reciente desde una tarea cron, con presupuesto compartido y manejo de 429; todavía no envía push ni importa todo el historial. Ver [detalles de sincronización](docs/api-sync.md).

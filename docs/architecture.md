@@ -14,7 +14,7 @@ flowchart LR
   B --> V[Token cifrado por empresa y subcuenta]
   V --> G[Cliente GHL en el backend]
   G --> H[GoHighLevel REST]
-  S[Sincronizador programado · pendiente] --> G
+  S[Cron · ventana reciente] --> G
   S --> D
   S --> N[Outbox / FCM / SSE · pendiente]
   N --> A
@@ -38,21 +38,21 @@ Configurar el secreto requiere que el administrador lo escriba temporalmente en 
 
 La clave maestra se genera una vez con `bin/generate-key.php`; el comando preserva una clave existente. Perderla hace irrecuperables los tokens cifrados. Mantener un backup seguro separado; para producción usar un gestor de claves, no una clave de desarrollo compartida en una imagen o snapshot. La rotación de tokens está implementada; la rotación de clave maestra requiere un procedimiento de re-cifrado todavía pendiente.
 
-El administrador actual administra las conexiones de **su empresa**. No es un superadministrador global y no puede acceder a conexiones de otros tenants. Preparar selección de subcuenta, membresías y permisos por subcuenta antes de conectar múltiples fuentes al inbox; no mezclar recursos de distintas locations bajo un único ID GHL. El panel ya acepta varias conexiones, pero el read model y la API de conversaciones todavía requieren esa evolución.
+El administrador actual administra las conexiones de **su empresa**. No es un superadministrador global y no puede acceder a conexiones de otros tenants. Inbox GHL ya selecciona subcuenta y guarda instantáneas independientes por conexión. Es sólo para administradores; las membresías de vendedores por subcuenta y la evolución del resto del read model siguen pendientes. La API legada /api/conversations continúa separada de esa vista.
 
 ## Sincronización y notificaciones
 
-El intervalo configurable (60–3600 segundos) se almacena como preferencia. **El planificador aún no está implementado**; guardar la configuración o comprobar el token no importa contactos ni mensajes. La UI lo indica expresamente.
+El intervalo configurable (60–3600 segundos) controla ahora una tarea cron opcional: `bin/sync-inbox.php`. Importa hasta 20 conversaciones recientes, con presupuesto por conexión; requiere activación y cron en CyberPanel. El botón manual usa el mismo servicio y cuotas. Inbox GHL lee esas conversaciones y hasta 20 mensajes por conversación. No se importa aún todo el CRM ni el historial.
 
 El siguiente desarrollo es una importación inicial paginada y una sincronización incremental adaptada a los filtros de cada endpoint, con cursores, control de rate limits, bloqueo por subcuenta, reintentos y reconciliación. Un sincronizador no debe asumir que todos los endpoints ofrecen `updatedSince`. Una petición del frontend nunca debe iniciar miles de llamadas síncronas a GHL. Los canales dependen de las conexiones, scopes y restricciones de la subcuenta; se validan individualmente antes de habilitar envío.
 
 Sin webhooks, un mensaje entrante sólo puede generar una notificación cuando el backend detecte el cambio en una consulta. La latencia será aproximadamente el intervalo de sincronización más el procesamiento y la entrega. No es tiempo real estricto. FCM permite notificar con la app cerrada, pero requiere sincronizador y worker de entrega activos en el servidor; un temporizador en el móvil no sirve. FCM/SSE siguen pendientes, igual que las push reales y los App Links nativos. No se promete entrega bajo force-stop, permisos denegados o sin red.
 
-Para minimizar consumo: prioridades por actividad, sincronización más frecuente del inbox, menos frecuente de catálogos, ventanas de atención configurables, presupuesto por location y reconciliación periódica. Esto requiere un planificador real y mediciones de las cabeceras del PIT.
+Para minimizar consumo: prioridades por actividad, sincronización más frecuente del inbox, menos frecuente de catálogos, ventanas de atención configurables, presupuesto por location y reconciliación periódica. La planificación avanzada y la reconciliación completa requieren ampliar el cron básico actual y medir las cabeceras del PIT.
 
 ## Resto del producto
 
-Pendientes: sincronización e inbox reales, ficha completa, adjuntos y envíos, acciones rápidas GHL, calendarios/citas reales, auditoría, gestión de usuarios, permisos por acción, MFA/recuperación, FCM, SSE, Capacitor y cola offline idempotente. Los mensajes de ejemplo no salen de la memoria del navegador.
+Pendientes: importación completa y paginación, refresco automático/SSE, permisos de vendedores por subcuenta, ficha completa, adjuntos y envíos, acciones rápidas GHL, calendarios/citas reales, auditoría, gestión de usuarios, permisos por acción, MFA/recuperación, FCM, SSE, Capacitor y cola offline idempotente. Los mensajes de ejemplo no salen de la memoria del navegador.
 
 La cola futura debe usar UUID estable por comando, estados queued/sending/confirmed/failed/uncertain, pertenencia de usuario/empresa y precondiciones. Si se pierde la conexión tras un envío, reconciliar antes de repetir: no se supone idempotencia de GHL. Datos offline reales por usuario y tenant con TTL y borrado al cerrar sesión.
 
@@ -64,4 +64,8 @@ Capacitor no hace actualizable un bundle empaquetado por sí solo. Antes de crea
 
 ## Despliegue
 
-Compose es sólo desarrollo, con puerto 8080 ligado a loopback y contraseña pública de ejemplo. Producción requiere PHP-FPM detrás de TLS, cookies Secure, límites de tamaño y tasa, backup de base y clave, migraciones, auditoría sin cuerpos ni tokens, observabilidad y restauración probada. No desplegar el servidor integrado de PHP como producción. La configuración de la app no recibe URLs GHL arbitrarias: el host está fijado en el backend.
+Compose es sólo desarrollo, con puerto 8080 ligado a loopback y contraseña pública de ejemplo. El despliegue elegido usa CyberPanel/OpenLiteSpeed con LSAPI PHP 8.3 y TLS; también necesita, cookies Secure, límites de tamaño y tasa, backup de base y clave, migraciones, auditoría sin cuerpos ni tokens, observabilidad y restauración probada. No desplegar el servidor integrado de PHP como producción. La configuración de la app no recibe URLs GHL arbitrarias: el host está fijado en el backend.
+
+## Avance: primera lectura API
+
+Ver [api-sync.md](api-sync.md) para alcance, controles de cuota y pruebas. La comprobación de conexión y las lecturas pasan por GhlGateway. La sincronización es una ventana reciente, no reconciliación completa. Se conserva la demo y se añade Inbox GHL separado, con datos de API sólo para administrador. No se han usado credenciales reales ni probado el VPS.

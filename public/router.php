@@ -47,6 +47,7 @@ try {
     if (!isset($_SESSION['uid']) || ($_SESSION['expires'] ?? 0) < time()) respond(['error'=>'Authentication required'],401);
     $u = query('SELECT id,tenant_id,email,role,ghl_user_id FROM users WHERE id=?',[$_SESSION['uid']])->fetch();
     if (!$u) respond(['error'=>'Authentication required'],401);
+    if (str_starts_with($path, '/api/ghl/')) {session_write_close();require $appRoot.'/src/live-inbox.php';}
     if (str_starts_with($path, '/api/admin/integrations')) {
         if (getenv('APP_ENV') !== 'development' && parse_url(getenv('APP_ORIGIN') ?: '', PHP_URL_SCHEME) !== 'https') respond(['error'=>'HTTPS required'],503);
         require $appRoot.'/src/integrations.php';
