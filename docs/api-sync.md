@@ -4,8 +4,8 @@
 
 - `GET /conversations/search`, Version `2021-04-15`, locationId fijo de la conexión, sort desc / last_message_date y limit 20. Contrato revisado en la fuente oficial de GoHighLevel antes de implementar.
 - Instantánea por connection_id con fecha de sincronización, número total reportado y aviso de parcialidad. No se mezclan IDs de distintas subcuentas.
-- Bandeja conectada separado de la demo, sólo para el administrador en esta primera versión. No se simula pertenencia de vendedores: falta configurar sus membresías GHL por location.
-- Lectura de hasta 20 mensajes de una conversación presente en esa instantánea, mediante el backend. La ruta exige empresa/conexión y valida locationId y conversationId en la respuesta. No renderiza HTML remoto como código y no marca como leído.
+- Conversaciones reales en el menú principal, separadas de la demo, sólo para el administrador en esta primera versión. No se simula pertenencia de vendedores: falta configurar sus membresías GHL por location.
+- Lectura paginada en bloques de 20 mensajes de una conversación presente en esa instantánea, mediante el backend. La ruta exige empresa/conexión y valida locationId y conversationId en la respuesta. No renderiza HTML remoto como código y no marca como leído.
 - `POST /api/admin/integrations/{id}/sync` con sesión/origen/CSRF, conexión previamente comprobada y limitación compartida.
 - `POST /api/admin/integrations/{id}/schedule` para activar/desactivar la programación; activación requiere comprobación previa. Esto no instala cron automáticamente.
 - Cron CLI `bin/sync-inbox.php`: una pasada de hasta 20 conexiones vencidas, bloqueo global y por conexión, configurado como usuario del sitio desde CyberPanel.
@@ -26,7 +26,7 @@ Tras comprobar una conexión con locations.readonly, habilitar conversations.rea
 
 ## Límites de esta entrega
 
-No es una importación inicial completa ni una sincronización incremental con historial. El cursor startAfterDate de búsqueda y lastMessageId de mensajes están documentados pero aún no se consumen para paginar esta vista. No se detectan cambios fuera de la ventana reciente. No hay envío de mensajes, confirmación de lectura, adjuntos interactivos, SSE, actualización automática de la pantalla o FCM. El cron renueva la instantánea de conversaciones; no descarga todo el historial de cada una.
+No es una importación inicial completa ni una sincronización incremental con historial. El cursor lastMessageId de mensajes se consume bajo demanda desde 0.3.0; se valida su formato, pertenencia a la página y avance. El cursor startAfterDate de búsqueda todavía no se consume: la lista continúa limitada a 20 conversaciones. La búsqueda local indica expresamente ese alcance. No se detectan cambios fuera de la ventana reciente. No hay envío de mensajes, confirmación de lectura, adjuntos interactivos, SSE, actualización automática de la pantalla o FCM. El cron renueva la instantánea de conversaciones; no descarga todo el historial de cada una.
 
 No se han usado tokens reales ni accedido al VPS. Las pruebas de GHL usan transporte inyectado **sólo desde código de prueba**, nunca desde parámetros HTTP. No hay un host/base URL configurable para evitar un proxy arbitrario o SSRF.
 
@@ -37,3 +37,7 @@ No se han usado tokens reales ni accedido al VPS. Las pruebas de GHL usan transp
 - Chromium móvil: vista conectada y mensajes, aviso de parcialidad y escape de contenido remoto; regresiones de demo, formulario de tokens y shell offline.
 
 La validación real requiere el despliegue HTTPS en nueva.agoradigital.app y la credencial introducida por su administrador, no enviada por chat.
+
+## Validación 0.3.0
+
+Nueve comprobaciones de contrato y validación de historial; Chromium a 390 y 1440 px con paginación, deduplicación, error 429 recuperable, búsqueda sin consultas, escape de HTML y cambio de cuenta/conversación. Las páginas antiguas no sustituyen la conversación seleccionada. El usuario confirmó sincronización real en 0.2.3; el historial nuevo aún requiere comprobación en el VPS.

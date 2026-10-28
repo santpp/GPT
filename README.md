@@ -1,6 +1,6 @@
 # Ágora Digital · Workspace comercial
 
-**Actualización 0.2.3:** [ZIP sin configuración ni claves](releases/agora-update-0.2.3.zip) · [Pasos sin terminal](deploy/native/UPDATE-0.2.3.md).
+**Actualización 0.3.0:** [ZIP sin configuración ni claves](releases/agora-update-0.3.0.zip) · [Pasos sin terminal](deploy/native/UPDATE-0.3.0.md).
 
 Entrada directa sin depender del menú o de rewrites: `https://nueva.agoradigital.app/conexiones.html`. La URL `/version.json` identifica el paquete instalado.
 
@@ -8,7 +8,7 @@ Acceso directo a Conexiones: `https://nueva.agoradigital.app/conexiones`. Requie
 
 Interfaz móvil sobre GoHighLevel con identidad del manual Ágora. HTML5, CSS modular, JavaScript, PHP 8.3 y MariaDB. **Demo visual y base técnica, no versión funcional completa.**
 
-La integración usa el **Private Integration Token de cada subcuenta**, configurable por el administrador desde **Conexiones**. No requiere webhooks. Se pueden guardar, cifrar, sustituir y eliminar credenciales, y comprobar acceso a una subcuenta. La primera vista **Bandeja conectada** permite sincronizar hasta 20 conversaciones recientes por subcuenta y leer hasta 20 mensajes por conversación; es de sólo lectura y acceso administrador. Las consultas periódicas necesitan activar la subcuenta y configurar cron en CyberPanel. El historial completo, envíos, push y Android siguen pendientes.
+La integración usa el **Private Integration Token de cada subcuenta**, configurable por el administrador desde **Conexiones**. No requiere webhooks. Se pueden guardar, cifrar, sustituir y eliminar credenciales, y comprobar acceso a una subcuenta. La vista **Conversaciones** abre los datos reales al iniciar sesión como administrador: hasta 20 conversaciones recientes, búsqueda local, filtro de pendientes e historial paginado en bloques de 20 mensajes. Es de sólo lectura; la búsqueda global y la paginación de la lista siguen pendientes. Las consultas periódicas necesitan activar la subcuenta y configurar cron en CyberPanel. Envíos, adjuntos interactivos, push y Android siguen pendientes.
 
 - [Descargar ZIP para CyberPanel](releases/agora-cyberpanel-php83.zip) — abrir el archivo en GitHub y pulsar **Download raw**.
 - [Arquitectura y alcance actual](docs/architecture.md)

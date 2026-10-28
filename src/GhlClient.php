@@ -15,8 +15,8 @@ final class GhlClient {
     public function conversations(string $location):array {
         return $this->get('/conversations/search?'.http_build_query(['locationId'=>$location,'limit'=>20,'sort'=>'desc','sortBy'=>'last_message_date']),'2021-04-15');
     }
-    public function conversationMessages(string $id): array {
-        return $this->get('/conversations/'.rawurlencode($id).'/messages?limit=20','2021-04-15');
+    public function conversationMessages(string $id,?string $cursor=null): array {
+        return $this->get('/conversations/'.rawurlencode($id).'/messages?'.http_build_query(array_filter(['limit'=>20,'lastMessageId'=>$cursor],fn($v)=>$v!==null)),'2021-04-15');
     }
     public function contact(string $id): array {return $this->get('/contacts/'.rawurlencode($id),'2021-07-28');}
     private function get(string $path,string $version):array {

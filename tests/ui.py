@@ -81,7 +81,7 @@ with sync_playwright() as p:
         route.fulfill(status=200,content_type='application/json',body=json.dumps(response))
     live.route('**/api/**',live_mock)
     live.goto(os.getenv('TEST_BASE_URL', 'http://127.0.0.1:8080/'))
-    live.locator('[data-view="live"]').click()
+    live.locator('button[data-view="inbox"]').click()
     live.wait_for_selector('[data-live-id]')
     assert 'Mostrando 1 de 25' in live.locator('#live-feedback').inner_text()
     assert live.locator('#live-list img').count()==0
