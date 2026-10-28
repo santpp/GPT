@@ -31,7 +31,7 @@ Confirmar que `https://nueva.agoradigital.app` abre con certificado válido. Si 
 
 Hacer copia de los archivos que ya existan en el sitio antes de extraer; no sobrescribir una aplicación existente. El ZIP incluye index.html, por lo que hay que preservar una página previa si existe. Subir por SFTP o el administrador de archivos del sitio y extraer en el directorio padre de public_html. Si el administrador de archivos no permite escribir fuera de public_html, usar SFTP con acceso al directorio del sitio.
 
-Mantener los archivos bajo el propietario del sitio CyberPanel. No usar chmod 777. Directorios privados: 700; archivos privados: 600 (el usuario PHP del sitio debe ser su propietario). Directorios públicos: 755; archivos públicos: 644. Si se extrae como root, ajustar propietario sólo en agora-private y los archivos de esta aplicación al usuario real del sitio. No adivinar su nombre ni cambiar permisos de otras webs.
+Mantener los archivos bajo el propietario del sitio CyberPanel. No usar chmod 777. Código y carpetas de aplicación: 644/755. Carpetas privadas config y var: 700; configuración y claves: 600 (el usuario PHP del sitio debe ser su propietario). Los archivos de código no contienen secretos; el ZIP de actualización los distribuye como 644 para que PHP pueda leerlos sin relajar la protección de config o var. Si se extrae como root, ajustar propietario sólo en agora-private y los archivos de esta aplicación al usuario real del sitio. No adivinar su nombre ni cambiar permisos de otras webs.
 
 Comprobar que PHP 8.3 tiene PDO MySQL, Sodium, cURL, OpenSSL y mbstring. El verificador CLI lo comprobará; el PHP web debe utilizar la misma versión/extensiones. Si la página muestra código PHP en texto, no introducir credenciales: corregir primero el handler PHP del sitio.
 
@@ -53,7 +53,11 @@ En `agora-private/config`, copiar `local.example.php` a `local.php` y editar **s
 
 Este archivo es PHP: las contraseñas con comillas simples o barras deben escaparse correctamente en la cadena PHP. No pegar su contenido en chat. El archivo nunca debe estar dentro de public_html. No incluir el PIT de GHL aquí: se añadirá después desde Integraciones.
 
-## 4. Generar la clave y crear administrador
+## 4. Protección y usuario administrador
+
+**Si ya tienes un administrador y estás corrigiendo un fallo de conexión, no necesitas terminal:** sigue [la actualización 0.2.1](UPDATE-0.2.1.md). Conexiones comprueba la instalación y permite aplicar las tablas adicionales y preparar la protección inicial cuando es seguro. Copiar resultado permite compartir códigos de fallo sin claves ni rutas.
+
+Los siguientes comandos son para la primera instalación, antes de disponer de un usuario administrador.
 
 Desde la terminal SSH, ejecutar como **usuario propietario del sitio**. CyberPanel suele instalar el binario en `/usr/local/lsws/lsphp83/bin/php`; verificarlo con `-v` antes de usarlo. Si la ruta difiere, utilizar el PHP 8.3 de ese VPS. No utilizar el PHP del sistema sin comprobar su versión.
 
@@ -86,15 +90,15 @@ Visitar `https://nueva.agoradigital.app/api/health`: debe responder `{"status":"
 
 Si `/api/health` da 404, revisar las reglas rewrite. Si responde 503, comprobar logs de PHP del sitio y la configuración privada sin compartir valores. Si se ve código fuente, revisar el handler PHP y dejar de introducir secretos hasta corregirlo. No subir un phpinfo público: revela configuración del servidor.
 
-## 6. Configurar GHL
+## 6. Conectar una cuenta
 
-Entrar con tu administrador, abrir Integraciones y añadir nombre, Location ID y Private Integration Token. La comprobación requiere `locations.readonly`; sólo prueba acceso a esa subcuenta. El token se guarda cifrado y no se devuelve al navegador. Configurar sólo desde la URL HTTPS propia.
+Entrar con tu administrador, abrir Conexiones y añadir nombre, Location ID y Private Integration Token. La comprobación requiere `locations.readonly`; sólo prueba acceso a esa subcuenta. El token se guarda cifrado y no se devuelve al navegador. Configurar sólo desde la URL HTTPS propia.
 
-La demo visual permanece identificada y separada. **Inbox GHL** muestra una primera ventana real de hasta 20 conversaciones y hasta 20 mensajes por conversación, a través del backend. En esta primera entrega sólo accede el administrador; faltan membresías por vendedor y location. Para sincronizar se requiere `conversations.readonly`; para leer mensajes, `conversations/message.readonly`. Los envíos, el historial completo, FCM y Android siguen pendientes. No habilitar webhooks.
+La demo visual permanece identificada y separada. **Bandeja conectada** muestra una primera ventana real de hasta 20 conversaciones y hasta 20 mensajes por conversación, a través del backend. En esta primera entrega sólo accede el administrador; faltan membresías por vendedor y location. Para sincronizar se requiere `conversations.readonly`; para leer mensajes, `conversations/message.readonly`. Los envíos, el historial completo, FCM y Android siguen pendientes. No habilitar webhooks.
 
 ### Consultas periódicas opcionales
 
-Primero comprobar la conexión y probar **Inbox GHL → Sincronizar ahora**. Cuando esa lectura funcione, activar «Consultas» para la subcuenta en Integraciones y añadir desde CyberPanel una tarea cron **como usuario del sitio**, cada minuto, con este comando (confirmar ruta real y PHP):
+Primero comprobar la conexión y probar **Bandeja conectada → Sincronizar ahora**. Cuando esa lectura funcione, activar «Consultas» para la subcuenta en Conexiones y añadir desde CyberPanel una tarea cron **como usuario del sitio**, cada minuto, con este comando (confirmar ruta real y PHP):
 
 ```sh
 /usr/local/lsws/lsphp83/bin/php /home/nueva.agoradigital.app/agora-private/bin/sync-inbox.php >> /home/nueva.agoradigital.app/agora-private/var/sync-inbox.log 2>&1

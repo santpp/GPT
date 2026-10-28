@@ -5,3 +5,5 @@
 
 @media(max-width:850px) and (min-width:601px){.brand-logo{width:60px;height:45px;object-fit:cover;object-position:left}}
 @media(max-width:600px){.sidebar nav{overflow-x:auto;justify-content:flex-start}.nav{min-width:68px;flex-shrink:0}.integration-heading{align-items:flex-start}.integration-heading h2{font-size:13px}}
+
+@media(max-width:600px){.top-actions:has(#app-update) #network{display:none}#app-update{font-size:9px;padding:8px}.breadcrumbs strong{display:inline-block;max-width:95px;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}

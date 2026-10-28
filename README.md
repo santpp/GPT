@@ -1,8 +1,10 @@
 # Ágora Digital · Workspace comercial
 
+**Corrección 0.2.1:** [ZIP de actualización sin configuración ni claves](releases/agora-update-0.2.1.zip) · [Pasos sin terminal](deploy/native/UPDATE-0.2.1.md).
+
 Interfaz móvil sobre GoHighLevel con identidad del manual Ágora. HTML5, CSS modular, JavaScript, PHP 8.3 y MariaDB. **Demo visual y base técnica, no versión funcional completa.**
 
-La integración usa el **Private Integration Token de cada subcuenta**, configurable por el administrador desde **Integraciones**. No requiere webhooks. Se pueden guardar, cifrar, sustituir y eliminar credenciales, y comprobar acceso a una subcuenta. La primera vista **Inbox GHL** permite sincronizar hasta 20 conversaciones recientes por subcuenta y leer hasta 20 mensajes por conversación; es de sólo lectura y acceso administrador. Las consultas periódicas necesitan activar la subcuenta y configurar cron en CyberPanel. El historial completo, envíos, push y Android siguen pendientes.
+La integración usa el **Private Integration Token de cada subcuenta**, configurable por el administrador desde **Conexiones**. No requiere webhooks. Se pueden guardar, cifrar, sustituir y eliminar credenciales, y comprobar acceso a una subcuenta. La primera vista **Bandeja conectada** permite sincronizar hasta 20 conversaciones recientes por subcuenta y leer hasta 20 mensajes por conversación; es de sólo lectura y acceso administrador. Las consultas periódicas necesitan activar la subcuenta y configurar cron en CyberPanel. El historial completo, envíos, push y Android siguen pendientes.
 
 - [Descargar ZIP para CyberPanel](releases/agora-cyberpanel-php83.zip) — abrir el archivo en GitHub y pulsar **Download raw**.
 - [Arquitectura y alcance actual](docs/architecture.md)
@@ -38,7 +40,7 @@ El puerto de desarrollo es 8080, enlazado sólo a loopback. `/api/health` consul
 
 No hay usuario predeterminado. Para crear uno, mantener `GHL_LOCATION_ID` como identificador inicial del tenant en `.env` (es una limitación del bootstrap actual, no el token de la integración), recrear api y ejecutar `docker compose exec -T api php bin/create-user.php usuario@empresa.test administrator`, suministrando la contraseña por stdin desde una fuente segura. No incluir contraseñas en argumentos o historial.
 
-Iniciar sesión en la app, abrir **Integraciones**, añadir nombre, Location ID y Private Integration Token. La comprobación utiliza `locations.readonly`; otros scopes se añadirán según los módulos que se habiliten. El token sólo se envía una vez al backend desde el formulario administrador y no se devuelve después. Usar HTTPS en el despliegue real. No enviar tokens en chat ni introducirlos en una demo pública o un equipo ajeno.
+Iniciar sesión en la app, abrir **Conexiones**, añadir nombre, Location ID y Private Integration Token. La comprobación utiliza `locations.readonly`; otros scopes se añadirán según los módulos que se habiliten. El token sólo se envía una vez al backend desde el formulario administrador y no se devuelve después. Usar HTTPS en el despliegue real. No enviar tokens en chat ni introducirlos en una demo pública o un equipo ajeno.
 
 Cada administrador accede sólo a las conexiones de su empresa. La selección de subcuenta y la separación de recursos por conexión en el inbox son el siguiente desarrollo; no se anuncia un SaaS multiempresa terminado.
 
@@ -48,6 +50,7 @@ Cada administrador accede sólo a las conexiones de su empresa. La selección de
 docker compose exec -T api php tests/webhook.php
 docker compose exec -T api php tests/integration.php
 docker compose exec -T api php tests/sync.php
+docker compose exec -T api php tests/installation.php
 # Con Playwright Python y Chromium disponibles:
 python3 tests/ui.py
 ```

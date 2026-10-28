@@ -1,14 +1,36 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__.'/SetupException.php';
 final class TokenVault {
     public function __construct(private readonly string $key) {
-        if(strlen($key)!==SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_KEYBYTES) throw new RuntimeException('Invalid encryption key');
+        if(!extension_loaded('sodium')||!function_exists('sodium_crypto_aead_xchacha20poly1305_ietf_encrypt'))throw new SetupException('encryption_module_missing');
+        if(strlen($key)!==SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_KEYBYTES)throw new SetupException('encryption_key_invalid');
     }
-    public static function fromEnvironment(): self {
-        $file=getenv('APP_KEY_FILE');
-        if(!$file || !is_file($file) || !is_readable($file)) throw new RuntimeException('Encryption key unavailable');
-        $key=base64_decode(trim(file_get_contents($file)),true);
-        if($key===false) throw new RuntimeException('Invalid encryption key');
+    public static function keyFile():string {
+        // Same fallback as the native key generator. Never generate a key here.
+        return getenv('APP_KEY_FILE') ?: dirname(__DIR__).'/var/integration.key';
+    }
+    public static function assertPrivatePath(string $file):void {
+        $resolved=realpath($file) ?: ((realpath(dirname($file))?:dirname($file)).DIRECTORY_SEPARATOR.basename($file));
+        foreach([dirname(__DIR__).'/public',dirname(dirname(__DIR__)).'/public_html'] as $public) {
+            $root=realpath($public);
+            if($root && ($resolved===$root || str_starts_with($resolved,$root.DIRECTORY_SEPARATOR)))throw new SetupException('encryption_key_unsafe_path');
+        }
+    }
+    public static function fromEnvironment():self {
+        if(!extension_loaded('sodium')||!function_exists('sodium_crypto_aead_xchacha20poly1305_ietf_encrypt'))throw new SetupException('encryption_module_missing');
+        $file=self::keyFile();self::assertPrivatePath($file);
+        if(!is_file($file)) {
+            $directory=dirname($file);
+            // An inaccessible parent must not be mistaken for a missing key.
+            if(is_dir($directory)&&!is_readable($directory))throw new SetupException('encryption_key_unreadable');
+            throw new SetupException('encryption_key_missing');
+        }
+        if(!is_readable($file))throw new SetupException('encryption_key_unreadable');
+        $raw=@file_get_contents($file);
+        if($raw===false)throw new SetupException('encryption_key_unreadable');
+        $key=base64_decode(trim($raw),true);
+        if($key===false)throw new SetupException('encryption_key_invalid');
         return new self($key);
     }
     public function seal(string $token,int $tenant,string $location):string {

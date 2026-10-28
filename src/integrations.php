@@ -4,6 +4,8 @@ declare(strict_types=1);
 if ($u['role'] !== 'administrator') respond(['error'=>'Sólo el administrador puede configurar integraciones'],403);
 require_once __DIR__.'/TokenVault.php';
 require_once __DIR__.'/InboxSync.php';
+require_once __DIR__.'/Installation.php';
+Installation::assertReady();
 if ($path === '/api/admin/integrations' && $method === 'GET') {
     $rows=query('SELECT c.id,c.name,c.location_id,c.sync_interval_seconds,c.status,c.last_checked_at,COALESCE(s.enabled,0) AS sync_enabled,s.last_success_at,s.last_error,s.requests_today,s.quota FROM ghl_connections c LEFT JOIN ghl_sync_state s ON s.connection_id=c.id WHERE c.tenant_id=? ORDER BY c.id',[$u['tenant_id']])->fetchAll();
     foreach($rows as &$row)$row['tokenConfigured']=true;
@@ -31,11 +33,11 @@ if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule)?$~',$path
                 $gateway->execute($row,function(GhlClient $client)use($row):array {$client->checkLocation($row['location_id']);return [];});
                 $updated=query("UPDATE ghl_connections SET status='connected',last_checked_at=CURRENT_TIMESTAMP WHERE id=? AND tenant_id=? AND token_ciphertext=?",[$row['id'],$u['tenant_id'],$row['token_ciphertext']]);
                 if($updated->rowCount()===0)respond(['error'=>'La credencial cambió durante la comprobación; vuelve a comprobarla'],409);
-                respond(['status'=>'connected','message'=>'La subcuenta responde. Esto no valida todos los scopes ni activa la sincronización.']);
+                respond(['status'=>'connected','message'=>'La cuenta responde correctamente. Ya puedes probar la sincronización.']);
             } catch (GhlCooldown $e) {header('Retry-After: '.$e->retryAfter);respond(['error'=>'Consulta pausada por presupuesto de API','retryAfter'=>$e->retryAfter],429);
             } catch (Throwable $e) {
                 query("UPDATE ghl_connections SET status='error',last_checked_at=CURRENT_TIMESTAMP WHERE id=? AND tenant_id=? AND token_ciphertext=?",[$row['id'],$u['tenant_id'],$row['token_ciphertext']]);
-                respond(['error'=>'No se pudo verificar la subcuenta. Revisa Location ID, token, scope locations.readonly y conectividad del servidor.'],502);
+                respond(['error'=>'No se pudo verificar la cuenta. Revisa el identificador, la clave y los permisos de conexión.'],502);
             }
         } finally {query('SELECT RELEASE_LOCK(?)',[$key]);}
     }
@@ -44,7 +46,7 @@ if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule)?$~',$path
         try {respond(['synced'=>(new InboxSync())->sync($row)]);}
         catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'Sincronización pausada; espera antes de repetir','retryAfter'=>$e->retryAfter],429);}
         catch(InvalidArgumentException $e){respond(['error'=>'Comprueba la conexión antes de sincronizar'],422);}
-        catch(Throwable $e){respond(['error'=>'Sincronización fallida. Revisa credenciales, scopes y estado de API.'],502);}
+        catch(Throwable $e){respond(['error'=>'No se pudo actualizar la bandeja. Revisa el estado de la conexión.'],502);}
     }
     if(($match[2]??'')==='/schedule' && $method==='POST') {
         $enabled=body()['enabled']??null;

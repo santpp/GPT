@@ -18,14 +18,24 @@ try {
  query('INSERT INTO users(tenant_id,email,password_hash,role,ghl_user_id) VALUES(?,?,?,?,?)',[$tenants[0],$email,password_hash($password,PASSWORD_DEFAULT),'seller','seller-1']);$users[]=(int)db()->lastInsertId();
  foreach([[$tenants[0],'own','seller-1'],[$tenants[0],'other','seller-2'],[$tenants[1],'foreign','seller-1']] as [$t,$id,$assigned]) query('INSERT INTO resources(tenant_id,kind,ghl_id,assigned_to,payload) VALUES(?,?,?,?,?)',[$t,'conversation',$id,$assigned,'{}']);
  check(request('conversations')[0]===401,'anonymous inbox denied');
+ check(request('admin/diagnostics')[0]===401,'installation diagnostics require authentication');
  check(request('login','POST',['email'=>$email,'password'=>'wrong'])[0]===401,'wrong password denied');
  [$code,$login]=request('login','POST',['email'=>$email,'password'=>$password]);check($code===200 && isset($login['csrf']),'login and CSRF token');
  [$code,$inbox]=request('conversations');check($code===200 && count($inbox['items'])===1 && $inbox['items'][0]['id']==='own','seller assignment and tenant isolation');
  check(request('admin/integrations')[0]===403,'seller cannot read integration settings');
+ check(request('admin/diagnostics')[0]===403,'seller cannot inspect installation');
+ check(request('admin/installation/encryption','POST',null,['X-CSRF-Token: '.$login['csrf']])[0]===403,'seller cannot prepare server encryption');
+ check(request('admin/installation/migrations','POST',null,['X-CSRF-Token: '.$login['csrf']])[0]===403,'seller cannot apply migrations');
  check(request('ghl/connections')[0]===403,'live inbox denies seller without per-location mapping');
  query("UPDATE users SET role='administrator' WHERE id=?",[$users[0]]);
  $token='pit-test-'.bin2hex(random_bytes(16));
  $headers=['X-CSRF-Token: '.$login['csrf']];
+ [$code,$diagnostics]=request('admin/diagnostics');
+ check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.2.1','administrator sees installation readiness and version');
+ check(!str_contains(json_encode($diagnostics),'APP_KEY_FILE')&&!str_contains(json_encode($diagnostics),'integration.key'),'diagnostics expose no configuration values or key paths');
+ check(request('admin/installation/encryption','POST')[0]===403,'preparation requires CSRF');
+ [$code,$profile]=request('me');check($code===200&&!array_key_exists('ghl_user_id',$profile['user']),'public profile omits provider-specific fields');
+
  [$code,$saved]=request('admin/integrations','POST',['name'=>'Test connection','locationId'=>'loc-'.$suffix,'token'=>$token,'syncIntervalSeconds'=>120],$headers);
  check($code===201 && !str_contains(json_encode($saved),$token),'administrator saves integration without token response');
  $id=$saved['id'];
@@ -42,6 +52,8 @@ try {
 
 
  $cipher=query('SELECT token_ciphertext FROM ghl_connections WHERE id=?',[$id])->fetchColumn();
+ check(request('admin/installation/migrations','POST')[0]===403,'browser migrations require CSRF');
+ check(request('admin/installation/migrations','POST',null,$headers)[0]===200 && request('admin/installation/migrations','POST',null,$headers)[0]===200 && query('SELECT token_ciphertext FROM ghl_connections WHERE id=?',[$id])->fetchColumn()===$cipher,'admin migrations repeat safely without modifying stored credentials');
  require_once __DIR__.'/../src/TokenVault.php';
  $vault=TokenVault::fromEnvironment();
  check(!str_contains($cipher,$token) && $vault->open($cipher,$tenants[0],'loc-'.$suffix)===$token,'token encrypted and recoverable server side');

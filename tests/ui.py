@@ -41,6 +41,8 @@ with sync_playwright() as p:
         path=request.url.split('/api/')[1]
         if path=='me':
             response={'user':{'role':'administrator'},'csrf':'test-csrf'}
+        elif path=='admin/diagnostics':
+            response={'ready':True,'version':'0.2.1','checks':[]}
         elif request.method=='POST' and path=='admin/integrations':
             data=request.post_data_json
             assert data['token']=='pit-ui-test-not-a-real-token'
@@ -72,9 +74,9 @@ with sync_playwright() as p:
         import json
         path=route.request.url.split('/api/')[1]
         if path=='me':response={'user':{'role':'administrator'},'csrf':'test-csrf'}
-        elif path=='ghl/connections':response={'items':[{'id':1,'name':'Test location','location_id':'loc-test'}]}
-        elif path.startswith('ghl/inbox?'):response={'items':[{'id':'conv-test','contactName':'Contacto de prueba API','lastMessageBody':'<img src=x onerror=alert(1)>','unreadCount':2}],'total':25,'partial':True,'syncedAt':'2026-10-28 10:00:00','state':None}
-        elif path.startswith('ghl/messages?'):response={'items':[{'id':'message-1','body':'<script>window.injected=true</script>','direction':'inbound','dateAdded':'2026-10-28T10:00:00Z','status':'delivered'}],'hasMore':True}
+        elif path=='workspace/connections':response={'items':[{'id':1,'name':'Test location','location_id':'loc-test'}]}
+        elif path.startswith('workspace/inbox?'):response={'items':[{'id':'conv-test','contactName':'Contacto de prueba API','lastMessageBody':'<img src=x onerror=alert(1)>','unreadCount':2}],'total':25,'partial':True,'syncedAt':'2026-10-28 10:00:00','state':None}
+        elif path.startswith('workspace/messages?'):response={'items':[{'id':'message-1','body':'<script>window.injected=true</script>','direction':'inbound','dateAdded':'2026-10-28T10:00:00Z','status':'delivered'}],'hasMore':True}
         else:response={'synced':{'count':1,'total':25,'partial':True}}
         route.fulfill(status=200,content_type='application/json',body=json.dumps(response))
     live.route('**/api/**',live_mock)
@@ -89,4 +91,35 @@ with sync_playwright() as p:
     assert live.evaluate('window.injected === undefined')
     assert live.evaluate('document.documentElement.scrollWidth')==390
     print('PASS connected inbox, partial-state notice, messages and escaped upstream content (mock API)')
+    import re
+    for visible in [admin,live]:
+        assert not re.search(r'gohighlevel|leadconnector|\bghl\b', visible.locator('body').inner_text(), re.I)
+    for fixture_role in ['seller','supervisor']:
+        restricted=browser.new_context(service_workers='block').new_page()
+        restricted.route('**/api/me',lambda route,_request,role=fixture_role:route.fulfill(status=200,content_type='application/json',body='{"user":{"role":"'+role+'"},"csrf":"test"}'))
+        restricted.goto(os.getenv('TEST_BASE_URL','http://127.0.0.1:8080/'))
+        restricted.wait_for_timeout(100)
+        assert restricted.locator('[data-view="settings"]').is_hidden()
+    print('PASS white-label visible UI and restricted administration navigation')
+    setup_page=browser.new_context(service_workers='block').new_page()
+    prepared=[False]
+    def setup_mock(route):
+        import json
+        path=route.request.url.split('/api/')[1]
+        if path=='me':response={'user':{'role':'administrator'},'csrf':'test-csrf'}
+        elif path=='admin/diagnostics':response={'ready':prepared[0],'version':'0.2.1','checks':[{'name':'encryption','ready':prepared[0],'code':None if prepared[0] else 'encryption_key_missing','message':'Falta preparar la protección.'}]}
+        elif path=='admin/installation/encryption':
+            assert route.request.method=='POST' and route.request.headers['x-csrf-token']=='test-csrf'
+            prepared[0]=True;response={'prepared':True}
+        else:response={'items':[]}
+        route.fulfill(status=200,content_type='application/json',body=json.dumps(response))
+    setup_page.route('**/api/**',setup_mock)
+    setup_page.goto(os.getenv('TEST_BASE_URL','http://127.0.0.1:8080/'))
+    setup_page.locator('[data-view="settings"]').click()
+    setup_page.wait_for_selector('#prepare-encryption')
+    assert setup_page.locator('#add-integration').count()==0
+    setup_page.locator('#prepare-encryption').click()
+    setup_page.wait_for_selector('#add-integration')
+    print('PASS setup preflight blocks credential entry and allows safe initial preparation (mock API)')
+
     browser.close()

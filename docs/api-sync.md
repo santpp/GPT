@@ -4,7 +4,7 @@
 
 - `GET /conversations/search`, Version `2021-04-15`, locationId fijo de la conexión, sort desc / last_message_date y limit 20. Contrato revisado en la fuente oficial de GoHighLevel antes de implementar.
 - Instantánea por connection_id con fecha de sincronización, número total reportado y aviso de parcialidad. No se mezclan IDs de distintas subcuentas.
-- Inbox GHL separado de la demo, sólo para el administrador en esta primera versión. No se simula pertenencia de vendedores: falta configurar sus membresías GHL por location.
+- Bandeja conectada separado de la demo, sólo para el administrador en esta primera versión. No se simula pertenencia de vendedores: falta configurar sus membresías GHL por location.
 - Lectura de hasta 20 mensajes de una conversación presente en esa instantánea, mediante el backend. La ruta exige empresa/conexión y valida locationId y conversationId en la respuesta. No renderiza HTML remoto como código y no marca como leído.
 - `POST /api/admin/integrations/{id}/sync` con sesión/origen/CSRF, conexión previamente comprobada y limitación compartida.
 - `POST /api/admin/integrations/{id}/schedule` para activar/desactivar la programación; activación requiere comprobación previa. Esto no instala cron automáticamente.
@@ -32,7 +32,7 @@ No se han usado tokens reales ni accedido al VPS. Las pruebas de GHL usan transp
 
 ## Verificado
 
-- 31 comprobaciones de integración HTTP + MariaDB: login, CSRF, permisos, cifrado/rotación, aislamiento de conexiones y rechazo de consultas de mensajes desconocidos.
+- 41 comprobaciones de integración HTTP + MariaDB: login, CSRF, permisos, cifrado/rotación, aislamiento de conexiones y rechazo de consultas de mensajes desconocidos.
 - 17 comprobaciones de sincronización con respuestas GHL simuladas y MariaDB real: ruta y versión, límite, parcialidad, duplicación, mezcla de locations, 429, cuota diaria, cabeceras agotadas, revocación y credencial obsoleta.
 - Chromium móvil: vista conectada y mensajes, aviso de parcialidad y escape de contenido remoto; regresiones de demo, formulario de tokens y shell offline.
 
