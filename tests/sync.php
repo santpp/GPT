@@ -41,6 +41,19 @@ try{
  resetState($id);$response=['status'=>200,'headers'=>['X-RateLimit-Daily-Remaining'=>'0'],'body'=>json_encode(['conversations'=>[],'total'=>0])];
  $sync->sync($connection);verify((int)query('SELECT request_not_before FROM ghl_sync_state WHERE connection_id=?',[$id])->fetchColumn()>=strtotime('tomorrow UTC'),'exhausted daily header defers until next UTC day');
  verify(!str_contains((string)query('SELECT quota FROM ghl_sync_state WHERE connection_id=?',[$id])->fetchColumn(),'must-not-be-logged'),'only whitelisted numeric quota metadata stored');
+ // Requested windows persist for scheduled runs and reject arbitrary sizes.
+ foreach([50,100] as $window){
+  resetState($id);query('UPDATE ghl_sync_state SET next_sync_at=? WHERE connection_id=?',[time()+120,$id]);
+  $wideGateway=new GhlGateway(fn($row)=>new GhlClient('fake',function($path,$version)use($window,$location){
+   verify(str_contains($path,'limit='.$window),'requested window reaches API');
+   return ['status'=>200,'body'=>json_encode(['conversations'=>array_map(fn($n)=>['id'=>'conv-'.$n,'locationId'=>$location],range(1,$window)),'total'=>150])];
+  }));
+  $wide=new InboxSync($wideGateway);$wideResult=$wide->sync($connection,$window);
+  verify($wideResult['count']===$window&&(int)query('SELECT inbox_limit FROM connection_preferences WHERE connection_id=?',[$id])->fetchColumn()===$window,'requested window stored after successful sync');
+  resetState($id);$wide->sync($connection);
+ }
+ $badLimit=false;try{(new InboxSync())->sync($connection,999);}catch(InvalidArgumentException $e){$badLimit=true;}
+ verify($badLimit,'unsupported window rejected before network');
  echo 'PASS '.$checks.' sync checks (mock upstream, real MariaDB)'.PHP_EOL;
 }finally{
  if($tenant){query('DELETE FROM ghl_connections WHERE tenant_id=?',[$tenant]);query('DELETE FROM tenants WHERE id=?',[$tenant]);}

@@ -14,13 +14,20 @@ if(!$connection)respond(['error'=>'Subcuenta no encontrada'],404);
 $row=query('SELECT * FROM ghl_inbox_snapshots WHERE connection_id=?',[$id])->fetch();
 if(in_array($path,['/api/workspace/inbox','/api/ghl/inbox'],true) && $method==='GET') {
     $state=query('SELECT last_success_at,last_error,next_sync_at,request_not_before,enabled,requests_today,quota FROM ghl_sync_state WHERE connection_id=?',[$id])->fetch();
-    respond(['items'=>$row?json_decode($row['payload'],true):[],'total'=>$row?(int)$row['total']:0,'syncedAt'=>$row['synced_at']??null,'partial'=>$row?(int)$row['total']>count(json_decode($row['payload'],true)):false,'state'=>$state?:null]);
+    $limit=(int)(query('SELECT inbox_limit FROM connection_preferences WHERE connection_id=?',[$id])->fetchColumn()?:20);
+    respond(['limit'=>$limit,'items'=>$row?json_decode($row['payload'],true):[],'total'=>$row?(int)$row['total']:0,'syncedAt'=>$row['synced_at']??null,'partial'=>$row?(int)$row['total']>count(json_decode($row['payload'],true)):false,'state'=>$state?:null]);
 }
-if(in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $method==='GET') {
+if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $method==='GET')||($path==='/api/workspace/send'&&$method==='POST')) {
     $conversation=$_GET['conversationId']??'';
     if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);
     $known=$row?json_decode($row['payload'],true):[];
     if(!in_array($conversation,array_column($known,'id'),true))respond(['error'=>'Conversación no disponible en esta subcuenta'],404);
+    if($path==='/api/workspace/send'){
+        require_once __DIR__.'/MessageSender.php';
+        $contact=$known[array_search($conversation,array_column($known,'id'),true)];
+        try {respond((new MessageSender())->send($connection,$contact,body()));}
+        catch(SendProblem $e){respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
+    }
     try {$cursor=MessageHistory::cursor($_GET['lastMessageId']??null);}
     catch(InvalidArgumentException $e){respond(['error'=>'Referencia de historial inválida'],422);}
     try {

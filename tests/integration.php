@@ -26,12 +26,13 @@ try {
  check(request('admin/diagnostics')[0]===403,'seller cannot inspect installation');
  check(request('admin/installation/encryption','POST',null,['X-CSRF-Token: '.$login['csrf']])[0]===403,'seller cannot prepare server encryption');
  check(request('admin/installation/migrations','POST',null,['X-CSRF-Token: '.$login['csrf']])[0]===403,'seller cannot apply migrations');
+ check(request('workspace/send?connectionId=1&conversationId=conv','POST',['requestId'=>str_repeat('x',32),'message'=>'test','channel'=>'SMS'],['X-CSRF-Token: '.$login['csrf']])[0]===403,'seller cannot send without account mapping');
  check(request('ghl/connections')[0]===403,'live inbox denies seller without per-location mapping');
  query("UPDATE users SET role='administrator' WHERE id=?",[$users[0]]);
  $token='pit-test-'.bin2hex(random_bytes(16));
  $headers=['X-CSRF-Token: '.$login['csrf']];
  [$code,$diagnostics]=request('admin/diagnostics');
- check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.3.0','administrator sees installation readiness and version');
+ check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.4.0','administrator sees installation readiness and version');
  check(!str_contains(json_encode($diagnostics),'APP_KEY_FILE')&&!str_contains(json_encode($diagnostics),'integration.key'),'diagnostics expose no configuration values or key paths');
  check(request('admin/installation/encryption','POST')[0]===403,'preparation requires CSRF');
  [$code,$profile]=request('me');check($code===200&&!array_key_exists('ghl_user_id',$profile['user']),'public profile omits provider-specific fields');
@@ -43,6 +44,9 @@ try {
  check(request('ghl/inbox?connectionId='.$id)[0]===200,'administrator can read own empty inbox snapshot');
  query('INSERT INTO ghl_inbox_snapshots(connection_id,payload,total) VALUES(?,?,?)',[$id,'[]',0]);
  check(request('ghl/messages?connectionId='.$id.'&conversationId=unknown')[0]===404,'unknown conversation cannot trigger arbitrary GHL lookup');
+ check(request('workspace/send?connectionId='.$id.'&conversationId=unknown','POST',[], $headers)[0]===404,'unknown conversation cannot trigger send');
+ check(request('workspace/send?connectionId='.$id.'&conversationId=unknown','POST',[])[0]===403,'send requires CSRF');
+ check(request('admin/integrations/'.$id.'/sync?limit=999','POST',null,$headers)[0]===422,'HTTP rejects unsupported inbox limit');
  query('SELECT GET_LOCK(?,0)',['agora-sync:'.$id]);
  check(request('admin/integrations/'.$id,'PUT',['name'=>'Busy','token'=>'','syncIntervalSeconds'=>120],$headers)[0]===409,'credential update waits for in-flight synchronization');
  query('SELECT RELEASE_LOCK(?)',['agora-sync:'.$id]);
@@ -74,6 +78,7 @@ try {
  $foreign=db()->lastInsertId();
  check(request('admin/integrations/'.$foreign,'DELETE',null,$headers)[0]===404,'administrator cannot modify another tenant integration');
  check(request('ghl/inbox?connectionId='.$foreign)[0]===404,'live inbox isolates tenant connections');
+ check(request('workspace/send?connectionId='.$foreign.'&conversationId=conv','POST',[],$headers)[0]===404,'send cannot access foreign tenant connection');
  check(request('admin/integrations','POST',['name'=>'No CSRF','locationId'=>'x','token'=>$token])[0]===403,'CSRF protects token configuration');
  check(request('webhooks/ghl','POST',[])[0]===404,'webhooks disabled by default');
  check(request('admin/integrations/'.$id,'DELETE',null,$headers)[0]===200,'administrator deletes connection');

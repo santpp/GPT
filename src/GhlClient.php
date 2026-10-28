@@ -12,23 +12,25 @@ final class GhlClient {
         $result=$this->get('/locations/'.rawurlencode($id),'2021-07-28');
         if(($result['location']['id'] ?? null)!==$id) throw new RuntimeException('Location mismatch');
     }
-    public function conversations(string $location):array {
-        return $this->get('/conversations/search?'.http_build_query(['locationId'=>$location,'limit'=>20,'sort'=>'desc','sortBy'=>'last_message_date']),'2021-04-15');
+    public function conversations(string $location,int $limit=20):array {
+        return $this->get('/conversations/search?'.http_build_query(['locationId'=>$location,'limit'=>$limit,'sort'=>'desc','sortBy'=>'last_message_date']),'2021-04-15');
     }
     public function conversationMessages(string $id,?string $cursor=null): array {
         return $this->get('/conversations/'.rawurlencode($id).'/messages?'.http_build_query(array_filter(['limit'=>20,'lastMessageId'=>$cursor],fn($v)=>$v!==null)),'2021-04-15');
     }
     public function contact(string $id): array {return $this->get('/contacts/'.rawurlencode($id),'2021-07-28');}
-    private function get(string $path,string $version):array {
+    public function sendMessage(array $payload):array {return $this->get('/conversations/messages','2021-04-15',$payload);}
+    private function get(string $path,string $version,?array $payload=null):array {
         if($this->token==='')throw new RuntimeException('GHL credential missing');
         $this->headers=[];$this->status=0;
         if($this->transport) {
-            $r=($this->transport)($path,$version);$this->status=$r['status'];$this->headers=array_change_key_case($r['headers']??[]);$raw=$r['body'];
+            $r=($this->transport)($path,$version,$payload===null?'GET':'POST',$payload);$this->status=$r['status'];$this->headers=array_change_key_case($r['headers']??[]);$raw=$r['body'];
         } else {
             $ch=curl_init('https://services.leadconnectorhq.com'.$path);
             curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>15,CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$this->token,'Version: '.$version,'Accept: application/json'],CURLOPT_HEADERFUNCTION=>function($ch,string $line):int {
                 $parts=explode(':',$line,2);if(count($parts)===2)$this->headers[strtolower(trim($parts[0]))]=trim($parts[1]);return strlen($line);
             }]);
+            if($payload!==null)curl_setopt_array($ch,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>json_encode($payload,JSON_THROW_ON_ERROR),CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$this->token,'Version: '.$version,'Accept: application/json','Content-Type: application/json']]);
             $raw=curl_exec($ch);$this->status=curl_getinfo($ch,CURLINFO_RESPONSE_CODE);curl_close($ch);
         }
         if($raw===false || $this->status<200 || $this->status>=300) {

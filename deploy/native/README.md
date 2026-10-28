@@ -44,6 +44,7 @@ Desde phpMyAdmin, seleccionar esa base NUEVA y vacía e importar en orden:
 1. `agora-private/database/schema.sql`
 2. `agora-private/database/002-integrations.sql`
 3. `agora-private/database/003-api-sync.sql`
+4. `agora-private/database/004-messaging.sql`
 
 No importar el esquema base en una base con tablas de otra aplicación. Para una futura actualización, conservar la base y aplicar sólo las migraciones necesarias, nunca volver a inicializarla.
 
@@ -55,7 +56,7 @@ Este archivo es PHP: las contraseñas con comillas simples o barras deben escapa
 
 ## 4. Protección y usuario administrador
 
-**Si ya tienes un administrador y estás corrigiendo un fallo de conexión, no necesitas terminal:** sigue [la actualización 0.3.0](UPDATE-0.3.0.md). Conexiones comprueba la instalación y permite aplicar las tablas adicionales y preparar la protección inicial cuando es seguro. Copiar resultado permite compartir códigos de fallo sin claves ni rutas.
+**Si ya tienes un administrador y estás corrigiendo un fallo de conexión, no necesitas terminal:** sigue [la actualización 0.4.0](UPDATE-0.4.0.md). Conexiones comprueba la instalación y permite aplicar las tablas adicionales y preparar la protección inicial cuando es seguro. Copiar resultado permite compartir códigos de fallo sin claves ni rutas.
 
 Los siguientes comandos son para la primera instalación, antes de disponer de un usuario administrador.
 
@@ -94,7 +95,7 @@ Si `/api/health` da 404, revisar las reglas rewrite. Si responde 503, comprobar 
 
 Entrar con tu administrador, abrir Conexiones y añadir nombre, Location ID y Private Integration Token. La comprobación requiere `locations.readonly`; sólo prueba acceso a esa subcuenta. El token se guarda cifrado y no se devuelve al navegador. Configurar sólo desde la URL HTTPS propia.
 
-La demo visual permanece identificada y separada. **Bandeja conectada** muestra una primera ventana real de hasta 20 conversaciones y hasta 20 mensajes por conversación, a través del backend. En esta primera entrega sólo accede el administrador; faltan membresías por vendedor y location. Para sincronizar se requiere `conversations.readonly`; para leer mensajes, `conversations/message.readonly`. Los envíos, el historial completo, FCM y Android siguen pendientes. No habilitar webhooks.
+La demo visual permanece identificada y separada. **Conversaciones** muestra una ventana real de 20, 50 o 100 conversaciones e historial paginado en bloques de 20 mensajes, a través del backend. En esta primera entrega sólo accede el administrador; faltan membresías por vendedor y location. Para sincronizar se requiere `conversations.readonly`; para leer mensajes, `conversations/message.readonly`. Las respuestas de texto requieren conversations/message.write y las tablas 004, aplicables desde Conexiones. Deben validarse en cada canal real; ver docs/message-sending.md. FCM y Android siguen pendientes. No habilitar webhooks.
 
 ### Consultas periódicas opcionales
 
@@ -106,7 +107,7 @@ Primero comprobar la conexión y probar **Bandeja conectada → Sincronizar ahor
 
 El script procesa sólo conexiones activadas y vencidas según su intervalo (120 segundos por defecto), con bloqueo global para no acumular procesos. No consulta GHL por cada móvil. Limita cada pasada a 20 conexiones y una llamada de listado por conexión. El log no incluye tokens ni cuerpos; mantenerlo privado y configurar rotación. El intervalo mínimo configurable es 60 segundos; cron por minuto no proporciona actualizaciones de 5 segundos. La app lee la instantánea al entrar o sincronizar manualmente; todavía no hay SSE o refresco automático en pantalla.
 
-Las consultas comparten un presupuesto local conservador de 5.000 peticiones/día por conexión y un espaciado mínimo de un segundo; esto no define los límites reales del PIT. Se respetan pausas por 429 y cabeceras de cuota observadas. Un 401/403 pausa la programación hasta corregir y comprobar la credencial. El primer resultado es parcial si hay más de 20 conversaciones: todavía no hay importación completa ni borrado/reconciliación de todo el CRM.
+Las consultas comparten un presupuesto local conservador de 5.000 peticiones/día por conexión y un espaciado mínimo de un segundo; esto no define los límites reales del PIT. Se respetan pausas por 429 y cabeceras de cuota observadas. Un 401/403 pausa la programación hasta corregir y comprobar la credencial. El primer resultado es parcial si hay más conversaciones que el tamaño seleccionado: todavía no hay importación completa ni borrado/reconciliación de todo el CRM.
 
 ## Verificación y actualización
 
@@ -116,4 +117,4 @@ Si ya se instaló una versión anterior, ejecutar con PHP 8.3 `bin/migrate-integ
 
 En actualizaciones, preservar `agora-private/config/local.php`, `agora-private/var/integration.key`, base y sesiones. No extraer un ZIP encima de esos archivos ni copiar claves del entorno de desarrollo. La variable de proceso, si existe, tiene prioridad sobre local.php para mantener compatibilidad con instalaciones gestionadas.
 
-Desde 0.3.0 el ZIP contiene conexiones.html y version.json, y cada build usa una carpeta nueva para sus módulos y estilos. Esto evita que un HTML actualizado importe módulos antiguos por reutilizar sus URLs. El código fuente de desarrollo sigue en public/assets; el ZIP ya viene construido y no requiere ejecutar Python en el VPS.
+Desde 0.2.3 el ZIP contiene conexiones.html y version.json, y cada build usa una carpeta nueva para sus módulos y estilos. Esto evita que un HTML actualizado importe módulos antiguos por reutilizar sus URLs. El código fuente de desarrollo sigue en public/assets; el ZIP ya viene construido y no requiere ejecutar Python en el VPS.

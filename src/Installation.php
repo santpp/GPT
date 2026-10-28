@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/TokenVault.php';
 final class Installation {
-    public const VERSION='0.3.0';
+    public const VERSION='0.4.0';
     public static function checks():array {
         $checks=[];
         $runtime=PHP_VERSION_ID>=80300;
@@ -20,6 +20,8 @@ final class Installation {
             query('SELECT id,tenant_id,name,location_id,token_ciphertext,sync_interval_seconds,status,last_checked_at FROM ghl_connections LIMIT 0');
             query('SELECT connection_id,enabled,next_sync_at,request_not_before,budget_day,requests_today,failures,last_success_at,last_http_status,last_error,quota FROM ghl_sync_state LIMIT 0');
             query('SELECT connection_id,payload,total,synced_at FROM ghl_inbox_snapshots LIMIT 0');
+            query('SELECT connection_id,inbox_limit FROM connection_preferences LIMIT 0');
+            query('SELECT connection_id,request_id,conversation_id,request_hash,state,message_id,delivery_status,error_code FROM message_send_attempts LIMIT 0');
             $checks[]=['name'=>'schema','ready'=>true,'code'=>null];
         }catch(PDOException $e){$checks[]=['name'=>'schema','ready'=>false,'code'=>in_array($e->getCode(),['42S02','42S22'],true)?'schema_pending':'database_unavailable'];}
         foreach($checks as &$check)$check['message']=$check['ready']?'Correcto':(SetupException::MESSAGES[$check['code']]??'Revisión necesaria');
@@ -30,7 +32,7 @@ final class Installation {
         if((int)query('SELECT GET_LOCK(?,0)',[$lock])->fetchColumn()!==1)throw new SetupException('database_unavailable');
         try {
             // Only additive, reviewed migrations; never import/reset core data.
-            foreach(['002-integrations.sql','003-api-sync.sql'] as $migration) {
+            foreach(['002-integrations.sql','003-api-sync.sql','004-messaging.sql'] as $migration) {
                 $sql=file_get_contents(dirname(__DIR__).'/database/'.$migration);
                 if($sql===false)throw new SetupException('schema_pending');
                 db()->exec($sql);

@@ -42,7 +42,7 @@ El administrador actual administra las conexiones de **su empresa**. No es un su
 
 ## Sincronización y notificaciones
 
-El intervalo configurable (60–3600 segundos) controla ahora una tarea cron opcional: `bin/sync-inbox.php`. Importa hasta 20 conversaciones recientes, con presupuesto por conexión; requiere activación y cron en CyberPanel. El botón manual usa el mismo servicio y cuotas. Inbox GHL lee esas conversaciones y hasta 20 mensajes por conversación. No se importa aún todo el CRM ni el historial.
+El intervalo configurable (60–3600 segundos) controla ahora una tarea cron opcional: `bin/sync-inbox.php`. Importa 20, 50 o 100 conversaciones recientes según preferencia, con presupuesto por conexión; requiere activación y cron en CyberPanel. El botón manual usa el mismo servicio y cuotas. Conversaciones lee esa ventana e historial paginado en bloques de 20 mensajes. No se importa aún todo el CRM ni el historial.
 
 El siguiente desarrollo es una importación inicial paginada y una sincronización incremental adaptada a los filtros de cada endpoint, con cursores, control de rate limits, bloqueo por subcuenta, reintentos y reconciliación. Un sincronizador no debe asumir que todos los endpoints ofrecen `updatedSince`. Una petición del frontend nunca debe iniciar miles de llamadas síncronas a GHL. Los canales dependen de las conexiones, scopes y restricciones de la subcuenta; se validan individualmente antes de habilitar envío.
 
@@ -69,3 +69,5 @@ Compose es sólo desarrollo, con puerto 8080 ligado a loopback y contraseña pú
 ## Avance: primera lectura API
 
 Ver [api-sync.md](api-sync.md) para alcance, controles de cuota y pruebas. La comprobación de conexión y las lecturas pasan por GhlGateway. La sincronización es una ventana reciente, no reconciliación completa. Se conserva la demo y se añade Inbox GHL separado, con datos de API sólo para administrador. No se han usado credenciales reales ni probado el VPS.
+
+Respuestas de texto disponibles desde 0.4.0 para administradores mediante el backend, con identificadores persistentes y bloqueo de resultados inciertos. Consultar message-sending.md: contrato mínimo pendiente de validación real por canal, sin promesa de entrega, adjuntos o reintentos offline.

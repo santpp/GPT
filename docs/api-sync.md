@@ -2,7 +2,7 @@
 
 ## Alcance implementado
 
-- `GET /conversations/search`, Version `2021-04-15`, locationId fijo de la conexión, sort desc / last_message_date y limit 20. Contrato revisado en la fuente oficial de GoHighLevel antes de implementar.
+- `GET /conversations/search`, Version `2021-04-15`, locationId fijo de la conexión, sort desc / last_message_date y limit 20/50/100 según preferencia de conexión. Contrato revisado en la fuente oficial de GoHighLevel antes de implementar.
 - Instantánea por connection_id con fecha de sincronización, número total reportado y aviso de parcialidad. No se mezclan IDs de distintas subcuentas.
 - Conversaciones reales en el menú principal, separadas de la demo, sólo para el administrador en esta primera versión. No se simula pertenencia de vendedores: falta configurar sus membresías GHL por location.
 - Lectura paginada en bloques de 20 mensajes de una conversación presente en esa instantánea, mediante el backend. La ruta exige empresa/conexión y valida locationId y conversationId en la respuesta. No renderiza HTML remoto como código y no marca como leído.
@@ -26,14 +26,14 @@ Tras comprobar una conexión con locations.readonly, habilitar conversations.rea
 
 ## Límites de esta entrega
 
-No es una importación inicial completa ni una sincronización incremental con historial. El cursor lastMessageId de mensajes se consume bajo demanda desde 0.3.0; se valida su formato, pertenencia a la página y avance. El cursor startAfterDate de búsqueda todavía no se consume: la lista continúa limitada a 20 conversaciones. La búsqueda local indica expresamente ese alcance. No se detectan cambios fuera de la ventana reciente. No hay envío de mensajes, confirmación de lectura, adjuntos interactivos, SSE, actualización automática de la pantalla o FCM. El cron renueva la instantánea de conversaciones; no descarga todo el historial de cada una.
+No es una importación inicial completa ni una sincronización incremental con historial. El cursor lastMessageId de mensajes se consume bajo demanda desde 0.3.0; se valida su formato, pertenencia a la página y avance. El cursor startAfterDate de búsqueda todavía no se consume: la lista continúa limitada al tamaño seleccionado de 20, 50 o 100 conversaciones. La búsqueda local indica expresamente ese alcance. No se detectan cambios fuera de la ventana reciente. El envío de texto está implementado desde 0.4.0, pendiente de validación por canal real (ver message-sending.md). No hay confirmación de lectura, adjuntos interactivos, SSE, actualización automática de la pantalla o FCM. El cron renueva la instantánea de conversaciones; no descarga todo el historial de cada una.
 
 No se han usado tokens reales ni accedido al VPS. Las pruebas de GHL usan transporte inyectado **sólo desde código de prueba**, nunca desde parámetros HTTP. No hay un host/base URL configurable para evitar un proxy arbitrario o SSRF.
 
 ## Verificado
 
-- 41 comprobaciones de integración HTTP + MariaDB: login, CSRF, permisos, cifrado/rotación, aislamiento de conexiones y rechazo de consultas de mensajes desconocidos.
-- 17 comprobaciones de sincronización con respuestas GHL simuladas y MariaDB real: ruta y versión, límite, parcialidad, duplicación, mezcla de locations, 429, cuota diaria, cabeceras agotadas, revocación y credencial obsoleta.
+- 46 comprobaciones de integración HTTP + MariaDB: login, CSRF, permisos, cifrado/rotación, aislamiento de conexiones y rechazo de consultas de mensajes desconocidos.
+- 24 comprobaciones de sincronización con respuestas GHL simuladas y MariaDB real: ruta y versión, límite, parcialidad, duplicación, mezcla de locations, 429, cuota diaria, cabeceras agotadas, revocación y credencial obsoleta.
 - Chromium móvil: vista conectada y mensajes, aviso de parcialidad y escape de contenido remoto; regresiones de demo, formulario de tokens y shell offline.
 
 La validación real requiere el despliegue HTTPS en nueva.agoradigital.app y la credencial introducida por su administrador, no enviada por chat.
@@ -41,3 +41,7 @@ La validación real requiere el despliegue HTTPS en nueva.agoradigital.app y la 
 ## Validación 0.3.0
 
 Nueve comprobaciones de contrato y validación de historial; Chromium a 390 y 1440 px con paginación, deduplicación, error 429 recuperable, búsqueda sin consultas, escape de HTML y cambio de cuenta/conversación. Las páginas antiguas no sustituyen la conversación seleccionada. El usuario confirmó sincronización real en 0.2.3; el historial nuevo aún requiere comprobación en el VPS.
+
+## Tamaño de bandeja 0.4.0
+
+POST /api/admin/integrations/{id}/sync?limit=20|50|100. Se valida una lista cerrada. La preferencia se guarda en connection_preferences sólo al completar la consulta y se usa en cron. Un cambio explícito de tamaño puede adelantarse al siguiente ciclo programado, pero mantiene bloqueo, espaciado y presupuesto del gateway. La búsqueda sigue siendo local. Aplicar migración 004 desde Conexiones antes de usar esta versión.

@@ -9,7 +9,7 @@ Installation::assertReady();
 if ($path === '/api/admin/integrations' && $method === 'GET') {
     $rows=query('SELECT c.id,c.name,c.location_id,c.sync_interval_seconds,c.status,c.last_checked_at,COALESCE(s.enabled,0) AS sync_enabled,s.last_success_at,s.last_error,s.requests_today,s.quota FROM ghl_connections c LEFT JOIN ghl_sync_state s ON s.connection_id=c.id WHERE c.tenant_id=? ORDER BY c.id',[$u['tenant_id']])->fetchAll();
     foreach($rows as &$row)$row['tokenConfigured']=true;
-    respond(['items'=>$rows,'syncImplemented'=>true,'syncWindow'=>20]);
+    respond(['items'=>$rows,'syncImplemented'=>true,'syncWindows'=>[20,50,100]]);
 }
 if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule)?$~',$path,$match)) {
     $row=query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$match[1],$u['tenant_id']])->fetch();
@@ -42,8 +42,10 @@ if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule)?$~',$path
         } finally {query('SELECT RELEASE_LOCK(?)',[$key]);}
     }
     if(($match[2]??'')==='/sync' && $method==='POST') {
+        $limit=isset($_GET['limit'])?filter_var($_GET['limit'],FILTER_VALIDATE_INT):null;
+        if($limit!==null&&!in_array($limit,[20,50,100],true))respond(['error'=>'Selecciona 20, 50 o 100 conversaciones'],422);
         session_write_close();
-        try {respond(['synced'=>(new InboxSync())->sync($row)]);}
+        try {respond(['synced'=>(new InboxSync())->sync($row,$limit)]);}
         catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'Sincronización pausada; espera antes de repetir','retryAfter'=>$e->retryAfter],429);}
         catch(InvalidArgumentException $e){respond(['error'=>'Comprueba la conexión antes de sincronizar'],422);}
         catch(Throwable $e){respond(['error'=>'No se pudo actualizar la bandeja. Revisa el estado de la conexión.'],502);}
