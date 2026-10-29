@@ -63,4 +63,6 @@ with zipfile.ZipFile(output) as archive:
     assert not any(Path(n).name in ['local.php','.env','integration.key'] for n in names)
     assert not any(n.startswith('public_html/') and ('/src/' in n or '/config/' in n or '/database/' in n) for n in names)
     assert ('/'+prefix+'/app.js').encode() in archive.read('public_html/conexiones.html')
+    assert version.encode() in archive.read('public_html/index.html'), 'the page must show the packaged version'
+    assert b"Installation::VERSION" in archive.read('public_html/router.php'), 'the version header must be derived, not typed'
 print(f'Built and checked {output.name}: version {version}, build {build}; no runtime secrets')
