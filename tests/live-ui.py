@@ -3,7 +3,7 @@ import json
 import os
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
-    browser=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox'])
+    browser=p.chromium.launch(executable_path=os.getenv('CHROMIUM_PATH','/usr/bin/chromium'),args=['--no-sandbox'])
     for width in [390,1440]:
         context=browser.new_context(viewport={'width':width,'height':844},service_workers='block')
         page=context.new_page();errors=[];calls=[];fail=[True];held=[]

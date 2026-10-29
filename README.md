@@ -46,9 +46,15 @@ El puerto de desarrollo es 8080, enlazado sólo a loopback. `/api/health` consul
 
 No hay usuario predeterminado. Para crear el único administrador nativo, mantener `GHL_LOCATION_ID` como identificador inicial del tenant en `.env` (es una limitación del bootstrap actual, no el token de la integración), recrear api y ejecutar `docker compose exec -T api php bin/create-user.php usuario@empresa.test`, suministrando la contraseña por stdin desde una fuente segura. El comando rechaza crear una segunda cuenta local. El equipo se importa desde las conexiones y entra con su correo sincronizado y un código temporal; no recibe contraseñas locales.
 
-Iniciar sesión en la app, abrir **Conexiones**, añadir nombre, Location ID y Private Integration Token. La comprobación utiliza `locations.readonly`; otros scopes se añadirán según los módulos que se habiliten. El token sólo se envía una vez al backend desde el formulario administrador y no se devuelve después. Usar HTTPS en el despliegue real. No enviar tokens en chat ni introducirlos en una demo pública o un equipo ajeno.
+Iniciar sesión en la app, abrir **Conexiones**, añadir nombre, Location ID y Private Integration Token. La comprobación utiliza `locations.readonly`; otros scopes se añadirán según los módulos que se habiliten. La bandeja y las respuestas usan `conversations.readonly`, `conversations/message.readonly` y `conversations/message.write`; el equipo importado necesita `users.readonly`; la ficha del contacto, `contacts.readonly` y `locations/customFields.readonly`; y el canal de acceso, `contacts.readonly`, `contacts.write` y `conversations/message.write`. El token sólo se envía una vez al backend desde el formulario administrador y no se devuelve después. Usar HTTPS en el despliegue real. No enviar tokens en chat ni introducirlos en una demo pública o un equipo ajeno.
 
 Cada administrador accede sólo a las conexiones de su empresa. La selección de subcuenta y la separación de recursos por conexión en el inbox son el siguiente desarrollo; no se anuncia un SaaS multiempresa terminado.
+
+## Canal de acceso del equipo
+
+Los códigos temporales del equipo se entregan con el correo de una de las cuentas conectadas. En **Conexiones → Canal de acceso** se elige cuál se encarga; sólo aparece disponible una cuenta ya comprobada. Para cada integrante, Ágora busca su dirección en esa cuenta, reutiliza la ficha que encuentre o crea una ficha interna marcada con la etiqueta `agora-acceso-interno`, y guarda la relación entre integrante, cuenta y ficha para no duplicar fichas en entregas posteriores. Dos direcciones distintas no pueden compartir una misma ficha. **Probar canal de acceso** entrega una prueba al correo del administrador.
+
+Ágora no necesita servidor de correo propio: desde 0.8.1 no se leen variables SMTP y un `local.php` que todavía las defina sigue funcionando sin cambios, simplemente se ignoran. Si no hay canal elegido, el equipo no puede pedir códigos y la interfaz lo indica; el propietario mantiene su acceso con contraseña como vía de recuperación. La cuenta elegida necesita un servicio de correo operativo y permisos de lectura y escritura de contactos y de escritura de mensajes.
 
 ## Pruebas
 
@@ -57,9 +63,13 @@ docker compose exec -T api php tests/webhook.php
 docker compose exec -T api php tests/integration.php
 docker compose exec -T api php tests/sync.php
 docker compose exec -T api php tests/installation.php
+docker compose exec -T api php tests/access-channel.php
+docker compose exec -T api php tests/external-auth.php
 # Con Playwright Python y Chromium disponibles:
 python3 tests/ui.py
 ```
+
+`tests/access-channel.php` cubre el canal de acceso con un cliente de API simulado y MariaDB real: selección del canal y aislamiento entre subcuentas, creación y reutilización de la ficha, etiqueta interna, direcciones compartidas, permisos insuficientes, canal de correo no disponible, límites por dirección y por origen, y códigos caducados o ya usados. No contacta con ningún servicio externo.
 
 La prueba de integración usa api en localhost:8080 dentro del contenedor y el origen local por defecto. Crea usuarios y tenants ficticios y elimina sus propios datos. Prueba login, CSRF, aislamiento, permisos administrador/vendedor/supervisor, cifrado contextual y rotación de tokens. Incluye regresiones del receptor legado, que está deshabilitado por defecto. No ejecutar contra producción.
 

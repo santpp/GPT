@@ -12,9 +12,9 @@ try{
  $email='TEAM-'.$suffix.'@example.test';
  query('INSERT INTO external_users(connection_id,external_user_id,email,display_name,permissions,scopes,assigned_data_only) VALUES(?,?,?,?,?,?,?)',[$connection,'member-'.$suffix,strtolower($email),'Team fixture',json_encode(['conversationsEnabled'=>true,'assignedDataOnly'=>true]),json_encode(['conversations.readonly','conversations/message.write']),1]);
  $externalRow=(int)db()->lastInsertId();
- $auth=new ExternalAuth(function(string $to,string $code)use(&$captured):bool{$captured=[$to,$code];return true;});
+ $auth=new ExternalAuth(function(int $tenantId,string $to,string $code)use(&$captured):void{$captured=[$to,$code,$tenantId];});
  $auth->request($email,'127.0.0.2');
- authCheck($captured[0]===strtolower($email)&&preg_match('/^\d{6}$/D',$captured[1])===1,'one-time code delivered only to imported email');
+ authCheck($captured[0]===strtolower($email)&&preg_match('/^\d{6}$/D',$captured[1])===1&&$captured[2]===$tenant,'one-time code delivered only to imported email through the account of that team');
  authCheck((int)query('SELECT COUNT(*) FROM external_identity_memberships WHERE external_user_row_id=?',[$externalRow])->fetchColumn()===1,'verified identity prepared from synchronized membership');
  try{$auth->verify($email,'000000','127.0.0.2');$wrong=false;}catch(InvalidArgumentException $e){$wrong=true;}
  authCheck($wrong,'wrong code rejected');
@@ -30,5 +30,5 @@ try{
  authCheck(Actor::fromSession(['external_identity_id'=>$identity])===null,'removed team member loses access on next request');
 }finally{
  if($tenant){query('DELETE FROM ghl_connections WHERE tenant_id=?',[$tenant]);query('DELETE FROM external_identities WHERE tenant_id=?',[$tenant]);query('DELETE FROM tenants WHERE id=?',[$tenant]);}
- foreach(['request','verify'] as $action)query('DELETE FROM login_attempts WHERE key_hash=?',[hash('sha256','127.0.0.2|external-'.$action.'|'.strtolower($email??''))]);
+ foreach(['request','verify'] as $action)foreach(['127.0.0.2|external-'.$action.'|'.strtolower($email??''),'email|external-'.$action.'|'.strtolower($email??''),'origin|external-'.$action.'|127.0.0.2'] as $scope)query('DELETE FROM login_attempts WHERE key_hash=?',[ExternalAuth::key($scope)]);
 }

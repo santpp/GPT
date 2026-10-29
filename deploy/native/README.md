@@ -54,7 +54,7 @@ No importar el esquema base en una base con tablas de otra aplicación. Para una
 
 ## 3. Configuración privada
 
-En `agora-private/config`, copiar `local.example.php` a `local.php` y editar **sólo ahí** los datos de conexión de MySQL. Mantener APP_ORIGIN como `https://nueva.agoradigital.app`, APP_ENV=production y webhooks=0. Configurar el bloque `LOGIN_MAIL_FROM`/`SMTP_*` con los datos de cliente del buzón para los códigos de acceso. Si el socket MySQL no funciona con localhost, comprobar el host/puerto configurados en CyberPanel antes de cambiarlo; no habilitar acceso público a MySQL.
+En `agora-private/config`, copiar `local.example.php` a `local.php` y editar **sólo ahí** los datos de conexión de MySQL. Mantener APP_ORIGIN como `https://nueva.agoradigital.app`, APP_ENV=production y webhooks=0. No hace falta configurar un servidor de correo: los códigos de acceso se entregan desde la cuenta conectada que se elija en **Conexiones → Canal de acceso**. Si el socket MySQL no funciona con localhost, comprobar el host/puerto configurados en CyberPanel antes de cambiarlo; no habilitar acceso público a MySQL.
 
 Este archivo es PHP: las contraseñas con comillas simples o barras deben escaparse correctamente en la cadena PHP. No pegar su contenido en chat. El archivo nunca debe estar dentro de public_html. No incluir el PIT de GHL aquí: se añadirá después desde Integraciones.
 

@@ -10,10 +10,6 @@ return [
     'GHL_LOCATION_ID'=>'agora-workspace', // Initial workspace reference, not a PIT.
     'APP_KEY_FILE'=>dirname(__DIR__).'/var/integration.key',
     'GHL_WEBHOOKS_ENABLED'=>'0',
-    'LOGIN_MAIL_FROM'=>'acceso@nueva.agoradigital.app',
-    'SMTP_HOST'=>'REPLACE_SMTP_HOST',
-    'SMTP_PORT'=>'465',
-    'SMTP_USERNAME'=>'acceso@nueva.agoradigital.app',
-    'SMTP_PASSWORD'=>'REPLACE_MAILBOX_PASSWORD',
-    'SMTP_ENCRYPTION'=>'tls', // tls for port 465; starttls is commonly used on 587.
+    // Access codes are delivered by the connected account chosen in
+    // Conexiones → Canal de acceso. No mail server credentials belong here.
 ];

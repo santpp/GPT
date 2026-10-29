@@ -1,23 +1,24 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__.'/LoginMailer.php';
+require_once __DIR__.'/AccessChannel.php';
 
 final class ExternalAuth {
+    // Request limits per window: combined address and origin, address alone, origin alone.
+    private const LIMITS=['request'=>[5,5,20],'verify'=>[10,10,40]];
     private Closure $deliver;
     public function __construct(?Closure $deliver=null) {
-        $this->deliver=$deliver??static function(string $email,string $code):bool {
-            try{(new LoginMailer())->sendAccessCode($email,$code);return true;}
-            catch(MailDeliveryException $e){return false;}
+        $this->deliver=$deliver??static function(int $tenant,string $email,string $code):void {
+            (new AccessChannel())->sendAccessCode($tenant,$email,$code);
         };
     }
 
-    public static function configured():bool {
-        return LoginMailer::configured();
+    public static function configured(int $tenant):bool {
+        return AccessChannel::configured($tenant);
     }
 
     public function request(string $email,string $remoteAddress):void {
         $email=$this->email($email);
-        $this->throttle($email,$remoteAddress,'request',5);
+        $this->throttle($email,$remoteAddress,'request');
         $rows=query('SELECT DISTINCT c.tenant_id FROM external_users eu JOIN ghl_connections c ON c.id=eu.connection_id WHERE eu.active=TRUE AND eu.email=?',[$email])->fetchAll();
         if(count($rows)!==1){password_verify('000000','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi');return;}
         $tenant=(int)$rows[0]['tenant_id'];
@@ -28,16 +29,18 @@ final class ExternalAuth {
         $code=str_pad((string)random_int(0,999999),6,'0',STR_PAD_LEFT);
         query('INSERT INTO external_login_challenges(identity_id,code_hash,expires_at) VALUES(?,?,?)',[$identity,password_hash($code,PASSWORD_DEFAULT),time()+600]);
         $challenge=(int)db()->lastInsertId();
-        if(!($this->deliver)($email,$code)){
+        try {($this->deliver)($tenant,$email,$code);}
+        catch(Throwable $error) {
+            // An undelivered code must not stay valid.
             query('DELETE FROM external_login_challenges WHERE id=?',[$challenge]);
-            throw new RuntimeException('login_delivery_unavailable');
+            throw $error;
         }
     }
 
     public function verify(string $email,string $code,string $remoteAddress):int {
         $email=$this->email($email);
         if(!preg_match('/^\d{6}$/D',$code))throw new InvalidArgumentException('invalid_login_code');
-        $this->throttle($email,$remoteAddress,'verify',10);
+        $this->throttle($email,$remoteAddress,'verify');
         db()->beginTransaction();
         try {
             $challenge=query('SELECT ch.*,i.tenant_id,i.email FROM external_login_challenges ch JOIN external_identities i ON i.id=ch.identity_id WHERE i.email=? AND ch.consumed_at IS NULL ORDER BY ch.id DESC LIMIT 1 FOR UPDATE',[$email])->fetch();
@@ -65,9 +68,16 @@ final class ExternalAuth {
         return $email;
     }
 
-    private function throttle(string $email,string $remoteAddress,string $action,int $limit):void {
-        $key=hash('sha256',$remoteAddress.'|external-'.$action.'|'.$email);
-        query('INSERT INTO login_attempts(key_hash,attempts,window_start) VALUES(?,1,?) ON DUPLICATE KEY UPDATE attempts=IF(window_start < UNIX_TIMESTAMP()-900,1,attempts+1),window_start=IF(window_start < UNIX_TIMESTAMP()-900,UNIX_TIMESTAMP(),window_start)',[$key,time()]);
-        if((int)query('SELECT attempts FROM login_attempts WHERE key_hash=?',[$key])->fetchColumn()>$limit)throw new OverflowException('login_rate_limited');
+    /** Independent windows stop both a single address and a single origin from flooding deliveries. */
+    private function throttle(string $email,string $remoteAddress,string $action):void {
+        [$pair,$byEmail,$byAddress]=self::LIMITS[$action];
+        foreach([self::key($remoteAddress.'|external-'.$action.'|'.$email)=>$pair,
+                 self::key('email|external-'.$action.'|'.$email)=>$byEmail,
+                 self::key('origin|external-'.$action.'|'.$remoteAddress)=>$byAddress] as $key=>$limit) {
+            query('INSERT INTO login_attempts(key_hash,attempts,window_start) VALUES(?,1,?) ON DUPLICATE KEY UPDATE attempts=IF(window_start < UNIX_TIMESTAMP()-900,1,attempts+1),window_start=IF(window_start < UNIX_TIMESTAMP()-900,UNIX_TIMESTAMP(),window_start)',[$key,time()]);
+            if((int)query('SELECT attempts FROM login_attempts WHERE key_hash=?',[$key])->fetchColumn()>$limit)throw new OverflowException('login_rate_limited');
+        }
     }
+
+    public static function key(string $value):string {return hash('sha256',$value);}
 }

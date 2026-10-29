@@ -25,11 +25,7 @@ def create(path, value):
 create(env, 'APP_HOST=nueva.agoradigital.app\n'
        f'DB_PASSWORD={secrets.token_hex(32)}\n'
        f'DB_ROOT_PASSWORD={secrets.token_hex(32)}\n'
-       'GHL_LOCATION_ID=agora-workspace\n'
-       'LOGIN_MAIL_FROM=acceso@nueva.agoradigital.app\n'
-       'SMTP_HOST=REPLACE_SMTP_HOST\n'
-       'SMTP_PORT=465\n'
-       'SMTP_USERNAME=acceso@nueva.agoradigital.app\n'
-       'SMTP_PASSWORD=REPLACE_MAILBOX_PASSWORD\n'
-       'SMTP_ENCRYPTION=tls\n')
+       # Access codes are delivered by the connected account chosen as access
+       # channel, so no mail server credentials are written here.
+       'GHL_LOCATION_ID=agora-workspace\n')
 create(key, base64.b64encode(secrets.token_bytes(32)).decode())

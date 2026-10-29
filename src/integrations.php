@@ -8,11 +8,37 @@ require_once __DIR__.'/Installation.php';
 require_once __DIR__.'/ExternalUserDirectory.php';
 require_once __DIR__.'/PermissionPolicy.php';
 require_once __DIR__.'/ExternalAuth.php';
+require_once __DIR__.'/AccessChannel.php';
 Installation::assertReady();
 if ($path === '/api/admin/integrations' && $method === 'GET') {
     $rows=query('SELECT c.id,c.name,c.location_id,c.sync_interval_seconds,c.status,c.last_checked_at,COALESCE(s.enabled,0) AS sync_enabled,s.last_success_at,s.last_error,s.requests_today,s.quota,s.users_last_success_at,s.users_last_error FROM ghl_connections c LEFT JOIN ghl_sync_state s ON s.connection_id=c.id WHERE c.tenant_id=? ORDER BY c.id',[$u['tenant_id']])->fetchAll();
     foreach($rows as &$row){$row['tokenConfigured']=true;$row['externalUsers']=(int)query('SELECT COUNT(*) FROM external_users WHERE connection_id=? AND active=TRUE',[$row['id']])->fetchColumn();}
-    respond(['items'=>$rows,'syncImplemented'=>true,'syncWindows'=>[20,50,100]]);
+    $channel=AccessChannel::connection((int)$u['tenant_id']);
+    foreach($rows as &$row)$row['accessChannel']=$channel&&(int)$channel['id']===(int)$row['id'];
+    respond(['items'=>$rows,'syncImplemented'=>true,'syncWindows'=>[20,50,100],'accessChannel'=>['connectionId'=>$channel?(int)$channel['id']:null,'ready'=>AccessChannel::configured((int)$u['tenant_id'])]]);
+}
+if ($path === '/api/admin/access-channel' && in_array($method,['GET','PUT'],true)) {
+    if($method==='PUT') {
+        $selected=body()['connectionId']??null;
+        if(!is_int($selected)&&$selected!==null)respond(['error'=>'Selecciona una cuenta conectada o deja el canal sin asignar'],422);
+        try{AccessChannel::select((int)$u['tenant_id'],$selected);}
+        catch(InvalidArgumentException $e){respond(['error'=>'Integración no encontrada'],404);}
+    }
+    $channel=AccessChannel::connection((int)$u['tenant_id']);
+    respond([
+        'connectionId'=>$channel?(int)$channel['id']:null,
+        'name'=>$channel?$channel['name']:null,
+        'status'=>$channel?$channel['status']:null,
+        'ready'=>AccessChannel::configured((int)$u['tenant_id']),
+        'internalTag'=>AccessChannel::INTERNAL_TAG,
+        'accessContacts'=>$channel?(int)query('SELECT COUNT(*) FROM access_contacts WHERE connection_id=?',[$channel['id']])->fetchColumn():0,
+    ]);
+}
+if ($path === '/api/admin/access-channel/test' && $method === 'POST') {
+    // The administrator keeps native password access, so the probe targets their own address.
+    session_write_close();
+    try{(new AccessChannel())->sendTest((int)$u['tenant_id'],(string)$u['email']);respond(['sent'=>true]);}
+    catch(AccessDeliveryProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason],$e->reason==='delivery_paused'?429:424);}
 }
 if(preg_match('~^/api/admin/integrations/(\d+)/users(?:/(sync))?$~',$path,$userMatch)) {
     $connection=query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$userMatch[1],$u['tenant_id']])->fetch();
@@ -28,7 +54,7 @@ if(preg_match('~^/api/admin/integrations/(\d+)/users(?:/(sync))?$~',$path,$userM
     if(($userMatch[2]??'')===''&&$method==='GET'){
         $rows=query('SELECT id,external_user_id,email,display_name,role_type,role_name,permissions,scopes,assigned_data_only,active,synced_at FROM external_users WHERE connection_id=? ORDER BY active DESC,display_name',[$connection['id']])->fetchAll();
         foreach($rows as &$row){$row['identityLinked']=(bool)query('SELECT 1 FROM external_identity_memberships WHERE external_user_row_id=? LIMIT 1',[$row['id']])->fetchColumn();$row['capabilities']=PermissionPolicy::capabilities($row+['identity_type'=>'external']);unset($row['permissions'],$row['scopes']);}
-        respond(['items'=>$rows,'authenticationConfigured'=>ExternalAuth::configured()]);
+        respond(['items'=>$rows,'authenticationConfigured'=>ExternalAuth::configured((int)$u['tenant_id'])]);
     }
     respond(['error'=>'Not found'],404);
 }

@@ -33,11 +33,13 @@ try {
  $token='pit-test-'.bin2hex(random_bytes(16));
  $headers=['X-CSRF-Token: '.$login['csrf']];
  [$code,$diagnostics]=request('admin/diagnostics');
- check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.8.0','administrator sees installation readiness and version');
+ check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.8.1','administrator sees installation readiness and version');
  check(!str_contains(json_encode($diagnostics),'APP_KEY_FILE')&&!str_contains(json_encode($diagnostics),'integration.key'),'diagnostics expose no configuration values or key paths');
  check(request('admin/installation/encryption','POST')[0]===403,'preparation requires CSRF');
  [$code,$profile]=request('me');check($code===200&&!array_key_exists('ghl_user_id',$profile['user'])&&$profile['user']['capabilities']['configureConnections'],'public profile exposes capabilities without provider-specific fields');
- [$code,$mailFailure]=request('admin/mail/test','POST',null,$headers);check($code===424&&isset($mailFailure['code'])&&!str_contains(json_encode($mailFailure),'SMTP_PASSWORD'),'mail diagnostic fails safely when SMTP is not configured');
+ [$code,$channel]=request('admin/access-channel','GET',null,$headers);check($code===200&&$channel['connectionId']===null&&$channel['ready']===false,'access channel starts unassigned');
+ [$code,$probe]=request('admin/access-channel/test','POST',null,$headers);check($code===424&&($probe['code']??'')==='access_channel_unconfigured'&&!str_contains(strtolower(json_encode($probe)),'highlevel'),'access channel probe fails safely and names no provider');
+ [$code,$rejected]=request('admin/access-channel','PUT',['connectionId'=>'not-a-number'],$headers);check($code===422,'a malformed access channel selection is rejected');
 
  [$code,$saved]=request('admin/integrations','POST',['name'=>'Test connection','locationId'=>'loc-'.$suffix,'token'=>$token,'syncIntervalSeconds'=>120],$headers);
  check($code===201 && !str_contains(json_encode($saved),$token),'administrator saves integration without token response');

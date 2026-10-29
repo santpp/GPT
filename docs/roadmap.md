@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 29 de octubre de 2026.
+Estado actualizado: 29 de octubre de 2026. Versión publicada: 0.8.1.
 
 ## Completado y desplegable
 
@@ -23,7 +23,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## Siguiente hito: contexto comercial dentro del chat
 
 - Ficha del contacto: teléfono, email, empresa, fuente, etiquetas, campos personalizados, actividad y ejecutivo: implementada en 0.8.0.
-- Oportunidades: pipeline, etapa, valor e historial.
+- Oportunidades: oportunidad activa, pipeline, etapa, estado, valor y responsable dentro del chat, con acceso a todas las oportunidades del contacto: siguiente versión.
 - Tareas, notas y citas.
 - Acciones rápidas: llamar, agendar, crear tarea/oportunidad, cambiar etapa, reasignar, etiquetar, workflow y nota.
 
@@ -31,6 +31,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 - Proyección de usuarios, roles, scopes y `assignedDataOnly` por cuenta: implementada.
 - Acceso por correo sincronizado y código de un solo uso: implementado en 0.7.0; el cron renueva permisos cada hora y la baja sincronizada revoca la sesión.
+- Entrega de los códigos a través del correo de una cuenta conectada elegida como canal de acceso: implementada en 0.8.1. Sustituye por completo al SMTP propio; Ágora ya no necesita servidor de correo ni credenciales de buzón. El propietario conserva su acceso con contraseña como recuperación.
 - Permisos efectivos y filtro de conversaciones asignadas: implementados para la bandeja; se aplicarán del mismo modo a cada módulo nuevo.
 - Asignación, filtros “mis conversaciones” y registro de acciones.
 - Sincronización incremental de listas más allá de la ventana 20/50/100.

@@ -1,8 +1,9 @@
 """Deterministic clock tests for foreground synchronization and cancellation."""
 import json
+import os
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
- browser=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox'])
+ browser=p.chromium.launch(executable_path=os.getenv('CHROMIUM_PATH','/usr/bin/chromium'),args=['--no-sandbox'])
  page=browser.new_context(viewport={'width':1280,'height':800},service_workers='block').new_page()
  page.clock.install();calls=[];syncs=[0];message_calls=[0];mode=['ok'];errors=[]
  page.on('pageerror',lambda e:errors.append(str(e)))

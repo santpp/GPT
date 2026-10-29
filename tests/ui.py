@@ -35,7 +35,7 @@ with sync_playwright() as p:
     print('PASS filters, search, 5 views, mobile overflow, conversation, composer, context, offline shell; no JS errors')
     context2=browser.new_context(viewport={'width':390,'height':844}, service_workers='block')
     admin=context2.new_page()
-    items=[];mail_tests=[]
+    items=[];mail_tests=[];channel={'connectionId':None,'ready':False}
     def mock(route):
         request=route.request
         path=request.url.split('/api/')[1]
@@ -43,8 +43,12 @@ with sync_playwright() as p:
             response={'user':{'role':'administrator'},'csrf':'test-csrf'}
         elif path=='admin/diagnostics':
             response={'ready':True,'version':'0.2.1','checks':[]}
-        elif path=='admin/mail/test':
+        elif path=='admin/access-channel/test':
             assert request.method=='POST' and request.headers['x-csrf-token']=='test-csrf';mail_tests.append(1);response={'sent':True}
+        elif path=='admin/access-channel':
+            assert request.method=='PUT' and request.headers['x-csrf-token']=='test-csrf'
+            channel['connectionId']=request.post_data_json['connectionId'];channel['ready']=channel['connectionId'] is not None
+            response={'connectionId':channel['connectionId'],'ready':channel['ready']}
         elif request.method=='POST' and path=='admin/integrations':
             data=request.post_data_json
             assert data['token']=='pit-ui-test-not-a-real-token'
@@ -52,13 +56,13 @@ with sync_playwright() as p:
             items.append({'id':1,'name':data['name'],'location_id':data['locationId'],'sync_interval_seconds':120,'status':'untested','last_checked_at':None,'tokenConfigured':True})
             response={'saved':True,'id':1,'tokenConfigured':True}
         else:
-            response={'items':items,'syncImplemented':False}
+            response={'items':[dict(i,accessChannel=channel['connectionId']==i['id']) for i in items],'syncImplemented':False,'accessChannel':dict(channel)}
         import json
         route.fulfill(status=200,content_type='application/json',body=json.dumps(response))
     admin.route('**/api/**',mock)
     admin.goto(os.getenv('TEST_BASE_URL', 'http://127.0.0.1:8080/'))
     admin.locator('[data-view="settings"]').click()
-    admin.locator('#test-login-mail').click();admin.wait_for_function("document.querySelector('#integration-feedback').textContent.includes('servidor SMTP')")
+    assert admin.locator('#test-access-channel').is_disabled(), 'the access channel cannot be probed before one is selected'
     admin.locator('#add-integration').click()
     admin.locator('[name="name"]').fill('Subcuenta de prueba')
     admin.locator('[name="locationId"]').fill('loc-test')
@@ -69,6 +73,15 @@ with sync_playwright() as p:
     assert admin.locator('[name="token"]').input_value()==''
     assert admin.evaluate('localStorage.length')==0
     assert 'pit-ui-test-not-a-real-token' not in admin.locator('body').inner_text()
+    assert admin.locator('#access-channel-select option[value="1"][disabled]').count()==1, 'an unverified account cannot be chosen as access channel'
+    items[0]['status']='connected'
+    admin.locator('[data-view="inbox"]').click();admin.locator('[data-view="settings"]').click()
+    admin.wait_for_function("!document.querySelector('#access-channel-select option[value=\"1\"]')?.disabled")
+    admin.locator('#access-channel-select').select_option('1')
+    admin.wait_for_function("document.querySelector('#integration-feedback')?.textContent.includes('Canal de acceso guardado')")
+    assert channel['connectionId']==1 and 'Canal de acceso del equipo' in admin.locator('.integration-card').inner_text()
+    admin.locator('#test-access-channel').click()
+    admin.wait_for_function("document.querySelector('#integration-feedback')?.textContent.includes('correo del administrador')")
     assert admin.evaluate('document.documentElement.scrollWidth')==390 and len(mail_tests)==1
     print('PASS admin settings form, CSRF header, cleared token and no localStorage (mock API; real API covered separately)')
     context3=browser.new_context(viewport={'width':390,'height':844}, service_workers='block')

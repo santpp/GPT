@@ -81,3 +81,22 @@ La revisión del mismo commit oficial confirma que Authorization Code identifica
 ## Ficha de contacto 0.8.0
 
 `GET /contacts/{contactId}`, versión `2021-07-28`, requiere `contacts.readonly` y devuelve identidad, contacto, fuente, responsable, actividad, etiquetas y valores personalizados. `GET /locations/{locationId}/customFields`, la misma versión, requiere `locations/customFields.readonly` y permite convertir IDs de campos en nombres. Ágora deriva el Contact ID exclusivamente de una conversación autorizada, valida ID y Location ID, limita tamaños y usa cachés de 60 segundos y una hora respectivamente.
+
+## Canal de acceso por correo 0.8.1
+
+Se volvió a clonar la fuente oficial el 29 de octubre de 2026: HEAD sigue en `0af86a4cbd48c66a4071c7e509d1079f9f10ed17`. El portal web (`marketplace.gohighlevel.com`, `highlevel.stoplight.io`) no resuelve bajo la política de red de la sesión, así que la verificación se hace sobre la especificación publicada en el repositorio oficial, no sobre la interfaz.
+
+| Paso | Método y endpoint | Scope publicado | Version |
+| --- | --- | --- | --- |
+| Buscar la ficha por correo | `GET /contacts/search/duplicate?locationId=…&email=…` | `contacts.readonly` | 2021-07-28 |
+| Crear la ficha interna | `POST /contacts/upsert` | `contacts.write` | 2021-07-28 |
+| Marcar la ficha | `POST /contacts/{contactId}/tags` | `contacts.write` | 2021-07-28 |
+| Enviar el código | `POST /conversations/messages` | `conversations/message.write` | 2021-04-15 |
+
+`SendMessageBodyDto` publica `type` con el valor `Email` y acepta `contactId`, `subject`, `html`, `message`, `emailFrom`, `emailCc`, `emailBcc`, `emailTo`, `attachments`, `threadId`, `replyMessageId`, `templateId`, `scheduledTimestamp` y `emailReplyMode`. El destinatario documentado es el contacto: `emailTo` se describe como «email address to send to, if different from contact's primary email. This should be a valid email address associated with the contact». No es un canal para destinatarios arbitrarios, así que Ágora no lo utiliza y envía siempre con `contactId`. La discrepancia conocida permanece: el esquema marca `subType` y `status` como obligatorios junto a `type` y `contactId`, mientras que el ejemplo publicado y el adaptador de texto en producción desde 0.4.0 funcionan sin ellos. No se fabrica un `status` «delivered» para que el endpoint acepte el payload; si la cuenta real exigiera esos campos, el envío se rechaza y Ágora lo informa como canal de correo no disponible.
+
+`GET /contacts/search/duplicate` documenta que, con contactos duplicados desactivados, busca por el identificador único global, y con duplicados activados da prioridad al correo y después al teléfono. `POST /contacts/upsert` sólo exige `locationId` y responde `new` más la ficha completa con su `id`; `createNewIfDuplicateAllowed` se deja sin enviar para conservar el comportamiento normal de upsert. `POST /contacts/{contactId}/tags` recibe `{"tags":[…]}` y añade etiquetas sin reemplazarlas, por lo que Ágora marca la ficha por esa vía y nunca mediante el campo `tags` del upsert, cuya propia documentación advierte que «this field will overwrite all current tags associated with the contact».
+
+Límites: la [guía OAuth](https://github.com/GoHighLevel/highlevel-api-docs/blob/main/docs/oauth/Authorization.md) publica 100 peticiones/10 s y 200.000/día por app y recurso. Los límites del PIT siguen sin publicarse. Una entrega consume una única ranura de `GhlGateway` y, dentro de ella, hasta cuatro peticiones (búsqueda, creación, etiqueta y envío); una entrega posterior al mismo integrante consume una sola petición porque reutiliza la relación guardada. El presupuesto local cuenta esa ranura como una petición, de modo que subestima el consumo real en la primera entrega de cada integrante: es un tope de seguridad, no una medida del cupo. Ágora añade además límites propios por dirección, por origen y por ventana de 15 minutos antes de llegar a la API.
+
+Requisitos del contacto y del canal: la cuenta elegida necesita un servicio de correo operativo y la ficha debe pertenecer a su `locationId`, que Ágora comprueba en cada respuesta. Permisos insuficientes (401/403) se informan como tales y no desactivan la conexión ni la bandeja; 400/422 en el envío se informan como canal de correo no disponible; un 404 borra la relación guardada para que el siguiente intento vuelva a resolver la ficha; 429 pausa la entrega con el `Retry-After` recibido.

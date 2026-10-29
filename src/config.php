@@ -6,7 +6,8 @@ $file=dirname(__DIR__).'/config/local.php';
 if(is_file($file)) {
     $settings=require $file;
     if(!is_array($settings))throw new RuntimeException('Invalid local configuration');
-    $allowed=['APP_ENV','APP_ORIGIN','DB_DSN','DB_USER','DB_PASSWORD','GHL_LOCATION_ID','APP_KEY_FILE','GHL_WEBHOOKS_ENABLED','LOGIN_MAIL_FROM','SMTP_HOST','SMTP_PORT','SMTP_USERNAME','SMTP_PASSWORD','SMTP_ENCRYPTION'];
+    $allowed=['APP_ENV','APP_ORIGIN','DB_DSN','DB_USER','DB_PASSWORD','GHL_LOCATION_ID','APP_KEY_FILE','GHL_WEBHOOKS_ENABLED'];
+    // Access codes travel through a connected account, so no mail credentials are read here.
     foreach($allowed as $name) {
         if(getenv($name)===false && isset($settings[$name]) && is_string($settings[$name]))putenv($name.'='.$settings[$name]);
     }

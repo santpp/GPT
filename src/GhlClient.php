@@ -22,6 +22,11 @@ final class GhlClient {
     public function contactFields(string $location):array{return $this->get('/locations/'.rawurlencode($location).'/customFields','2021-07-28');}
     public function locationUsers(string $location):array {return $this->get('/users/?'.http_build_query(['locationId'=>$location]),'2021-07-28');}
     public function sendMessage(array $payload):array {return $this->get('/conversations/messages','2021-04-15',$payload);}
+    public function duplicateContact(string $location,string $email):array {
+        return $this->get('/contacts/search/duplicate?'.http_build_query(['locationId'=>$location,'email'=>$email]),'2021-07-28');
+    }
+    public function upsertContact(array $payload):array {return $this->get('/contacts/upsert','2021-07-28',$payload);}
+    public function addContactTags(string $id,array $tags):array {return $this->get('/contacts/'.rawurlencode($id).'/tags','2021-07-28',['tags'=>$tags]);}
     private function get(string $path,string $version,?array $payload=null):array {
         if($this->token==='')throw new RuntimeException('GHL credential missing');
         $this->headers=[];$this->status=0;

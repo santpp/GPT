@@ -15,12 +15,6 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
       GHL_LOCATION_ID: ${GHL_LOCATION_ID:?Set the initial tenant identifier}
       GHL_WEBHOOKS_ENABLED: '0'
-      LOGIN_MAIL_FROM: ${LOGIN_MAIL_FROM:-}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-465}
-      SMTP_USERNAME: ${SMTP_USERNAME:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_ENCRYPTION: ${SMTP_ENCRYPTION:-tls}
     secrets: [integration_key]
     tmpfs: ["/run/agora:mode=0700"]
     volumes: ["sessions:/var/lib/php/sessions"]

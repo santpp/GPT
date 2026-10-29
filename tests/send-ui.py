@@ -1,9 +1,10 @@
 """Mock network tests: real send UI, durable request keys, pagination size and drafts."""
 import json
+import os
 from urllib.parse import urlparse,parse_qs
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
- browser=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox'])
+ browser=p.chromium.launch(executable_path=os.getenv('CHROMIUM_PATH','/usr/bin/chromium'),args=['--no-sandbox'])
  for width in [390,1440]:
   page=browser.new_context(viewport={'width':width,'height':844},service_workers='block').new_page()
   window=[20];sent=[];mode=['lost'];errors=[];held=[]

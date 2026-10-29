@@ -1,8 +1,9 @@
 """Passwordless team login uses synchronized email and keeps administration hidden."""
 import json
+import os
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
- browser=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox'])
+ browser=p.chromium.launch(executable_path=os.getenv('CHROMIUM_PATH','/usr/bin/chromium'),args=['--no-sandbox'])
  page=browser.new_context(viewport={'width':390,'height':844},service_workers='block').new_page();signed=[False];calls=[]
  def api(route):
   request=route.request;path=request.url.split('/api/')[1];status=200

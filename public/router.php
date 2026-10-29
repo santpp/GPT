@@ -10,7 +10,7 @@ if (!str_starts_with($path, '/api/')) {
 }
 require $appRoot.'/src/bootstrap.php';
 header('X-Content-Type-Options: nosniff');
-header('X-Agora-Version: 0.8.0');
+header('X-Agora-Version: 0.8.1');
 try {
     $method = $_SERVER['REQUEST_METHOD'];
     if ($path === '/api/health' && $method === 'GET') { query('SELECT 1'); respond(['status'=>'ok']); }
@@ -38,6 +38,7 @@ try {
         $b=body();
         try{(new ExternalAuth())->request((string)($b['email']??''),$_SERVER['REMOTE_ADDR']??'');}
         catch(OverflowException $e){respond(['error'=>'Espera unos minutos antes de solicitar otro código.'],429);}
+        catch(AccessDeliveryProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>'El correo de acceso no está disponible ahora mismo. Contacta con el administrador.','code'=>$e->reason],$e->reason==='delivery_paused'?429:503);}
         catch(RuntimeException $e){respond(['error'=>'El correo de acceso no está disponible. Contacta con el administrador.','code'=>'login_delivery_unavailable'],503);}
         catch(InvalidArgumentException $e){}
         respond(['accepted'=>true,'message'=>'Si el correo pertenece a un usuario activo, recibirá un código de acceso.'],202);
@@ -87,13 +88,8 @@ try {
         $checks=Installation::checks();
         respond(['version'=>Installation::VERSION,'ready'=>!in_array(false,array_column($checks,'ready'),true),'checks'=>$checks]);
     }
-    if($path==='/api/admin/mail/test'&&$method==='POST'){
-        if($u['role']!=='administrator')respond(['error'=>'Acceso restringido'],403);
-        try{(new LoginMailer())->sendTest($u['email']);respond(['sent'=>true]);}
-        catch(MailDeliveryException $e){respond(['error'=>'El servidor SMTP rechazó la prueba. Revisa host, puerto, cifrado, usuario y contraseña.','code'=>$e->reason],424);}
-    }
     if (str_starts_with($path, '/api/workspace/') || str_starts_with($path, '/api/ghl/')) {session_write_close();require $appRoot.'/src/live-inbox.php';}
-    if (str_starts_with($path, '/api/admin/integrations')) {
+    if (str_starts_with($path, '/api/admin/integrations') || str_starts_with($path, '/api/admin/access-channel')) {
         if (getenv('APP_ENV') !== 'development' && parse_url(getenv('APP_ORIGIN') ?: '', PHP_URL_SCHEME) !== 'https') respond(['error'=>'HTTPS required'],503);
         require $appRoot.'/src/integrations.php';
     }

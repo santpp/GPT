@@ -30,7 +30,7 @@ self.addEventListener('fetch',e=>{
     threading.Thread(target=server.serve_forever, daemon=True).start()
     try:
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(executable_path='/usr/bin/chromium', args=['--no-sandbox'])
+            browser = playwright.chromium.launch(executable_path=os.getenv('CHROMIUM_PATH','/usr/bin/chromium'), args=['--no-sandbox'])
             page = browser.new_page()
             errors = []
             page.on('pageerror', lambda error: errors.append(str(error)))
