@@ -34,12 +34,17 @@ if($path==='/api/workspace/contact'&&$method==='GET'){
     if($position===false)respond(['error'=>'Conversación no disponible en esta cuenta'],404);
     $contactId=$known[$position]['contactId']??'';if(!is_string($contactId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))respond(['error'=>'La conversación no contiene un contacto válido'],422);
     require_once __DIR__.'/ContactProfile.php';
-    try{respond(['contact'=>(new ContactProfile())->get($connection,$contactId)]);}
+    require_once __DIR__.'/MessageSender.php';
+    try{respond([
+        'contact'=>(new ContactProfile())->get($connection,$contactId,($_GET['refresh']??'')==='1'),
+        'channels'=>($membership['capabilities']['sendMessages']??false)?MessageSender::availableChannels($connection,$known[$position]):[],
+        'canEdit'=>($membership['capabilities']['editContacts']??false)===true,
+    ]);}
     catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La ficha está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
     catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la ficha. Revisa el permiso de contactos.','code'=>'contact_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'La ficha recibida no tiene el formato esperado.','code'=>'contact_invalid_response'],424);}
 }
-if(preg_match('~^/api/workspace/activity(/note|/task|/task-state)?$~',$path,$activityMatch)&&in_array($method,['GET','POST'],true)){
+if(preg_match('~^/api/workspace/activity(/note|/task|/task-state|/contact)?$~',$path,$activityMatch)&&in_array($method,['GET','POST'],true)){
     if(!($membership['capabilities']['viewContacts']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar la ficha del contacto.'],403);
     $conversation=$_GET['conversationId']??'';
     if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);
@@ -56,6 +61,7 @@ if(preg_match('~^/api/workspace/activity(/note|/task|/task-state)?$~',$path,$act
                 '/note'=>$actions->note($connection,$contactId,$membership,$input),
                 '/task'=>$actions->task($connection,$contactId,$membership,$input),
                 '/task-state'=>$actions->completeTask($connection,$contactId,$membership,$input),
+                '/contact'=>$actions->contact($connection,$contactId,$membership,$input),
             });
         } catch(ActionProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
     }

@@ -62,8 +62,8 @@ final class ContactActivity {
             if($id===null||!self::belongs($task,$contactId))continue;
             $items[]=[
                 'id'=>$id,
-                'title'=>self::text($task['title']??null,190)??'Tarea',
-                'body'=>self::text($task['body']??null,2000),
+                'title'=>self::plain($task['title']??null,190)??'Tarea',
+                'body'=>self::plain($task['body']??null,2000),
                 'dueDate'=>self::text($task['dueDate']??null,80),
                 'completed'=>($task['completed']??false)===true,
                 'assignedTo'=>self::identifier($task['assignedTo']??null),
@@ -78,7 +78,7 @@ final class ContactActivity {
         $items=[];
         foreach(self::entries($response['notes']??null) as $note) {
             $id=self::identifier($note['id']??null);
-            $body=self::text($note['body']??null,5000);
+            $body=self::plain($note['body']??null,5000);
             if($id===null||$body===null||!self::belongs($note,$contactId))continue;
             $items[]=['id'=>$id,'body'=>$body,'dateAdded'=>self::text($note['dateAdded']??null,80),'userId'=>self::identifier($note['userId']??null)];
         }
@@ -95,7 +95,7 @@ final class ContactActivity {
             $status=is_string($status)&&isset(self::STATUSES[strtolower($status)])?strtolower($status):null;
             $items[]=[
                 'id'=>$id,
-                'title'=>self::text($event['title']??null,190)??'Cita',
+                'title'=>self::plain($event['title']??null,190)??'Cita',
                 'startTime'=>self::text($event['startTime']??null,80),
                 'endTime'=>self::text($event['endTime']??null,80),
                 'status'=>$status,
@@ -127,6 +127,26 @@ final class ContactActivity {
     private static function identifier(mixed $value):?string {
         return is_string($value)&&preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$value)?$value:null;
     }
+    /**
+     * Tasks and notes are stored as rich text upstream. The panel shows reading
+     * text, never markup: tags become line breaks or disappear, entities are
+     * decoded once, and the result is measured after cleaning, not before.
+     */
+    private static function plain(mixed $value,int $max):?string {
+        if(!is_scalar($value))return null;
+        $text=(string)$value;
+        if(str_contains($text,'<')) {
+            $text=preg_replace('~<\s*(br|/p|/div|/li|/tr|/h[1-6])\b[^>]*>~i',"\n",$text)??$text;
+            $text=strip_tags($text);
+        }
+        $text=html_entity_decode($text,ENT_QUOTES|ENT_HTML5,'UTF-8');
+        $text=preg_replace('/[ \t\x{00a0}]+/u',' ',$text)??$text;
+        $text=preg_replace('/\n{3,}/',"\n\n",$text)??$text;
+        $text=trim($text);
+        if($text==='')return null;
+        return mb_strlen($text)<=$max?$text:mb_substr($text,0,$max);
+    }
+
     private static function text(mixed $value,int $max):?string {
         if(!is_scalar($value))return null;
         $value=trim((string)$value);

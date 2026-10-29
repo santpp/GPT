@@ -6,12 +6,40 @@ final class SendProblem extends RuntimeException {
 }
 final class MessageSender {
     public const CHANNELS=['TYPE_SMS'=>'SMS','TYPE_WHATSAPP'=>'WhatsApp','TYPE_INSTAGRAM'=>'IG','TYPE_FACEBOOK'=>'FB','TYPE_EMAIL'=>'Email'];
+    public const LABELS=['SMS'=>'SMS','WhatsApp'=>'WhatsApp','IG'=>'Instagram','FB'=>'Messenger','Email'=>'Email'];
+    // A thread the contact opened can always be answered on its own channel. The
+    // others need an address of the contact, so they are offered only when the
+    // account's own record has one. Nothing here is taken from the browser.
+    private const NEEDS_PHONE=['SMS','WhatsApp'];
+    private const NEEDS_EMAIL=['Email'];
+
+    /** @return list<array{type:string,label:string,needsSubject:bool}> */
+    public static function availableChannels(array $connection,array $conversation):array {
+        $current=self::CHANNELS[$conversation['lastMessageType']??'']??null;
+        $contact=$conversation['contactId']??null;
+        $profile=is_string($contact)&&preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contact)
+            ? query('SELECT payload FROM contact_profile_cache WHERE connection_id=? AND contact_id=?',[$connection['id'],$contact])->fetchColumn()
+            : false;
+        $profile=is_string($profile)?json_decode($profile,true):null;
+        $hasPhone=is_array($profile)&&is_string($profile['phone']??null)&&trim($profile['phone'])!=='';
+        $hasEmail=is_array($profile)&&is_string($profile['email']??null)&&trim($profile['email'])!=='';
+        $allowed=$current!==null?[$current]:[];
+        foreach(self::LABELS as $type=>$label) {
+            if(in_array($type,$allowed,true))continue;
+            if(in_array($type,self::NEEDS_PHONE,true)&&$hasPhone)$allowed[]=$type;
+            if(in_array($type,self::NEEDS_EMAIL,true)&&$hasEmail)$allowed[]=$type;
+        }
+        return array_map(fn(string $type):array=>['type'=>$type,'label'=>self::LABELS[$type],'needsSubject'=>$type==='Email'],$allowed);
+    }
     public function __construct(private readonly GhlGateway $gateway=new GhlGateway()){}
     public function send(array $connection,array $conversation,array $input):array {
         $id=(int)$connection['id'];$conversationId=$conversation['id']??'';
-        $request=$input['requestId']??null;$text=$input['message']??null;$channel=self::CHANNELS[$conversation['lastMessageType']??'']??null;
+        $request=$input['requestId']??null;$text=$input['message']??null;
         if(!is_string($request)||!preg_match('/^[A-Za-z0-9_-]{16,64}$/D',$request)||!is_string($text)||trim($text)===''||mb_strlen($text)>4000)throw new SendProblem('invalid_message',422,'Escribe un mensaje de hasta 4.000 caracteres.');
-        if(!$channel||($input['channel']??null)!==$channel)throw new SendProblem('unsupported_channel',422,'Este canal no está disponible para responder desde aquí.');
+        // The choice is checked against the set the server computes, never trusted.
+        $available=array_column(self::availableChannels($connection,$conversation),'type');
+        $channel=$input['channel']??null;
+        if(!is_string($channel)||!in_array($channel,$available,true))throw new SendProblem('unsupported_channel',422,'Ese canal no está disponible para este contacto.');
         $contact=$conversation['contactId']??null;
         if(!is_string($contact)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contact)||($conversation['locationId']??null)!==$connection['location_id'])throw new SendProblem('invalid_contact',422,'Actualiza la conversación antes de responder.');
         $payload=['type'=>$channel,'contactId'=>$contact,'message'=>trim($text)];

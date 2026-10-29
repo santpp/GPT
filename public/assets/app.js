@@ -9,10 +9,10 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const view=$('#view');
 
 const VIEWS={
-  inbox:{path:'/bandeja',title:'Conversaciones',heading:'Cada conversación cuenta.',subtitle:'Todo el contexto. Un solo lugar.',render:renderLiveInbox,account:true},
-  contacts:{path:'/contactos',title:'Contactos',heading:'Personas, no registros.',subtitle:'Tu siguiente conversación empieza aquí.',render:renderContacts,account:true},
-  board:{path:'/oportunidades',title:'Oportunidades',heading:'De la conexión al cierre.',subtitle:'Una vista clara de cada oportunidad abierta.',render:renderBoard,account:true},
-  settings:{path:'/conexiones',title:'Conexiones',heading:'Configura tu espacio.',subtitle:'Gestiona las cuentas conectadas desde tu usuario administrador.',render:renderIntegrations,account:false},
+  inbox:{path:'/bandeja',title:'Conversaciones',eyebrow:'BANDEJA',heading:'Cada conversación cuenta.',subtitle:'Todo el contexto, en un solo lugar.',render:renderLiveInbox,account:true},
+  contacts:{path:'/contactos',title:'Contactos',eyebrow:'TU GENTE',heading:'Personas, no registros.',subtitle:'Tu siguiente conversación empieza aquí.',render:renderContacts,account:true},
+  board:{path:'/oportunidades',title:'Oportunidades',eyebrow:'EMBUDO',heading:'De la conexión al cierre.',subtitle:'Cada oportunidad abierta, a la vista.',render:renderBoard,account:true},
+  settings:{path:'/conexiones',title:'Conexiones',eyebrow:'ADMINISTRACIÓN',heading:'Tu espacio, a tu manera.',subtitle:'Gestiona las cuentas conectadas y el acceso del equipo.',render:renderIntegrations,account:false},
 };
 const byPath=path=>Object.keys(VIEWS).find(name=>VIEWS[name].path===path);
 // A host that cannot rewrite paths can still deep-link with a hash.
@@ -39,6 +39,7 @@ function show(name,{push=true}={}){
   $('#breadcrumb').textContent=meta.title;
   $('#page-title').innerHTML=esc(meta.heading).replace(/\.$/,'<span>.</span>');
   $('#page-subtitle').textContent=meta.subtitle;
+  $('#page-eyebrow').textContent=meta.eyebrow;
   $('.account-switch').hidden=!meta.account;
   view.dataset.view=target;
   view.innerHTML='';
@@ -119,22 +120,28 @@ $('#login-form').onsubmit=async e=>{
 function network(){$('#network').textContent=navigator.onLine?'● En línea':'○ Sin conexión'}
 window.addEventListener('online',network);window.addEventListener('offline',network);network();
 
-// Offline shell. The banner is about a new build of Ágora, not about refreshing
-// data: conversations and screens keep themselves up to date on their own.
+// Offline shell. A new build installs itself: nobody should have to press
+// anything. The only thing worth waiting for is unsent text, so the swap is
+// held back while something is being written and applied as soon as it is not.
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(registration=>{
-    const offer=worker=>{
-      if(document.querySelector('#app-update'))return;
-      const button=document.createElement('button');
-      button.id='app-update';button.className='primary';button.textContent='Nueva versión';
-      document.querySelector('.top-actions').prepend(button);
-      button.onclick=()=>{toast('Actualizando Ágora…');worker.postMessage({type:'ACTIVATE'})};
+    let pending=null,timer=null;
+    const busy=()=>document.querySelector('#action-dialog')?.open
+      ||[...document.querySelectorAll('textarea, input:not([type=search]):not([type=hidden])')].some(field=>field.value.trim()!=='');
+    const apply=()=>{
+      if(!pending)return;
+      if(busy()){clearTimeout(timer);timer=setTimeout(apply,5000);return}
+      toast('Actualizando Ágora a la última versión…');
+      pending.postMessage({type:'ACTIVATE'});
     };
-    if(registration.waiting)offer(registration.waiting);
+    const take=worker=>{if(!worker)return;pending=worker;apply()};
+    take(registration.waiting);
     registration.addEventListener('updatefound',()=>{
       const worker=registration.installing;
-      worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)offer(worker)});
+      worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)take(worker)});
     });
+    // Look for a new build on every return to the app, not only on a cold start.
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)registration.update().catch(()=>{})});
     let reloading=false,hadController=!!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener('controllerchange',()=>{
       if(!hadController){hadController=true;return}

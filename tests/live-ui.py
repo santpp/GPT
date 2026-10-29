@@ -8,6 +8,8 @@ with sync_playwright() as p:
         context=browser.new_context(viewport={'width':width,'height':844},service_workers='block')
         page=context.new_page();errors=[];calls=[];fail=[True];held=[]
         page.on('pageerror',lambda e:errors.append(str(e)))
+        saved=[]
+        contact={'name':'Ángeles García','phone':'+34123456789','email':'angeles@example.test','source':'Formulario web','assignedName':'Ana Responsable','lastActivity':'2026-10-28T11:00:00Z','tags':['Interesada'],'customFields':[{'id':'f1','label':'Campo personalizado','value':'Consulta'}]}
         actions=[]
         tasks=[{'id':'t1','title':'Confirmar disponibilidad','body':'Llamar por la tarde','dueDate':'2026-11-05T10:00:00Z','completed':False,'assignedName':'Ana Responsable'}]
         notes=[{'id':'n1','body':'Pidió presupuesto','dateAdded':'2026-10-28T10:00:00Z','authorName':'Ana Responsable'}]
@@ -25,8 +27,13 @@ with sync_playwright() as p:
                 elif 'lastMessageId=m2' in path:
                     data={'items':[{'id':'m1','body':'Mensaje anterior','dateAdded':'2026-10-27T10:00:00Z','direction':'inbound'},{'id':'m2','body':'Texto reciente','dateAdded':'2026-10-28T10:00:00Z'}],'hasMore':False}
                 else:data={'items':[{'id':'m2','body':'Texto reciente','dateAdded':'2026-10-28T10:00:00Z'},{'id':'m3','body':'<script>window.injected=true</script>','direction':'outbound','dateAdded':'2026-10-28T11:00:00Z'}],'hasMore':True,'lastMessageId':'m2'}
+            elif path.startswith('workspace/activity/contact'):
+                saved.append(route.request.post_data_json)
+                contact['name']='Ángeles G. Nueva';contact['tags']=['Interesada','Prioritaria']
+                data={'state':'accepted','id':'c1'}
             elif path.startswith('workspace/contact?'):
-                data={'contact':{'name':'Ángeles García','phone':'+34123456789','email':'angeles@example.test','source':'Formulario web','assignedName':'Ana Responsable','lastActivity':'2026-10-28T11:00:00Z','tags':['Interesada'],'customFields':[{'label':'Campo personalizado','value':'Consulta'}]}}
+                data={'contact':dict(contact),'canEdit':True,
+                      'channels':[]}
             elif path.startswith('workspace/contact-fields?'):
                 data={'items':[]}
             elif path.startswith('workspace/activity/task-state'):
@@ -87,6 +94,25 @@ with sync_playwright() as p:
         page.wait_for_function("document.querySelector('#live-activity-status')?.textContent.includes('Nota guardada')")
         assert actions[-1][0]=='note' and actions[-1][1]=='Nota escrita desde Ágora'
         assert 'Nota escrita desde Ágora' in page.locator('#live-contact-panel .live-notes').evaluate('(n)=>n.textContent')
+
+        # Every field of the record, and its tags, can be edited.
+        page.locator('#live-edit-contact').evaluate('(n)=>n.click()')
+        page.wait_for_selector('#live-contact-form',state='attached')
+        page.locator('#live-contact-form [name="name"]').evaluate("(n)=>n.value='Ángeles G. Nueva'")
+        page.locator('#live-contact-form [data-field="f1"]').evaluate("(n)=>n.value='Otra consulta'")
+        page.locator('#live-new-tag').evaluate("(n)=>n.value='Prioritaria'")
+        page.locator('#live-add-tag').evaluate('(n)=>n.click()')
+        page.locator('#live-contact-form [data-drop-tag="Interesada"]').evaluate('(n)=>n.click()')
+        page.locator('#live-save-contact').evaluate('(n)=>n.click()')
+        page.wait_for_function("!document.querySelector('#live-contact-form')")
+        assert len(saved)==1, saved
+        sent=saved[0]
+        assert sent['fields']['name']=='Ángeles G. Nueva'
+        assert sent['fields']['customFields']==[{'id':'f1','value':'Otra consulta'}]
+        assert sent['addTags']==['Prioritaria'] and sent['removeTags']==['Interesada']
+        assert 'tags' not in sent['fields'], 'tags never ride in the update field'
+        assert len(sent['requestId'])>=16
+        assert 'Ángeles G. Nueva' in page.locator('#live-contact-panel').evaluate('(n)=>n.textContent')
         if width==390:
             page.locator('#live-contact-toggle').click();assert page.locator('#live-contact-panel').is_visible();page.locator('#live-profile-close').click()
         assert page.locator('#live-log script').count()==0

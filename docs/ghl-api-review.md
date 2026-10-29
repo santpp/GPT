@@ -173,3 +173,21 @@ Hasta 0.10.0 el gateway imponía un hueco fijo de un segundo entre peticiones de
 **Envoltorio del historial.** `GetMessagesByConversationResponseDto` publica `lastMessageId`, `nextPage` y `messages` en el primer nivel, y la especificación no incluye ningún ejemplo de respuesta. En la cuenta real, el historial seguía rechazándose en 0.11.0 con el mensaje nuevo, lo que descarta las tres tolerancias añadidas entonces y deja como causa probable que la cuenta responda con los mismos campos envueltos un nivel más abajo (`{"messages":{"messages":[…],"nextPage":…,"lastMessageId":…}}`). Ágora acepta ahora las dos formas y no inventa ninguna otra: si el contenido no es una lista de mensajes en ninguno de los dos niveles, se rechaza igual. Las comprobaciones de cuenta y conversación siguen siendo estrictas en ambas formas. El motivo concreto viaja ahora en el texto visible, no sólo en el campo `code`, para poder confirmarlo contra la cuenta en lugar de deducirlo.
 
 **Contención del bloqueo por conexión.** `GhlGateway` tomaba su cerrojo con `GET_LOCK(clave, 0)`, que falla en el acto si otra petición de la misma conexión lo tiene. Al pedir la ficha sus cuatro bloques a la vez, cada pantalla competía consigo misma y con el sondeo del chat, y el resultado era «Espera 2 segundos» aunque hubiera presupuesto de sobra: no era la cuota, era la cola. El cerrojo espera ahora hasta seis segundos (cinco en la caché de mensajes) y la ficha pide sus bloques uno detrás de otro. La ventana de 20 peticiones cada 10 segundos no cambia.
+
+## Edición de ficha y selector de canal 0.12.0
+
+Misma fuente oficial y mismo commit `0af86a4cbd48c66a4071c7e509d1079f9f10ed17`, revisado el 29 de octubre de 2026.
+
+| Uso | Método y endpoint | Scope publicado | Version |
+| --- | --- | --- | --- |
+| Editar la ficha | `PUT /contacts/{contactId}` | `contacts.write` | 2021-07-28 |
+| Añadir etiquetas | `POST /contacts/{contactId}/tags` | `contacts.write` | 2021-07-28 |
+| Quitar etiquetas | `DELETE /contacts/{contactId}/tags` | `contacts.write` | 2021-07-28 |
+
+`UpdateContactDto` no marca ningún campo obligatorio y admite `firstName`, `lastName`, `name`, `email`, `phone`, `address1`, `city`, `state`, `postalCode`, `country`, `website`, `timezone`, `source`, `dnd`, `dateOfBirth`, `assignedTo`, `customFields` y `tags`. Ágora envía únicamente los campos que la persona cambió, de modo que una edición nunca reescribe lo que no tocó, y **nunca envía `tags` por esta vía**: la propia documentación advierte que ese campo «will overwrite all current tags associated with the contact». Las etiquetas viajan como altas y bajas por los dos endpoints dedicados, que son aditivos.
+
+Hay una asimetría publicada que conviene recordar: al leer, un campo personalizado llega como `{id, value}`; al escribir, `TextField` y sus hermanos exigen `{id, field_value}`. Ágora traduce entre las dos formas y descarta identificadores que no encajen en el formato esperado. `dnd`, `dateOfBirth` y `assignedTo` no se exponen todavía: el primero necesita su propia explicación al usuario, el segundo admite seis formatos distintos y el tercero requiere un selector de usuario.
+
+**Selector de canal.** `SendMessageBodyDto` publica `type` con `SMS`, `RCS`, `Email`, `WhatsApp`, `IG`, `FB`, `Custom`, `Live_Chat` y `TIKTOK`, y el destinatario documentado sigue siendo el contacto. Ágora calcula en el servidor qué canales admite cada contacto y no acepta otro: el canal del propio hilo siempre; `SMS` y `WhatsApp` si la ficha guardada tiene teléfono; `Email` si tiene correo. Instagram, Messenger y el chat web no se ofrecen salvo que sean el canal del hilo, porque no hay forma documentada de iniciar una conversación por ahí. El cálculo se hace sobre la ficha ya almacenada en caché, sin ninguna petición adicional, y si no hay ficha conocida sólo se ofrece el canal del hilo: falla cerrado. La elección del navegador se vuelve a comprobar contra ese mismo cálculo antes de enviar; el destino sigue saliendo del servidor y nunca de la petición.
+
+**Texto enriquecido en tareas y notas.** La cuenta devuelve el cuerpo de tareas y notas como HTML. Las pantallas de Ágora muestran texto de lectura: las etiquetas de salto se convierten en saltos, el resto se elimina, las entidades se decodifican una sola vez y el largo se mide después de limpiar. Nunca se interpreta marcado recibido de la cuenta.

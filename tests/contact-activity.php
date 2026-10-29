@@ -27,7 +27,10 @@ final class FakeActivityApi {
             if($method==='GET'&&str_ends_with($path,'/appointments'))return ['status'=>200,'body'=>json_encode(['events'=>$this->events])];
             if($method==='POST'&&str_ends_with($path,'/notes')){$this->created++;return ['status'=>201,'body'=>json_encode(['note'=>['id'=>'note-'.$this->created]])];}
             if($method==='POST'&&str_ends_with($path,'/tasks')){$this->created++;return ['status'=>201,'body'=>json_encode(['task'=>['id'=>'task-'.$this->created]])];}
+            if($method==='POST'&&str_ends_with($path,'/tags'))return ['status'=>200,'body'=>json_encode(['tags'=>$payload['tags']??[]])];
             if($method==='PUT'&&str_ends_with($path,'/completed'))return ['status'=>200,'body'=>json_encode(['task'=>['id'=>'task-1']])];
+            if($method==='PUT'&&preg_match('~^/contacts/[^/]+$~',$path))return ['status'=>200,'body'=>json_encode(['contact'=>['id'=>'contact-1']])];
+            if($method==='DELETE'&&str_ends_with($path,'/tags'))return ['status'=>200,'body'=>json_encode(['tags'=>[]])];
             throw new GhlApiException(404);
         }));
     }
@@ -173,6 +176,38 @@ try {
  catch(ActionProblem $e){$blocked=$e->reason;}
  activityCheck($blocked==='action_unconfirmed','identical content with a new key is blocked while the result is uncertain');
  $api->fail=[];
+
+ // ---- editing the contact record and its tags --------------------------------
+ $api->reset();clearBudget($connectionId);
+ query('INSERT INTO contact_profile_cache(connection_id,contact_id,payload) VALUES(?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload)',[$connectionId,'contact-1',json_encode(['id'=>'contact-1','name'=>'Antes'])]);
+ $edited=$actions->contact($connection,'contact-1',$full,['requestId'=>key16(),
+   'fields'=>['name'=>' Richard Perez ','email'=>'richard@example.test','phone'=>'+58 414-2736522','city'=>'Caracas','companyName'=>'','customFields'=>[['id'=>'field-1','value'=>'Referido'],['id'=>'../malo','value'=>'x']]],
+   'addTags'=>['Interesado',' interesado ','Nuevo'],'removeTags'=>['Frio']]);
+ activityCheck($edited['state']==='accepted','the contact record is updated');
+ $calls=$api->paths();
+ activityCheck($calls===['PUT /contacts/contact-1','POST /contacts/contact-1/tags','DELETE /contacts/contact-1/tags'],'documented update, add-tag and remove-tag endpoints, in that order');
+ $sent=$api->calls[0][3];
+ activityCheck($sent['name']==='Richard Perez'&&$sent['email']==='richard@example.test'&&$sent['city']==='Caracas','edited fields are trimmed and sent');
+ activityCheck($sent['companyName']===''&&!array_key_exists('source',$sent),'a cleared field is sent empty and an untouched field is never sent');
+ activityCheck($sent['customFields']===[['id'=>'field-1','field_value'=>'Referido']],'custom values are written as field_value and unsafe identifiers dropped');
+ activityCheck(!array_key_exists('tags',$sent),'tags never travel in the update field, which would overwrite them all');
+ activityCheck($api->calls[1][3]===['tags'=>['Interesado','interesado','Nuevo']]&&$api->calls[2][3]===['tags'=>['Frio']],'tags are added and removed as deltas');
+ activityCheck((int)query('SELECT COUNT(*) FROM contact_profile_cache WHERE connection_id=? AND contact_id=?',[$connectionId,'contact-1'])->fetchColumn()===0,'a successful edit clears the cached profile');
+
+ foreach([['email'=>'no-es-correo'],['phone'=>'<script>']] as $bad) {
+  $reason=null;try{$actions->contact($connection,'contact-1',$full,['requestId'=>key16(),'fields'=>$bad]);}catch(ActionProblem $e){$reason=$e->reason;}
+  activityCheck(in_array($reason,['invalid_contact_email','invalid_contact_phone'],true),'a malformed '.array_key_first($bad).' is refused before any request');
+ }
+ $long=null;try{$actions->contact($connection,'contact-1',$full,['requestId'=>key16(),'fields'=>['name'=>str_repeat('x',200)]]);}catch(ActionProblem $e){$long=$e->reason;}
+ activityCheck($long==='invalid_contact_fields','an oversized field is refused');
+ $empty=null;try{$actions->contact($connection,'contact-1',$full,['requestId'=>key16(),'fields'=>[]]);}catch(ActionProblem $e){$empty=$e->reason;}
+ activityCheck($empty==='nothing_to_change','an edit that changes nothing is refused instead of writing');
+ $forbidden=null;try{$actions->contact($connection,'contact-1',$readOnly,['requestId'=>key16(),'fields'=>['name'=>'X']]);}catch(ActionProblem $e){$forbidden=$e->reason;}
+ activityCheck($forbidden==='action_forbidden','a read-only member cannot edit the contact');
+
+ $api->reset();clearBudget($connectionId);
+ $onlyTags=$actions->contact($connection,'contact-1',$full,['requestId'=>key16(),'addTags'=>['Sola']]);
+ activityCheck($onlyTags['state']==='accepted'&&$api->paths()===['POST /contacts/contact-1/tags'],'a tag-only change writes no contact update');
 
  // ---- a malformed read cannot corrupt the panel ------------------------------
  $api->reset();clearBudget($connectionId);

@@ -42,10 +42,13 @@ final class GhlClient {
     public function contactAppointments(string $contact):array {return $this->get('/contacts/'.rawurlencode($contact).'/appointments','2021-07-28');}
     public function createContactTask(string $contact,array $payload):array {return $this->get('/contacts/'.rawurlencode($contact).'/tasks','2021-07-28',$payload);}
     public function createContactNote(string $contact,array $payload):array {return $this->get('/contacts/'.rawurlencode($contact).'/notes','2021-07-28',$payload);}
+    public function updateContact(string $contact,array $payload):array {return $this->put('/contacts/'.rawurlencode($contact),'2021-07-28',$payload);}
+    public function removeContactTags(string $contact,array $tags):array {return $this->delete('/contacts/'.rawurlencode($contact).'/tags','2021-07-28',['tags'=>$tags]);}
     public function completeContactTask(string $contact,string $task,bool $completed):array {
         return $this->put('/contacts/'.rawurlencode($contact).'/tasks/'.rawurlencode($task).'/completed','2021-07-28',['completed'=>$completed]);
     }
     private function put(string $path,string $version,array $payload):array {return $this->get($path,$version,$payload,'PUT');}
+    private function delete(string $path,string $version,array $payload):array {return $this->get($path,$version,$payload,'DELETE');}
     private function get(string $path,string $version,?array $payload=null,?string $verb=null):array {
         if($this->token==='')throw new RuntimeException('GHL credential missing');
         $this->headers=[];$this->status=0;
