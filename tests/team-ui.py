@@ -8,7 +8,7 @@ with sync_playwright() as p:
  def api(route):
   request=route.request;path=request.url.split('/api/')[1]
   if path=='me':data={'user':{'role':'administrator'},'csrf':'test-csrf'}
-  elif path=='admin/diagnostics':data={'ready':True,'version':'0.6.0','checks':[]}
+  elif path=='admin/diagnostics':data={'ready':True,'version':'0.7.0','checks':[]}
   elif path=='admin/integrations':data={'items':[{'id':1,'name':'Cuenta de prueba','location_id':'loc-test','status':'connected','externalUsers':1,'sync_interval_seconds':120,'sync_enabled':1}]}
   elif path=='admin/integrations/1/users':data={'authenticationConfigured':False,'items':[{'id':2,'display_name':'Ana Vendedora','email':'ana@example.test','role_name':'user','assigned_data_only':1,'active':1,'identityLinked':False,'capabilities':{'configureConnections':False,'viewConversations':True,'sendMessages':False,'assignedDataOnly':True}}]}
   elif path=='admin/integrations/1/users/sync':
@@ -18,7 +18,7 @@ with sync_playwright() as p:
  page.route('**/api/**',api);page.goto('http://127.0.0.1:8080/')
  page.locator('button[data-view="settings"]').click();page.wait_for_selector('[data-users="1"]');page.locator('[data-users="1"]').click()
  page.wait_for_selector('#sync-team');body=page.locator('#dialog-content').inner_text()
- assert 'Ana Vendedora' in body and 'Sólo datos asignados' in body and 'Sin acceso vinculado' in body
+ assert 'Ana Vendedora' in body and 'Sólo datos asignados' in body and 'Acceso aún no utilizado' in body
  assert 'configureConnections' not in body and 'viewConversations' in body
  page.locator('#sync-team').click();page.wait_for_function('document.querySelector("#team-feedback").textContent.includes("1 usuarios")')
  assert syncs[0]==1 and not errors,errors

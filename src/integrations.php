@@ -7,9 +7,10 @@ require_once __DIR__.'/InboxSync.php';
 require_once __DIR__.'/Installation.php';
 require_once __DIR__.'/ExternalUserDirectory.php';
 require_once __DIR__.'/PermissionPolicy.php';
+require_once __DIR__.'/ExternalAuth.php';
 Installation::assertReady();
 if ($path === '/api/admin/integrations' && $method === 'GET') {
-    $rows=query('SELECT c.id,c.name,c.location_id,c.sync_interval_seconds,c.status,c.last_checked_at,COALESCE(s.enabled,0) AS sync_enabled,s.last_success_at,s.last_error,s.requests_today,s.quota FROM ghl_connections c LEFT JOIN ghl_sync_state s ON s.connection_id=c.id WHERE c.tenant_id=? ORDER BY c.id',[$u['tenant_id']])->fetchAll();
+    $rows=query('SELECT c.id,c.name,c.location_id,c.sync_interval_seconds,c.status,c.last_checked_at,COALESCE(s.enabled,0) AS sync_enabled,s.last_success_at,s.last_error,s.requests_today,s.quota,s.users_last_success_at,s.users_last_error FROM ghl_connections c LEFT JOIN ghl_sync_state s ON s.connection_id=c.id WHERE c.tenant_id=? ORDER BY c.id',[$u['tenant_id']])->fetchAll();
     foreach($rows as &$row){$row['tokenConfigured']=true;$row['externalUsers']=(int)query('SELECT COUNT(*) FROM external_users WHERE connection_id=? AND active=TRUE',[$row['id']])->fetchColumn();}
     respond(['items'=>$rows,'syncImplemented'=>true,'syncWindows'=>[20,50,100]]);
 }
@@ -26,8 +27,8 @@ if(preg_match('~^/api/admin/integrations/(\d+)/users(?:/(sync))?$~',$path,$userM
     }
     if(($userMatch[2]??'')===''&&$method==='GET'){
         $rows=query('SELECT id,external_user_id,email,display_name,role_type,role_name,permissions,scopes,assigned_data_only,active,synced_at FROM external_users WHERE connection_id=? ORDER BY active DESC,display_name',[$connection['id']])->fetchAll();
-        foreach($rows as &$row){$row['identityLinked']=(bool)query('SELECT 1 FROM external_identity_links WHERE external_user_row_id=? LIMIT 1',[$row['id']])->fetchColumn();$row['capabilities']=PermissionPolicy::capabilities($row+['identity_type'=>'external']);unset($row['permissions'],$row['scopes']);}
-        respond(['items'=>$rows,'authenticationConfigured'=>false]);
+        foreach($rows as &$row){$row['identityLinked']=(bool)query('SELECT 1 FROM external_identity_memberships WHERE external_user_row_id=? LIMIT 1',[$row['id']])->fetchColumn();$row['capabilities']=PermissionPolicy::capabilities($row+['identity_type'=>'external']);unset($row['permissions'],$row['scopes']);}
+        respond(['items'=>$rows,'authenticationConfigured'=>ExternalAuth::configured()]);
     }
     respond(['error'=>'Not found'],404);
 }

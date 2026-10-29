@@ -9,7 +9,7 @@ import threading
 import zipfile
 from playwright.sync_api import sync_playwright
 
-archive = Path(os.getenv('NATIVE_ARCHIVE', 'releases/agora-update-0.6.0.zip'))
+archive = Path(os.getenv('NATIVE_ARCHIVE', 'releases/agora-update-0.7.0.zip'))
 with tempfile.TemporaryDirectory() as directory:
     with zipfile.ZipFile(archive) as bundle:
         bundle.extractall(directory)
@@ -56,8 +56,9 @@ self.addEventListener('fetch',e=>{
             page.wait_for_function('navigator.serviceWorker.controller !== null')
             page.goto(base + '/conexiones.html')
             page.locator('#settings-login').click()
-            page.locator('[name="email"]').fill('admin@example.test')
-            page.locator('[name="password"]').fill('test-password')
+            page.locator('.admin-login summary').click()
+            page.locator('#login-form [name="email"]').fill('admin@example.test')
+            page.locator('#login-form [name="password"]').fill('test-password')
             page.locator('#login-form button').click()
             page.wait_for_selector('#add-integration')
             assert page.locator('#action-dialog').evaluate('(d)=>!d.open')

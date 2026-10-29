@@ -10,4 +10,5 @@ return [
     'GHL_LOCATION_ID'=>'agora-workspace', // Initial workspace reference, not a PIT.
     'APP_KEY_FILE'=>dirname(__DIR__).'/var/integration.key',
     'GHL_WEBHOOKS_ENABLED'=>'0',
+    'LOGIN_MAIL_FROM'=>'acceso@nueva.agoradigital.app',
 ];

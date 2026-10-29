@@ -63,7 +63,7 @@ Elegir el email que se usará para entrar. En una shell Bash del VPS, sustituir 
 ```sh
 read -r -s -p 'Contraseña administrador (mínimo 12 caracteres): ' agora_admin_password
 printf '\n'
-printf '%s' "$agora_admin_password" | docker compose --env-file deploy/.env.production -f deploy/compose.production.yaml exec -T api php bin/create-user.php TU_EMAIL administrator
+printf '%s' "$agora_admin_password" | docker compose --env-file deploy/.env.production -f deploy/compose.production.yaml exec -T api php bin/create-user.php TU_EMAIL
 unset agora_admin_password
 ```
 

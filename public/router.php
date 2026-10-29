@@ -10,7 +10,7 @@ if (!str_starts_with($path, '/api/')) {
 }
 require $appRoot.'/src/bootstrap.php';
 header('X-Content-Type-Options: nosniff');
-header('X-Agora-Version: 0.6.0');
+header('X-Agora-Version: 0.7.0');
 try {
     $method = $_SERVER['REQUEST_METHOD'];
     if ($path === '/api/health' && $method === 'GET') { query('SELECT 1'); respond(['status'=>'ok']); }
@@ -28,9 +28,28 @@ try {
     session_name('workspace_session');
     session_set_cookie_params(['httponly'=>true,'secure'=>getenv('APP_ENV') !== 'development','samesite'=>'Strict','path'=>'/']);
     session_start();
+    require_once $appRoot.'/src/ExternalAuth.php';
+    require_once $appRoot.'/src/Actor.php';
     if ($method !== 'GET') {
         if (($_SERVER['HTTP_ORIGIN'] ?? '') !== getenv('APP_ORIGIN')) respond(['error'=>'El dominio de acceso no coincide con la configuración de la aplicación.'],403);
-        if ($path !== '/api/login' && !hash_equals($_SESSION['csrf'] ?? '', $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '!')) respond(['error'=>'La sesión de seguridad ha cambiado. Actualiza la página y vuelve a intentarlo.'],403);
+        if (!in_array($path,['/api/login','/api/team-login/request','/api/team-login/verify'],true) && !hash_equals($_SESSION['csrf'] ?? '', $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '!')) respond(['error'=>'La sesión de seguridad ha cambiado. Actualiza la página y vuelve a intentarlo.'],403);
+    }
+    if ($path === '/api/team-login/request' && $method === 'POST') {
+        $b=body();
+        try{(new ExternalAuth())->request((string)($b['email']??''),$_SERVER['REMOTE_ADDR']??'');}
+        catch(OverflowException $e){respond(['error'=>'Espera unos minutos antes de solicitar otro código.'],429);}
+        catch(RuntimeException $e){respond(['error'=>'El correo de acceso no está disponible. Contacta con el administrador.','code'=>'login_delivery_unavailable'],503);}
+        catch(InvalidArgumentException $e){}
+        respond(['accepted'=>true,'message'=>'Si el correo pertenece a un usuario activo, recibirá un código de acceso.'],202);
+    }
+    if ($path === '/api/team-login/verify' && $method === 'POST') {
+        $b=body();
+        try{$identity=(new ExternalAuth())->verify((string)($b['email']??''),(string)($b['code']??''),$_SERVER['REMOTE_ADDR']??'');}
+        catch(OverflowException $e){respond(['error'=>'Espera unos minutos antes de volver a intentarlo.'],429);}
+        catch(InvalidArgumentException $e){respond(['error'=>'El código no es válido o ha caducado.'],401);}
+        session_regenerate_id(true);
+        $_SESSION=['external_identity_id'=>$identity,'csrf'=>bin2hex(random_bytes(32)),'expires'=>time()+28800];
+        respond(['csrf'=>$_SESSION['csrf']]);
     }
     if ($path === '/api/login' && $method === 'POST') {
         $b = body();
@@ -45,8 +64,8 @@ try {
         $_SESSION = ['uid'=>$u['id'],'csrf'=>bin2hex(random_bytes(32)),'expires'=>time()+28800];
         respond(['csrf'=>$_SESSION['csrf']]);
     }
-    if (!isset($_SESSION['uid']) || ($_SESSION['expires'] ?? 0) < time()) respond(['error'=>'Inicia sesión para continuar.'],401);
-    $u = query('SELECT id,tenant_id,email,role,ghl_user_id FROM users WHERE id=?',[$_SESSION['uid']])->fetch();
+    if ((!isset($_SESSION['uid'])&&!isset($_SESSION['external_identity_id'])) || ($_SESSION['expires'] ?? 0) < time()) respond(['error'=>'Inicia sesión para continuar.'],401);
+    $u = Actor::fromSession($_SESSION);
     if (!$u) respond(['error'=>'Inicia sesión para continuar.'],401);
     if ($path==='/api/admin/installation/migrations' && $method==='POST') {
         if($u['role']!=='administrator')respond(['error'=>'Acceso restringido'],403);
@@ -73,9 +92,10 @@ try {
         if (getenv('APP_ENV') !== 'development' && parse_url(getenv('APP_ORIGIN') ?: '', PHP_URL_SCHEME) !== 'https') respond(['error'=>'HTTPS required'],503);
         require $appRoot.'/src/integrations.php';
     }
-    if ($path === '/api/me' && $method === 'GET') respond(['user'=>array_intersect_key($u,array_flip(['id','email','role'])),'csrf'=>$_SESSION['csrf']]);
+    if ($path === '/api/me' && $method === 'GET') respond(['user'=>array_intersect_key($u,array_flip(['id','email','role','identity_type','capabilities'])),'csrf'=>$_SESSION['csrf']]);
     if ($path === '/api/logout' && $method === 'POST') { $_SESSION=[]; session_destroy(); respond(['ok'=>true]); }
     if ($path === '/api/conversations' && $method === 'GET') {
+        if(($u['identity_type']??'native')!=='native')respond(['error'=>'Utiliza la bandeja conectada para consultar tus conversaciones.'],403);
         $sql = 'SELECT ghl_id,payload,updated_at FROM resources WHERE tenant_id=? AND kind=?';
         $args = [$u['tenant_id'],'conversation'];
         if ($u['role'] === 'seller') {

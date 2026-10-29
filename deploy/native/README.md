@@ -47,18 +47,19 @@ Desde phpMyAdmin, seleccionar esa base NUEVA y vacía e importar en orden:
 4. `agora-private/database/004-messaging.sql`
 5. `agora-private/database/005-message-cache.sql`
 6. `agora-private/database/006-external-users.sql`
+7. `agora-private/database/007-external-auth.sql`
 
 No importar el esquema base en una base con tablas de otra aplicación. Para una futura actualización, conservar la base y aplicar sólo las migraciones necesarias, nunca volver a inicializarla.
 
 ## 3. Configuración privada
 
-En `agora-private/config`, copiar `local.example.php` a `local.php` y editar **sólo ahí** los datos de conexión de MySQL. Mantener APP_ORIGIN como `https://nueva.agoradigital.app`, APP_ENV=production y webhooks=0. Si el socket MySQL no funciona con localhost, comprobar el host/puerto configurados en CyberPanel antes de cambiarlo; no habilitar acceso público a MySQL.
+En `agora-private/config`, copiar `local.example.php` a `local.php` y editar **sólo ahí** los datos de conexión de MySQL. Mantener APP_ORIGIN como `https://nueva.agoradigital.app`, APP_ENV=production y webhooks=0. Configurar `LOGIN_MAIL_FROM` con un remitente real del dominio para los códigos de acceso del equipo. Si el socket MySQL no funciona con localhost, comprobar el host/puerto configurados en CyberPanel antes de cambiarlo; no habilitar acceso público a MySQL.
 
 Este archivo es PHP: las contraseñas con comillas simples o barras deben escaparse correctamente en la cadena PHP. No pegar su contenido en chat. El archivo nunca debe estar dentro de public_html. No incluir el PIT de GHL aquí: se añadirá después desde Integraciones.
 
 ## 4. Protección y usuario administrador
 
-**Si ya tienes un administrador y estás corrigiendo un fallo de conexión, no necesitas terminal:** sigue [la actualización 0.6.0](UPDATE-0.6.0.md). Conexiones comprueba la instalación y permite aplicar las tablas adicionales y preparar la protección inicial cuando es seguro. Copiar resultado permite compartir códigos de fallo sin claves ni rutas.
+**Si ya tienes un administrador, no necesitas terminal:** sigue [la actualización 0.7.0](UPDATE-0.7.0.md). Conexiones comprueba la instalación y permite aplicar las tablas adicionales. Copiar resultado permite compartir códigos de fallo sin claves ni rutas.
 
 Los siguientes comandos son para la primera instalación, antes de disponer de un usuario administrador.
 
@@ -97,7 +98,7 @@ Si `/api/health` da 404, revisar las reglas rewrite. Si responde 503, comprobar 
 
 Entrar con tu administrador, abrir Conexiones y añadir nombre, Location ID y Private Integration Token. La comprobación requiere `locations.readonly`; sólo prueba acceso a esa subcuenta. El token se guarda cifrado y no se devuelve al navegador. Configurar sólo desde la URL HTTPS propia.
 
-La demo visual permanece identificada y separada. **Conversaciones** muestra una ventana real de 20, 50 o 100 conversaciones e historial paginado en bloques de 20 mensajes, a través del backend. En esta primera entrega sólo accede el administrador; faltan membresías por vendedor y location. Para sincronizar se requiere `conversations.readonly`; para leer mensajes, `conversations/message.readonly`. Las respuestas de texto requieren conversations/message.write y las tablas 004, aplicables desde Conexiones. Deben validarse en cada canal real; ver docs/message-sending.md. FCM y Android siguen pendientes. No habilitar webhooks.
+La demo visual permanece identificada y separada. **Conversaciones** muestra una ventana real de 20, 50 o 100 conversaciones e historial paginado en bloques de 20 mensajes, a través del backend. El equipo importado entra con su correo y un código temporal; sus permisos y asignaciones se comprueban por cuenta. Para sincronizar se requiere `conversations.readonly`; para leer mensajes, `conversations/message.readonly`. Las respuestas de texto requieren conversations/message.write. Deben validarse en cada canal real; ver docs/message-sending.md. FCM y Android siguen pendientes. No habilitar webhooks.
 
 ### Consultas periódicas opcionales
 
@@ -107,7 +108,7 @@ Primero comprobar la conexión y probar **Bandeja conectada → Sincronizar ahor
 /usr/local/lsws/lsphp83/bin/php /home/nueva.agoradigital.app/agora-private/bin/sync-inbox.php >> /home/nueva.agoradigital.app/agora-private/var/sync-inbox.log 2>&1
 ```
 
-El script procesa sólo conexiones activadas y vencidas según su intervalo (120 segundos por defecto), con bloqueo global para no acumular procesos. No consulta GHL por cada móvil. Limita cada pasada a 20 conexiones y una llamada de listado por conexión. El log no incluye tokens ni cuerpos; mantenerlo privado y configurar rotación. El intervalo mínimo configurable es 60 segundos; cron por minuto no proporciona actualizaciones de 5 segundos. La app actualiza automáticamente mientras la bandeja está abierta y visible al intervalo de la cuenta. El cron sigue siendo necesario cuando la app está cerrada; no hay SSE ni push.
+El script procesa sólo conexiones activadas y vencidas según su intervalo (120 segundos por defecto), con bloqueo global para no acumular procesos. También renueva el equipo y sus permisos cada hora. No consulta la API por cada móvil. Limita cada pasada a 20 conexiones por tipo y comparte el presupuesto de llamadas. El log no incluye tokens ni cuerpos; mantenerlo privado y configurar rotación. El intervalo mínimo configurable es 60 segundos; cron por minuto no proporciona actualizaciones de 5 segundos. La app actualiza automáticamente mientras la bandeja está abierta y visible al intervalo de la cuenta. El cron sigue siendo necesario cuando la app está cerrada; no hay SSE ni push.
 
 Las consultas comparten un presupuesto local conservador de 5.000 peticiones/día por conexión y un espaciado mínimo de un segundo; esto no define los límites reales del PIT. Se respetan pausas por 429 y cabeceras de cuota observadas. Un 401/403 pausa la programación hasta corregir y comprobar la credencial. El primer resultado es parcial si hay más conversaciones que el tamaño seleccionado: todavía no hay importación completa ni borrado/reconciliación de todo el CRM.
 

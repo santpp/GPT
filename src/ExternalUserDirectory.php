@@ -18,7 +18,9 @@ final class ExternalUserDirectory {
         try {
             query('UPDATE external_users SET active=FALSE WHERE connection_id=?',[$id]);
             foreach($normalized as $user)query('INSERT INTO external_users(connection_id,external_user_id,email,display_name,role_type,role_name,permissions,scopes,assigned_data_only,active) VALUES(?,?,?,?,?,?,?,?,?,TRUE) ON DUPLICATE KEY UPDATE email=VALUES(email),display_name=VALUES(display_name),role_type=VALUES(role_type),role_name=VALUES(role_name),permissions=VALUES(permissions),scopes=VALUES(scopes),assigned_data_only=VALUES(assigned_data_only),active=TRUE,synced_at=CURRENT_TIMESTAMP',[$id,$user['id'],$user['email'],$user['name'],$user['roleType'],$user['roleName'],json_encode($user['permissions'],JSON_THROW_ON_ERROR),json_encode($user['scopes'],JSON_THROW_ON_ERROR),(int)$user['assignedDataOnly']]);
+            query('INSERT IGNORE INTO external_identity_memberships(identity_id,external_user_row_id) SELECT i.id,eu.id FROM external_users eu JOIN ghl_connections c ON c.id=eu.connection_id JOIN external_identities i ON i.tenant_id=c.tenant_id AND i.email=eu.email WHERE eu.connection_id=? AND eu.email IS NOT NULL',[$id]);
             db()->commit();
+            query('UPDATE ghl_sync_state SET users_next_sync_at=?,users_last_success_at=CURRENT_TIMESTAMP,users_last_error=NULL WHERE connection_id=?',[time()+3600,$id]);
         }catch(Throwable $e){if(db()->inTransaction())db()->rollBack();throw $e;}
         return ['count'=>count($normalized),'active'=>count($normalized)];
     }

@@ -19,6 +19,7 @@ try {
  foreach([[$tenants[0],'own','seller-1'],[$tenants[0],'other','seller-2'],[$tenants[1],'foreign','seller-1']] as [$t,$id,$assigned]) query('INSERT INTO resources(tenant_id,kind,ghl_id,assigned_to,payload) VALUES(?,?,?,?,?)',[$t,'conversation',$id,$assigned,'{}']);
  check(request('conversations')[0]===401,'anonymous inbox denied');
  check(request('admin/diagnostics')[0]===401,'installation diagnostics require authentication');
+ check(request('team-login/request','POST',['email'=>'unknown-'.$suffix.'@example.test'])[0]===202,'team login request does not reveal whether an email exists');
  check(request('login','POST',['email'=>$email,'password'=>'wrong'])[0]===401,'wrong password denied');
  [$code,$login]=request('login','POST',['email'=>$email,'password'=>$password]);check($code===200 && isset($login['csrf']),'login and CSRF token');
  [$code,$inbox]=request('conversations');check($code===200 && count($inbox['items'])===1 && $inbox['items'][0]['id']==='own','seller assignment and tenant isolation');
@@ -32,10 +33,10 @@ try {
  $token='pit-test-'.bin2hex(random_bytes(16));
  $headers=['X-CSRF-Token: '.$login['csrf']];
  [$code,$diagnostics]=request('admin/diagnostics');
- check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.6.0','administrator sees installation readiness and version');
+ check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.7.0','administrator sees installation readiness and version');
  check(!str_contains(json_encode($diagnostics),'APP_KEY_FILE')&&!str_contains(json_encode($diagnostics),'integration.key'),'diagnostics expose no configuration values or key paths');
  check(request('admin/installation/encryption','POST')[0]===403,'preparation requires CSRF');
- [$code,$profile]=request('me');check($code===200&&!array_key_exists('ghl_user_id',$profile['user']),'public profile omits provider-specific fields');
+ [$code,$profile]=request('me');check($code===200&&!array_key_exists('ghl_user_id',$profile['user'])&&$profile['user']['capabilities']['configureConnections'],'public profile exposes capabilities without provider-specific fields');
 
  [$code,$saved]=request('admin/integrations','POST',['name'=>'Test connection','locationId'=>'loc-'.$suffix,'token'=>$token,'syncIntervalSeconds'=>120],$headers);
  check($code===201 && !str_contains(json_encode($saved),$token),'administrator saves integration without token response');
@@ -99,5 +100,6 @@ try {
 } finally {
  foreach($tenants as $t){foreach(['notifications','resources','webhook_events','ghl_connections','users','tenants'] as $table)query('DELETE FROM '.$table.' WHERE '.($table==='tenants'?'id':'tenant_id').'=?',[$t]);}
  query('DELETE FROM login_attempts WHERE key_hash=?',[hash('sha256','127.0.0.1|'.$email)]);
+ query('DELETE FROM login_attempts WHERE key_hash=?',[hash('sha256','127.0.0.1|external-request|unknown-'.$suffix.'@example.test')]);
  unlink($cookie);
 }

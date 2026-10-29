@@ -127,7 +127,7 @@ export async function renderLiveInbox(container){
    const connection=select.value,requested=limit.value;button.disabled=true;select.disabled=true;limit.disabled=true;
    if(!automatic)feedback.textContent='Actualizando conversaciones…';
    let changed=false;
-   try{await request(`admin/integrations/${connection}/sync?limit=${requested}`,'POST',me.csrf);if(active()&&connection===select.value)changed=await load(true);autoStatus.textContent='Actualización automática activa';}
+   try{await request(`workspace/sync?connectionId=${encodeURIComponent(connection)}&limit=${requested}`,'POST',me.csrf);if(active()&&connection===select.value)changed=await load(true);autoStatus.textContent='Actualización automática activa';}
    catch(e){
     if(e.status===401){container.agoraLiveDispose();autoStatus.textContent='Inicia sesión para reanudar';}
     else {pause=Math.max(pause,Date.now()/1000+(e.retryAfter||interval));if(active()&&connection===select.value)changed=await load(true);if(active())autoStatus.textContent=e.retryAfter?'Actualización automática · En espera para respetar el intervalo':e.message;}
@@ -142,5 +142,5 @@ export async function renderLiveInbox(container){
   button.onclick=()=>sync();limit.onchange=()=>sync();
   await load();schedule(interval);
 
- }catch(e){if(!active())return;container.innerHTML=`<h2>Conversaciones</h2><p class="settings-notice">${esc(e.message)} Inicia sesión como administrador para usar esta primera versión.</p><button id="live-login" class="primary">Iniciar sesión</button>`;container.querySelector('#live-login').onclick=()=>document.querySelector('#connect').click()}
+ }catch(e){if(!active())return;container.innerHTML=`<h2>Conversaciones</h2><p class="settings-notice">${esc(e.message)} Inicia sesión con tu cuenta de equipo.</p><button id="live-login" class="primary">Iniciar sesión</button>`;container.querySelector('#live-login').onclick=()=>document.querySelector('#connect').click()}
 }

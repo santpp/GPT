@@ -27,7 +27,7 @@ with sync_playwright() as p:
         page.route('**/api/**',api)
         page.goto(os.getenv('TEST_BASE_URL','http://127.0.0.1:8080/'))
         page.wait_for_selector('[data-live-id]')
-        assert page.locator('button[data-view="live"]').is_hidden()
+        assert page.locator('button[data-view="live"]').is_visible()
         assert page.locator('button[data-view="inbox"]').get_attribute('class').endswith('active')
         assert page.locator('#inbox-view').is_hidden()
         assert 'Instagram' in page.locator('#live-list').inner_text()

@@ -12,7 +12,7 @@ with sync_playwright() as p:
    req=route.request;url=urlparse(req.url);path=url.path;query=parse_qs(url.query)
    if path=='/api/me':data={'user':{'role':'administrator'},'csrf':'csrf-test'}
    elif path=='/api/workspace/connections':data={'items':[{'id':1,'name':'Cuenta'}]}
-   elif path.startswith('/api/admin/integrations/'):
+   elif path=='/api/workspace/sync':
     assert req.method=='POST' and req.headers['x-csrf-token']=='csrf-test'
     window[0]=int(query['limit'][0]);data={'synced':{'count':window[0]}}
    elif path=='/api/workspace/inbox':data={'limit':window[0],'items':[{'id':'c'+str(i),'contactId':'contact'+str(i),'contactName':'Contacto '+str(i),'lastMessageType':'TYPE_EMAIL' if i==2 else 'TYPE_WHATSAPP'} for i in range(window[0])],'total':130,'syncedAt':'2026-10-28 19:00:00','partial':True}

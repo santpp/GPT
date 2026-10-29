@@ -23,7 +23,7 @@ services:
       MARIADB_USER: workspace
       MARIADB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
       MARIADB_RANDOM_ROOT_PASSWORD: '1'
-    volumes: ["database:/var/lib/mysql", "./database/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro", "./database/002-integrations.sql:/docker-entrypoint-initdb.d/002-integrations.sql:ro", "./database/003-api-sync.sql:/docker-entrypoint-initdb.d/003-api-sync.sql:ro", "./database/004-messaging.sql:/docker-entrypoint-initdb.d/004-messaging.sql:ro", "./database/005-message-cache.sql:/docker-entrypoint-initdb.d/005-message-cache.sql:ro", "./database/006-external-users.sql:/docker-entrypoint-initdb.d/006-external-users.sql:ro"]
+    volumes: ["database:/var/lib/mysql", "./database/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro", "./database/002-integrations.sql:/docker-entrypoint-initdb.d/002-integrations.sql:ro", "./database/003-api-sync.sql:/docker-entrypoint-initdb.d/003-api-sync.sql:ro", "./database/004-messaging.sql:/docker-entrypoint-initdb.d/004-messaging.sql:ro", "./database/005-message-cache.sql:/docker-entrypoint-initdb.d/005-message-cache.sql:ro", "./database/006-external-users.sql:/docker-entrypoint-initdb.d/006-external-users.sql:ro", "./database/007-external-auth.sql:/docker-entrypoint-initdb.d/007-external-auth.sql:ro"]
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s

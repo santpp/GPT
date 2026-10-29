@@ -14,6 +14,7 @@ try{
  $directory=new ExternalUserDirectory($gateway);$result=$directory->sync($connection);
  $stored=query('SELECT * FROM external_users WHERE connection_id=?',[$id])->fetch();
  directoryCheck($result['count']===1&&$stored['email']==='ana@example.test'&&(int)$stored['assigned_data_only']===1,'user and assigned-only permission imported');
+ directoryCheck((int)query('SELECT users_next_sync_at>UNIX_TIMESTAMP() AND users_last_success_at IS NOT NULL FROM ghl_sync_state WHERE connection_id=?',[$id])->fetchColumn()===1,'successful team sync schedules the next permission refresh');
  directoryCheck(json_decode($stored['scopes'],true)===['conversations.readonly','conversations/message.readonly'],'invalid scope discarded');
  query('UPDATE ghl_sync_state SET request_not_before=0 WHERE connection_id=?',[$id]);$response=['users'=>[]];$directory->sync($connection);
  directoryCheck((int)query('SELECT active FROM external_users WHERE connection_id=?',[$id])->fetchColumn()===0,'missing upstream user becomes inactive without deletion');

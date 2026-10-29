@@ -71,3 +71,9 @@ Se contrastó además el SDK oficial highlevel-api-sdk (`2b1b8e2bdf50617a330a7bf
 `GET /users/?locationId=…`, Version `2021-07-28`, publica acceso de ubicación con `users.readonly` y devuelve `UserSchema`: ID, email, rol, `PermissionsDto`, scopes y subcuentas. Se usa para proyectar el equipo de cada conexión. La propia documentación lo marca deprecado y recomienda `GET /users/search`; el reemplazo exige `companyId`, por lo que no debe inventarse a partir de Location ID. La migración se hará cuando el ID de agencia esté disponible y validado.
 
 El PIT no ofrece un endpoint para verificar la contraseña de un usuario. La importación de usuarios no se considera autenticación ni crea sesiones. Ágora mantiene una sola cuenta local administrativa y deja preparada una vinculación posterior con un proveedor de identidad verificado. Los permisos importados se filtran a claves booleanas conocidas y scopes de formato seguro; un usuario ausente queda inactivo.
+
+## Acceso sincronizado 0.7.0
+
+La revisión del mismo commit oficial confirma que Authorization Code identifica a quien instala/autoriza una app y que la guía pide intervención de un administrador de agencia o ubicación. No se utiliza como login cotidiano de empleados. El Shared Secret documenta contexto autenticado para Custom JavaScript y Custom Pages ejecutadas dentro de la interfaz original; tampoco autentica una visita directa a Ágora. No hay endpoint público para verificar usuario y contraseña.
+
+Ágora vincula por correo exacto normalizado a los usuarios importados y verifica la posesión mediante código temporal enviado por el backend. Esto permite sincronizar alta, baja, rol, permisos y asignaciones sin almacenar credenciales externas ni presentar el proveedor técnico en la interfaz del cliente.

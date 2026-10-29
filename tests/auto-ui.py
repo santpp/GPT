@@ -13,7 +13,7 @@ with sync_playwright() as p:
   elif path.startswith('workspace/inbox?'):data={'syncIntervalSeconds':60,'limit':20,'items':[{'id':'c1','contactId':'contact','contactName':'Persona de prueba','lastMessageType':'TYPE_WHATSAPP','lastMessageBody':'Actualización '+str(syncs[0]),'unreadCount':syncs[0]}],'total':1,'syncedAt':'2026-10-28 19:00:00'}
   elif path.startswith('workspace/messages?'):
    message_calls[0]+=1;data={'items':[{'id':'m'+str(message_calls[0]),'body':'Mensaje '+str(message_calls[0]),'dateAdded':'2026-10-28T19:00:00Z'}],'hasMore':False}
-  elif path.startswith('admin/integrations/1/sync'):
+  elif path.startswith('workspace/sync?connectionId=1'):
    syncs[0]+=1
    if mode[0]=='quota':route.fulfill(status=429,content_type='application/json',body=json.dumps({'error':'Pausa','retryAfter':180}));return
    data={'synced':{'count':1}}

@@ -25,5 +25,6 @@ def create(path, value):
 create(env, 'APP_HOST=nueva.agoradigital.app\n'
        f'DB_PASSWORD={secrets.token_hex(32)}\n'
        f'DB_ROOT_PASSWORD={secrets.token_hex(32)}\n'
-       'GHL_LOCATION_ID=agora-workspace\n')
+       'GHL_LOCATION_ID=agora-workspace\n'
+       'LOGIN_MAIL_FROM=acceso@nueva.agoradigital.app\n')
 create(key, base64.b64encode(secrets.token_bytes(32)).decode())
