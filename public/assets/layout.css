@@ -168,3 +168,38 @@ body:has(#view[data-view="inbox"]) .topbar{flex-shrink:0;height:58px}
  .live-check{min-height:44px}
  .live-check input{width:22px;height:22px}
 }
+
+/* Focus: the conversation owns the screen. Works the same on a phone held
+   sideways and on a desktop, because it hides chrome rather than resizing. */
+body.agora-focus .sidebar,body.agora-focus .page-heading,body.agora-focus .topbar,body.agora-focus .page-footer{display:none}
+body.agora-focus main{margin:0;padding:0}
+body.agora-focus #view[data-view="inbox"]{min-height:100dvh}
+body.agora-focus .live-toolbar,body.agora-focus .live-feedback,body.agora-focus .live-auto-status{display:none}
+body.agora-focus .live-inbox-layout{grid-template-columns:minmax(0,1fr);border-radius:0;border:0;height:100dvh}
+body.agora-focus .live-sidebar{display:none}
+body.agora-focus #live-messages{display:flex}
+body.agora-focus .live-message-log{max-height:none}
+body.agora-focus .live-contact-panel{display:none}
+body.agora-focus .live-inbox-layout.contact-open .live-contact-panel{display:block;flex:1;overflow:auto}
+body.agora-focus .live-inbox-layout.contact-open #live-messages{display:none}
+body.agora-focus .live-composer{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+#live-focus{font-size:17px}
+/* A phone held sideways has little height: the same trimming helps there too. */
+@media(max-width:1000px) and (orientation:landscape){
+ .page-heading,.page-footer{display:none}
+ .topbar{min-height:48px}
+ .live-inbox-layout.chat-open .live-toolbar,.live-inbox-layout.chat-open .live-feedback{display:none}
+ .live-message-log{min-height:120px}
+ .live-composer textarea{min-height:44px;rows:2}
+}
+/* Channel marks, in each service's own colour when chosen. */
+.live-channels button{position:relative}
+.live-channel-mark{display:inline-grid;place-items:center;width:18px;height:18px}
+.live-channel-mark svg{width:18px;height:18px;display:block}
+.live-channels button.unavailable{opacity:.42;cursor:not-allowed}
+.live-channels button.selected.channel-WhatsApp{border-color:#1faf54;background:#eaf7ef;color:#137a3a}
+.live-channels button.selected.channel-IG{border-color:#c13584;background:#fbeaf4;color:#a32a6e}
+.live-channels button.selected.channel-FB{border-color:#0866ff;background:#e9f1ff;color:#0a57d0}
+.live-channels button.selected.channel-SMS{border-color:#282e49;background:#eceef5;color:#282e49}
+.live-channels button.selected.channel-Email{border-color:var(--green);background:#f7e9ee;color:var(--green)}
+@media(max-width:700px){.live-channel-mark,.live-channel-mark svg{width:20px;height:20px}}

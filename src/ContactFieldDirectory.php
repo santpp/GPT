@@ -28,7 +28,11 @@ final class ContactFieldDirectory {
         $row=query('SELECT payload,UNIX_TIMESTAMP(fetched_at) AS fetched FROM contact_field_cache WHERE connection_id=?',[$connection['id']])->fetch();
         if(!$row||time()-(int)$row['fetched']>=3600)return null;
         $items=json_decode($row['payload'],true);
-        return is_array($items)?$items:null;
+        if(!is_array($items))return null;
+        // A directory stored before field types existed is read as stale, so an
+        // update refetches it instead of offering every field as plain text.
+        foreach($items as $item)if(!is_array($item)||!isset($item['dataType']))return null;
+        return $items;
     }
 
     public function normalize(array $data,array $connection):array {

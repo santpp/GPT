@@ -29,7 +29,19 @@ final class MessageSender {
             if(in_array($type,self::NEEDS_PHONE,true)&&$hasPhone)$allowed[]=$type;
             if(in_array($type,self::NEEDS_EMAIL,true)&&$hasEmail)$allowed[]=$type;
         }
-        return array_map(fn(string $type):array=>['type'=>$type,'label'=>self::LABELS[$type],'needsSubject'=>$type==='Email'],$allowed);
+        // Every channel is published so the panel can show the whole row; the
+        // ones that cannot be used say why instead of silently disappearing.
+        $all=[];
+        foreach(self::LABELS as $type=>$label) {
+            $usable=in_array($type,$allowed,true);
+            $all[]=[
+                'type'=>$type,'label'=>$label,'available'=>$usable,'needsSubject'=>$type==='Email',
+                'reason'=>$usable?null:(in_array($type,self::NEEDS_PHONE,true)?'needs_phone':(in_array($type,self::NEEDS_EMAIL,true)?'needs_email':'needs_thread')),
+            ];
+        }
+        // The thread's own channel leads, then the rest in a stable order.
+        usort($all,fn(array $a,array $b):int=>[$a['type']!==$current,!$a['available']]<=>[$b['type']!==$current,!$b['available']]);
+        return $all;
     }
     public function __construct(private readonly GhlGateway $gateway=new GhlGateway()){}
     public function send(array $connection,array $conversation,array $input):array {
@@ -37,7 +49,7 @@ final class MessageSender {
         $request=$input['requestId']??null;$text=$input['message']??null;
         if(!is_string($request)||!preg_match('/^[A-Za-z0-9_-]{16,64}$/D',$request)||!is_string($text)||trim($text)===''||mb_strlen($text)>4000)throw new SendProblem('invalid_message',422,'Escribe un mensaje de hasta 4.000 caracteres.');
         // The choice is checked against the set the server computes, never trusted.
-        $available=array_column(self::availableChannels($connection,$conversation),'type');
+        $available=array_column(array_values(array_filter(self::availableChannels($connection,$conversation),fn(array $c):bool=>$c['available'])),'type');
         $channel=$input['channel']??null;
         if(!is_string($channel)||!in_array($channel,$available,true))throw new SendProblem('unsupported_channel',422,'Ese canal no está disponible para este contacto.');
         $contact=$conversation['contactId']??null;

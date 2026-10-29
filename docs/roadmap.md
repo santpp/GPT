@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 29 de octubre de 2026. Versión publicada: 0.13.0.
+Estado actualizado: 29 de octubre de 2026. Versión publicada: 0.14.0.
 
 ## Completado y desplegable
 

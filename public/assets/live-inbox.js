@@ -28,6 +28,7 @@ export async function renderLiveInbox(container){
   const select={get value(){return workspace.current()},set disabled(v){}};
   if(!items.length){feedback.textContent='Añade una cuenta desde Conexiones para empezar.';return}
   let disposed=false,timer=null,chatTimer=null,pollTimer=null,interval=120,pause=0,syncBusy=false,messageBusy=0,chatNeedsRefresh=false;
+  try{if(localStorage.getItem('agora-focus')==='1')document.body.classList.add('agora-focus')}catch{}
   const canRefresh=()=>active()&&!disposed&&!document.hidden&&navigator.onLine;
   const autoStatus=$('#live-auto-status');
   function schedule(seconds=interval){clearTimeout(timer);if(!canRefresh())return;timer=setTimeout(tick,Math.max(1,seconds)*1000)}
@@ -38,7 +39,7 @@ export async function renderLiveInbox(container){
    await page(false,true);
   }
   function wake(){clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);if(canRefresh()){autoStatus.textContent=selected?'Chat activo · actualización frecuente':'Actualización automática activa';schedule(Math.max(1,pause-Date.now()/1000));scheduleChat(1)}else autoStatus.textContent=navigator.onLine?'Actualización pausada mientras la pantalla está oculta':'Sin conexión · Se reanudará automáticamente'}
-  container.agoraLiveDispose=()=>{disposed=true;clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);document.removeEventListener('visibilitychange',wake);window.removeEventListener('online',wake);window.removeEventListener('offline',wake)};
+  container.agoraLiveDispose=()=>{disposed=true;document.body.classList.remove('agora-focus');clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);document.removeEventListener('visibilitychange',wake);window.removeEventListener('online',wake);window.removeEventListener('offline',wake)};
   document.addEventListener('visibilitychange',wake);window.addEventListener('online',wake);window.addEventListener('offline',wake);
   async function tick(){if(!canRefresh())return;if(syncBusy||messageBusy||[...drafts.values()].some(d=>d.sending)){schedule(5);return}if(pause>Date.now()/1000){schedule(pause-Date.now()/1000);return}await sync(true)}
   let generation=0, chatGeneration=0, conversations=[], selected=null, filter='all', messages=new Map(), cursor=null, chatChannel=null, chatChannels=null;
@@ -70,16 +71,33 @@ export async function renderLiveInbox(container){
    finally{messageBusy--;if(active()&&current===chatGeneration){more.disabled=false;if(refresh)scheduleChat(effectiveChatDelay())}}
   }
   function effectiveChatDelay(){return Math.max(10,pause-Date.now()/1000)}
-  const channelMarks={SMS:'✉',WhatsApp:'◉',IG:'◌',FB:'◍',Email:'✎'};
+  // Simple marks drawn here, not official brand artwork: enough to recognise the
+  // channel at a glance without redistributing anyone's logo files.
+  const channelMarks={
+   WhatsApp:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.6 7.9c.3-.1.7 0 .9.4l.7 1.4c.1.3.1.6-.1.8l-.5.6c-.1.2-.2.4 0 .7.5.9 1.3 1.7 2.2 2.2.3.2.5.1.7 0l.6-.5c.2-.2.5-.2.8-.1l1.4.7c.4.2.5.6.4.9-.3.8-1.1 1.3-2 1.2-3-.3-5.6-2.9-5.9-5.9-.1-.9.4-1.7 1.2-2Z" fill="currentColor"/></svg>',
+   IG:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5.2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="4.1" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="17.2" cy="6.8" r="1.25" fill="currentColor"/></svg>',
+   FB:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6c-5.3 0-9.4 3.9-9.4 9 0 2.9 1.3 5.4 3.5 7.1v3.6l3.2-1.8c.9.2 1.8.4 2.7.4 5.3 0 9.4-3.9 9.4-9s-4.1-9.3-9.4-9.3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m6.9 14.3 3.5-3.7 1.9 1.9 3-1.9-3.5 3.7-1.9-1.9-3 1.9Z" fill="currentColor"/></svg>',
+   SMS:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.8h16a1.2 1.2 0 0 1 1.2 1.2v9.6a1.2 1.2 0 0 1-1.2 1.2H9.2L4.6 20.4V16.8H4A1.2 1.2 0 0 1 2.8 15.6V6A1.2 1.2 0 0 1 4 4.8Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="8.4" cy="10.8" r="1.1" fill="currentColor"/><circle cx="12" cy="10.8" r="1.1" fill="currentColor"/><circle cx="15.6" cy="10.8" r="1.1" fill="currentColor"/></svg>',
+   Email:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.8" y="5" width="18.4" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="m3.4 6.6 8.6 6 8.6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+  };
+  const CHANNEL_REASONS={needs_phone:'Este contacto no tiene teléfono en su ficha.',needs_email:'Este contacto no tiene correo en su ficha.',needs_thread:'Sólo se puede responder por aquí si el contacto escribió primero.'};
   const threadChannel=c=>sendChannels[c.lastMessageType]
     ? [{type:sendChannels[c.lastMessageType],label:channel(c.lastMessageType),needsSubject:sendChannels[c.lastMessageType]==='Email'}] : [];
-  const pickerMarkup=offered=>offered.length>1
-    ? offered.map(o=>`<button type="button" data-channel="${esc(o.type)}" class="${o.type===chatChannel?'selected':''}" aria-pressed="${o.type===chatChannel}"><span aria-hidden="true">${channelMarks[o.type]||'◦'}</span>${esc(o.label)}</button>`).join('')
-    : `<p class="live-channel-single">${esc(offered[0]?.label??'')} · Texto</p>`;
+  const usableChannels=offered=>asList(offered).filter(o=>o.available!==false);
+  const pickerMarkup=offered=>{
+   const list=asList(offered);
+   if(list.length<2&&!list.some(o=>o.available===false))return `<p class="live-channel-single">${esc(list[0]?.label??'')} · Texto</p>`;
+   return list.map(o=>{
+    const off=o.available===false;
+    const title=off?` title="${esc(CHANNEL_REASONS[o.reason]||'No disponible para este contacto.')}"`:'';
+    return `<button type="button" data-channel="${esc(o.type)}" class="channel-${esc(o.type)}${o.type===chatChannel&&!off?' selected':''}${off?' unavailable':''}"${off?' disabled aria-disabled="true"':''} aria-pressed="${o.type===chatChannel&&!off}"${title}><span class="live-channel-mark" aria-hidden="true">${channelMarks[o.type]||''}</span><span class="live-channel-label">${esc(o.label)}</span></button>`;
+   }).join('');
+  };
   function composer(c,channels=null){
    const offered=channels??threadChannel(c);
-   if(!offered.length||!c.contactId)return '<p class="live-readonly">Este canal todavía no admite respuestas desde aquí.</p>';
-   const chosen=offered.find(o=>o.type===chatChannel)||offered[0];
+   const usable=usableChannels(offered);
+   if(!usable.length||!c.contactId)return '<p class="live-readonly">Este canal todavía no admite respuestas desde aquí.</p>';
+   const chosen=usable.find(o=>o.type===chatChannel)||usable[0];
    chatChannel=chosen.type;
    return `<form id="live-composer" class="live-composer"><div class="live-channels" id="live-channel-row" role="group" aria-label="Canal de envío">${pickerMarkup(offered)}</div><div id="live-subject-slot">${chosen.needsSubject?'<label class="live-subject-field">Asunto<input id="live-subject" maxlength="200" required></label>':''}</div><label class="sr-only" for="live-reply">Respuesta</label><textarea id="live-reply" maxlength="4000" rows="3" required placeholder="Escribe una respuesta…"></textarea><div><span id="live-channel-name">${esc(chosen.label)}</span><button id="live-send" class="primary">Enviar</button></div><p id="live-send-status" role="status"></p></form>`;
   }
@@ -90,11 +108,12 @@ export async function renderLiveInbox(container){
    */
   function applyChannels(c,offered,draft){
    const row=$('#live-channel-row');if(!row)return;
-   const chosen=offered.find(o=>o.type===chatChannel)||offered[0];
+   const usable=usableChannels(offered);
+   const chosen=usable.find(o=>o.type===chatChannel)||usable[0];
    if(!chosen)return;
    chatChannel=chosen.type;
    row.innerHTML=pickerMarkup(offered);
-   row.classList.toggle('live-channels-single',offered.length<2);
+   row.classList.toggle('live-channels-single',asList(offered).length<2);
    const name=$('#live-channel-name');if(name)name.textContent=chosen.label;
    const slot=$('#live-subject-slot');
    if(slot){
@@ -104,7 +123,7 @@ export async function renderLiveInbox(container){
     const topic=$('#live-subject');
     if(topic){topic.value=draft.subject;topic.disabled=draft.sending;topic.oninput=()=>draft.subject=topic.value}
    }
-   row.querySelectorAll('[data-channel]').forEach(button=>button.onclick=()=>{
+   row.querySelectorAll('[data-channel]:not([disabled])').forEach(button=>button.onclick=()=>{
     if(draft.sending||button.dataset.channel===chatChannel)return;
     chatChannel=button.dataset.channel;draft.notice='';
     applyChannels(c,offered,draft);
@@ -209,7 +228,7 @@ export async function renderLiveInbox(container){
   function contactProfile(profile,labels={},opportunities=null,activity=null){
    const details=[['Teléfono',profile.phone],['Email',profile.email],['Empresa',profile.companyName],['Sitio web',profile.website],['Fuente',profile.source],['Responsable',profile.assignedName],['Última actividad',date(profile.lastActivity)],['Alta',date(profile.dateAdded)],['Nacimiento',profile.dateOfBirth],['Zona horaria',profile.timezone],['Dirección',profile.address],['No contactar',profile.dnd?'Sí':null]].filter(([,value])=>value);
    const phone=String(profile.phone||'').replace(/[^0-9+]/g,'');
-   return `<header class="live-profile-header"><div><span class="section-label">CONTEXTO DEL CONTACTO</span><h2>${esc(profile.name)}</h2></div><div class="live-profile-controls">${profile.canEdit?'<button id="live-edit-contact">Editar</button>':''}<button id="live-profile-close" aria-label="Cerrar ficha">×</button></div></header>${phone||profile.email?`<div class="live-profile-actions">${phone?`<a href="tel:${esc(phone)}">Llamar</a>`:''}${profile.email?`<a href="mailto:${encodeURIComponent(profile.email)}">Email</a>`:''}</div>`:''}<div class="live-profile-details">${details.map(([label,value])=>`<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div><div class="section-label">ETIQUETAS</div><div class="live-profile-tags">${profile.tags?.length?profile.tags.map(tag=>`<span class="tag">${esc(tag)}</span>`).join(''):'<span class="muted">Sin etiquetas</span>'}</div><div class="section-label">CAMPOS PERSONALIZADOS</div><div class="live-profile-fields">${asList(profile.customFields).filter(field=>field.value!==''&&field.value!=null).map(field=>`<div><span>${esc(labels[field.id]||field.label)}</span><strong>${esc(field.value)}</strong></div>`).join('')||'<span class="muted">Sin campos con valor</span>'}</div><div class="section-label">OPORTUNIDAD ACTIVA</div><div class="live-profile-opportunities">${opportunitySection(opportunities)}</div><div class="live-profile-activity">${activitySection(activity)}</div>`;
+   return `<header class="live-profile-header"><div><span class="section-label">CONTEXTO DEL CONTACTO</span><h2>${esc(profile.name)}</h2></div><div class="live-profile-controls">${profile.canEdit?'<button id="live-edit-contact">Editar</button>':''}<button id="live-profile-close" aria-label="Cerrar ficha">×</button></div></header>${profile.email?`<div class="live-profile-actions"><a href="mailto:${encodeURIComponent(profile.email)}">Escribir por correo</a></div>`:''}<div class="live-profile-details">${details.map(([label,value])=>`<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div><div class="section-label">ETIQUETAS</div><div class="live-profile-tags">${profile.tags?.length?profile.tags.map(tag=>`<span class="tag">${esc(tag)}</span>`).join(''):'<span class="muted">Sin etiquetas</span>'}</div><div class="section-label">CAMPOS PERSONALIZADOS</div><div class="live-profile-fields">${asList(profile.customFields).filter(field=>field.value!==''&&field.value!=null).map(field=>`<div><span>${esc(labels[field.id]||field.label)}</span><strong>${esc(field.value)}</strong></div>`).join('')||'<span class="muted">Sin campos con valor</span>'}</div><div class="section-label">OPORTUNIDAD ACTIVA</div><div class="live-profile-opportunities">${opportunitySection(opportunities)}</div><div class="live-profile-activity">${activitySection(activity)}</div>`;
   }
   async function loadContact(c,version){
    const panel=$('#live-contact-panel');panel.innerHTML='<p class="empty">Cargando ficha…</p>';
@@ -371,10 +390,16 @@ export async function renderLiveInbox(container){
   }
   function open(c){
    selected=c;chatNeedsRefresh=false;chatGeneration++;messages=new Map();cursor=null;chatChannel=sendChannels[c.lastMessageType]||null;chatChannels=null;list();layout.classList.add('chat-open');layout.classList.remove('contact-open');
-   $('#live-messages').innerHTML=`<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">←</button><span class="avatar">${esc(initials(c))}</span><div><h2>${esc(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div><button id="live-contact-toggle" aria-label="Ver ficha del contacto">ⓘ</button></header><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
-   $('#live-back').onclick=()=>{clearTimeout(pollTimer);layout.classList.remove('chat-open','contact-open');autoStatus.textContent='Actualización automática activa';$('#live-search').focus()};
+   $('#live-messages').innerHTML=`<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">←</button><span class="avatar">${esc(initials(c))}</span><div><h2>${esc(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div><button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">⤢</button><button id="live-contact-toggle" aria-label="Ver ficha del contacto">ⓘ</button></header><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
+   $('#live-back').onclick=()=>{clearTimeout(pollTimer);document.body.classList.remove('agora-focus');layout.classList.remove('chat-open','contact-open');autoStatus.textContent='Actualización automática activa';$('#live-search').focus()};
    $('#live-contact-toggle').onclick=()=>layout.classList.toggle('contact-open');
-   $('#live-older').onclick=()=>page(true);bindComposer(c);const profileVersion=chatGeneration;page().finally(()=>{if(active()&&profileVersion===chatGeneration)loadContact(c,profileVersion)});
+   $('#live-older').onclick=()=>page(true);
+   const focus=$('#live-focus');
+   // Focus hides the menu and the list so the conversation owns the screen.
+   const paintFocus=()=>{const on=document.body.classList.contains('agora-focus');focus.textContent=on?'⤡':'⤢';focus.setAttribute('aria-label',on?'Reducir la conversación':'Ampliar la conversación');focus.title=focus.getAttribute('aria-label')};
+   focus.onclick=()=>{document.body.classList.toggle('agora-focus');try{localStorage.setItem('agora-focus',document.body.classList.contains('agora-focus')?'1':'0')}catch{}paintFocus()};
+   paintFocus();
+   bindComposer(c);const profileVersion=chatGeneration;page().finally(()=>{if(active()&&profileVersion===chatGeneration)loadContact(c,profileVersion)});
    autoStatus.textContent='Chat activo · actualización cada 10 segundos';scheduleChat();
   }
   async function load(preserve=false){

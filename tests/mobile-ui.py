@@ -50,9 +50,25 @@ with sync_playwright() as p:
     assert page.evaluate("getComputedStyle(document.querySelector('.live-composer textarea')).fontSize")=='16px'
     print(f'PASS chat uses the screen: log {int(box["height"])}px, composer reachable, no zoom on focus')
 
+    # Focus hides the menu and the list so the conversation owns the screen.
+    before=page.locator('#live-log').bounding_box()['height']
+    page.locator('#live-focus').click()
+    page.wait_for_timeout(250)
+    assert page.locator('.sidebar').is_hidden(), 'the menu bar is hidden in focus'
+    assert page.locator('.live-sidebar').is_hidden(), 'the conversation list is hidden in focus'
+    after=page.locator('#live-log').bounding_box()['height']
+    assert after>before, f'the log should grow in focus: {before} -> {after}'
+    no_overflow('focus')
+    targets('focus','.live-chat-header button')
+    page.locator('#live-focus').click()
+    page.wait_for_timeout(250)
+    assert page.locator('.sidebar').is_visible(), 'leaving focus brings the menu back'
+    print(f'PASS focus mode hides menu and list, log grows {int(before)} to {int(after)}px')
+
     page.locator('#live-contact-toggle').click()
     page.wait_for_selector('#live-contact-panel .live-profile-details')
     no_overflow('contact sheet');targets('contact sheet','.live-profile-actions a')
+    assert page.locator('#live-contact-panel a[href^="tel:"]').count()==0, 'the call action is gone'
     print('PASS contact sheet fits and its actions are tappable')
     page.locator('#live-profile-close').click()
 

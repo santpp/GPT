@@ -203,3 +203,13 @@ La ficha publica además `address1`, `city`, `state`, `postalCode`, `country`, `
 Al escribir: `UpdateContactDto` admite `dnd` booleano y `assignedTo` con el identificador de un usuario. Ágora sólo acepta como responsable a un integrante importado y activo de esa misma cuenta, comprobado contra el equipo ya sincronizado; cualquier otro identificador se rechaza antes de salir. `dateOfBirth` se documenta con seis formatos admitidos (`YYYY/MM/DD`, `MM/DD/YYYY`, `YYYY-MM-DD`, `MM-DD-YYYY`, `YYYY.MM.DD` y otro más); Ágora acepta únicamente una fecha de calendario real en `YYYY-MM-DD` y la envía así, en vez de adivinar cuál interpreta la cuenta.
 
 `field_value` no es siempre una cadena: `TextField` y `LargeTextField` lo declaran string y `NumericField` lo declara object. Ágora conserva la forma de cada control: un número se envía como número, una casilla como booleano, una selección múltiple como lista y el resto como texto.
+
+## Fila completa de canales 0.14.0
+
+`availableChannels` pasa a publicar **todos** los canales de texto que `SendMessageBodyDto` enumera y que Ágora sabe manejar (`WhatsApp`, `SMS`, `IG`, `FB`, `Email`), cada uno con `available` y, cuando no lo está, el motivo: `needs_phone`, `needs_email` o `needs_thread`. La interfaz los muestra todos, como hace el producto original, y sólo deja elegir los utilizables. El criterio no cambia: el canal del propio hilo siempre; teléfono en la ficha abre SMS y WhatsApp; correo abre Email; Instagram y Messenger sólo si son el hilo, porque la especificación no documenta forma de iniciarlos. El envío sigue comprobando contra el subconjunto utilizable, de modo que un canal deshabilitado no puede forzarse desde el navegador.
+
+Los iconos de canal son dibujos propios en SVG, no los archivos de marca de cada servicio: identifican el canal sin redistribuir material de terceros.
+
+## Directorio de campos: caché fría y caché antigua 0.14.0
+
+El panel recibía el directorio de campos sólo si estaba en caché. Con la caché fría o caducada llegaba vacío, y como `GET /contacts/{contactId}` sólo devuelve los campos personalizados **con valor**, el formulario de edición se quedaba sin ninguno: justamente el caso que la versión anterior pretendía resolver. Ahora, si falta, el directorio se pide en ese momento (una petición por hora como mucho) y sólo un fallo real lo deja vacío. Además, una caché guardada por versiones anteriores a 0.13.0, sin `dataType`, se considera caducada, de modo que al actualizar se vuelve a pedir en lugar de ofrecer todos los campos como texto plano.

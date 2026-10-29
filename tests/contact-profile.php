@@ -28,6 +28,12 @@ try{
  $fields=(new ContactFieldDirectory($fieldGateway))->get($connection);
  contactCheck(count($fields)===1&&$fields[0]['id']==='field-1'&&$fields[0]['name']==='Tipo de consulta'&&$fieldCalls===1,'contact field names normalized and opportunity fields excluded');
  contactCheck($fields[0]['dataType']==='SINGLE_OPTIONS'&&$fields[0]['options']===['Precio','Soporte'],'the field carries its type and its options, so it can be edited');
+
+ // A directory stored before field types existed must not be served as current.
+ query('UPDATE contact_field_cache SET payload=? WHERE connection_id=?',[json_encode([['id'=>'field-1','name'=>'Antiguo']]),$connectionId]);
+ contactCheck((new ContactFieldDirectory($fieldGateway))->cached($connection)===null,'a directory saved before field types is read as stale');
+ query('DELETE FROM contact_field_cache WHERE connection_id=?',[$connectionId]);
+ contactCheck((new ContactFieldDirectory($fieldGateway))->cached($connection)===null,'an empty directory cache reports nothing instead of an empty list');
  query('UPDATE ghl_sync_state SET request_not_before=0 WHERE connection_id=?',[$connectionId]);$response['contact']['locationId']='foreign';$failed=false;
  try{$service->get($connection,'contact-1',true);}catch(RuntimeException $e){$failed=true;}
  contactCheck($failed&&json_decode(query('SELECT payload FROM contact_profile_cache WHERE connection_id=? AND contact_id=?',[$connectionId,'contact-1'])->fetchColumn(),true)['name']==='Cliente Uno','mismatched response cannot replace cached profile');

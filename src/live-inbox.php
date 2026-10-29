@@ -39,13 +39,22 @@ if($path==='/api/workspace/contact'&&$method==='GET'){
     try{
         $profile=(new ContactProfile())->get($connection,$contactId,($_GET['refresh']??'')==='1');
         $canEdit=($membership['capabilities']['editContacts']??false)===true;
+        $directory=new ContactFieldDirectory();
+        $fieldDirectory=$directory->cached($connection);
+        if($fieldDirectory===null) {
+            // Costs one request an hour at most, and only a failure leaves it empty.
+            try {$fieldDirectory=$directory->get($connection);}
+            catch(Throwable $e){$fieldDirectory=[];}
+        }
         respond([
             'contact'=>$profile,
             'channels'=>($membership['capabilities']['sendMessages']??false)?MessageSender::availableChannels($connection,$known[$position]):[],
             'canEdit'=>$canEdit,
             // The definitions come from the stored directory so the sheet costs no
             // extra request; the separate route refreshes it when it has expired.
-            'fields'=>(new ContactFieldDirectory())->cached($connection)??[],
+            // Definitions must always reach the sheet: an empty directory would
+            // hide every custom field the contact has not filled in yet.
+            'fields'=>$fieldDirectory,
             'assignees'=>$canEdit?query('SELECT external_user_id AS id,display_name AS name FROM external_users WHERE connection_id=? AND active=TRUE ORDER BY display_name',[$connection['id']])->fetchAll():[],
         ]);
     }

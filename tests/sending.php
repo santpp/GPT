@@ -21,7 +21,10 @@ try{
  verifySend(issue(fn()=>$sender->send($connection,array_replace($conversation,['locationId'=>'foreign']),$input))==='invalid_contact','foreign destination refused');
 
  // ---- the channel selector is computed by the server, not offered by the browser
- verifySend(array_column(MessageSender::availableChannels($connection,$conversation),'type')===['WhatsApp'],'without a known contact record only the thread channel is offered');
+ $cold=MessageSender::availableChannels($connection,$conversation);
+ verifySend(count($cold)===5&&array_column($cold,'type')===['WhatsApp','SMS','IG','FB','Email'],'every channel is published so the row can show them all');
+ verifySend(array_column($cold,'available')===[true,false,false,false,false],'without a known contact record only the thread channel can be used');
+ verifySend($cold[1]['reason']==='needs_phone'&&$cold[4]['reason']==='needs_email'&&$cold[2]['reason']==='needs_thread','each unusable channel says what it is missing');
  verifySend(issue(fn()=>$sender->send($connection,$conversation,array_replace($input,['requestId'=>str_repeat('s',32),'channel'=>'SMS'])))==='unsupported_channel','a channel the contact cannot receive is refused');
  verifySend(issue(fn()=>$sender->send($connection,$conversation,array_replace($input,['requestId'=>str_repeat('s',32),'channel'=>'Telepatia'])))==='unsupported_channel','an invented channel is refused');
 
@@ -29,8 +32,11 @@ try{
  query('INSERT INTO contact_profile_cache(connection_id,contact_id,payload) VALUES(?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload),fetched_at=CURRENT_TIMESTAMP',
   [$id,'contact',json_encode(['id'=>'contact','name'=>'Richard','phone'=>'+584142736522','email'=>'richard@example.test'])]);
  $offered=MessageSender::availableChannels($connection,$conversation);
- verifySend(array_column($offered,'type')===['WhatsApp','SMS','Email'],'a phone opens SMS and WhatsApp, an address opens Email, thread channel first');
- verifySend($offered[2]['needsSubject']===true&&$offered[0]['needsSubject']===false&&$offered[1]['label']==='SMS','the panel is told which channel needs a subject');
+ $usable=array_values(array_filter($offered,fn($c)=>$c['available']));
+ verifySend(array_column($usable,'type')===['WhatsApp','SMS','Email'],'a phone opens SMS and WhatsApp, an address opens Email, thread channel first');
+ verifySend(array_column($offered,'type')===['WhatsApp','SMS','Email','IG','FB'],'usable channels lead the row and the rest follow');
+ $byType=array_column($offered,null,'type');
+ verifySend($byType['Email']['needsSubject']===true&&$byType['WhatsApp']['needsSubject']===false&&$byType['SMS']['label']==='SMS','the panel is told which channel needs a subject');
  query('UPDATE ghl_sync_state SET request_not_before=0,rate_window_start=0,rate_window_count=0 WHERE connection_id=?',[$id]);
  $switched=$sender->send($connection,$conversation,['requestId'=>str_repeat('z',32),'message'=>'Te escribo por aquí','channel'=>'SMS']);
  verifySend($switched['state']==='accepted','a thread opened on one channel can be answered on another the contact has');
@@ -39,8 +45,10 @@ try{
  query('INSERT INTO contact_profile_cache(connection_id,contact_id,payload) VALUES(?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload)',
   [$id,'solo-ig',json_encode(['id'=>'solo-ig','name'=>'Richard','phone'=>null,'email'=>null])]);
  $instagram=MessageSender::availableChannels($connection,['id'=>'c2','contactId'=>'solo-ig','locationId'=>$location,'lastMessageType'=>'TYPE_INSTAGRAM']);
- verifySend(array_column($instagram,'type')===['IG']&&$instagram[0]['label']==='Instagram','a social thread without phone or address offers only itself, with its real name');
- verifySend(MessageSender::availableChannels($connection,['id'=>'c3','contactId'=>'solo-ig','locationId'=>$location,'lastMessageType'=>'TYPE_CALL'])===[],'a channel that cannot be answered offers nothing');
+ $usableIg=array_values(array_filter($instagram,fn($c)=>$c['available']));
+ verifySend(count($usableIg)===1&&$usableIg[0]['type']==='IG'&&$usableIg[0]['label']==='Instagram','a social thread without phone or address can use only itself, with its real name');
+ $noReply=MessageSender::availableChannels($connection,['id'=>'c3','contactId'=>'solo-ig','locationId'=>$location,'lastMessageType'=>'TYPE_CALL']);
+ verifySend(array_filter($noReply,fn($c)=>$c['available'])===[],'a channel that cannot be answered leaves every option disabled');
  query('UPDATE ghl_sync_state SET request_not_before=0,rate_window_start=0,rate_window_count=0 WHERE connection_id=?',[$id]);
  $input['requestId']=str_repeat('b',32);$input['message']='Second';
  // An exhausted burst window must stop the send before it reaches the channel.

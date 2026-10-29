@@ -20,7 +20,11 @@ with sync_playwright() as p:
    elif path=='/api/workspace/messages':data={'items':[],'hasMore':False}
    elif path=='/api/workspace/contact':
     data={'contact':{'name':'Contacto 0','phone':'+34123456789','email':'c0@example.test','tags':[],'customFields':[]},'canEdit':False,
-          'channels':[{'type':'WhatsApp','label':'WhatsApp','needsSubject':False},{'type':'SMS','label':'SMS','needsSubject':False},{'type':'Email','label':'Email','needsSubject':True}]}
+          'channels':[{'type':'WhatsApp','label':'WhatsApp','available':True,'needsSubject':False,'reason':None},
+                      {'type':'SMS','label':'SMS','available':True,'needsSubject':False,'reason':None},
+                      {'type':'Email','label':'Email','available':True,'needsSubject':True,'reason':None},
+                      {'type':'IG','label':'Instagram','available':False,'needsSubject':False,'reason':'needs_thread'},
+                      {'type':'FB','label':'Messenger','available':False,'needsSubject':False,'reason':'needs_thread'}]}
    elif path=='/api/workspace/send':
     body=req.post_data_json;sent.append(body)
     assert req.method=='POST' and req.headers['x-csrf-token']=='csrf-test'
@@ -82,7 +86,13 @@ with sync_playwright() as p:
   page.locator('[data-live-id="c0"]').evaluate('(n)=>n.click()')
   page.wait_for_selector('#live-composer [data-channel="SMS"]',state='attached')
   offered=page.locator('#live-composer [data-channel]').evaluate_all('ns=>ns.map(n=>n.dataset.channel)')
-  assert offered==['WhatsApp','SMS','Email'], offered
+  assert offered==['WhatsApp','SMS','Email','IG','FB'], offered
+  # Unavailable channels are shown but cannot be chosen, and say why.
+  assert page.locator('#live-composer [data-channel="IG"]').evaluate('(n)=>n.disabled')
+  assert 'escribió primero' in page.locator('#live-composer [data-channel="IG"]').get_attribute('title')
+  assert page.locator('#live-composer [data-channel="WhatsApp"] svg').count()==1, 'each channel carries its own mark'
+  assert page.locator('#live-composer [data-channel="IG"]').evaluate('(n)=>n.click()') is None
+  assert page.locator('#live-composer [data-channel="WhatsApp"]').evaluate('(n)=>n.classList.contains("selected")'), 'a disabled channel cannot steal the selection'
   assert page.locator('#live-composer [data-channel="WhatsApp"]').evaluate('(n)=>n.classList.contains("selected")'), 'the thread channel starts selected'
   page.locator('#live-reply').evaluate("(n)=>{n.value='Te escribo por aqui';n.dispatchEvent(new Event('input'))}")
   page.locator('#live-composer [data-channel="Email"]').evaluate('(n)=>n.click()')
