@@ -4,6 +4,7 @@ declare(strict_types=1);
 if($u['role']!=='administrator')respond(['error'=>'Inbox conectado disponible por ahora sólo para el administrador'],403);
 require_once __DIR__.'/InboxSync.php';
 require_once __DIR__.'/MessageHistory.php';
+require_once __DIR__.'/MessageFeed.php';
 if(in_array($path,['/api/workspace/connections','/api/ghl/connections'],true) && $method==='GET') {
     respond(['items'=>query('SELECT id,name,location_id,status FROM ghl_connections WHERE tenant_id=? ORDER BY id',[$u['tenant_id']])->fetchAll()]);
 }
@@ -31,10 +32,10 @@ if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $met
     try {$cursor=MessageHistory::cursor($_GET['lastMessageId']??null);}
     catch(InvalidArgumentException $e){respond(['error'=>'Referencia de historial inválida'],422);}
     try {
-        $data=(new GhlGateway())->execute($connection,fn(GhlClient $client)=>$client->conversationMessages($conversation,$cursor));
-        respond(MessageHistory::page($data,$conversation,$connection['location_id'],$cursor));
+        $feed=new MessageFeed();
+        respond($cursor?$feed->older($connection,$conversation,$cursor):$feed->recent($connection,$conversation,($_GET['refresh']??'')==='1'));
     } catch(GhlCooldown $e) {header('Retry-After: '.$e->retryAfter);respond(['error'=>'Consulta pausada para respetar la cuota. Vuelve a intentarlo más tarde.','retryAfter'=>$e->retryAfter],429);}
-    catch(GhlApiException $e){respond(['error'=>'No se pudieron leer los mensajes. Código del canal: '.$e->status.'. Revisa los permisos de lectura.','code'=>'messages_upstream_'.$e->status],502);}
-    catch(Throwable $e) {respond(['error'=>'El historial recibido no tiene el formato esperado. Código: messages_invalid_response.','code'=>'messages_invalid_response'],502);}
+    catch(GhlApiException $e){respond(['error'=>'No se pudieron leer los mensajes. Código del canal: '.$e->status.'. Revisa los permisos de lectura.','code'=>'messages_upstream_'.$e->status],424);}
+    catch(Throwable $e) {respond(['error'=>'El historial recibido no tiene el formato esperado. Código: messages_invalid_response.','code'=>'messages_invalid_response'],424);}
 }
 respond(['error'=>'Not found'],404);

@@ -10,7 +10,7 @@ if (!str_starts_with($path, '/api/')) {
 }
 require $appRoot.'/src/bootstrap.php';
 header('X-Content-Type-Options: nosniff');
-header('X-Agora-Version: 0.4.1');
+header('X-Agora-Version: 0.5.0');
 try {
     $method = $_SERVER['REQUEST_METHOD'];
     if ($path === '/api/health' && $method === 'GET') { query('SELECT 1'); respond(['status'=>'ok']); }

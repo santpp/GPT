@@ -26,7 +26,13 @@ Tras comprobar una conexión con locations.readonly, habilitar conversations.rea
 
 ## Límites de esta entrega
 
-No es una importación inicial completa ni una sincronización incremental con historial. El cursor lastMessageId de mensajes se consume bajo demanda desde 0.3.0; se valida su formato, pertenencia a la página y avance. El cursor startAfterDate de búsqueda todavía no se consume: la lista continúa limitada al tamaño seleccionado de 20, 50 o 100 conversaciones. La búsqueda local indica expresamente ese alcance. No se detectan cambios fuera de la ventana reciente. El envío de texto está implementado desde 0.4.0, pendiente de validación por canal real (ver message-sending.md). No hay confirmación de lectura, adjuntos interactivos, SSE o FCM. Desde 0.4.1 la pantalla visible se actualiza al intervalo de la cuenta y pausa al ocultarse o perder conexión. El cron renueva la instantánea de conversaciones; no descarga todo el historial de cada una.
+No es una importación inicial completa. El cursor lastMessageId de mensajes se consume bajo demanda desde 0.3.0; se valida su formato, pertenencia a la página y avance. El cursor startAfterDate de búsqueda todavía no se consume: la lista continúa limitada al tamaño seleccionado de 20, 50 o 100 conversaciones. La búsqueda local indica expresamente ese alcance. No se detectan cambios fuera de la ventana reciente. El envío de texto está implementado desde 0.4.0, pendiente de validación por canal real (ver message-sending.md). No hay confirmación de lectura, adjuntos interactivos, SSE o FCM. Desde 0.5.0 el chat visible consulta mensajes recientes cada 10 segundos mediante una caché compartida de 8 segundos; la lista mantiene el intervalo de la cuenta. El cron renueva la instantánea de conversaciones cuando no hay navegador abierto.
+
+## Chat activo 0.5.0
+
+`conversation_message_cache` guarda sólo la página reciente por conexión y conversación. No mezcla empresas y se elimina en cascada al borrar la conexión. Un bloqueo con nombre evita solicitudes simultáneas; la caché fresca responde a otros dispositivos sin consumir otra llamada. Las páginas antiguas siguen consultándose bajo demanda y no reemplazan la caché reciente.
+
+Algunos registros reales de actividad/canal omiten campos de envoltura que la especificación marca como requeridos. Ágora acepta su ausencia porque el endpoint ya está acotado a una conversación conocida; si `conversationId` o `locationId` están presentes y no coinciden, rechaza toda la página y conserva la caché anterior. Los fallos remotos y de formato se devuelven como JSON con HTTP 424 para que OpenLiteSpeed no sustituya el cuerpo como hacía con 502.
 
 No se han usado tokens reales ni accedido al VPS. Las pruebas de GHL usan transporte inyectado **sólo desde código de prueba**, nunca desde parámetros HTTP. No hay un host/base URL configurable para evitar un proxy arbitrario o SSRF.
 

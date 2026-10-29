@@ -14,5 +14,6 @@ check(rejected(fn()=>MessageHistory::page(array_replace($d,['lastMessageId'=>'un
 check(rejected(fn()=>MessageHistory::cursor(['unexpected'])),'array cursor rejected');
 check(rejected(fn()=>MessageHistory::cursor('../escape')),'path cursor rejected');
 check(MessageHistory::page(['messages'=>[],'nextPage'=>false],'conv','loc',null)['hasMore']===false,'empty last page accepted');
+check(MessageHistory::page(['messages'=>[['id'=>'activity-without-envelope']],'nextPage'=>false],'conv','loc',null)['items'][0]['id']==='activity-without-envelope','real channel record without optional envelope accepted');
 $client=new GhlClient('test',function($path,$version){check($path==='/conversations/conv/messages?limit=20&lastMessageId=m2'&&$version==='2021-04-15','documented endpoint and pagination query');return ['status'=>200,'body'=>'{}'];});
 $client->conversationMessages('conv','m2');

@@ -71,3 +71,5 @@ Compose es sólo desarrollo, con puerto 8080 ligado a loopback y contraseña pú
 Ver [api-sync.md](api-sync.md) para alcance, controles de cuota y pruebas. La comprobación de conexión y las lecturas pasan por GhlGateway. La sincronización es una ventana reciente, no reconciliación completa. Se conserva la demo y se añade Inbox GHL separado, con datos de API sólo para administrador. No se han usado credenciales reales ni probado el VPS.
 
 Respuestas de texto disponibles desde 0.4.0 para administradores mediante el backend, con identificadores persistentes y bloqueo de resultados inciertos. Consultar message-sending.md: contrato mínimo pendiente de validación real por canal, sin promesa de entrega, adjuntos o reintentos offline.
+
+Desde 0.5.0, el chat visible consulta su página reciente cada 10 segundos. `conversation_message_cache` comparte durante 8 segundos la respuesta entre pestañas/dispositivos y un bloqueo evita llamadas simultáneas para la misma conversación. Esto ofrece actualización casi en tiempo real sin webhooks y dentro del presupuesto compartido; no garantiza entrega instantánea ni sustituye FCM cuando la app está cerrada.

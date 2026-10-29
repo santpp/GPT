@@ -1,6 +1,6 @@
 # Ágora Digital · Workspace comercial
 
-**Actualización 0.4.1:** [ZIP sin configuración ni claves](releases/agora-update-0.4.1.zip) · [Pasos sin terminal](deploy/native/UPDATE-0.4.1.md).
+**Actualización 0.5.0:** [ZIP sin configuración ni claves](releases/agora-update-0.5.0.zip) · [Pasos sin terminal](deploy/native/UPDATE-0.5.0.md).
 
 Entrada directa sin depender del menú o de rewrites: `https://nueva.agoradigital.app/conexiones.html`. La URL `/version.json` identifica el paquete instalado.
 
@@ -12,6 +12,7 @@ La integración usa el **Private Integration Token de cada subcuenta**, configur
 
 - [Descargar ZIP para CyberPanel](releases/agora-cyberpanel-php83.zip) — abrir el archivo en GitHub y pulsar **Download raw**.
 - [Arquitectura y alcance actual](docs/architecture.md)
+- [Roadmap actualizado](docs/roadmap.md)
 - [API GHL revisada](docs/ghl-api-review.md)
 - [Identidad del manual](docs/brand.md)
 - [Despliegue actual: CyberPanel nativo, sin Docker](deploy/native/README.md)

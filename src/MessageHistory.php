@@ -10,7 +10,11 @@ final class MessageHistory {
         $items=$data['messages']??null;
         if(!is_array($items)||!array_is_list($items)||count($items)>20)throw new RuntimeException('Invalid messages');
         foreach($items as $message) {
-            if(!is_array($message)||!is_string($message['id']??null)||($message['conversationId']??null)!==$conversation||($message['locationId']??null)!==$location)throw new RuntimeException('Message scope mismatch');
+            if(!is_array($message)||!is_string($message['id']??null))throw new RuntimeException('Invalid message');
+            // Some real channel/activity records omit these optional envelope fields.
+            // When present they must still match the tenant-scoped request.
+            if(isset($message['conversationId'])&&$message['conversationId']!==$conversation)throw new RuntimeException('Conversation mismatch');
+            if(isset($message['locationId'])&&$message['locationId']!==$location)throw new RuntimeException('Location mismatch');
         }
         $next=self::cursor($data['lastMessageId']??null);
         $more=($data['nextPage']??false)===true;
