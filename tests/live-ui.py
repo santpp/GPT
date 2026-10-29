@@ -8,6 +8,8 @@ with sync_playwright() as p:
         context=browser.new_context(viewport={'width':width,'height':844},service_workers='block')
         page=context.new_page();errors=[];calls=[];fail=[True];held=[]
         page.on('pageerror',lambda e:errors.append(str(e)))
+        reads=[]
+        inbox_queries=[]
         saved=[]
         contact={'name':'Ángeles García','phone':'+34123456789','email':'angeles@example.test','source':'Formulario web','assignedName':'Ana Responsable','lastActivity':'2026-10-28T11:00:00Z','tags':['Interesada'],'customFields':[{'id':'f1','label':'Campo personalizado','value':'Precio'}],'address1':'Calle Uno','city':'Caracas','website':'https://example.test','dnd':False,'assignedTo':'u1','dateOfBirth':'1990-04-12'}
         actions=[]
@@ -18,7 +20,22 @@ with sync_playwright() as p:
             if path=='me':data={'user':{'role':'administrator'},'csrf':'test'}
             elif path=='workspace/connections':data={'items':[{'id':1,'name':'Cuenta uno'},{'id':2,'name':'Cuenta dos'}]}
             elif path.startswith('workspace/inbox?'):
-                data={'items':[{'id':'c1','contactName':'Ángeles García','lastMessageBody':'Texto reciente','lastMessageType':'TYPE_INSTAGRAM','unreadCount':3},{'id':'c2','contactName':'Ana','lastMessageBody':'Otro mensaje','lastMessageType':'TYPE_WHATSAPP','unreadCount':0}],'total':40,'partial':True,'syncedAt':'2026-10-28 19:00:00'} if 'connectionId=1' in path else {'items':[],'total':0,'partial':False,'syncedAt':None}
+                import urllib.parse as up
+                q=dict(up.parse_qsl(path.split('?',1)[1]))
+                inbox_queries.append(q)
+                rows=[{'id':'c1','contactName':'Ángeles García','lastMessageBody':'Texto reciente','lastMessageType':'TYPE_INSTAGRAM','unreadCount':3},
+                      {'id':'c2','contactName':'Ana','lastMessageBody':'Otro mensaje','lastMessageType':'TYPE_WHATSAPP','unreadCount':0}] if q.get('connectionId')=='1' else []
+                # The account resolves the filters, exactly as the server does.
+                if q.get('status')=='unread':rows=[r for r in rows if r['unreadCount']>0]
+                if q.get('channel'):rows=[r for r in rows if r['lastMessageType']==q['channel']]
+                if q.get('query'):
+                    import unicodedata
+                    plain=lambda t:''.join(c for c in unicodedata.normalize('NFD',t.lower()) if unicodedata.category(c)!='Mn')
+                    rows=[r for r in rows if plain(q['query']) in plain(r['contactName'])]
+                data={'items':rows,'total':40 if rows else 0,'partial':True,'syncedAt':'2026-10-28T19:00:00Z','stale':False,'reason':None,
+                      'unread':sum(r['unreadCount'] for r in rows),'channels':{'TYPE_INSTAGRAM':'Instagram','TYPE_WHATSAPP':'WhatsApp'},'limit':20}
+            elif path.startswith('workspace/read'):
+                reads.append(path);data={'read':True}
             elif path.startswith('workspace/messages?'):
                 if 'conversationId=c2' in path:
                     held.append(route);return
@@ -26,7 +43,7 @@ with sync_playwright() as p:
                     fail[0]=False;status=429;data={'error':'Consulta pausada','retryAfter':1}
                 elif 'lastMessageId=m2' in path:
                     data={'items':[{'id':'m1','body':'Mensaje anterior','dateAdded':'2026-10-27T10:00:00Z','direction':'inbound'},{'id':'m2','body':'Texto reciente','dateAdded':'2026-10-28T10:00:00Z'}],'hasMore':False}
-                else:data={'items':[{'id':'m2','body':'Texto reciente','dateAdded':'2026-10-28T10:00:00Z'},{'id':'m3','body':'<script>window.injected=true</script>','direction':'outbound','dateAdded':'2026-10-28T11:00:00Z'}],'hasMore':True,'lastMessageId':'m2'}
+                else:data={'items':[{'id':'m2','body':'Texto reciente','dateAdded':'2026-10-28T10:00:00Z'},{'id':'m3','body':'<script>window.injected=true</script>','direction':'outbound','dateAdded':'2026-10-28T11:00:00Z','attachments':['https://cdn.example.test/fotos/propuesta.png','javascript:alert(1)','http://inseguro.example.test/x.pdf','https://cdn.example.test/docs/contrato.pdf']}],'hasMore':True,'lastMessageId':'m2'}
             elif path.startswith('workspace/activity/contact'):
                 saved.append(route.request.post_data_json)
                 contact['name']='Ángeles G. Nueva';contact['tags']=['Interesada','Prioritaria']
@@ -68,12 +85,23 @@ with sync_playwright() as p:
         assert page.locator('#inbox-view').is_hidden()
         assert 'Instagram' in page.locator('#live-list').inner_text()
         assert 'TYPE_' not in page.locator('#live-list').inner_text()
-        count=len(calls)
+        # Search and filters are answered by the account, not by the loaded window.
         page.locator('#live-search').fill('angeles')
-        assert page.locator('[data-live-id]').count()==1
+        page.wait_for_function("document.querySelectorAll('[data-live-id]').length===1")
+        assert inbox_queries[-1].get('query')=='angeles', inbox_queries[-1]
         page.locator('#live-search').fill('')
+        page.wait_for_function("document.querySelectorAll('[data-live-id]').length===2")
         page.locator('[data-live-filter="unread"]').click()
-        assert page.locator('[data-live-id]').count()==1 and len(calls)==count
+        page.wait_for_function("document.querySelectorAll('[data-live-id]').length===1")
+        assert inbox_queries[-1].get('status')=='unread', inbox_queries[-1]
+        page.wait_for_selector('[data-channel-filter="TYPE_WHATSAPP"]',state='attached')
+        page.locator('[data-channel-filter="TYPE_WHATSAPP"]').evaluate('(n)=>n.click()')
+        page.wait_for_function("document.querySelectorAll('[data-live-id]').length===0")
+        assert inbox_queries[-1].get('channel')=='TYPE_WHATSAPP' and inbox_queries[-1].get('status')=='unread', inbox_queries[-1]
+        page.locator('[data-channel-filter=""]').evaluate('(n)=>n.click()')
+        page.locator('[data-live-filter="all"]').click()
+        page.wait_for_function("document.querySelectorAll('[data-live-id]').length===2")
+        assert page.locator('#nav-unread').inner_text()=='3', 'the menu shows what the account reported unread'
         page.locator('[data-live-id="c1"]').click()
         page.wait_for_selector('#live-log .bubble')
         page.wait_for_selector('#live-contact-panel h2',state='attached')
@@ -136,6 +164,15 @@ with sync_playwright() as p:
         assert 'Ángeles G. Nueva' in page.locator('#live-contact-panel').evaluate('(n)=>n.textContent')
         if width==390:
             page.locator('#live-contact-toggle').click();assert page.locator('#live-contact-panel').is_visible();page.locator('#live-profile-close').click()
+        # Attachments are shown; only the account's https links are followed.
+        page.wait_for_selector('.live-attachment',state='attached')
+        links=page.locator('#live-log .live-attachment').evaluate_all('ns=>ns.map(n=>n.getAttribute("href"))')
+        assert links==['https://cdn.example.test/fotos/propuesta.png','https://cdn.example.test/docs/contrato.pdf'], links
+        assert page.locator('#live-log .live-attachment.image img').count()==1, 'an image is shown inline'
+        assert 'contrato.pdf' in page.locator('#live-log').evaluate('(n)=>n.textContent'), 'a file shows its own name'
+        assert page.locator('#live-log a[href^="javascript:"]').count()==0 and page.locator('#live-log a[href^="http:"]').count()==0
+        # Opening an unread conversation clears it in the account.
+        assert reads and 'conversationId=c1' in reads[0], reads
         assert page.locator('#live-log script').count()==0
         assert page.evaluate('window.injected === undefined')
         page.locator('#live-older').click()

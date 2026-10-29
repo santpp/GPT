@@ -71,9 +71,14 @@ try {
  $api->reset();freeBudget($connectionId);
  $searched=$directory->get($connection,'  Andre<script>  ',$admin,true);
  dirCheck(str_contains($api->calls[0][1],'query=Andrescript')&&$searched['query']==='Andrescript','only a plain search term reaches the account');
- $api->reset();
+ $api->reset();freeBudget($connectionId);
  $directory->get($connection,'  Andre<script>  ',$admin);
- dirCheck($api->calls===[],'a repeated search is served from the short cache');
+ dirCheck($api->paths()===['/contacts/'],'a repeated search asks the account again instead of serving what was stored');
+ $api->reset();
+ query('UPDATE ghl_sync_state SET rate_window_start=UNIX_TIMESTAMP(),rate_window_count=1000 WHERE connection_id=?',[$connectionId]);
+ $paused=$directory->get($connection,'  Andre<script>  ',$admin);
+ dirCheck($api->calls===[]&&$paused['total']===2,'a paused budget falls back to the stored list so the screen still opens');
+ freeBudget($connectionId);
 
  $api->reset();freeBudget($connectionId);
  $mine=$directory->get($connection,null,$restricted,true);

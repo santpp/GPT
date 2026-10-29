@@ -26,7 +26,7 @@ final class FakeOpportunityApi {
     public function reset():void {$this->calls=[];}
     public function paths():array {return array_map(fn($c)=>explode('?',$c[1])[0],$this->calls);}
 }
-function resetPause(int $connection):void{query('UPDATE ghl_sync_state SET request_not_before=0,requests_today=0 WHERE connection_id=?',[$connection]);}
+function resetPause(int $connection):void{query('UPDATE ghl_sync_state SET request_not_before=0,requests_today=0,rate_window_start=0,rate_window_count=0 WHERE connection_id=?',[$connection]);}
 function freshPipelines(int $connection):void{query('DELETE FROM pipeline_cache WHERE connection_id=?',[$connection]);}
 
 try {
@@ -89,9 +89,14 @@ try {
  query('DELETE FROM opportunity_cache WHERE connection_id=?',[$connectionId]);
  $context->get($connection,'contact-1',$admin);
  opportunityCheck($api->paths()===['/opportunities/search'],'pipeline names served from the one-hour directory cache');
- $api->reset();
+ $api->reset();resetPause($connectionId);
  $context->get($connection,'contact-1',$admin);
- opportunityCheck($api->calls===[],'a fresh opportunity result is served from the shared cache');
+ opportunityCheck($api->paths()===['/opportunities/search'],'the account is asked again instead of serving what was stored');
+ $api->reset();
+ query('UPDATE ghl_sync_state SET rate_window_start=UNIX_TIMESTAMP(),rate_window_count=1000 WHERE connection_id=?',[$connectionId]);
+ $paused=$context->get($connection,'contact-1',$admin);
+ opportunityCheck($api->calls===[]&&$paused['total']===2,'a paused budget falls back to the stored result');
+ resetPause($connectionId);
  $api->reset();resetPause($connectionId);
  $context->get($connection,'contact-1',$admin,true);
  opportunityCheck($api->paths()===['/opportunities/search'],'explicit refresh re-reads opportunities without re-reading pipelines');

@@ -12,8 +12,12 @@ final class GhlClient {
         $result=$this->get('/locations/'.rawurlencode($id),'2021-07-28');
         if(($result['location']['id'] ?? null)!==$id) throw new RuntimeException('Location mismatch');
     }
-    public function conversations(string $location,int $limit=20):array {
-        return $this->get('/conversations/search?'.http_build_query(['locationId'=>$location,'limit'=>$limit,'sort'=>'desc','sortBy'=>'last_message_date']),'2021-04-15');
+    public function conversations(string $location,int $limit=20,array $filters=[]):array {
+        $query=['locationId'=>$location,'limit'=>$limit,'sort'=>'desc','sortBy'=>'last_message_date']+$filters;
+        return $this->get('/conversations/search?'.http_build_query(array_filter($query,fn($v)=>$v!==null&&$v!=='')),'2021-04-15');
+    }
+    public function markConversationRead(string $conversation,string $location):array {
+        return $this->put('/conversations/'.rawurlencode($conversation),'2021-04-15',['locationId'=>$location,'unreadCount'=>0]);
     }
     public function conversationMessages(string $id,?string $cursor=null): array {
         return $this->get('/conversations/'.rawurlencode($id).'/messages?'.http_build_query(array_filter(['limit'=>20,'lastMessageId'=>$cursor],fn($v)=>$v!==null)),'2021-04-15');

@@ -38,12 +38,9 @@ final class ContactActivity {
 
     private function read(array $connection,string $contactId,bool $refresh):array {
         $cached=query('SELECT payload,UNIX_TIMESTAMP(fetched_at) AS fetched FROM contact_activity_cache WHERE connection_id=? AND contact_id=?',[$connection['id'],$contactId])->fetch();
-        if(!$refresh&&$cached&&time()-(int)$cached['fetched']<self::TTL) {
-            $value=json_decode($cached['payload'],true);
-            if(is_array($value)&&isset($value['tasks'],$value['notes'],$value['appointments']))return $value;
-        }
-        // The three reads share one gateway slot: the budget spaces slots by a
-        // second and the panel needs the whole block on the first view.
+        // The three reads share one gateway slot and are made on every view; the
+        // stored block only rescues a paused budget.
+        try {
         $data=$this->gateway->execute($connection,function(GhlClient $client)use($contactId):array {
             return [
                 'tasks'=>$this->tasks($client->contactTasks($contactId),$contactId),
@@ -51,6 +48,11 @@ final class ContactActivity {
                 'appointments'=>$this->appointments($client->contactAppointments($contactId),$contactId),
             ];
         },false);
+        } catch(GhlCooldown $e) {
+            $value=$cached?json_decode($cached['payload'],true):null;
+            if(is_array($value)&&isset($value['tasks'],$value['notes'],$value['appointments']))return $value;
+            throw $e;
+        }
         query('INSERT INTO contact_activity_cache(connection_id,contact_id,payload) VALUES(?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload),fetched_at=CURRENT_TIMESTAMP',[$connection['id'],$contactId,json_encode($data,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE)]);
         return $data;
     }

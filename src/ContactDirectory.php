@@ -16,8 +16,12 @@ final class ContactDirectory {
     public function get(array $connection,?string $search,array $membership,bool $refresh=false):array {
         $query=self::search($search);
         $key='contacts:'.substr(hash('sha256',(string)$query),0,40);
-        $records=$this->cached($connection,$key,$refresh)
-            ?? $this->store($connection,$key,$this->fetch($connection,$query));
+        try {$records=$this->store($connection,$key,$this->fetch($connection,$query));}
+        catch(GhlCooldown $e) {
+            // Only a paused budget serves the stored list, so the screen still opens.
+            $records=$this->cached($connection,$key,false);
+            if($records===null)throw $e;
+        }
         $restricted=($membership['capabilities']['assignedDataOnly']??false)===true;
         $assignee=$membership['external_user_id']??null;
         $visible=$restricted?array_values(array_filter($records,fn(array $row):bool=>$row['assignedTo']!==null&&$row['assignedTo']===$assignee)):$records;
@@ -59,9 +63,8 @@ final class ContactDirectory {
     }
 
     private function cached(array $connection,string $key,bool $refresh):?array {
-        if($refresh)return null;
         $row=query('SELECT payload,UNIX_TIMESTAMP(fetched_at) AS fetched FROM directory_cache WHERE connection_id=? AND cache_key=?',[$connection['id'],$key])->fetch();
-        if(!$row||time()-(int)$row['fetched']>=self::TTL)return null;
+        if(!$row)return null;
         $value=json_decode($row['payload'],true);
         return is_array($value)?$value:null;
     }

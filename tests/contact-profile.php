@@ -22,7 +22,12 @@ try{
  contactCheck($profile['address1']==='Calle Uno'&&$profile['city']==='Caracas'&&$profile['country']==='VE'&&$profile['address']==='Calle Uno, Caracas, VE','each part of the address travels on its own and the joined line stays');
  contactCheck($profile['dateOfBirth']==='1990-04-12'&&$profile['dnd']===true&&$profile['website']==='https://example.test','birth date, do-not-contact and website are published for editing');
  contactCheck(array_column($emptyProfile['customFields'],'value')===[''],'a defined field without a value is still published so it can be filled in');
- contactCheck($service->get($connection,'contact-1')['email']==='cliente@example.test'&&$calls===1,'fresh contact profile served from shared cache');
+ query('UPDATE ghl_sync_state SET request_not_before=0,rate_window_start=0,rate_window_count=0 WHERE connection_id=?',[$connectionId]);
+ contactCheck($service->get($connection,'contact-1')['email']==='cliente@example.test'&&$calls===2,'the account is asked again instead of serving what was stored');
+ // Only a paused budget serves the stored copy, so the panel still opens.
+ query('UPDATE ghl_sync_state SET rate_window_start=UNIX_TIMESTAMP(),rate_window_count=1000 WHERE connection_id=?',[$connectionId]);
+ contactCheck($service->get($connection,'contact-1')['email']==='cliente@example.test'&&$calls===2,'a paused budget falls back to the stored profile');
+ query('UPDATE ghl_sync_state SET request_not_before=0,rate_window_start=0,rate_window_count=0 WHERE connection_id=?',[$connectionId]);
  query('UPDATE ghl_sync_state SET request_not_before=0 WHERE connection_id=?',[$connectionId]);$fieldCalls=0;
  $fieldGateway=new GhlGateway(function()use(&$fieldCalls,$location){return new GhlClient('fake',function($path,$version)use(&$fieldCalls,$location){$fieldCalls++;contactCheck($path==='/locations/'.$location.'/customFields'&&$version==='2021-07-28','documented custom-field endpoint and version');return ['status'=>200,'body'=>json_encode(['customFields'=>[['id'=>'field-1','name'=>'Tipo de consulta','locationId'=>$location,'model'=>'contact','dataType'=>'SINGLE_OPTIONS','picklistOptions'=>['Precio','Soporte','Precio'],'position'=>2],['id'=>'opportunity','name'=>'Valor','locationId'=>$location,'model'=>'opportunity']]])];});});
  $fields=(new ContactFieldDirectory($fieldGateway))->get($connection);

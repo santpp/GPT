@@ -8,8 +8,12 @@ final class ContactProfile {
     public function get(array $connection,string $contactId,bool $refresh=false):array {
         if(!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))throw new InvalidArgumentException('Invalid contact id');
         $cached=query('SELECT payload,UNIX_TIMESTAMP(fetched_at) AS fetched FROM contact_profile_cache WHERE connection_id=? AND contact_id=?',[$connection['id'],$contactId])->fetch();
-        if(!$refresh&&$cached&&time()-(int)$cached['fetched']<60){$value=json_decode($cached['payload'],true);if(is_array($value))return $value;}
-        $response=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->contact($contactId),false);
+        // The account is asked every time; the stored copy only rescues a pause.
+        try {$response=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->contact($contactId),false);}
+        catch(GhlCooldown $e) {
+            if($cached){$value=json_decode($cached['payload'],true);if(is_array($value))return $value;}
+            throw $e;
+        }
         $profile=$this->normalize($response['contact']??null,$connection,$contactId);
         query('INSERT INTO contact_profile_cache(connection_id,contact_id,payload) VALUES(?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload),fetched_at=CURRENT_TIMESTAMP',[$connection['id'],$contactId,json_encode($profile,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE)]);
         return $profile;

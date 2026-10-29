@@ -117,6 +117,15 @@ $('#login-form').onsubmit=async e=>{
   finally{button.disabled=false}
 };
 
+// The inbox publishes what it read; the menu only shows it.
+window.addEventListener('agora:unread',event=>{
+  const badge=$('#nav-unread');if(!badge)return;
+  const count=Number(event.detail)||0;
+  badge.hidden=count<1;
+  badge.textContent=count>99?'99+':String(count);
+  badge.setAttribute('aria-label',`${count} conversaciones sin leer`);
+});
+
 function network(){$('#network').textContent=navigator.onLine?'● En línea':'○ Sin conexión'}
 window.addEventListener('online',network);window.addEventListener('offline',network);network();
 

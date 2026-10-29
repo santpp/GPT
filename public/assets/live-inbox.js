@@ -21,8 +21,10 @@ export async function renderLiveInbox(container){
  container.innerHTML='<p class="empty">Cargando conversaciones…</p>';
  try{
   const me=await request('me');const {items}=await request('workspace/connections');if(!active())return;
-  container.innerHTML=`<div class="live-toolbar"><label>Mostrar<select id="live-limit" aria-label="Cantidad de conversaciones"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label></div><p id="live-auto-status" class="live-auto-status" role="status">Actualización automática al mantener abierta esta pantalla</p><p id="live-feedback" class="live-feedback" role="status"></p><div class="live-inbox-layout"><section class="live-sidebar" aria-label="Lista de conversaciones"><label class="search"><span aria-hidden="true">⌕</span><input id="live-search" type="search" placeholder="Buscar nombre o mensaje" aria-label="Buscar en conversaciones cargadas"></label><div class="tabs"><button data-live-filter="all" class="active" aria-pressed="true">Todas</button><button data-live-filter="unread" aria-pressed="false">Pendientes</button><span id="live-count"></span></div><p class="live-search-hint">Búsqueda en las conversaciones cargadas</p><div id="live-list"></div></section><section id="live-messages" aria-label="Conversación"><p class="empty">Selecciona una conversación para consultar su historial.</p></section><aside id="live-contact-panel" class="live-contact-panel" aria-label="Ficha del contacto"><p class="empty">Selecciona una conversación.</p></aside></div>`;
+  container.innerHTML=`<div class="live-toolbar"><label>Mostrar<select id="live-limit" aria-label="Cantidad de conversaciones"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label></div><p id="live-auto-status" class="live-auto-status" role="status">Actualización automática al mantener abierta esta pantalla</p><p id="live-feedback" class="live-feedback" role="status"></p><div class="live-inbox-layout"><section class="live-sidebar" aria-label="Lista de conversaciones"><label class="search"><span aria-hidden="true">⌕</span><input id="live-search" type="search" placeholder="Buscar nombre o mensaje" aria-label="Buscar en conversaciones cargadas"></label><div class="tabs"><button data-live-filter="all" class="active" aria-pressed="true">Todas</button><button data-live-filter="unread" aria-pressed="false">No leídas</button><button data-live-filter="mine" aria-pressed="false" id="live-filter-mine" hidden>Mías</button><span id="live-count"></span></div><div class="live-channel-filters" id="live-channel-filters" role="group" aria-label="Filtrar por canal"></div><p class="live-search-hint">La búsqueda y los filtros se resuelven en la cuenta</p><div id="live-list"></div></section><section id="live-messages" aria-label="Conversación"><p class="empty">Selecciona una conversación para consultar su historial.</p></section><aside id="live-contact-panel" class="live-contact-panel" aria-label="Ficha del contacto"><p class="empty">Selecciona una conversación.</p></aside></div>`;
   const $=s=>container.querySelector(s), limit=$('#live-limit'),feedback=$('#live-feedback'),layout=$('.live-inbox-layout');
+  const mineButton=$('#live-filter-mine');
+  if(mineButton&&me?.user?.identity_type==='external')mineButton.hidden=false;
   // The chosen account is read from the header on every use, so switching there
   // takes effect without this screen owning a control of its own.
   const select={get value(){return workspace.current()},set disabled(v){}};
@@ -42,16 +44,46 @@ export async function renderLiveInbox(container){
   container.agoraLiveDispose=()=>{disposed=true;document.body.classList.remove('agora-focus');clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);document.removeEventListener('visibilitychange',wake);window.removeEventListener('online',wake);window.removeEventListener('offline',wake)};
   document.addEventListener('visibilitychange',wake);window.addEventListener('online',wake);window.addEventListener('offline',wake);
   async function tick(){if(!canRefresh())return;if(syncBusy||messageBusy||[...drafts.values()].some(d=>d.sending)){schedule(5);return}if(pause>Date.now()/1000){schedule(pause-Date.now()/1000);return}await sync(true)}
-  let generation=0, chatGeneration=0, conversations=[], selected=null, filter='all', messages=new Map(), cursor=null, chatChannel=null, chatChannels=null;
+  let generation=0, chatGeneration=0, conversations=[], selected=null, filter='all', messages=new Map(), cursor=null, chatChannel=null, chatChannels=null, channelFilter='', searchTerm='', searchTimer=null, channelNames={};
+  const inboxQuery=()=>{
+   const parts=[`connectionId=${encodeURIComponent(select.value)}`,`limit=${encodeURIComponent(limit.value||'20')}`];
+   if(filter==='unread')parts.push('status=unread');
+   if(filter==='mine')parts.push('mine=1');
+   if(channelFilter)parts.push('channel='+encodeURIComponent(channelFilter));
+   if(searchTerm)parts.push('query='+encodeURIComponent(searchTerm));
+   return parts.join('&');
+  };
   function list(){
-   const search=normalize($('#live-search').value);
-   const visible=conversations.filter(c=>(filter!=='unread'||Number(c.unreadCount)>0)&&normalize(name(c)+' '+(c.lastMessageBody||'')).includes(search));
+   const visible=conversations;
    $('#live-count').textContent=visible.length;
    $('#live-list').innerHTML=visible.map(c=>`<button class="conversation-item live-conversation ${selected?.id===c.id?'selected':''}" data-live-id="${esc(c.id)}" aria-label="Abrir conversación de ${esc(name(c))}" aria-pressed="${selected?.id===c.id}"><span class="avatar">${esc(initials(c))}</span><span class="conversation-info"><header><strong>${esc(name(c))}</strong></header><p>${esc(c.lastMessageBody||'Sin vista previa')}</p><footer><span class="channel">${channel(c.lastMessageType)}</span>${Number(c.unreadCount)>0?`<b class="unread">${Number(c.unreadCount)}<span class="sr-only"> pendientes</span></b>`:''}</footer><time>${esc(date(c.lastMessageDate))}</time></span></button>`).join('')||'<p class="empty">No hay conversaciones con este filtro.</p>';
    container.querySelectorAll('[data-live-id]').forEach(b=>b.onclick=()=>open(conversations.find(c=>c.id===b.dataset.liveId)));
   }
+  const IMAGE=/\.(png|jpe?g|gif|webp|avif|bmp|svg)(\?|$)/i;
+  // Only the account's own https links are followed, and the name shown is the
+  // file's, never anything the sender could use to dress the link up.
+  function attachmentsOf(message){
+   const raw=Array.isArray(message.attachments)?message.attachments:[];
+   const files=[];
+   for(const item of raw.slice(0,10)){
+    const url=typeof item==='string'?item:(item&&typeof item.url==='string'?item.url:null);
+    if(!url)continue;
+    let parsed;try{parsed=new URL(url)}catch{continue}
+    if(parsed.protocol!=='https:')continue;
+    const name=decodeURIComponent(parsed.pathname.split('/').filter(Boolean).pop()||'archivo').slice(0,80);
+    files.push({url:parsed.href,name,image:IMAGE.test(parsed.pathname)});
+   }
+   return files;
+  }
+  const attachmentMarkup=file=>file.image
+   ? `<a class="live-attachment image" href="${esc(file.url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(file.url)}" alt="${esc(file.name)}" loading="lazy"></a>`
+   : `<a class="live-attachment" href="${esc(file.url)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">⇩</span>${esc(file.name)}</a>`;
   function renderMessages(){
-   $('#live-log').innerHTML=[...messages.values()].sort((a,b)=>(Date.parse(a.dateAdded)||0)-(Date.parse(b.dateAdded)||0)).map(m=>`<div class="bubble ${m.direction==='outbound'?'out':''}">${esc(m.body||'Mensaje sin texto')}<time>${esc(date(m.dateAdded))}${status(m.status)?' · '+status(m.status):''}</time></div>`).join('')||'<p class="empty">No hay mensajes disponibles.</p>';
+   $('#live-log').innerHTML=[...messages.values()].sort((a,b)=>(Date.parse(a.dateAdded)||0)-(Date.parse(b.dateAdded)||0)).map(m=>{
+    const files=attachmentsOf(m);
+    const body=m.body?esc(m.body):(files.length?'':'Mensaje sin texto');
+    return `<div class="bubble ${m.direction==='outbound'?'out':''}">${body}${files.length?`<div class="live-attachments">${files.map(attachmentMarkup).join('')}</div>`:''}<time>${esc(date(m.dateAdded))}${status(m.status)?' · '+status(m.status):''}</time></div>`;
+   }).join('')||'<p class="empty">No hay mensajes disponibles.</p>';
   }
   async function page(older=false,refresh=false){
    messageBusy++;
@@ -393,6 +425,11 @@ export async function renderLiveInbox(container){
    $('#live-messages').innerHTML=`<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">←</button><span class="avatar">${esc(initials(c))}</span><div><h2>${esc(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div><button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">⤢</button><button id="live-contact-toggle" aria-label="Ver ficha del contacto">ⓘ</button></header><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
    $('#live-back').onclick=()=>{clearTimeout(pollTimer);document.body.classList.remove('agora-focus');layout.classList.remove('chat-open','contact-open');autoStatus.textContent='Actualización automática activa';$('#live-search').focus()};
    $('#live-contact-toggle').onclick=()=>layout.classList.toggle('contact-open');
+   if(Number(c.unreadCount)>0&&me?.csrf){
+    request(`workspace/read?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`,'POST',me.csrf)
+     .then(()=>{c.unreadCount=0;if(active())list();window.dispatchEvent(new CustomEvent('agora:unread',{detail:conversations.reduce((sum,item)=>sum+(Number(item.unreadCount)||0),0)}))})
+     .catch(()=>{});
+   }
    $('#live-older').onclick=()=>page(true);
    const focus=$('#live-focus');
    // Focus hides the menu and the list so the conversation owns the screen.
@@ -406,21 +443,49 @@ export async function renderLiveInbox(container){
    const version=++generation,connection=select.value;
    if(!preserve){clearTimeout(pollTimer);chatNeedsRefresh=false;chatGeneration++;selected=null;conversations=[];list();layout.classList.remove('chat-open');$('#live-messages').innerHTML='<p class="empty">Selecciona una conversación para consultar su historial.</p>';feedback.textContent='Cargando conversaciones…'}
    try{
-    const data=await request(`workspace/inbox?connectionId=${encodeURIComponent(select.value)}`);
+    const data=await request(`workspace/inbox?${inboxQuery()}`);
     if(version!==generation||!active()||connection!==select.value)return false;
     const updated=selected?data.items.find(c=>c.id===selected.id):null;
     const changed=!!selected&&(!messages.size||!!updated&&[updated.lastMessageDate,updated.lastMessageBody,updated.unreadCount].join('|')!==[selected.lastMessageDate,selected.lastMessageBody,selected.unreadCount].join('|'));
     if(updated)for(const field of ['lastMessageDate','lastMessageBody','unreadCount'])selected[field]=updated[field];
     interval=Math.max(60,Number(data.syncIntervalSeconds)||120);
     pause=Math.max(pause,Number(data.state?.request_not_before)||0);
-    conversations=data.items;limit.value=String(data.limit||20);list();
-    feedback.textContent=data.syncedAt?`Mostrando ${data.items.length} de ${data.total} conversaciones · Actualizado ${date(data.syncedAt)}${data.partial?' · Vista parcial':''}`:'Todavía no hay conversaciones cargadas. Se están pidiendo a la cuenta…';
-    if(data.state?.last_error)feedback.textContent+=' No se pudo completar la última sincronización. Revisa Conexiones.';
+    conversations=data.items;limit.value=String(data.limit||20);
+    if(data.channels&&Object.keys(data.channels).length){channelNames=data.channels;paintChannelFilters()}
+    list();
+    window.dispatchEvent(new CustomEvent('agora:unread',{detail:Number(data.unread)||0}));
+    const scope=[filter==='unread'?'no leídas':filter==='mine'?'mías':null,channelNames[channelFilter],searchTerm?`«${searchTerm}»`:null].filter(Boolean).join(' · ');
+    feedback.textContent=data.items.length
+     ? `${data.items.length} de ${data.total} conversaciones${scope?' · '+scope:''}${data.partial?' · ventana parcial':''}`
+     : (scope?`Ninguna conversación con este filtro (${scope}).`:'Esta cuenta todavía no tiene conversaciones.');
+    if(data.stale)feedback.textContent+=data.reason==='paused'?` · Mostrando la última lista, de ${date(data.syncedAt)}; la consulta está en espera.`:` · Mostrando la última lista, de ${date(data.syncedAt)}; no se pudo leer la cuenta ahora.`;
     return changed;
    }catch(e){if(e.status===401)container.agoraLiveDispose();if(version===generation&&active())feedback.textContent=e.message;return false}
   }
-  $('#live-search').oninput=list;
-  container.querySelectorAll('[data-live-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.liveFilter;container.querySelectorAll('[data-live-filter]').forEach(n=>{n.classList.toggle('active',n===b);n.setAttribute('aria-pressed',String(n===b))});list()});
+  $('#live-search').oninput=event=>{
+   clearTimeout(searchTimer);
+   const value=event.target.value.trim();
+   // The account answers the search, so it is asked once typing settles.
+   searchTimer=setTimeout(()=>{if(value===searchTerm)return;searchTerm=value;load()},450);
+  };
+  container.querySelectorAll('[data-live-filter]').forEach(b=>b.onclick=()=>{
+   if(filter===b.dataset.liveFilter)return;
+   filter=b.dataset.liveFilter;
+   container.querySelectorAll('[data-live-filter]').forEach(n=>{n.classList.toggle('active',n===b);n.setAttribute('aria-pressed',String(n===b))});
+   load();
+  });
+  function paintChannelFilters(){
+   const row=$('#live-channel-filters');if(!row)return;
+   const entries=Object.entries(channelNames);
+   if(!entries.length){row.innerHTML='';return}
+   row.innerHTML=`<button type="button" data-channel-filter="" class="${channelFilter?'':'selected'}">Todos los canales</button>`
+    +entries.map(([type,label])=>`<button type="button" data-channel-filter="${esc(type)}" class="${channelFilter===type?'selected':''}">${esc(label)}</button>`).join('');
+   row.querySelectorAll('[data-channel-filter]').forEach(button=>button.onclick=()=>{
+    const value=button.dataset.channelFilter;
+    if(value===channelFilter)return;
+    channelFilter=value;paintChannelFilters();load();
+   });
+  }
 
   async function sync(automatic=false){
    if(syncBusy)return;syncBusy=true;clearTimeout(timer);clearTimeout(chatTimer);

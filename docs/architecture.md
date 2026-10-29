@@ -28,6 +28,9 @@ GHL conserva los datos principales del CRM. Nuestra base organiza usuarios, perm
 - Sesión HttpOnly, CSRF y control de origen. El único usuario nativo es el administrador. Los empleados se proyectan desde cada cuenta conectada y entran con el mismo correo mediante un código de un solo uso; no se copian ni validan contraseñas externas.
 - Las actualizaciones de esquema se aplican solas en la primera petición posterior a una actualización, bajo cerrojo y sólo con migraciones aditivas e idempotentes. No hay botón que pulsar y, si fallaran, la pantalla de preparación lo informa en lugar de romperse.
 - La ficha del contacto se ve y se edita completa desde la conversación: todos los datos publicados, el responsable, el indicador de no contactar, la fecha de nacimiento, todos los campos personalizados que define la cuenta (incluidos los vacíos, con el control que corresponde a su tipo) y las etiquetas. Las etiquetas se escriben como altas y bajas, nunca sustituyendo la lista entera.
+- Toda pantalla pide a la cuenta en cada carga. Lo guardado es un respaldo que sólo se usa con el presupuesto en pausa o la lectura fallida, y se marca como tal con la fecha de la copia.
+- Los filtros de la bandeja (no leídas, canal, mías) y la búsqueda se resuelven en la cuenta, no sobre la ventana cargada.
+- Un índice por conexión guarda cada conversación que la cuenta ha mostrado y es la base de la autorización, separada de la lista que se muestra.
 - Modo ampliado de la conversación: oculta el menú y la lista de chats para que el historial ocupe la pantalla, tanto en escritorio como en un teléfono apaisado. La preferencia se recuerda en el navegador.
 - Selector de canal en la respuesta: el servidor decide qué canales admite cada contacto a partir de su ficha y del canal del hilo, y vuelve a comprobarlo al enviar.
 - La aplicación se actualiza sola cuando hay una versión nueva; sólo espera si se está escribiendo algo sin enviar.

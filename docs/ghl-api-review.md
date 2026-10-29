@@ -213,3 +213,24 @@ Los iconos de canal son dibujos propios en SVG, no los archivos de marca de cada
 ## Directorio de campos: caché fría y caché antigua 0.14.0
 
 El panel recibía el directorio de campos sólo si estaba en caché. Con la caché fría o caducada llegaba vacío, y como `GET /contacts/{contactId}` sólo devuelve los campos personalizados **con valor**, el formulario de edición se quedaba sin ninguno: justamente el caso que la versión anterior pretendía resolver. Ahora, si falta, el directorio se pide en ese momento (una petición por hora como mucho) y sólo un fallo real lo deja vacío. Además, una caché guardada por versiones anteriores a 0.13.0, sin `dataType`, se considera caducada, de modo que al actualizar se vuelve a pedir en lugar de ofrecer todos los campos como texto plano.
+
+## Bandeja en vivo, filtros y leído 0.15.0
+
+Misma fuente oficial y mismo commit `0af86a4cbd48c66a4071c7e509d1079f9f10ed17`.
+
+| Uso | Método y endpoint | Scope publicado | Version |
+| --- | --- | --- | --- |
+| Bandeja y filtros | `GET /conversations/search` | `conversations.readonly` | 2021-04-15 |
+| Marcar como leída | `PUT /conversations/{conversationId}` | `conversations.write` | 2021-04-15 |
+
+`GET /conversations/search` publica, además de `locationId` y `limit`, los parámetros `status` (`all`, `read`, `unread`, `starred`, `recents`), `lastMessageType` (con la lista completa de canales), `lastMessageDirection` (`inbound`, `outbound`), `assignedTo`, `contactId`, `query`, `followers`, `mentions`, `sortBy` y rangos de fecha. Ágora traslada a la cuenta los filtros de estado, canal, asignación y búsqueda, de modo que «no leídas» significa todas las que la cuenta tiene sin leer y no sólo las que caen dentro de la ventana cargada. Cualquier valor que no figure en la enumeración publicada se descarta antes de salir, y «mías» sólo se envía si el integrante tiene identidad importada.
+
+`UpdateConversationDto` exige `locationId` y admite `unreadCount`, `starred` y `feedback`. Marcar como leída es enviar `unreadCount: 0` con el `locationId` de la conexión. Requiere `conversations.write`, que hasta ahora no hacía falta: sin ese permiso la lectura sigue funcionando y sólo falla el marcado, con su propio código.
+
+**Lecturas siempre frescas.** Por decisión de producto, toda pantalla pide a la cuenta en cada carga. Lo guardado deja de ser la fuente y pasa a ser un respaldo que sólo entra cuando el presupuesto está en pausa o la lectura falla, y la respuesta lo marca (`stale`) junto con la fecha de la copia, para que nunca pase por actual. Esto multiplica las peticiones frente al diseño anterior: con la ventana de 20 cada 10 segundos por conexión hay margen para un uso normal, pero varios integrantes sobre una misma subcuenta pueden toparse con pausas, y entonces verán la última lista con su aviso en lugar de un error.
+
+**Autorización separada de la lista.** Como la lista mostrada depende ahora de los filtros, no puede ser la base de la autorización: una conversación abierta dejaría de estar permitida al cambiar un filtro. Se guarda un índice por conexión con cada conversación que la cuenta ha mostrado (hasta 400, las más recientes), y es ese índice el que autoriza leer mensajes, responder, ver la ficha o actuar. Una conversación que la cuenta nunca mostró no se autoriza.
+
+**Adjuntos.** `GetMessageResponseDto` publica `attachments` como array. Ágora muestra los que llegan: sólo enlaces `https`, el nombre tomado de la ruta del archivo y nunca de texto del remitente, y las imágenes en línea. El envío de adjuntos necesitaría almacenamiento propio y no se incluye.
+
+**Plantillas de WhatsApp: no implementadas.** `GET /locations/{locationId}/templates` acepta `type=whatsapp` y declara el scope `locations/templates.readonly`, pero exige un parámetro `originId` cuyo significado no se documenta en ninguna parte del esquema, y la respuesta sólo publica estructuras para SMS y correo (`GetSmsTemplateResponseSchema`, `GetEmailTemplateResponseSchema`), sin esquema para WhatsApp. No se implementa a partir de un parámetro obligatorio adivinado; queda pendiente de comprobar contra una cuenta real qué valor espera.

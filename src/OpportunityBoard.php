@@ -50,11 +50,7 @@ final class OpportunityBoard {
         $key='board:'.substr(hash('sha256',(string)$pipelineId),0,40);
         $names=$directory->cached($connection);
         $records=null;
-        if(!$refresh) {
-            $row=query('SELECT payload,UNIX_TIMESTAMP(fetched_at) AS fetched FROM directory_cache WHERE connection_id=? AND cache_key=?',[$connection['id'],$key])->fetch();
-            if($row&&time()-(int)$row['fetched']<self::TTL){$value=json_decode($row['payload'],true);if(is_array($value))$records=$value;}
-        }
-        if($records!==null&&$names!==null)return [$names,$records];
+        try {
         return $this->gateway->execute($connection,function(GhlClient $client)use($connection,$directory,$names,$records,$pipelineId,$key):array {
             if($names===null) {
                 try {$names=$directory->fromClient($client,$connection);}
@@ -66,6 +62,12 @@ final class OpportunityBoard {
             }
             return [$names,$records];
         },false);
+        } catch(GhlCooldown $e) {
+            $row=query('SELECT payload FROM directory_cache WHERE connection_id=? AND cache_key=?',[$connection['id'],$key])->fetch();
+            $stored=$row?json_decode($row['payload'],true):null;
+            if(is_array($stored))return [$names??[],$stored];
+            throw $e;
+        }
     }
 
     private function fetch(GhlClient $client,array $connection,?string $pipelineId):array {

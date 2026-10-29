@@ -37,7 +37,7 @@ final class FakeActivityApi {
     public function reset():void {$this->calls=[];}
     public function paths():array {return array_map(fn($c)=>$c[0].' '.$c[1],$this->calls);}
 }
-function clearBudget(int $connection):void{query('UPDATE ghl_sync_state SET request_not_before=0,requests_today=0 WHERE connection_id=?',[$connection]);}
+function clearBudget(int $connection):void{query('UPDATE ghl_sync_state SET request_not_before=0,requests_today=0,rate_window_start=0,rate_window_count=0 WHERE connection_id=?',[$connection]);}
 
 try {
  query('INSERT INTO tenants(name,location_id) VALUES(?,?)',['Activity test','act-'.$suffix]);$tenants[]=$tenant=(int)db()->lastInsertId();
@@ -93,9 +93,14 @@ try {
  activityCheck($limited['canEdit']===false&&$result['canEdit']===true,'the panel reports whether quick actions are allowed');
 
  // ---- caching ---------------------------------------------------------------
- $api->reset();
+ $api->reset();clearBudget($connectionId);
  $activity->get($connection,'contact-1',$full);
- activityCheck($api->calls===[],'a fresh activity block is served from the shared cache');
+ activityCheck(count($api->calls)===3,'the account is asked again instead of serving what was stored');
+ $api->reset();
+ query('UPDATE ghl_sync_state SET rate_window_start=UNIX_TIMESTAMP(),rate_window_count=1000 WHERE connection_id=?',[$connectionId]);
+ $paused=$activity->get($connection,'contact-1',$full);
+ activityCheck($api->calls===[]&&count($paused['tasks'])===3,'a paused budget falls back to the stored block');
+ clearBudget($connectionId);
 
  // ---- quick actions: note ----------------------------------------------------
  $actions=new ContactActions($api->gateway());

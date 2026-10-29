@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/InboxSync.php';
+require_once __DIR__.'/InboxFeed.php';
 require_once __DIR__.'/MessageHistory.php';
 require_once __DIR__.'/MessageFeed.php';
 if(($u['identity_type']??'native')==='native'&&$u['role']!=='administrator')respond(['error'=>'Acceso restringido'],403);
@@ -30,9 +31,10 @@ if($path==='/api/workspace/contact'&&$method==='GET'){
     if(!($membership['capabilities']['viewContacts']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar contactos.'],403);
     $conversation=$_GET['conversationId']??'';
     if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);
-    $known=Actor::filterConversations($row?json_decode($row['payload'],true):[],$membership);$position=array_search($conversation,array_column($known,'id'),true);
-    if($position===false)respond(['error'=>'Conversación no disponible en esta cuenta'],404);
-    $contactId=$known[$position]['contactId']??'';if(!is_string($contactId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))respond(['error'=>'La conversación no contiene un contacto válido'],422);
+    $record=InboxFeed::known($id,$conversation);
+    if(!$record||!Actor::filterConversations([$record],$membership))respond(['error'=>'Conversación no disponible en esta cuenta'],404);
+    $known=[$record];$position=0;
+    $contactId=$record['contactId']??'';if(!is_string($contactId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))respond(['error'=>'La conversación no contiene un contacto válido'],422);
     require_once __DIR__.'/ContactProfile.php';
     require_once __DIR__.'/MessageSender.php';
     require_once __DIR__.'/ContactFieldDirectory.php';
@@ -66,9 +68,10 @@ if(preg_match('~^/api/workspace/activity(/note|/task|/task-state|/contact)?$~',$
     if(!($membership['capabilities']['viewContacts']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar la ficha del contacto.'],403);
     $conversation=$_GET['conversationId']??'';
     if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);
-    $known=Actor::filterConversations($row?json_decode($row['payload'],true):[],$membership);$position=array_search($conversation,array_column($known,'id'),true);
-    if($position===false)respond(['error'=>'Conversación no disponible en esta cuenta'],404);
-    $contactId=$known[$position]['contactId']??'';if(!is_string($contactId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))respond(['error'=>'La conversación no contiene un contacto válido'],422);
+    $record=InboxFeed::known($id,$conversation);
+    if(!$record||!Actor::filterConversations([$record],$membership))respond(['error'=>'Conversación no disponible en esta cuenta'],404);
+    $known=[$record];$position=0;
+    $contactId=$record['contactId']??'';if(!is_string($contactId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))respond(['error'=>'La conversación no contiene un contacto válido'],422);
     require_once __DIR__.'/ContactActivity.php';
     $action=$activityMatch[1]??'';
     if($action!==''&&$method==='POST'){
@@ -113,9 +116,10 @@ if($path==='/api/workspace/opportunities'&&$method==='GET'){
     if(!($membership['capabilities']['viewOpportunities']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar oportunidades.'],403);
     $conversation=$_GET['conversationId']??'';
     if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);
-    $known=Actor::filterConversations($row?json_decode($row['payload'],true):[],$membership);$position=array_search($conversation,array_column($known,'id'),true);
-    if($position===false)respond(['error'=>'Conversación no disponible en esta cuenta'],404);
-    $contactId=$known[$position]['contactId']??'';if(!is_string($contactId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))respond(['error'=>'La conversación no contiene un contacto válido'],422);
+    $record=InboxFeed::known($id,$conversation);
+    if(!$record||!Actor::filterConversations([$record],$membership))respond(['error'=>'Conversación no disponible en esta cuenta'],404);
+    $known=[$record];$position=0;
+    $contactId=$record['contactId']??'';if(!is_string($contactId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))respond(['error'=>'La conversación no contiene un contacto válido'],422);
     require_once __DIR__.'/OpportunityContext.php';
     try{respond((new OpportunityContext())->get($connection,$contactId,$membership,($_GET['refresh']??'')==='1'));}
     catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'Las oportunidades están en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
@@ -131,20 +135,41 @@ if($path==='/api/workspace/contact-fields'&&$method==='GET'){
     catch(Throwable $e){respond(['error'=>'Los campos recibidos no tienen el formato esperado.','code'=>'contact_fields_invalid_response'],424);}
 }
 if(in_array($path,['/api/workspace/inbox','/api/ghl/inbox'],true) && $method==='GET') {
+    session_write_close();
     $state=query('SELECT last_success_at,last_error,next_sync_at,request_not_before,enabled,requests_today,quota FROM ghl_sync_state WHERE connection_id=?',[$id])->fetch();
-    $limit=(int)(query('SELECT inbox_limit FROM connection_preferences WHERE connection_id=?',[$id])->fetchColumn()?:20);
-    $raw=$row?json_decode($row['payload'],true):[];$items=Actor::filterConversations($raw,$membership);$restricted=(bool)($membership['capabilities']['assignedDataOnly']??false);
-    respond(['syncIntervalSeconds'=>max(60,(int)$connection['sync_interval_seconds']),'limit'=>$limit,'items'=>$items,'total'=>$restricted?count($items):($row?(int)$row['total']:0),'syncedAt'=>$row['synced_at']??null,'partial'=>$row?((int)$row['total']>count($raw)):false,'state'=>$state?:null]);
+    $requested=filter_var($_GET['limit']??null,FILTER_VALIDATE_INT);
+    $limit=in_array($requested,[20,50,100],true)?$requested:(int)(query('SELECT inbox_limit FROM connection_preferences WHERE connection_id=?',[$id])->fetchColumn()?:20);
+    if(!in_array($limit,[20,50,100],true))$limit=20;
+    query('INSERT INTO connection_preferences(connection_id,inbox_limit) VALUES(?,?) ON DUPLICATE KEY UPDATE inbox_limit=VALUES(inbox_limit)',[$id,$limit]);
+    ['filters'=>$filters]=InboxFeed::readFilters($_GET,$membership);
+    try{
+        $feed=(new InboxFeed())->load($connection,$limit,$filters,$membership);
+        respond($feed+['syncIntervalSeconds'=>max(60,(int)$connection['sync_interval_seconds']),'limit'=>$limit,'state'=>$state?:null]);
+    }
+    catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la bandeja. Revisa los permisos de lectura.','code'=>'inbox_upstream_'.$e->status],424);}
+    catch(InvalidArgumentException $e){respond(['error'=>'Comprueba la conexión antes de consultar la bandeja.'],422);}
+    catch(Throwable $e){respond(['error'=>'La bandeja recibida no tiene el formato esperado.','code'=>'inbox_invalid_response'],424);}
+}
+if($path==='/api/workspace/read'&&$method==='POST'){
+    $conversation=$_GET['conversationId']??'';
+    if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);
+    $known=InboxFeed::known($id,$conversation);
+    if(!$known||!Actor::filterConversations([$known],$membership))respond(['error'=>'Conversación no disponible en esta cuenta'],404);
+    try{(new InboxFeed())->markRead($connection,$known);respond(['read'=>true]);}
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La marca de leído está en espera.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>'No se pudo marcar como leída. Revisa el permiso de escritura de conversaciones.','code'=>'read_upstream_'.$e->status],424);}
+    catch(Throwable $e){respond(['error'=>'No se pudo marcar como leída.','code'=>'read_failed'],424);}
 }
 if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $method==='GET')||($path==='/api/workspace/send'&&$method==='POST')) {
     $conversation=$_GET['conversationId']??'';
     if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);
-    $known=Actor::filterConversations($row?json_decode($row['payload'],true):[],$membership);
-    if(!in_array($conversation,array_column($known,'id'),true))respond(['error'=>'Conversación no disponible en esta subcuenta'],404);
+    $record=InboxFeed::known($id,$conversation);
+    if(!$record||!Actor::filterConversations([$record],$membership))respond(['error'=>'Conversación no disponible en esta subcuenta'],404);
+    $known=[$record];
     if($path==='/api/workspace/send'){
         if(!($membership['capabilities']['sendMessages']??false))respond(['error'=>'Tu usuario tiene acceso de lectura, pero no permiso para responder.'],403);
         require_once __DIR__.'/MessageSender.php';
-        $contact=$known[array_search($conversation,array_column($known,'id'),true)];
+        $contact=$record;
         try {respond((new MessageSender())->send($connection,$contact,body()));}
         catch(SendProblem $e){respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
     }

@@ -90,7 +90,7 @@ with sync_playwright() as p:
     live.goto(os.getenv('TEST_BASE_URL', 'http://127.0.0.1:8080/'))
     live.wait_for_selector('#app:not([hidden])')
     live.wait_for_selector('[data-live-id]')
-    assert 'Mostrando 1 de 25' in live.locator('#live-feedback').inner_text()
+    assert '1 de 25 conversaciones' in live.locator('#live-feedback').inner_text()
     assert live.locator('#live-list img').count()==0
     live.locator('[data-live-id]').click()
     live.wait_for_selector('.live-message-log')

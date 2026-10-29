@@ -42,11 +42,11 @@ final class OpportunityContext {
     private function read(array $connection,string $contactId,bool $refresh):array {
         $directory=$this->pipelines??new PipelineDirectory();
         $cached=query('SELECT payload,UNIX_TIMESTAMP(fetched_at) AS fetched FROM opportunity_cache WHERE connection_id=? AND contact_id=?',[$connection['id'],$contactId])->fetch();
-        $stored=!$refresh&&$cached&&time()-(int)$cached['fetched']<60?json_decode($cached['payload'],true):null;
+        $stored=$cached?json_decode($cached['payload'],true):null;
         $names=$directory->cached($connection);
-        if(is_array($stored)&&$names!==null)return [$stored,$names];
-        return $this->gateway->execute($connection,function(GhlClient $client)use($connection,$contactId,$directory,$stored,$names):array {
-            $records=is_array($stored)?$stored:$this->search($client,$connection,$contactId);
+        try {
+        return $this->gateway->execute($connection,function(GhlClient $client)use($connection,$contactId,$directory,$names):array {
+            $records=$this->search($client,$connection,$contactId);
             if($names===null) {
                 // Pipeline names are optional context: without them no identifier is shown.
                 try {$names=$directory->fromClient($client,$connection);}
@@ -54,6 +54,11 @@ final class OpportunityContext {
             }
             return [$records,$names];
         },false);
+        } catch(GhlCooldown $e) {
+            // Only a paused budget serves what was stored, and only if there is any.
+            if(is_array($stored))return [$stored,$names??[]];
+            throw $e;
+        }
     }
 
     /** @return list<array<string,mixed>> */
