@@ -39,6 +39,19 @@ if($path==='/api/workspace/contact'&&$method==='GET'){
     catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la ficha. Revisa el permiso de contactos.','code'=>'contact_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'La ficha recibida no tiene el formato esperado.','code'=>'contact_invalid_response'],424);}
 }
+if($path==='/api/workspace/opportunities'&&$method==='GET'){
+    if(!($membership['capabilities']['viewOpportunities']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar oportunidades.'],403);
+    $conversation=$_GET['conversationId']??'';
+    if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);
+    $known=Actor::filterConversations($row?json_decode($row['payload'],true):[],$membership);$position=array_search($conversation,array_column($known,'id'),true);
+    if($position===false)respond(['error'=>'Conversación no disponible en esta cuenta'],404);
+    $contactId=$known[$position]['contactId']??'';if(!is_string($contactId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))respond(['error'=>'La conversación no contiene un contacto válido'],422);
+    require_once __DIR__.'/OpportunityContext.php';
+    try{respond((new OpportunityContext())->get($connection,$contactId,$membership,($_GET['refresh']??'')==='1'));}
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'Las oportunidades están en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>'No se pudieron consultar las oportunidades. Revisa el permiso de oportunidades.','code'=>'opportunities_upstream_'.$e->status],424);}
+    catch(Throwable $e){respond(['error'=>'Las oportunidades recibidas no tienen el formato esperado.','code'=>'opportunities_invalid_response'],424);}
+}
 if($path==='/api/workspace/contact-fields'&&$method==='GET'){
     if(!($membership['capabilities']['viewContacts']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar contactos.'],403);
     require_once __DIR__.'/ContactFieldDirectory.php';

@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 29 de octubre de 2026. Versión publicada: 0.8.1.
+Estado actualizado: 29 de octubre de 2026. Versión publicada: 0.9.0.
 
 ## Completado y desplegable
 
@@ -23,8 +23,8 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## Siguiente hito: contexto comercial dentro del chat
 
 - Ficha del contacto: teléfono, email, empresa, fuente, etiquetas, campos personalizados, actividad y ejecutivo: implementada en 0.8.0.
-- Oportunidades: oportunidad activa, pipeline, etapa, estado, valor y responsable dentro del chat, con acceso a todas las oportunidades del contacto: siguiente versión.
-- Tareas, notas y citas.
+- Oportunidades: oportunidad activa, pipeline, etapa, estado, valor y responsable dentro del chat, con acceso a todas las oportunidades del contacto: implementadas en 0.9.0, con nombres reales de pipeline y etapa, caché de 60 segundos por contacto y una hora para el directorio, y respeto de permisos y `assignedDataOnly`.
+- Tareas, notas y citas dentro del chat: siguiente versión.
 - Acciones rápidas: llamar, agendar, crear tarea/oportunidad, cambiar etapa, reasignar, etiquetar, workflow y nota.
 
 ## Operación del equipo

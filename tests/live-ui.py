@@ -26,6 +26,10 @@ with sync_playwright() as p:
                 data={'contact':{'name':'Ángeles García','phone':'+34123456789','email':'angeles@example.test','source':'Formulario web','assignedName':'Ana Responsable','lastActivity':'2026-10-28T11:00:00Z','tags':['Interesada'],'customFields':[{'label':'Campo personalizado','value':'Consulta'}]}}
             elif path.startswith('workspace/contact-fields?'):
                 data={'items':[]}
+            elif path.startswith('workspace/opportunities?'):
+                active={'id':'o1','name':'Proyecto de Ángeles','pipelineName':'Pipeline comercial','stageName':'Propuesta enviada','statusLabel':'Abierta','monetaryValue':2400,'assignedName':'Ana Responsable','source':'Formulario web'}
+                other={'id':'o2','name':'<script>window.injected=true</script>','pipelineName':'Pipeline comercial','stageName':'Nuevo lead','statusLabel':'Ganada','monetaryValue':900.5,'assignedName':None,'source':None}
+                data={'active':active,'items':[active,other],'total':2,'restricted':False,'partial':False,'pipelineNamesAvailable':True}
             else:data={'items':[]}
             route.fulfill(status=status,content_type='application/json',body=json.dumps(data))
         page.route('**/api/**',api)
@@ -46,6 +50,14 @@ with sync_playwright() as p:
         page.wait_for_selector('#live-log .bubble')
         page.wait_for_selector('#live-contact-panel h2',state='attached')
         assert 'Ana Responsable' in page.locator('#live-contact-panel').inner_text()
+        page.wait_for_selector('#live-contact-panel .live-opportunity',state='attached')
+        opportunity=page.locator('#live-contact-panel .live-profile-opportunities').evaluate('(n)=>n.textContent')
+        assert 'Proyecto de Ángeles' in opportunity and 'Pipeline comercial' in opportunity and 'Propuesta enviada' in opportunity
+        assert 'Abierta' in opportunity and '2.400' in opportunity and 'Ana Responsable' in opportunity
+        assert '900,5' in page.locator('#live-contact-panel .live-opportunity-all').evaluate('(n)=>n.textContent'), 'Spanish decimal separator'
+        assert page.locator('#live-contact-panel .live-opportunity-all').evaluate('(n)=>!n.open'), 'the other opportunities stay collapsed'
+        assert 'Ganada' in page.locator('#live-contact-panel .live-opportunity-all').evaluate('(n)=>n.textContent')
+        assert page.locator('#live-contact-panel script').count()==0 and page.evaluate('window.injected === undefined')
         if width==390:
             page.locator('#live-contact-toggle').click();assert page.locator('#live-contact-panel').is_visible();page.locator('#live-profile-close').click()
         assert page.locator('#live-log script').count()==0

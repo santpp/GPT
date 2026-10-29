@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/TokenVault.php';
 final class Installation {
-    public const VERSION='0.8.1';
+    public const VERSION='0.9.0';
     public static function checks():array {
         $checks=[];
         $runtime=PHP_VERSION_ID>=80300;
@@ -32,6 +32,8 @@ final class Installation {
             query('SELECT connection_id,payload,fetched_at FROM contact_field_cache LIMIT 0');
             query('SELECT tenant_id,connection_id FROM access_channels LIMIT 0');
             query('SELECT connection_id,email,contact_id,created_by_agora,tagged,last_delivery_at FROM access_contacts LIMIT 0');
+            query('SELECT connection_id,contact_id,payload,fetched_at FROM opportunity_cache LIMIT 0');
+            query('SELECT connection_id,payload,fetched_at FROM pipeline_cache LIMIT 0');
             $checks[]=['name'=>'schema','ready'=>true,'code'=>null];
         }catch(PDOException $e){$checks[]=['name'=>'schema','ready'=>false,'code'=>in_array($e->getCode(),['42S02','42S22'],true)?'schema_pending':'database_unavailable'];}
         foreach($checks as &$check)$check['message']=$check['ready']?'Correcto':(SetupException::MESSAGES[$check['code']]??'Revisión necesaria');
@@ -42,7 +44,7 @@ final class Installation {
         if((int)query('SELECT GET_LOCK(?,0)',[$lock])->fetchColumn()!==1)throw new SetupException('database_unavailable');
         try {
             // Only additive, reviewed migrations; never import/reset core data.
-            foreach(['002-integrations.sql','003-api-sync.sql','004-messaging.sql','005-message-cache.sql','006-external-users.sql','007-external-auth.sql','008-contact-profile.sql','009-access-channel.sql'] as $migration) {
+            foreach(['002-integrations.sql','003-api-sync.sql','004-messaging.sql','005-message-cache.sql','006-external-users.sql','007-external-auth.sql','008-contact-profile.sql','009-access-channel.sql','010-opportunity-context.sql'] as $migration) {
                 $sql=file_get_contents(dirname(__DIR__).'/database/'.$migration);
                 if($sql===false)throw new SetupException('schema_pending');
                 db()->exec($sql);
