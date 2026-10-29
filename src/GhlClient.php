@@ -31,17 +31,27 @@ final class GhlClient {
         return $this->get('/opportunities/search?'.http_build_query(['location_id'=>$location,'contact_id'=>$contact,'status'=>'all','limit'=>$limit]),'2021-07-28');
     }
     public function pipelines(string $location):array {return $this->get('/opportunities/pipelines?'.http_build_query(['locationId'=>$location]),'2021-07-28');}
-    private function get(string $path,string $version,?array $payload=null):array {
+    public function contactTasks(string $contact):array {return $this->get('/contacts/'.rawurlencode($contact).'/tasks','2021-07-28');}
+    public function contactNotes(string $contact):array {return $this->get('/contacts/'.rawurlencode($contact).'/notes','2021-07-28');}
+    public function contactAppointments(string $contact):array {return $this->get('/contacts/'.rawurlencode($contact).'/appointments','2021-07-28');}
+    public function createContactTask(string $contact,array $payload):array {return $this->get('/contacts/'.rawurlencode($contact).'/tasks','2021-07-28',$payload);}
+    public function createContactNote(string $contact,array $payload):array {return $this->get('/contacts/'.rawurlencode($contact).'/notes','2021-07-28',$payload);}
+    public function completeContactTask(string $contact,string $task,bool $completed):array {
+        return $this->put('/contacts/'.rawurlencode($contact).'/tasks/'.rawurlencode($task).'/completed','2021-07-28',['completed'=>$completed]);
+    }
+    private function put(string $path,string $version,array $payload):array {return $this->get($path,$version,$payload,'PUT');}
+    private function get(string $path,string $version,?array $payload=null,?string $verb=null):array {
         if($this->token==='')throw new RuntimeException('GHL credential missing');
         $this->headers=[];$this->status=0;
+        $method=$verb??($payload===null?'GET':'POST');
         if($this->transport) {
-            $r=($this->transport)($path,$version,$payload===null?'GET':'POST',$payload);$this->status=$r['status'];$this->headers=array_change_key_case($r['headers']??[]);$raw=$r['body'];
+            $r=($this->transport)($path,$version,$method,$payload);$this->status=$r['status'];$this->headers=array_change_key_case($r['headers']??[]);$raw=$r['body'];
         } else {
             $ch=curl_init('https://services.leadconnectorhq.com'.$path);
             curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>15,CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$this->token,'Version: '.$version,'Accept: application/json'],CURLOPT_HEADERFUNCTION=>function($ch,string $line):int {
                 $parts=explode(':',$line,2);if(count($parts)===2)$this->headers[strtolower(trim($parts[0]))]=trim($parts[1]);return strlen($line);
             }]);
-            if($payload!==null)curl_setopt_array($ch,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>json_encode($payload,JSON_THROW_ON_ERROR),CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$this->token,'Version: '.$version,'Accept: application/json','Content-Type: application/json']]);
+            if($payload!==null)curl_setopt_array($ch,[CURLOPT_CUSTOMREQUEST=>$method,CURLOPT_POSTFIELDS=>json_encode($payload,JSON_THROW_ON_ERROR),CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$this->token,'Version: '.$version,'Accept: application/json','Content-Type: application/json']]);
             $raw=curl_exec($ch);$this->status=curl_getinfo($ch,CURLINFO_RESPONSE_CODE);curl_close($ch);
         }
         if($raw===false || $this->status<200 || $this->status>=300) {

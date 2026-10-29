@@ -39,6 +39,32 @@ if($path==='/api/workspace/contact'&&$method==='GET'){
     catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la ficha. Revisa el permiso de contactos.','code'=>'contact_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'La ficha recibida no tiene el formato esperado.','code'=>'contact_invalid_response'],424);}
 }
+if(preg_match('~^/api/workspace/activity(/note|/task|/task-state)?$~',$path,$activityMatch)&&in_array($method,['GET','POST'],true)){
+    if(!($membership['capabilities']['viewContacts']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar la ficha del contacto.'],403);
+    $conversation=$_GET['conversationId']??'';
+    if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);
+    $known=Actor::filterConversations($row?json_decode($row['payload'],true):[],$membership);$position=array_search($conversation,array_column($known,'id'),true);
+    if($position===false)respond(['error'=>'Conversación no disponible en esta cuenta'],404);
+    $contactId=$known[$position]['contactId']??'';if(!is_string($contactId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))respond(['error'=>'La conversación no contiene un contacto válido'],422);
+    require_once __DIR__.'/ContactActivity.php';
+    $action=$activityMatch[1]??'';
+    if($action!==''&&$method==='POST'){
+        require_once __DIR__.'/ContactActions.php';
+        $actions=new ContactActions();$input=body();
+        try {
+            respond(match($action){
+                '/note'=>$actions->note($connection,$contactId,$membership,$input),
+                '/task'=>$actions->task($connection,$contactId,$membership,$input),
+                '/task-state'=>$actions->completeTask($connection,$contactId,$membership,$input),
+            });
+        } catch(ActionProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
+    }
+    if($action!==''||$method!=='GET')respond(['error'=>'Not found'],404);
+    try{respond((new ContactActivity())->get($connection,$contactId,$membership,($_GET['refresh']??'')==='1'));}
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La actividad está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la actividad del contacto. Revisa el permiso de contactos.','code'=>'activity_upstream_'.$e->status],424);}
+    catch(Throwable $e){respond(['error'=>'La actividad recibida no tiene el formato esperado.','code'=>'activity_invalid_response'],424);}
+}
 if($path==='/api/workspace/opportunities'&&$method==='GET'){
     if(!($membership['capabilities']['viewOpportunities']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar oportunidades.'],403);
     $conversation=$_GET['conversationId']??'';

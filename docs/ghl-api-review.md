@@ -119,3 +119,28 @@ Misma fuente oficial y mismo commit `0af86a4cbd48c66a4071c7e509d1079f9f10ed17`, 
 Ágora deriva el Contact ID exclusivamente de una conversación que el integrante tiene permiso para ver, comprueba `locationId` y `contactId` en cada registro recibido y descarta el resto. El permiso efectivo se evalúa con `opportunitiesEnabled` y el scope de oportunidades; con `assignedDataOnly` sólo se muestran las oportunidades cuyo `assignedTo` coincide con el usuario importado, y la oportunidad activa se elige dentro de ese subconjunto. El nombre del responsable se resuelve contra el equipo ya importado, no con una consulta adicional.
 
 Cachés y cuota: el resultado por contacto se guarda 60 segundos y el directorio de pipelines una hora. Ambas lecturas comparten una única ranura de `GhlGateway`, porque el presupuesto espacia las ranuras un segundo y el panel necesita los nombres en la primera apertura. Si falta el permiso para pipelines, el bloque sigue funcionando sin nombres en lugar de fallar. Un rechazo 401/403 no desactiva la conexión ni la bandeja, y una respuesta con forma inesperada no sustituye el resultado ya guardado.
+
+## Tareas, notas, citas y acciones rápidas 0.10.0
+
+Misma fuente oficial y mismo commit `0af86a4cbd48c66a4071c7e509d1079f9f10ed17`, revisado el 29 de octubre de 2026.
+
+| Uso | Método y endpoint | Scope publicado | Version |
+| --- | --- | --- | --- |
+| Tareas del contacto | `GET /contacts/{contactId}/tasks` | `contacts.readonly` | 2021-07-28 |
+| Notas del contacto | `GET /contacts/{contactId}/notes` | `contacts.readonly` | 2021-07-28 |
+| Citas del contacto | `GET /contacts/{contactId}/appointments` | `contacts.readonly` | 2021-07-28 |
+| Crear tarea | `POST /contacts/{contactId}/tasks` | `contacts.write` | 2021-07-28 |
+| Crear nota | `POST /contacts/{contactId}/notes` | `contacts.write` | 2021-07-28 |
+| Completar o reabrir tarea | `PUT /contacts/{contactId}/tasks/{taskId}/completed` | `contacts.write` | 2021-07-28 |
+
+Las tres lecturas se publican bajo `contacts.readonly`, incluidas las citas: el endpoint de citas del contacto no pide un scope de calendarios. Aun así, Ágora sólo muestra las citas a un integrante cuyo módulo de citas esté activo, porque el permiso del módulo en la cuenta es lo que debe decidir qué ve esa persona; el administrador nativo las ve siempre.
+
+`CreateTaskParams` marca `title`, `dueDate` y `completed` como obligatorios, y admite `body` y `assignedTo`. Ágora envía los tres obligatorios, con `completed` en `false`, y añade `body` sólo si hay detalle. No se envía `assignedTo`: asignar a otra persona es una decisión que requiere elegir usuario y todavía no hay esa interfaz, y no debe deducirse del integrante que pulsa el botón. La fecha se normaliza a una marca UTC explícita (`YYYY-MM-DDTHH:MM:SSZ`); una fecha de calendario sin hora se fija al mediodía UTC para que no cambie de día según la zona del servidor.
+
+`NotesDTO` marca sólo `body` como obligatorio y admite `userId`, `title`, `color` y `pinned`. Ágora envía únicamente `body`: no se inventa un `userId`, porque el PIT no identifica a la persona que actúa y atribuir la nota a un usuario concreto sería falsear la autoría. `UpdateTaskStatusParams` exige `completed`, que es lo único que se envía al completar o reabrir.
+
+`TaskSchema` publica `id`, `title`, `body`, `assignedTo`, `dueDate`, `completed` y `contactId`. `GetNoteSchema` publica `id`, `body`, `userId`, `dateAdded`, `contactId`, `title`, `color` y `pinned`. `GetEventSchema` publica `id`, `calendarId`, `status`, `title`, `assignedUserId`, `notes`, `startTime`, `endTime`, `address`, `locationId`, `contactId`, `groupId`, `appointmentStatus`, `users`, `dateAdded`, `dateUpdated` y `assignedResources`. Ágora comprueba `contactId` en cada registro y descarta el que nombre otro contacto; un registro sin `contactId` se acepta porque el endpoint ya está dirigido a ese contacto. El estado de la cita se lee de `appointmentStatus` y, si falta, de `status`, y se traduce a una etiqueta en español; un valor desconocido se deja vacío.
+
+Las tres lecturas comparten una única ranura de `GhlGateway` y se guardan 60 segundos por contacto. Se piden como máximo 25 registros de cada tipo y, al alcanzar ese límite, se informa en lugar de dar la lista por completa.
+
+Ninguno de los tres endpoints de escritura es idempotente: repetir la petición crea otra nota u otra tarea. La API tampoco acepta una clave de idempotencia. Ágora registra cada intento bajo una clave generada por el navegador y derivada del contenido, igual que el envío de mensajes: una repetición con la misma clave devuelve el primer resultado sin volver a escribir, la misma clave con contenido distinto se rechaza, y un contenido idéntico con una clave nueva se bloquea mientras un intento anterior siga sin resultado confirmado. Un resultado incierto no se declara correcto. Un rechazo 401/403 no desactiva la conexión ni la bandeja.

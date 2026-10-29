@@ -5,7 +5,7 @@ final class PermissionPolicy {
     public static function capabilities(array $actor):array {
         if(($actor['identity_type']??'native')==='native') {
             $admin=($actor['role']??null)==='administrator';
-            return ['configureConnections'=>$admin,'viewConversations'=>$admin,'sendMessages'=>$admin,'viewContacts'=>$admin,'viewOpportunities'=>$admin,'viewCalendars'=>$admin,'assignedDataOnly'=>false];
+            return ['configureConnections'=>$admin,'viewConversations'=>$admin,'sendMessages'=>$admin,'viewContacts'=>$admin,'editContacts'=>$admin,'viewOpportunities'=>$admin,'viewCalendars'=>$admin,'assignedDataOnly'=>false];
         }
         $permissions=self::object($actor['permissions']??[]);
         $scopes=self::list($actor['scopes']??[]);
@@ -17,6 +17,7 @@ final class PermissionPolicy {
             'viewConversations'=>$conversations,
             'sendMessages'=>$conversations&&$scope(['conversations.write','conversations/message.write']),
             'viewContacts'=>$enabled('contactsEnabled')&&$scope(['contacts.readonly','contacts.write']),
+            'editContacts'=>$enabled('contactsEnabled')&&$scope(['contacts.write']),
             'viewOpportunities'=>$enabled('opportunitiesEnabled')&&$scope(['opportunities.readonly','opportunities.write']),
             'viewCalendars'=>$enabled('appointmentsEnabled')&&$scope(['calendars.readonly','calendars.write','calendars/events.readonly','calendars/events.write']),
             'assignedDataOnly'=>($actor['assigned_data_only']??false)===true||(int)($actor['assigned_data_only']??0)===1,

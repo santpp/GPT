@@ -109,18 +109,30 @@ export async function renderLiveInbox(container){
     +(others.length?`<details class="live-opportunity-all"><summary>Ver todas las oportunidades (${opportunities.total})</summary>${others.map(opportunityCard).join('')}</details>`:'')
     +(opportunities.partial?'<span class="muted">Se muestran las oportunidades más recientes de este contacto.</span>':'');
   }
-  function contactProfile(profile,labels={},opportunities=null){
+  const dayOnly=value=>{if(!value)return '';const d=new Date(value);return Number.isNaN(d.getTime())?'':new Intl.DateTimeFormat('es',{dateStyle:'medium'}).format(d)};
+  function activitySection(activity){
+   if(!activity)return '<span class="muted">Cargando actividad…</span>';
+   if(activity.error)return `<span class="muted">${esc(activity.error)}</span>`;
+   const tasks=activity.tasks.length?activity.tasks.map(task=>`<div class="live-task${task.completed?' done':''}"><button data-task="${esc(task.id)}" data-completed="${task.completed?1:0}"${activity.canEdit?'':' disabled'} aria-label="${task.completed?'Reabrir tarea':'Completar tarea'}">${task.completed?'☑':'☐'}</button><div><strong>${esc(task.title)}</strong>${task.body?`<p>${esc(task.body)}</p>`:''}<small>${esc([dayOnly(task.dueDate),task.assignedName].filter(Boolean).join(' · ')||'Sin fecha')}</small></div></div>`).join(''):'<span class="muted">Sin tareas para este contacto.</span>';
+   const notes=activity.notes.length?activity.notes.map(note=>`<div class="live-note"><p>${esc(note.body)}</p><small>${esc([date(note.dateAdded),note.authorName].filter(Boolean).join(' · '))}</small></div>`).join(''):'<span class="muted">Sin notas para este contacto.</span>';
+   const appointments=!activity.appointmentsVisible?'<span class="muted">Tu usuario no tiene el módulo de citas activo.</span>'
+    :activity.appointments.length?activity.appointments.map(item=>`<div class="live-appointment"><strong>${esc(item.title)}</strong><small>${esc([date(item.startTime),item.statusLabel,item.assignedName,item.address].filter(Boolean).join(' · '))}</small></div>`).join(''):'<span class="muted">Sin citas para este contacto.</span>';
+   const forms=activity.canEdit?`<div class="live-quick-actions"><details><summary>+ Crear tarea</summary><form id="live-task-form"><label class="sr-only" for="live-task-title">Título de la tarea</label><input id="live-task-title" maxlength="190" placeholder="Título de la tarea" required><label class="sr-only" for="live-task-due">Vencimiento</label><input id="live-task-due" type="date" required><label class="sr-only" for="live-task-body">Detalle</label><textarea id="live-task-body" maxlength="2000" rows="2" placeholder="Detalle (opcional)"></textarea><button class="primary">Crear tarea</button></form></details><details><summary>+ Crear nota</summary><form id="live-note-form"><label class="sr-only" for="live-note-body">Nota</label><textarea id="live-note-body" maxlength="5000" rows="3" placeholder="Escribe una nota…" required></textarea><button class="primary">Guardar nota</button></form></details><p id="live-activity-status" role="status"></p></div>`:'<p id="live-activity-status" role="status"></p>';
+   return `<div class="section-label">TAREAS</div><div class="live-tasks">${tasks}</div><div class="section-label">NOTAS</div><div class="live-notes">${notes}</div><div class="section-label">CITAS</div><div class="live-appointments">${appointments}</div>${forms}`;
+  }
+  function contactProfile(profile,labels={},opportunities=null,activity=null){
    const details=[['Teléfono',profile.phone],['Email',profile.email],['Empresa',profile.companyName],['Fuente',profile.source],['Responsable',profile.assignedName],['Última actividad',date(profile.lastActivity)],['Zona horaria',profile.timezone],['Dirección',profile.address]].filter(([,value])=>value);
    const phone=String(profile.phone||'').replace(/[^0-9+]/g,'');
-   return `<header class="live-profile-header"><div><span class="section-label">CONTEXTO DEL CONTACTO</span><h2>${esc(profile.name)}</h2></div><button id="live-profile-close" aria-label="Cerrar ficha">×</button></header>${phone||profile.email?`<div class="live-profile-actions">${phone?`<a href="tel:${esc(phone)}">Llamar</a>`:''}${profile.email?`<a href="mailto:${encodeURIComponent(profile.email)}">Email</a>`:''}</div>`:''}<div class="live-profile-details">${details.map(([label,value])=>`<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div><div class="section-label">ETIQUETAS</div><div class="live-profile-tags">${profile.tags?.length?profile.tags.map(tag=>`<span class="tag">${esc(tag)}</span>`).join(''):'<span class="muted">Sin etiquetas</span>'}</div><div class="section-label">CAMPOS PERSONALIZADOS</div><div class="live-profile-fields">${profile.customFields?.length?profile.customFields.map(field=>`<div><span>${esc(labels[field.id]||field.label)}</span><strong>${esc(field.value)}</strong></div>`).join(''):'<span class="muted">Sin campos con valor</span>'}</div><div class="section-label">OPORTUNIDAD ACTIVA</div><div class="live-profile-opportunities">${opportunitySection(opportunities)}</div>`;
+   return `<header class="live-profile-header"><div><span class="section-label">CONTEXTO DEL CONTACTO</span><h2>${esc(profile.name)}</h2></div><button id="live-profile-close" aria-label="Cerrar ficha">×</button></header>${phone||profile.email?`<div class="live-profile-actions">${phone?`<a href="tel:${esc(phone)}">Llamar</a>`:''}${profile.email?`<a href="mailto:${encodeURIComponent(profile.email)}">Email</a>`:''}</div>`:''}<div class="live-profile-details">${details.map(([label,value])=>`<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div><div class="section-label">ETIQUETAS</div><div class="live-profile-tags">${profile.tags?.length?profile.tags.map(tag=>`<span class="tag">${esc(tag)}</span>`).join(''):'<span class="muted">Sin etiquetas</span>'}</div><div class="section-label">CAMPOS PERSONALIZADOS</div><div class="live-profile-fields">${profile.customFields?.length?profile.customFields.map(field=>`<div><span>${esc(labels[field.id]||field.label)}</span><strong>${esc(field.value)}</strong></div>`).join(''):'<span class="muted">Sin campos con valor</span>'}</div><div class="section-label">OPORTUNIDAD ACTIVA</div><div class="live-profile-opportunities">${opportunitySection(opportunities)}</div><div class="live-profile-activity">${activitySection(activity)}</div>`;
   }
   async function loadContact(c,version){
    const panel=$('#live-contact-panel');panel.innerHTML='<p class="empty">Cargando ficha…</p>';
    try{
     const data=await request(`workspace/contact?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`);if(!active()||version!==chatGeneration)return;
-    const bind=()=>{$('#live-profile-close').onclick=()=>layout.classList.remove('contact-open')};
-    let labels={},opportunities=null;
-    const show=()=>{panel.innerHTML=contactProfile(data.contact,labels,opportunities);bind()};
+    let bindActivity=()=>{};
+    const bind=()=>{$('#live-profile-close').onclick=()=>layout.classList.remove('contact-open');bindActivity()};
+    let labels={},opportunities=null,activity=null;
+    const show=()=>{panel.innerHTML=contactProfile(data.contact,labels,opportunities,activity);bind()};
     show();
     // Each extra call waits its turn so the shared per-account budget is respected.
     setTimeout(async()=>{try{const fields=await request(`workspace/contact-fields?connectionId=${encodeURIComponent(select.value)}`);if(!active()||version!==chatGeneration)return;labels=Object.fromEntries(fields.items.map(field=>[field.id,field.name]));show()}catch{}},1100);
@@ -129,6 +141,55 @@ export async function renderLiveInbox(container){
      catch(error){if(!active()||version!==chatGeneration)return;opportunities={error:error.message}}
      show();
     },2300);
+    const query=`connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`;
+    const reload=async()=>{
+     try{const result=await request(`workspace/activity?${query}&refresh=1`);if(!active()||version!==chatGeneration)return;activity=result}
+     catch(error){if(!active()||version!==chatGeneration)return;activity={error:error.message}}
+     show();
+    };
+    // A quick action keeps one key per content, so a retry can never duplicate it.
+    const act=async(path,payload,pending,done)=>{
+     const status=$('#live-activity-status');if(status)status.textContent=pending;
+     const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(path+JSON.stringify(payload)));
+     const storageKey='agora-action:'+c.id+':'+Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+     const requestId=sessionStorage.getItem(storageKey)||crypto.randomUUID().replace(/-/g,'');
+     sessionStorage.setItem(storageKey,requestId);
+     try{
+      await request(`workspace/activity/${path}?${query}`,'POST',me.csrf,{...payload,requestId});
+      sessionStorage.removeItem(storageKey);
+      await reload();
+      const settled=$('#live-activity-status');if(settled)settled.textContent=done;
+     }catch(error){
+      if(['action_rejected','invalid_note','invalid_task','invalid_due_date','invalid_task_id','invalid_task_state','action_forbidden'].includes(error.code))sessionStorage.removeItem(storageKey);
+      const failed=$('#live-activity-status');if(failed)failed.textContent=error.message;
+     }
+    };
+    bindActivity=()=>{
+     panel.querySelectorAll('[data-task]').forEach(button=>button.onclick=async()=>{
+      panel.querySelectorAll('[data-task]').forEach(other=>other.disabled=true);
+      await act('task-state',{taskId:button.dataset.task,completed:button.dataset.completed!=='1'},'Actualizando tarea…','Tarea actualizada.');
+     });
+     const taskForm=$('#live-task-form');
+     if(taskForm)taskForm.onsubmit=async event=>{
+      event.preventDefault();const title=$('#live-task-title').value.trim(),due=$('#live-task-due').value,body=$('#live-task-body').value.trim();
+      if(!title||!due)return;
+      taskForm.querySelector('button').disabled=true;
+      await act('task',{title,dueDate:due,...(body?{body}:{})},'Creando tarea…','Tarea creada.');
+     };
+     const noteForm=$('#live-note-form');
+     if(noteForm)noteForm.onsubmit=async event=>{
+      event.preventDefault();const body=$('#live-note-body').value.trim();
+      if(!body)return;
+      noteForm.querySelector('button').disabled=true;
+      await act('note',{body},'Guardando nota…','Nota guardada.');
+     };
+    };
+    bindActivity();
+    setTimeout(async()=>{
+     try{const result=await request(`workspace/activity?${query}`);if(!active()||version!==chatGeneration)return;activity=result}
+     catch(error){if(!active()||version!==chatGeneration)return;activity={error:error.message}}
+     show();
+    },3500);
    }
    catch(error){if(active()&&version===chatGeneration)panel.innerHTML=`<p class="empty">${esc(error.message)}</p>`}
   }
