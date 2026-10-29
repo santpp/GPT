@@ -35,7 +35,7 @@ with sync_playwright() as p:
     print('PASS filters, search, 5 views, mobile overflow, conversation, composer, context, offline shell; no JS errors')
     context2=browser.new_context(viewport={'width':390,'height':844}, service_workers='block')
     admin=context2.new_page()
-    items=[]
+    items=[];mail_tests=[]
     def mock(route):
         request=route.request
         path=request.url.split('/api/')[1]
@@ -43,6 +43,8 @@ with sync_playwright() as p:
             response={'user':{'role':'administrator'},'csrf':'test-csrf'}
         elif path=='admin/diagnostics':
             response={'ready':True,'version':'0.2.1','checks':[]}
+        elif path=='admin/mail/test':
+            assert request.method=='POST' and request.headers['x-csrf-token']=='test-csrf';mail_tests.append(1);response={'sent':True}
         elif request.method=='POST' and path=='admin/integrations':
             data=request.post_data_json
             assert data['token']=='pit-ui-test-not-a-real-token'
@@ -56,6 +58,7 @@ with sync_playwright() as p:
     admin.route('**/api/**',mock)
     admin.goto(os.getenv('TEST_BASE_URL', 'http://127.0.0.1:8080/'))
     admin.locator('[data-view="settings"]').click()
+    admin.locator('#test-login-mail').click();admin.wait_for_function("document.querySelector('#integration-feedback').textContent.includes('servidor SMTP')")
     admin.locator('#add-integration').click()
     admin.locator('[name="name"]').fill('Subcuenta de prueba')
     admin.locator('[name="locationId"]').fill('loc-test')
@@ -66,7 +69,7 @@ with sync_playwright() as p:
     assert admin.locator('[name="token"]').input_value()==''
     assert admin.evaluate('localStorage.length')==0
     assert 'pit-ui-test-not-a-real-token' not in admin.locator('body').inner_text()
-    assert admin.evaluate('document.documentElement.scrollWidth')==390
+    assert admin.evaluate('document.documentElement.scrollWidth')==390 and len(mail_tests)==1
     print('PASS admin settings form, CSRF header, cleared token and no localStorage (mock API; real API covered separately)')
     context3=browser.new_context(viewport={'width':390,'height':844}, service_workers='block')
     live=context3.new_page()

@@ -26,6 +26,7 @@ GHL conserva los datos principales del CRM. Nuestra base organiza usuarios, perm
 
 - UI HTML/CSS/JS responsive con manual de Ágora: logotipo vectorial, vino, azul y oro. La tipografía Author Variable necesita el archivo web autorizado; se utiliza fallback de sistema. Inbox, ficha, contactos, pipeline, agenda y tareas contienen datos de demostración.
 - Sesión HttpOnly, CSRF y control de origen. El único usuario nativo es el administrador. Los empleados se proyectan desde cada cuenta conectada y entran con el mismo correo mediante un código de un solo uso; no se copian ni validan contraseñas externas.
+- Entrega de códigos por SMTP autenticado con TLS/STARTTLS, prueba administrativa y credenciales sólo en la configuración privada.
 - Panel **Integraciones**: requiere sesión de administrador. Añadir múltiples subcuentas por empresa, guardar Location ID y nombre, sustituir el token, conservarlo al dejar el campo vacío y eliminarlo. Vendedores y supervisores reciben 403 también en backend.
 - Cifrado autenticado XChaCha20-Poly1305 con nonce aleatorio y contexto empresa + location. La clave maestra está fuera de `public/`, en `APP_KEY_FILE`; nunca se versiona. Cambiar ciphertext entre empresas o subcuentas impide descifrarlo. Los endpoints sólo devuelven metadatos y `tokenConfigured`, nunca texto plano ni ciphertext.
 - Botón de comprobación: el backend llama a `GET /locations/{locationId}`, Version `2021-07-28`, y exige que la respuesta corresponda al Location ID. Necesita `locations.readonly`. Una comprobación positiva no demuestra acceso a todos los módulos, y no activa sincronización. Máximo una comprobación simultánea por conexión; separación de 30 segundos.
@@ -52,7 +53,7 @@ Para minimizar consumo: prioridades por actividad, sincronización más frecuent
 
 ## Resto del producto
 
-Pendientes: aplicar `assignedDataOnly` a los módulos que se añadan, importación completa y paginación, ficha completa, adjuntos, acciones rápidas, calendarios/citas reales, auditoría, recuperación, FCM, SSE, Capacitor y cola offline idempotente.
+La ficha de contacto del chat ya consulta teléfono, email, empresa, fuente, responsable, actividad, dirección, etiquetas y campos personalizados, con caché y control de permisos. Pendientes: oportunidades, tareas, notas, citas, adjuntos, acciones rápidas, auditoría, recuperación, FCM, SSE, Capacitor y cola offline idempotente.
 
 La cola futura debe usar UUID estable por comando, estados queued/sending/confirmed/failed/uncertain, pertenencia de usuario/empresa y precondiciones. Si se pierde la conexión tras un envío, reconciliar antes de repetir: no se supone idempotencia de GHL. Datos offline reales por usuario y tenant con TTL y borrado al cerrar sesión.
 

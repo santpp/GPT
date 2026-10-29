@@ -9,7 +9,7 @@ final class GhlGateway {
     // The conservative local budget is a safety cap, not a claim about PIT quotas.
     private const DAILY_BUDGET=5000;
     public function __construct(private readonly ?Closure $factory=null) {}
-    public function execute(array $connection,Closure $operation):array {
+    public function execute(array $connection,Closure $operation,bool $disableOnForbidden=true):array {
         $id=(int)$connection['id'];$key='agora-api:'.$id;
         if((int)query('SELECT GET_LOCK(?,0)',[$key])->fetchColumn()!==1)throw new GhlCooldown(2);
         try {
@@ -32,7 +32,7 @@ final class GhlGateway {
                 $wait=$error instanceof GhlApiException && $status===429 ? max(30,$error->retryAfter) : min(3600,15*(2**min(8,(int)$state['failures'])));
                 $quota=$this->quota($client);$pause=max($now+$wait,$this->quotaPause($quota,$now));
                 $code=in_array($status,[401,403],true)?'authentication_or_scope':($status===429?'rate_limited':'upstream_error');
-                query('UPDATE ghl_sync_state SET request_not_before=?,last_http_status=?,last_error=?,quota=?,failures=failures+1,enabled=IF(?,FALSE,enabled) WHERE connection_id=?',[$pause,$status,$code,json_encode($quota,JSON_THROW_ON_ERROR),(int)in_array($status,[401,403],true),$id]);
+                query('UPDATE ghl_sync_state SET request_not_before=?,last_http_status=?,last_error=?,quota=?,failures=failures+1,enabled=IF(?,FALSE,enabled) WHERE connection_id=?',[$pause,$status,$code,json_encode($quota,JSON_THROW_ON_ERROR),(int)($status===401||($status===403&&$disableOnForbidden)),$id]);
                 throw $error;
             }
         } finally {query('SELECT RELEASE_LOCK(?)',[$key]);}

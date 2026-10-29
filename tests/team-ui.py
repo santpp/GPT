@@ -8,7 +8,7 @@ with sync_playwright() as p:
  def api(route):
   request=route.request;path=request.url.split('/api/')[1]
   if path=='me':data={'user':{'role':'administrator'},'csrf':'test-csrf'}
-  elif path=='admin/diagnostics':data={'ready':True,'version':'0.7.0','checks':[]}
+  elif path=='admin/diagnostics':data={'ready':True,'version':'0.8.0','checks':[]}
   elif path=='admin/integrations':data={'items':[{'id':1,'name':'Cuenta de prueba','location_id':'loc-test','status':'connected','externalUsers':1,'sync_interval_seconds':120,'sync_enabled':1}]}
   elif path=='admin/integrations/1/users':data={'authenticationConfigured':False,'items':[{'id':2,'display_name':'Ana Vendedora','email':'ana@example.test','role_name':'user','assigned_data_only':1,'active':1,'identityLinked':False,'capabilities':{'configureConnections':False,'viewConversations':True,'sendMessages':False,'assignedDataOnly':True}}]}
   elif path=='admin/integrations/1/users/sync':

@@ -22,6 +22,10 @@ with sync_playwright() as p:
                 elif 'lastMessageId=m2' in path:
                     data={'items':[{'id':'m1','body':'Mensaje anterior','dateAdded':'2026-10-27T10:00:00Z','direction':'inbound'},{'id':'m2','body':'Texto reciente','dateAdded':'2026-10-28T10:00:00Z'}],'hasMore':False}
                 else:data={'items':[{'id':'m2','body':'Texto reciente','dateAdded':'2026-10-28T10:00:00Z'},{'id':'m3','body':'<script>window.injected=true</script>','direction':'outbound','dateAdded':'2026-10-28T11:00:00Z'}],'hasMore':True,'lastMessageId':'m2'}
+            elif path.startswith('workspace/contact?'):
+                data={'contact':{'name':'Ángeles García','phone':'+34123456789','email':'angeles@example.test','source':'Formulario web','assignedName':'Ana Responsable','lastActivity':'2026-10-28T11:00:00Z','tags':['Interesada'],'customFields':[{'label':'Campo personalizado','value':'Consulta'}]}}
+            elif path.startswith('workspace/contact-fields?'):
+                data={'items':[]}
             else:data={'items':[]}
             route.fulfill(status=status,content_type='application/json',body=json.dumps(data))
         page.route('**/api/**',api)
@@ -40,6 +44,10 @@ with sync_playwright() as p:
         assert page.locator('[data-live-id]').count()==1 and len(calls)==count
         page.locator('[data-live-id="c1"]').click()
         page.wait_for_selector('#live-log .bubble')
+        page.wait_for_selector('#live-contact-panel h2',state='attached')
+        assert 'Ana Responsable' in page.locator('#live-contact-panel').inner_text()
+        if width==390:
+            page.locator('#live-contact-toggle').click();assert page.locator('#live-contact-panel').is_visible();page.locator('#live-profile-close').click()
         assert page.locator('#live-log script').count()==0
         assert page.evaluate('window.injected === undefined')
         page.locator('#live-older').click()

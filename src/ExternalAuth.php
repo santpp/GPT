@@ -1,24 +1,18 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__.'/LoginMailer.php';
 
 final class ExternalAuth {
     private Closure $deliver;
     public function __construct(?Closure $deliver=null) {
         $this->deliver=$deliver??static function(string $email,string $code):bool {
-            $from=getenv('LOGIN_MAIL_FROM')?:'';
-            if(!filter_var($from,FILTER_VALIDATE_EMAIL))return false;
-            $subject='Tu código de acceso a Ágora';
-            $message="Tu código de acceso es: $code\n\nCaduca en 10 minutos y sólo puede utilizarse una vez.\n";
-            return mail($email,$subject,$message,[
-                'From'=>'Ágora <'.$from.'>',
-                'Content-Type'=>'text/plain; charset=UTF-8',
-                'X-Auto-Response-Suppress'=>'All',
-            ]);
+            try{(new LoginMailer())->sendAccessCode($email,$code);return true;}
+            catch(MailDeliveryException $e){return false;}
         };
     }
 
     public static function configured():bool {
-        return filter_var(getenv('LOGIN_MAIL_FROM')?:'',FILTER_VALIDATE_EMAIL)!==false;
+        return LoginMailer::configured();
     }
 
     public function request(string $email,string $remoteAddress):void {

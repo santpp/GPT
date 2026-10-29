@@ -16,6 +16,11 @@ services:
       GHL_LOCATION_ID: ${GHL_LOCATION_ID:?Set the initial tenant identifier}
       GHL_WEBHOOKS_ENABLED: '0'
       LOGIN_MAIL_FROM: ${LOGIN_MAIL_FROM:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_ENCRYPTION: ${SMTP_ENCRYPTION:-tls}
     secrets: [integration_key]
     tmpfs: ["/run/agora:mode=0700"]
     volumes: ["sessions:/var/lib/php/sessions"]
@@ -58,6 +63,7 @@ services:
       - ../database/005-message-cache.sql:/docker-entrypoint-initdb.d/005-message-cache.sql:ro
       - ../database/006-external-users.sql:/docker-entrypoint-initdb.d/006-external-users.sql:ro
       - ../database/007-external-auth.sql:/docker-entrypoint-initdb.d/007-external-auth.sql:ro
+      - ../database/008-contact-profile.sql:/docker-entrypoint-initdb.d/008-contact-profile.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s

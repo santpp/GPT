@@ -77,3 +77,7 @@ El PIT no ofrece un endpoint para verificar la contraseña de un usuario. La imp
 La revisión del mismo commit oficial confirma que Authorization Code identifica a quien instala/autoriza una app y que la guía pide intervención de un administrador de agencia o ubicación. No se utiliza como login cotidiano de empleados. El Shared Secret documenta contexto autenticado para Custom JavaScript y Custom Pages ejecutadas dentro de la interfaz original; tampoco autentica una visita directa a Ágora. No hay endpoint público para verificar usuario y contraseña.
 
 Ágora vincula por correo exacto normalizado a los usuarios importados y verifica la posesión mediante código temporal enviado por el backend. Esto permite sincronizar alta, baja, rol, permisos y asignaciones sin almacenar credenciales externas ni presentar el proveedor técnico en la interfaz del cliente.
+
+## Ficha de contacto 0.8.0
+
+`GET /contacts/{contactId}`, versión `2021-07-28`, requiere `contacts.readonly` y devuelve identidad, contacto, fuente, responsable, actividad, etiquetas y valores personalizados. `GET /locations/{locationId}/customFields`, la misma versión, requiere `locations/customFields.readonly` y permite convertir IDs de campos en nombres. Ágora deriva el Contact ID exclusivamente de una conversación autorizada, valida ID y Location ID, limita tamaños y usa cachés de 60 segundos y una hora respectivamente.

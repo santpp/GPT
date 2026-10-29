@@ -1,6 +1,6 @@
 # Ágora Digital · Workspace comercial
 
-**Actualización 0.7.0:** [ZIP sin configuración ni claves](releases/agora-update-0.7.0.zip) · [Pasos sin terminal](deploy/native/UPDATE-0.7.0.md).
+**Actualización 0.8.0:** [ZIP sin configuración ni claves](releases/agora-update-0.8.0.zip) · [Pasos sin terminal](deploy/native/UPDATE-0.8.0.md).
 
 Entrada directa sin depender del menú o de rewrites: `https://nueva.agoradigital.app/conexiones.html`. La URL `/version.json` identifica el paquete instalado.
 

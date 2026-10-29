@@ -10,7 +10,7 @@ if (!str_starts_with($path, '/api/')) {
 }
 require $appRoot.'/src/bootstrap.php';
 header('X-Content-Type-Options: nosniff');
-header('X-Agora-Version: 0.7.0');
+header('X-Agora-Version: 0.8.0');
 try {
     $method = $_SERVER['REQUEST_METHOD'];
     if ($path === '/api/health' && $method === 'GET') { query('SELECT 1'); respond(['status'=>'ok']); }
@@ -86,6 +86,11 @@ try {
         require_once $appRoot.'/src/Installation.php';
         $checks=Installation::checks();
         respond(['version'=>Installation::VERSION,'ready'=>!in_array(false,array_column($checks,'ready'),true),'checks'=>$checks]);
+    }
+    if($path==='/api/admin/mail/test'&&$method==='POST'){
+        if($u['role']!=='administrator')respond(['error'=>'Acceso restringido'],403);
+        try{(new LoginMailer())->sendTest($u['email']);respond(['sent'=>true]);}
+        catch(MailDeliveryException $e){respond(['error'=>'El servidor SMTP rechazó la prueba. Revisa host, puerto, cifrado, usuario y contraseña.','code'=>$e->reason],424);}
     }
     if (str_starts_with($path, '/api/workspace/') || str_starts_with($path, '/api/ghl/')) {session_write_close();require $appRoot.'/src/live-inbox.php';}
     if (str_starts_with($path, '/api/admin/integrations')) {

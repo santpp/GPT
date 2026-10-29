@@ -19,6 +19,7 @@ final class GhlClient {
         return $this->get('/conversations/'.rawurlencode($id).'/messages?'.http_build_query(array_filter(['limit'=>20,'lastMessageId'=>$cursor],fn($v)=>$v!==null)),'2021-04-15');
     }
     public function contact(string $id): array {return $this->get('/contacts/'.rawurlencode($id),'2021-07-28');}
+    public function contactFields(string $location):array{return $this->get('/locations/'.rawurlencode($location).'/customFields','2021-07-28');}
     public function locationUsers(string $location):array {return $this->get('/users/?'.http_build_query(['locationId'=>$location]),'2021-07-28');}
     public function sendMessage(array $payload):array {return $this->get('/conversations/messages','2021-04-15',$payload);}
     private function get(string $path,string $version,?array $payload=null):array {

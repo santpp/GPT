@@ -1,5 +1,7 @@
 # Actualizar Ágora a 0.7.0
 
+**Sustituida por la actualización 0.8.0**, que corrige la entrega mediante SMTP autenticado. No usar `mail()` como solución definitiva.
+
 1. Extraer `agora-update-0.7.0.zip` sobre las carpetas existentes del sitio. El paquete no contiene `local.php`, claves ni datos de ejecución.
 2. En `agora-private/config/local.php`, añadir antes de `];` la entrada `'LOGIN_MAIL_FROM'=>'acceso@nueva.agoradigital.app',` usando un remitente real del dominio. No compartir el archivo ni su contraseña de correo.
 3. Entrar con el administrador, abrir **Conexiones** y pulsar **Actualizar base de datos**. La operación añade las tablas de identidad, membresías y códigos temporales; conserva conexiones, conversaciones y usuarios importados.

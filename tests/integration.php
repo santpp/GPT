@@ -33,10 +33,11 @@ try {
  $token='pit-test-'.bin2hex(random_bytes(16));
  $headers=['X-CSRF-Token: '.$login['csrf']];
  [$code,$diagnostics]=request('admin/diagnostics');
- check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.7.0','administrator sees installation readiness and version');
+ check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.8.0','administrator sees installation readiness and version');
  check(!str_contains(json_encode($diagnostics),'APP_KEY_FILE')&&!str_contains(json_encode($diagnostics),'integration.key'),'diagnostics expose no configuration values or key paths');
  check(request('admin/installation/encryption','POST')[0]===403,'preparation requires CSRF');
  [$code,$profile]=request('me');check($code===200&&!array_key_exists('ghl_user_id',$profile['user'])&&$profile['user']['capabilities']['configureConnections'],'public profile exposes capabilities without provider-specific fields');
+ [$code,$mailFailure]=request('admin/mail/test','POST',null,$headers);check($code===424&&isset($mailFailure['code'])&&!str_contains(json_encode($mailFailure),'SMTP_PASSWORD'),'mail diagnostic fails safely when SMTP is not configured');
 
  [$code,$saved]=request('admin/integrations','POST',['name'=>'Test connection','locationId'=>'loc-'.$suffix,'token'=>$token,'syncIntervalSeconds'=>120],$headers);
  check($code===201 && !str_contains(json_encode($saved),$token),'administrator saves integration without token response');
@@ -50,6 +51,10 @@ try {
  check(request('ghl/messages?connectionId='.$id.'&conversationId=unknown')[0]===404,'unknown conversation cannot trigger arbitrary GHL lookup');
  check(request('workspace/send?connectionId='.$id.'&conversationId=unknown','POST',[], $headers)[0]===404,'unknown conversation cannot trigger send');
  check(request('workspace/send?connectionId='.$id.'&conversationId=unknown','POST',[])[0]===403,'send requires CSRF');
+ $cachedProfile=['id'=>'contact-test','name'=>'Contacto real','email'=>'contact@example.test','phone'=>'+34000000000','tags'=>['Cliente'],'customFields'=>[]];
+ query('UPDATE ghl_inbox_snapshots SET payload=?,total=1 WHERE connection_id=?',[json_encode([['id'=>'conv-contact','contactId'=>'contact-test','locationId'=>'loc-'.$suffix]]),$id]);
+ query('INSERT INTO contact_profile_cache(connection_id,contact_id,payload) VALUES(?,?,?)',[$id,'contact-test',json_encode($cachedProfile)]);
+ [$code,$contactResponse]=request('workspace/contact?connectionId='.$id.'&conversationId=conv-contact');check($code===200&&$contactResponse['contact']['name']==='Contacto real','authorized conversation returns cached contact context');
  check(request('admin/integrations/'.$id.'/sync?limit=999','POST',null,$headers)[0]===422,'HTTP rejects unsupported inbox limit');
  query('SELECT GET_LOCK(?,0)',['agora-sync:'.$id]);
  check(request('admin/integrations/'.$id,'PUT',['name'=>'Busy','token'=>'','syncIntervalSeconds'=>120],$headers)[0]===409,'credential update waits for in-flight synchronization');

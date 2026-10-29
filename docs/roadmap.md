@@ -22,7 +22,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## Siguiente hito: contexto comercial dentro del chat
 
-- Ficha del contacto: teléfono, email, fuente, etiquetas, campos personalizados y ejecutivo.
+- Ficha del contacto: teléfono, email, empresa, fuente, etiquetas, campos personalizados, actividad y ejecutivo: implementada en 0.8.0.
 - Oportunidades: pipeline, etapa, valor e historial.
 - Tareas, notas y citas.
 - Acciones rápidas: llamar, agendar, crear tarea/oportunidad, cambiar etapa, reasignar, etiquetar, workflow y nota.

@@ -48,18 +48,19 @@ Desde phpMyAdmin, seleccionar esa base NUEVA y vacía e importar en orden:
 5. `agora-private/database/005-message-cache.sql`
 6. `agora-private/database/006-external-users.sql`
 7. `agora-private/database/007-external-auth.sql`
+8. `agora-private/database/008-contact-profile.sql`
 
 No importar el esquema base en una base con tablas de otra aplicación. Para una futura actualización, conservar la base y aplicar sólo las migraciones necesarias, nunca volver a inicializarla.
 
 ## 3. Configuración privada
 
-En `agora-private/config`, copiar `local.example.php` a `local.php` y editar **sólo ahí** los datos de conexión de MySQL. Mantener APP_ORIGIN como `https://nueva.agoradigital.app`, APP_ENV=production y webhooks=0. Configurar `LOGIN_MAIL_FROM` con un remitente real del dominio para los códigos de acceso del equipo. Si el socket MySQL no funciona con localhost, comprobar el host/puerto configurados en CyberPanel antes de cambiarlo; no habilitar acceso público a MySQL.
+En `agora-private/config`, copiar `local.example.php` a `local.php` y editar **sólo ahí** los datos de conexión de MySQL. Mantener APP_ORIGIN como `https://nueva.agoradigital.app`, APP_ENV=production y webhooks=0. Configurar el bloque `LOGIN_MAIL_FROM`/`SMTP_*` con los datos de cliente del buzón para los códigos de acceso. Si el socket MySQL no funciona con localhost, comprobar el host/puerto configurados en CyberPanel antes de cambiarlo; no habilitar acceso público a MySQL.
 
 Este archivo es PHP: las contraseñas con comillas simples o barras deben escaparse correctamente en la cadena PHP. No pegar su contenido en chat. El archivo nunca debe estar dentro de public_html. No incluir el PIT de GHL aquí: se añadirá después desde Integraciones.
 
 ## 4. Protección y usuario administrador
 
-**Si ya tienes un administrador, no necesitas terminal:** sigue [la actualización 0.7.0](UPDATE-0.7.0.md). Conexiones comprueba la instalación y permite aplicar las tablas adicionales. Copiar resultado permite compartir códigos de fallo sin claves ni rutas.
+**Si ya tienes un administrador, no necesitas terminal:** sigue [la actualización 0.8.0](UPDATE-0.8.0.md). Conexiones comprueba la instalación y permite aplicar las tablas adicionales. Copiar resultado permite compartir códigos de fallo sin claves ni rutas.
 
 Los siguientes comandos son para la primera instalación, antes de disponer de un usuario administrador.
 
