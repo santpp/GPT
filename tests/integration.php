@@ -32,7 +32,7 @@ try {
  $token='pit-test-'.bin2hex(random_bytes(16));
  $headers=['X-CSRF-Token: '.$login['csrf']];
  [$code,$diagnostics]=request('admin/diagnostics');
- check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.5.0','administrator sees installation readiness and version');
+ check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.6.0','administrator sees installation readiness and version');
  check(!str_contains(json_encode($diagnostics),'APP_KEY_FILE')&&!str_contains(json_encode($diagnostics),'integration.key'),'diagnostics expose no configuration values or key paths');
  check(request('admin/installation/encryption','POST')[0]===403,'preparation requires CSRF');
  [$code,$profile]=request('me');check($code===200&&!array_key_exists('ghl_user_id',$profile['user']),'public profile omits provider-specific fields');
@@ -42,6 +42,9 @@ try {
  $id=$saved['id'];
  check(request('admin/integrations/'.$id.'/schedule','POST',['enabled'=>true],$headers)[0]===422,'unverified connection cannot enable cron');
  check(request('ghl/inbox?connectionId='.$id)[0]===200,'administrator can read own empty inbox snapshot');
+ query('INSERT INTO external_users(connection_id,external_user_id,email,display_name,permissions,scopes,assigned_data_only) VALUES(?,?,?,?,?,?,?)',[$id,'external-test','external@example.test','External fixture',json_encode(['conversationsEnabled'=>true,'assignedDataOnly'=>true]),json_encode(['conversations.readonly','conversations/message.readonly']),1]);
+ [$code,$team]=request('admin/integrations/'.$id.'/users');check($code===200&&count($team['items'])===1&&$team['items'][0]['capabilities']['assignedDataOnly']&&!$team['items'][0]['capabilities']['configureConnections']&&!isset($team['items'][0]['permissions'],$team['items'][0]['scopes']),'admin sees projected capabilities without raw permission payload');
+ check((int)query('SELECT COUNT(*) FROM users WHERE tenant_id=?',[$tenants[0]])->fetchColumn()===1,'imported team does not create native login users');
  query('INSERT INTO ghl_inbox_snapshots(connection_id,payload,total) VALUES(?,?,?)',[$id,'[]',0]);
  check(request('ghl/messages?connectionId='.$id.'&conversationId=unknown')[0]===404,'unknown conversation cannot trigger arbitrary GHL lookup');
  check(request('workspace/send?connectionId='.$id.'&conversationId=unknown','POST',[], $headers)[0]===404,'unknown conversation cannot trigger send');

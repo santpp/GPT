@@ -25,7 +25,7 @@ GHL conserva los datos principales del CRM. Nuestra base organiza usuarios, perm
 ## Implementado en esta base
 
 - UI HTML/CSS/JS responsive con manual de Ágora: logotipo vectorial, vino, azul y oro. La tipografía Author Variable necesita el archivo web autorizado; se utiliza fallback de sistema. Inbox, ficha, contactos, pipeline, agenda y tareas contienen datos de demostración.
-- Login propio con sesión HttpOnly, CSRF y control de origen; roles administrador/supervisor/vendedor. Consulta de conversaciones por empresa y asignación. No hay usuario de fábrica.
+- Login propio con sesión HttpOnly, CSRF y control de origen para el único administrador nativo. Los empleados no se crean como usuarios locales: se proyectan desde cada cuenta conectada con rol, permisos, scopes y restricción `assignedDataOnly`. Su vinculación a un proveedor de identidad todavía está pendiente.
 - Panel **Integraciones**: requiere sesión de administrador. Añadir múltiples subcuentas por empresa, guardar Location ID y nombre, sustituir el token, conservarlo al dejar el campo vacío y eliminarlo. Vendedores y supervisores reciben 403 también en backend.
 - Cifrado autenticado XChaCha20-Poly1305 con nonce aleatorio y contexto empresa + location. La clave maestra está fuera de `public/`, en `APP_KEY_FILE`; nunca se versiona. Cambiar ciphertext entre empresas o subcuentas impide descifrarlo. Los endpoints sólo devuelven metadatos y `tokenConfigured`, nunca texto plano ni ciphertext.
 - Botón de comprobación: el backend llama a `GET /locations/{locationId}`, Version `2021-07-28`, y exige que la respuesta corresponda al Location ID. Necesita `locations.readonly`. Una comprobación positiva no demuestra acceso a todos los módulos, y no activa sincronización. Máximo una comprobación simultánea por conexión; separación de 30 segundos.
@@ -38,7 +38,7 @@ Configurar el secreto requiere que el administrador lo escriba temporalmente en 
 
 La clave maestra se genera una vez con `bin/generate-key.php`; el comando preserva una clave existente. Perderla hace irrecuperables los tokens cifrados. Mantener un backup seguro separado; para producción usar un gestor de claves, no una clave de desarrollo compartida en una imagen o snapshot. La rotación de tokens está implementada; la rotación de clave maestra requiere un procedimiento de re-cifrado todavía pendiente.
 
-El administrador actual administra las conexiones de **su empresa**. No es un superadministrador global y no puede acceder a conexiones de otros tenants. Inbox GHL ya selecciona subcuenta y guarda instantáneas independientes por conexión. Es sólo para administradores; las membresías de vendedores por subcuenta y la evolución del resto del read model siguen pendientes. La API legada /api/conversations continúa separada de esa vista.
+El administrador actual administra las conexiones de **su empresa**. No es un superadministrador global y no puede acceder a conexiones de otros tenants. Cada conexión puede importar su equipo con `users.readonly`; Ágora guarda una proyección segura y marca inactivos a quienes desaparecen, sin borrar su rastro. Ningún usuario importado puede configurar conexiones. El acceso efectivo de empleados se habilitará cuando exista una vinculación de identidad verificada; hasta entonces la bandeja real sigue reservada al administrador.
 
 ## Sincronización y notificaciones
 
@@ -52,7 +52,7 @@ Para minimizar consumo: prioridades por actividad, sincronización más frecuent
 
 ## Resto del producto
 
-Pendientes: importación completa y paginación, refresco automático/SSE, permisos de vendedores por subcuenta, ficha completa, adjuntos y envíos, acciones rápidas GHL, calendarios/citas reales, auditoría, gestión de usuarios, permisos por acción, MFA/recuperación, FCM, SSE, Capacitor y cola offline idempotente. Los mensajes de ejemplo no salen de la memoria del navegador.
+Pendientes: vinculación de identidad para empleados, aplicación de `assignedDataOnly` a todos los módulos, importación completa y paginación, ficha completa, adjuntos, acciones rápidas, calendarios/citas reales, auditoría, MFA/recuperación, FCM, SSE, Capacitor y cola offline idempotente.
 
 La cola futura debe usar UUID estable por comando, estados queued/sending/confirmed/failed/uncertain, pertenencia de usuario/empresa y precondiciones. Si se pierde la conexión tras un envío, reconciliar antes de repetir: no se supone idempotencia de GHL. Datos offline reales por usuario y tenant con TTL y borrado al cerrar sesión.
 

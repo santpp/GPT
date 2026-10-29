@@ -55,6 +55,7 @@ services:
       - ../database/003-api-sync.sql:/docker-entrypoint-initdb.d/003-api-sync.sql:ro
       - ../database/004-messaging.sql:/docker-entrypoint-initdb.d/004-messaging.sql:ro
       - ../database/005-message-cache.sql:/docker-entrypoint-initdb.d/005-message-cache.sql:ro
+      - ../database/006-external-users.sql:/docker-entrypoint-initdb.d/006-external-users.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s

@@ -29,7 +29,8 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## Operación del equipo
 
-- Mapeo de vendedores por subcuenta y permisos efectivos de administrador, supervisor y vendedor.
+- Proyección de usuarios, roles, scopes y `assignedDataOnly` por subcuenta: implementada en 0.6.0; falta vincular su identidad para permitirles iniciar sesión.
+- Aplicación de esos permisos efectivos en cada módulo y filtro de datos asignados.
 - Asignación, filtros “mis conversaciones” y registro de acciones.
 - Sincronización incremental de listas más allá de la ventana 20/50/100.
 - Monitorización, copias de seguridad y herramientas seguras para resolver envíos con resultado incierto.

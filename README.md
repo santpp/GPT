@@ -1,6 +1,6 @@
 # Ágora Digital · Workspace comercial
 
-**Actualización 0.5.0:** [ZIP sin configuración ni claves](releases/agora-update-0.5.0.zip) · [Pasos sin terminal](deploy/native/UPDATE-0.5.0.md).
+**Actualización 0.6.0:** [ZIP sin configuración ni claves](releases/agora-update-0.6.0.zip) · [Pasos sin terminal](deploy/native/UPDATE-0.6.0.md).
 
 Entrada directa sin depender del menú o de rewrites: `https://nueva.agoradigital.app/conexiones.html`. La URL `/version.json` identifica el paquete instalado.
 
@@ -13,6 +13,7 @@ La integración usa el **Private Integration Token de cada subcuenta**, configur
 - [Descargar ZIP para CyberPanel](releases/agora-cyberpanel-php83.zip) — abrir el archivo en GitHub y pulsar **Download raw**.
 - [Arquitectura y alcance actual](docs/architecture.md)
 - [Roadmap actualizado](docs/roadmap.md)
+- [Usuarios y permisos importados](docs/external-users.md)
 - [API GHL revisada](docs/ghl-api-review.md)
 - [Identidad del manual](docs/brand.md)
 - [Despliegue actual: CyberPanel nativo, sin Docker](deploy/native/README.md)
@@ -43,7 +44,7 @@ El puerto de desarrollo es 8080, enlazado sólo a loopback. `/api/health` consul
 
 ## Cuenta administradora y conexiones
 
-No hay usuario predeterminado. Para crear uno, mantener `GHL_LOCATION_ID` como identificador inicial del tenant en `.env` (es una limitación del bootstrap actual, no el token de la integración), recrear api y ejecutar `docker compose exec -T api php bin/create-user.php usuario@empresa.test administrator`, suministrando la contraseña por stdin desde una fuente segura. No incluir contraseñas en argumentos o historial.
+No hay usuario predeterminado. Para crear el único administrador nativo, mantener `GHL_LOCATION_ID` como identificador inicial del tenant en `.env` (es una limitación del bootstrap actual, no el token de la integración), recrear api y ejecutar `docker compose exec -T api php bin/create-user.php usuario@empresa.test`, suministrando la contraseña por stdin desde una fuente segura. El comando rechaza crear una segunda cuenta local. El equipo se importa desde las conexiones y no recibe contraseñas locales.
 
 Iniciar sesión en la app, abrir **Conexiones**, añadir nombre, Location ID y Private Integration Token. La comprobación utiliza `locations.readonly`; otros scopes se añadirán según los módulos que se habiliten. El token sólo se envía una vez al backend desde el formulario administrador y no se devuelve después. Usar HTTPS en el despliegue real. No enviar tokens en chat ni introducirlos en una demo pública o un equipo ajeno.
 

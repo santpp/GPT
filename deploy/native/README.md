@@ -46,6 +46,7 @@ Desde phpMyAdmin, seleccionar esa base NUEVA y vacía e importar en orden:
 3. `agora-private/database/003-api-sync.sql`
 4. `agora-private/database/004-messaging.sql`
 5. `agora-private/database/005-message-cache.sql`
+6. `agora-private/database/006-external-users.sql`
 
 No importar el esquema base en una base con tablas de otra aplicación. Para una futura actualización, conservar la base y aplicar sólo las migraciones necesarias, nunca volver a inicializarla.
 
@@ -57,7 +58,7 @@ Este archivo es PHP: las contraseñas con comillas simples o barras deben escapa
 
 ## 4. Protección y usuario administrador
 
-**Si ya tienes un administrador y estás corrigiendo un fallo de conexión, no necesitas terminal:** sigue [la actualización 0.5.0](UPDATE-0.5.0.md). Conexiones comprueba la instalación y permite aplicar las tablas adicionales y preparar la protección inicial cuando es seguro. Copiar resultado permite compartir códigos de fallo sin claves ni rutas.
+**Si ya tienes un administrador y estás corrigiendo un fallo de conexión, no necesitas terminal:** sigue [la actualización 0.6.0](UPDATE-0.6.0.md). Conexiones comprueba la instalación y permite aplicar las tablas adicionales y preparar la protección inicial cuando es seguro. Copiar resultado permite compartir códigos de fallo sin claves ni rutas.
 
 Los siguientes comandos son para la primera instalación, antes de disponer de un usuario administrador.
 
@@ -78,7 +79,7 @@ Elegir el email de administrador y sustituir `TU_EMAIL` en el comando. En Bash:
 ```sh
 read -r -s -p 'Contraseña administrador (mínimo 12 caracteres): ' agora_admin_password
 printf '\n'
-printf '%s' "$agora_admin_password" | /usr/local/lsws/lsphp83/bin/php bin/create-user.php TU_EMAIL administrator
+printf '%s' "$agora_admin_password" | /usr/local/lsws/lsphp83/bin/php bin/create-user.php TU_EMAIL
 unset agora_admin_password
 ```
 

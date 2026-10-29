@@ -9,7 +9,7 @@ import threading
 import zipfile
 from playwright.sync_api import sync_playwright
 
-archive = Path(os.getenv('NATIVE_ARCHIVE', 'releases/agora-update-0.5.0.zip'))
+archive = Path(os.getenv('NATIVE_ARCHIVE', 'releases/agora-update-0.6.0.zip'))
 with tempfile.TemporaryDirectory() as directory:
     with zipfile.ZipFile(archive) as bundle:
         bundle.extractall(directory)
