@@ -1,4 +1,4 @@
-const CACHE='agora-shell-v17';
+const CACHE='agora-shell-v18';
 const SHELL=['/','/bandeja','/contactos','/oportunidades','/assets/app.css','/assets/layout.css','/assets/app.js','/assets/workspace.js','/assets/contacts.js','/assets/board.js','/assets/icon.svg','/assets/agora-logo.svg','/assets/integrations.js','/assets/live-inbox.js','/manifest.webmanifest'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL.map(url=>new Request(url,{cache:'reload'}))))));
 self.addEventListener('message',e=>{if(e.data?.type==='ACTIVATE')self.skipWaiting()});

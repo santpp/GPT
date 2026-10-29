@@ -139,11 +139,8 @@ export async function renderLiveInbox(container){
     const show=()=>{panel.innerHTML=contactProfile(data.contact,labels,opportunities,activity);bind()};
     show();
     // Each extra call waits its turn so the shared per-account budget is respected.
-    request(`workspace/contact-fields?connectionId=${encodeURIComponent(select.value)}`)
-     .then(fields=>{if(!active()||version!==chatGeneration)return;labels=Object.fromEntries(fields.items.map(field=>[field.id,field.name]));show()}).catch(()=>{});
-    request(`workspace/opportunities?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`)
-     .then(result=>{opportunities=result}).catch(error=>{opportunities={error:error.message}})
-     .finally(()=>{if(active()&&version===chatGeneration)show()});
+
+
     const query=`connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`;
     const reload=async()=>{
      try{const result=await request(`workspace/activity?${query}&refresh=1`);if(!active()||version!==chatGeneration)return;activity=result}
@@ -188,9 +185,20 @@ export async function renderLiveInbox(container){
      };
     };
     bindActivity();
-    request(`workspace/activity?${query}`)
-     .then(result=>{activity=result}).catch(error=>{activity={error:error.message}})
-     .finally(()=>{if(active()&&version===chatGeneration)show()});
+    // One read at a time: the account's budget is shared with the chat poll,
+    // and racing for the same lock only turns into a queue with errors.
+    (async()=>{
+     try{const fields=await request(`workspace/contact-fields?connectionId=${encodeURIComponent(select.value)}`);if(!active()||version!==chatGeneration)return;labels=Object.fromEntries(fields.items.map(field=>[field.id,field.name]));show()}catch{}
+     if(!active()||version!==chatGeneration)return;
+     try{opportunities=await request(`workspace/opportunities?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`)}
+     catch(error){opportunities={error:error.message}}
+     if(!active()||version!==chatGeneration)return;
+     show();
+     try{activity=await request(`workspace/activity?${query}`)}
+     catch(error){activity={error:error.message}}
+     if(!active()||version!==chatGeneration)return;
+     show();
+    })();
    }
    catch(error){if(active()&&version===chatGeneration)panel.innerHTML=`<p class="empty">${esc(error.message)}</p>`}
   }

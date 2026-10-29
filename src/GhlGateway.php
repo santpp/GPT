@@ -13,10 +13,12 @@ final class GhlGateway {
     // while letting one screen make its handful of reads without waiting.
     private const BURST=20;
     private const WINDOW=10;
+    private const LOCK_WAIT=6;
     public function __construct(private readonly ?Closure $factory=null) {}
     public function execute(array $connection,Closure $operation,bool $disableOnForbidden=true):array {
         $id=(int)$connection['id'];$key='agora-api:'.$id;
-        if((int)query('SELECT GET_LOCK(?,0)',[$key])->fetchColumn()!==1)throw new GhlCooldown(2);
+        // Screens read several things at once; waiting our turn beats refusing.
+        if((int)query('SELECT GET_LOCK(?,?)',[$key,self::LOCK_WAIT])->fetchColumn()!==1)throw new GhlCooldown(2);
         try {
             $fresh=query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$id,$connection['tenant_id']])->fetch();
             if(!$fresh || !hash_equals($fresh['token_ciphertext'],$connection['token_ciphertext']))throw new GhlCooldown(2);

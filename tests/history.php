@@ -37,5 +37,13 @@ check(reason(fn()=>MessageHistory::page(['messages'=>array_map(fn(int $i):array=
 check(reason(fn()=>MessageHistory::page(['messages'=>'no'],'conv','loc',null))==='messages_not_a_list'||reason(fn()=>MessageHistory::page(['messages'=>'no'],'conv','loc',null))==='messages_missing','a non-list message set is refused with its reason');
 check(reason(fn()=>MessageHistory::page([],'conv','loc',null))==='messages_missing','a response without messages is refused with its reason');
 
+// Some accounts answer with the same fields wrapped one level deeper.
+$nested=MessageHistory::page(['messages'=>['messages'=>[$m],'nextPage'=>True,'lastMessageId'=>'m2']],'conv','loc',null);
+check($nested['items']===[$m]&&$nested['hasMore']===true&&$nested['lastMessageId']==='m2','a nested response envelope is read like the flat one');
+$nestedLast=MessageHistory::page(['messages'=>['messages'=>[$m],'nextPage'=>false]],'conv','loc',null);
+check($nestedLast['items']===[$m]&&$nestedLast['hasMore']===false,'a nested last page is accepted');
+check(reason(fn()=>MessageHistory::page(['messages'=>['messages'=>'no']],'conv','loc',null))==='messages_not_a_list','a nested envelope with an unusable list is still refused');
+check(reason(fn()=>MessageHistory::page(['messages'=>['messages'=>[['id'=>'x','conversationId'=>'otra']]]],'conv','loc',null))==='conversation_mismatch','a nested envelope keeps the account checks strict');
+
 $client=new GhlClient('test',function($path,$version){check($path==='/conversations/conv/messages?limit=20&lastMessageId=m2'&&$version==='2021-04-15','documented endpoint and pagination query');return ['status'=>200,'body'=>'{}'];});
 $client->conversationMessages('conv','m2');

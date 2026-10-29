@@ -71,6 +71,7 @@ docker compose exec -T api php tests/external-auth.php
 # Con Playwright Python y Chromium disponibles:
 python3 tests/ui.py
 python3 tests/shell-ui.py
+python3 tests/mobile-ui.py
 ```
 
 `tests/directories.php` cubre las pantallas de contactos y oportunidades con un cliente de API simulado y MariaDB real: endpoints y versiones documentados, aislamiento por cuenta, agrupación por embudo y etapa reales, totales por columna, filtro `assignedDataOnly` y respuestas con forma inesperada. `tests/shell-ui.py` comprueba que sin sesión sólo se ve la pantalla de acceso, que el menú no ofrece pantallas de ejemplo, y que el selector de subcuenta de la cabecera gobierna todas las vistas.

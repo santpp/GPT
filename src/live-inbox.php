@@ -131,7 +131,7 @@ if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $met
         respond($cursor?$feed->older($connection,$conversation,$cursor):$feed->recent($connection,$conversation,($_GET['refresh']??'')==='1'));
     } catch(GhlCooldown $e) {header('Retry-After: '.$e->retryAfter);respond(['error'=>'Consulta pausada para respetar la cuota. Vuelve a intentarlo más tarde.','retryAfter'=>$e->retryAfter],429);}
     catch(GhlApiException $e){respond(['error'=>'No se pudieron leer los mensajes. Código del canal: '.$e->status.'. Revisa los permisos de lectura.','code'=>'messages_upstream_'.$e->status],424);}
-    catch(HistoryFormatException $e) {respond(['error'=>'El historial recibido no tiene el formato esperado.','code'=>'messages_'.$e->reason],424);}
+    catch(HistoryFormatException $e) {respond(['error'=>'El historial recibido no tiene el formato esperado. Código: messages_'.$e->reason.'.','code'=>'messages_'.$e->reason],424);}
     catch(Throwable $e) {respond(['error'=>'El historial recibido no tiene el formato esperado. Código: messages_invalid_response.','code'=>'messages_invalid_response'],424);}
 }
 respond(['error'=>'Not found'],404);

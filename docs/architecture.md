@@ -26,6 +26,8 @@ GHL conserva los datos principales del CRM. Nuestra base organiza usuarios, perm
 
 - UI HTML/CSS/JS responsive con manual de Ágora: logotipo vectorial, vino, azul y oro. La tipografía Author Variable necesita el archivo web autorizado; se utiliza fallback de sistema. Inbox, ficha, contactos, pipeline, agenda y tareas contienen datos de demostración.
 - Sesión HttpOnly, CSRF y control de origen. El único usuario nativo es el administrador. Los empleados se proyectan desde cada cuenta conectada y entran con el mismo correo mediante un código de un solo uso; no se copian ni validan contraseñas externas.
+- Las actualizaciones de esquema se aplican solas en la primera petición posterior a una actualización, bajo cerrojo y sólo con migraciones aditivas e idempotentes. No hay botón que pulsar y, si fallaran, la pantalla de preparación lo informa en lugar de romperse.
+- Interfaz pensada para teléfono de 6,7 pulgadas: nada tocable por debajo de 44 px, sin desplazamiento lateral, y la conversación ocupa la pantalla con el campo de respuesta siempre alcanzable.
 - Entrada única: sin sesión se muestra la pantalla de acceso y nada más; con sesión, el espacio real. No hay datos de ejemplo en la aplicación.
 - La subcuenta en uso se elige una vez en la cabecera y gobierna todas las pantallas; la elección se recuerda en el navegador y se valida siempre contra las conexiones que el usuario puede ver.
 - Pantalla de contactos y tablero de oportunidades por embudo, con los mismos permisos y `assignedDataOnly` que el resto.

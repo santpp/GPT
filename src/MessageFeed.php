@@ -11,7 +11,7 @@ final class MessageFeed {
         $cached=$this->cached((int)$connection['id'],$conversation);
         if(!$force && $cached && strtotime($cached['fetched_at'])>=time()-self::FRESH_SECONDS)return $this->response($cached,true);
         $lock='agora-messages:'.$connection['id'].':'.substr(hash('sha256',$conversation),0,32);
-        if((int)query('SELECT GET_LOCK(?,0)',[$lock])->fetchColumn()!==1) {
+        if((int)query('SELECT GET_LOCK(?,5)',[$lock])->fetchColumn()!==1) {
             if($cached)return $this->response($cached,true);
             throw new GhlCooldown(1);
         }

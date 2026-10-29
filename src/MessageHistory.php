@@ -17,7 +17,13 @@ final class MessageHistory {
     }
 
     public static function page(array $data,string $conversation,string $location,?string $previous):array {
+        // The published DTO is flat, but an account can answer with the same
+        // fields wrapped one level deeper. Both are read; nothing else is.
         $raw=$data['messages']??null;
+        if(is_array($raw)&&!array_is_list($raw)&&isset($raw['messages'])&&is_array($raw['messages'])&&array_is_list($raw['messages'])) {
+            $data=$raw+$data;
+            $raw=$raw['messages'];
+        }
         if(!is_array($raw))throw new HistoryFormatException('messages_missing');
         if(!array_is_list($raw))throw new HistoryFormatException('messages_not_a_list');
         if(count($raw)>self::MAX_PAGE)throw new HistoryFormatException('page_too_large');

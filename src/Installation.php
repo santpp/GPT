@@ -2,8 +2,8 @@
 declare(strict_types=1);
 require_once __DIR__.'/TokenVault.php';
 final class Installation {
-    public const VERSION='0.11.0';
-    public static function checks():array {
+    public const VERSION='0.11.1';
+    public static function checks(bool $autoMigrate=true):array {
         $checks=[];
         $runtime=PHP_VERSION_ID>=80300;
         foreach(['pdo_mysql','curl','openssl','mbstring'] as $module)$runtime=$runtime&&extension_loaded($module);
@@ -39,6 +39,7 @@ final class Installation {
             query('SELECT connection_id,request_id,contact_id,action,request_hash,state,result_id,error_code FROM contact_action_attempts LIMIT 0');
             $checks[]=['name'=>'schema','ready'=>true,'code'=>null];
         }catch(PDOException $e){$checks[]=['name'=>'schema','ready'=>false,'code'=>in_array($e->getCode(),['42S02','42S22'],true)?'schema_pending':'database_unavailable'];}
+        if($autoMigrate)$checks=self::ensureSchema($checks);
         foreach($checks as &$check)$check['message']=$check['ready']?'Correcto':(SetupException::MESSAGES[$check['code']]??'Revisión necesaria');
         return $checks;
     }
@@ -82,6 +83,20 @@ final class Installation {
             TokenVault::fromEnvironment();
         } finally {query('SELECT RELEASE_LOCK(?)',[$lock]);}
     }
+    /**
+     * Brings the schema up to date by itself. The migrations are additive and
+     * idempotent and run under a named lock, so an update is a file copy: the
+     * first request after it applies what is missing instead of asking.
+     */
+    public static function ensureSchema(array $checks):array {
+        $schema=null;
+        foreach($checks as $check)if($check['name']==='schema')$schema=$check;
+        if($schema===null||$schema['ready']||$schema['code']!=='schema_pending')return $checks;
+        try {self::applyMigrations();}
+        catch(Throwable $e){return $checks;}
+        return self::checks(false);
+    }
+
     public static function assertReady():void {
         foreach(self::checks() as $check)if(!$check['ready'])throw new SetupException($check['code']);
     }
