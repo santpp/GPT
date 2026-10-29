@@ -10,29 +10,20 @@ with sync_playwright() as p:
     page.goto(os.getenv('TEST_BASE_URL', 'http://127.0.0.1:8080/'))
     page.evaluate('navigator.serviceWorker.ready')
     page.wait_for_function('navigator.serviceWorker.controller !== null')
-    page.locator('[data-filter="unread"]').click()
-    assert page.locator('.conversation-item').count() == 4
-    page.locator('#search').fill('Lucía')
-    assert page.locator('.conversation-item').count() == 1
-    page.locator('#search').fill('')
-    page.locator('[data-filter="all"]').click()
-    for view in ['contacts', 'pipeline', 'calendar', 'tasks', 'inbox']:
-        page.locator(f'[data-view="{view}"]').click()
-        assert page.evaluate('document.documentElement.scrollWidth') == 390
-    page.get_by_role('button', name='Abrir conversación de Lucía Martínez').click()
-    page.locator('#message-input').fill('Prueba de respuesta')
-    page.locator('button.send').click()
-    assert 'Prueba de respuesta' in page.locator('#messages').inner_text()
-    page.locator('#context-toggle').click()
-    assert page.locator('#contact-panel').is_visible()
-    page.locator('#close-context').click()
+    # A visitor without a session gets the sign-in screen, never a sample workspace.
+    page.wait_for_selector('#signin:not([hidden])')
+    assert page.locator('#app').is_hidden()
+    landing = page.locator('body').inner_text()
+    for sample in ['demostración', 'Demo', 'Vista de ejemplo', 'Datos de demostración']:
+        assert sample not in landing, sample
+    assert page.evaluate('document.documentElement.scrollWidth') == 390
     context.set_offline(True)
     page.reload()
     page.wait_for_load_state('domcontentloaded')
-    assert page.locator('#page-title').inner_text() == 'Cada conversación cuenta.'
-    assert 'Sin conexión' in page.locator('#network').inner_text()
+    page.wait_for_selector('#signin:not([hidden])')
+    assert page.locator('#team-login-request').count() == 1, 'the offline shell still offers sign-in'
     assert not errors, errors
-    print('PASS filters, search, 5 views, mobile overflow, conversation, composer, context, offline shell; no JS errors')
+    print('PASS sign-in gate, no sample workspace, mobile width and offline shell; no JS errors')
     context2=browser.new_context(viewport={'width':390,'height':844}, service_workers='block')
     admin=context2.new_page()
     items=[];mail_tests=[];channel={'connectionId':None,'ready':False}
@@ -90,14 +81,14 @@ with sync_playwright() as p:
         import json
         path=route.request.url.split('/api/')[1]
         if path=='me':response={'user':{'role':'administrator'},'csrf':'test-csrf'}
-        elif path=='workspace/connections':response={'items':[{'id':1,'name':'Test location','location_id':'loc-test'}]}
+        elif path=='workspace/connections':response={'items':[{'id':1,'name':'Test location','location_id':'loc-test','status':'connected'}]}
         elif path.startswith('workspace/inbox?'):response={'items':[{'id':'conv-test','contactName':'Contacto de prueba API','lastMessageBody':'<img src=x onerror=alert(1)>','unreadCount':2}],'total':25,'partial':True,'syncedAt':'2026-10-28 10:00:00','state':None}
         elif path.startswith('workspace/messages?'):response={'items':[{'id':'message-1','body':'<script>window.injected=true</script>','direction':'inbound','dateAdded':'2026-10-28T10:00:00Z','status':'delivered'}],'hasMore':True}
         else:response={'synced':{'count':1,'total':25,'partial':True}}
         route.fulfill(status=200,content_type='application/json',body=json.dumps(response))
     live.route('**/api/**',live_mock)
     live.goto(os.getenv('TEST_BASE_URL', 'http://127.0.0.1:8080/'))
-    live.locator('button[data-view="inbox"]').click()
+    live.wait_for_selector('#app:not([hidden])')
     live.wait_for_selector('[data-live-id]')
     assert 'Mostrando 1 de 25' in live.locator('#live-feedback').inner_text()
     assert live.locator('#live-list img').count()==0
@@ -112,9 +103,15 @@ with sync_playwright() as p:
         assert not re.search(r'gohighlevel|leadconnector|\bghl\b', visible.locator('body').inner_text(), re.I)
     for fixture_role in ['seller','supervisor']:
         restricted=browser.new_context(service_workers='block').new_page()
-        restricted.route('**/api/me',lambda route,_request,role=fixture_role:route.fulfill(status=200,content_type='application/json',body='{"user":{"role":"'+role+'"},"csrf":"test"}'))
+        def mock_for(role):
+            def handler(route):
+                path=route.request.url.split('/api/')[1]
+                body='{"user":{"role":"'+role+'"},"csrf":"test"}' if path=='me' else '{"items":[]}'
+                route.fulfill(status=200,content_type='application/json',body=body)
+            return handler
+        restricted.route('**/api/**',mock_for(fixture_role))
         restricted.goto(os.getenv('TEST_BASE_URL','http://127.0.0.1:8080/'))
-        restricted.wait_for_timeout(100)
+        restricted.wait_for_selector('#app:not([hidden])')
         assert restricted.locator('[data-view="settings"]').is_hidden()
     print('PASS white-label visible UI and restricted administration navigation')
     setup_page=browser.new_context(service_workers='block').new_page()
@@ -153,7 +150,8 @@ with sync_playwright() as p:
     login_page.route('**/api/**',direct_mock)
     base=os.getenv('TEST_BASE_URL','http://127.0.0.1:8080/').rstrip('/')
     login_page.goto(base+'/conexiones')
-    login_page.locator('#settings-login').click()
+    # A deep link while signed out leads straight to sign-in, not to a sample screen.
+    login_page.wait_for_selector('#signin:not([hidden])')
     login_page.locator('.admin-login summary').click()
     login_page.locator('#login-form [name="email"]').fill('admin@example.test')
     login_page.locator('#login-form [name="password"]').fill('dummy-test-password')

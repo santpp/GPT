@@ -1,10 +1,13 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 29 de octubre de 2026. Versión publicada: 0.10.0.
+Estado actualizado: 29 de octubre de 2026. Versión publicada: 0.11.0.
 
 ## Completado y desplegable
 
 - Base PWA móvil, PHP 8.3 y MariaDB; instalación nativa en CyberPanel.
+- Entrada directa al espacio real: pantalla de acceso y, al entrar, datos de la cuenta. Sin vistas de ejemplo.
+- Selector de subcuenta en la cabecera que manda en toda la aplicación.
+- Pantallas reales de contactos y de oportunidades por embudo.
 - Login propio, roles base y administración de conexiones por subcuenta.
 - Credenciales cifradas en el servidor; el navegador nunca recibe la clave privada.
 - Bandeja real con 20/50/100 conversaciones, búsqueda local, pendientes y canales legibles.
@@ -46,7 +49,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## Evolución
 
-- Pipeline Kanban, calendario, contactos y tareas completamente reales.
+- Contactos y tablero de oportunidades: implementados en 0.11.0. Pendientes como pantallas propias: calendario y tareas, que hoy sólo aparecen dentro de la conversación.
 - Resúmenes y sugerencias con IA, intención, clasificación y scoring.
 - Dashboards, reportes, Ágora Digital ERP, cobranza, facturación y pagos.
 - Varias subcuentas por empresa y posterior arquitectura SaaS multiempresa.

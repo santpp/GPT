@@ -144,3 +144,26 @@ Las tres lecturas se publican bajo `contacts.readonly`, incluidas las citas: el 
 Las tres lecturas comparten una única ranura de `GhlGateway` y se guardan 60 segundos por contacto. Se piden como máximo 25 registros de cada tipo y, al alcanzar ese límite, se informa en lugar de dar la lista por completa.
 
 Ninguno de los tres endpoints de escritura es idempotente: repetir la petición crea otra nota u otra tarea. La API tampoco acepta una clave de idempotencia. Ágora registra cada intento bajo una clave generada por el navegador y derivada del contenido, igual que el envío de mensajes: una repetición con la misma clave devuelve el primer resultado sin volver a escribir, la misma clave con contenido distinto se rechaza, y un contenido idéntico con una clave nueva se bloquea mientras un intento anterior siga sin resultado confirmado. Un resultado incierto no se declara correcto. Un rechazo 401/403 no desactiva la conexión ni la bandeja.
+
+## Pantallas de contactos y oportunidades 0.11.0
+
+Misma fuente oficial y mismo commit `0af86a4cbd48c66a4071c7e509d1079f9f10ed17`, revisado el 29 de octubre de 2026.
+
+| Uso | Método y endpoint | Scope publicado | Version |
+| --- | --- | --- | --- |
+| Lista de contactos | `GET /contacts/?locationId=…&query=…&limit=50` | `contacts.readonly` | 2021-07-28 |
+| Tablero de oportunidades | `GET /opportunities/search?location_id=…&status=open&limit=100` | `opportunities.readonly` | 2021-07-28 |
+
+`GET /contacts/` declara `locationId` obligatorio y admite `query`, `limit` (máximo publicado 100, por defecto 20), `startAfter` y `startAfterId`. Responde `contacts` y `count`. Ágora pide 50 y trata el resultado como ventana, no como lista completa; el término de búsqueda se reduce a letras, números y los signos de una dirección o un teléfono antes de enviarlo, de modo que no se reenvía ningún operador. `POST /contacts/search` existe con el mismo scope, pero su `SearchBodyV2DTO` se publica sin propiedades, así que no se usa: no se puede construir un cuerpo contra un contrato vacío sin suponer.
+
+El tablero reutiliza `GET /opportunities/search` con `status=open` y sin `contact_id`, y agrupa en el servidor por `pipelineId` y `pipelineStageId` contra el directorio de embudos. Una oportunidad cuya etapa no figura en el embudo se recoge en una columna «Sin etapa» explícita, en lugar de desaparecer o de mostrar un identificador. Las dos lecturas del tablero comparten una sola ranura de `GhlGateway`.
+
+Ambas pantallas respetan `assignedDataOnly` filtrando por `assignedTo` después de leer, y lo indican en la propia pantalla para que una lista corta no se confunda con la totalidad de la cuenta. El filtro se aplica sobre la ventana leída: un integrante con muchos registros ajenos por delante puede ver menos de los suyos de los que existen, y por eso la pantalla avisa de que muestra los más recientes.
+
+## Presupuesto local revisado en 0.11.0
+
+Hasta 0.10.0 el gateway imponía un hueco fijo de un segundo entre peticiones de una misma conexión. La [guía OAuth](https://github.com/GoHighLevel/highlevel-api-docs/blob/main/docs/oauth/Authorization.md) publica 100 peticiones por 10 segundos y 200.000 al día por app y recurso, de modo que ese hueco era diez veces más restrictivo que el límite publicado y hacía que una pantalla con varias lecturas se bloqueara a sí misma. Se sustituye por una ventana deslizante de 20 peticiones cada 10 segundos por conexión: una quinta parte del límite publicado, que deja margen para cualquier otro uso de la misma credencial y permite que una pantalla haga sus lecturas sin esperar. Se conservan el presupuesto diario, la pausa derivada de las cabeceras `X-RateLimit-*` y el tratamiento de 429 con `Retry-After`. Los límites reales del PIT siguen sin publicarse.
+
+## Tolerancia del historial revisada en 0.11.0
+
+`GetMessagesByConversationResponseDto` publica `messages`, `nextPage` y `lastMessageId`. La validación anterior descartaba la página entera ante tres diferencias que no son un problema de seguridad: una página mayor que el límite pedido, un registro sin `id`, y un `lastMessageId` que no aparece entre los mensajes devueltos. Una cuenta real puede producir cualquiera de las tres, y el resultado era `messages_invalid_response` con el historial vacío. Ahora una página mayor se acepta hasta un tamaño implausible, un registro sin identificador se omite y el resto se muestra, y un cursor inservible detiene la paginación en vez de tirar la página: la protección contra bucles se mantiene, porque ese cursor nunca se usa. Las comprobaciones de cuenta y de conversación siguen siendo estrictas y rechazan la respuesta. Cada rechazo publica ahora su motivo (`messages_page_too_large`, `messages_conversation_mismatch`, `messages_location_mismatch`, `messages_messages_missing`, `messages_messages_not_a_list`) para poder diagnosticar sin exponer datos.

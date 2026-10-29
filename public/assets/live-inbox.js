@@ -1,3 +1,4 @@
+import {workspace} from './workspace.js';
 const drafts=new Map();
 window.addEventListener('agora:logout',()=>{drafts.clear();for(const key of Object.keys(sessionStorage))if(key.startsWith('agora-send:'))sessionStorage.removeItem(key)});
 const sendChannels={TYPE_SMS:'SMS',TYPE_WHATSAPP:'WhatsApp',TYPE_INSTAGRAM:'IG',TYPE_FACEBOOK:'FB',TYPE_EMAIL:'Email'};
@@ -16,13 +17,16 @@ async function request(path,method='GET',csrf='',body=null){
 export async function renderLiveInbox(container){
  container.agoraLiveDispose?.();
  const instance=Symbol();container.agoraLiveInstance=instance;
- const active=()=>container.agoraLiveInstance===instance&&container.dataset.view==='live';
+ const active=()=>container.agoraLiveInstance===instance&&container.dataset.view==='inbox';
  container.innerHTML='<p class="empty">Cargando conversaciones…</p>';
  try{
   const me=await request('me');const {items}=await request('workspace/connections');if(!active())return;
-  container.innerHTML=`<div class="live-toolbar"><label>Cuenta<select id="live-connection" aria-label="Cuenta">${items.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label><label>Mostrar<select id="live-limit" aria-label="Cantidad de conversaciones"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label><button id="sync-live" class="primary">Actualizar</button></div><p id="live-auto-status" class="live-auto-status" role="status">Actualización automática al mantener abierta esta pantalla</p><p id="live-feedback" class="live-feedback" role="status"></p><div class="live-inbox-layout"><section class="live-sidebar" aria-label="Lista de conversaciones"><label class="search"><span aria-hidden="true">⌕</span><input id="live-search" type="search" placeholder="Buscar nombre o mensaje" aria-label="Buscar en conversaciones cargadas"></label><div class="tabs"><button data-live-filter="all" class="active" aria-pressed="true">Todas</button><button data-live-filter="unread" aria-pressed="false">Pendientes</button><span id="live-count"></span></div><p class="live-search-hint">Búsqueda en las conversaciones cargadas</p><div id="live-list"></div></section><section id="live-messages" aria-label="Conversación"><p class="empty">Selecciona una conversación para consultar su historial.</p></section><aside id="live-contact-panel" class="live-contact-panel" aria-label="Ficha del contacto"><p class="empty">Selecciona una conversación.</p></aside></div>`;
-  const $=s=>container.querySelector(s), limit=$('#live-limit'), select=$('#live-connection'),feedback=$('#live-feedback'),button=$('#sync-live'),layout=$('.live-inbox-layout');
-  if(!items.length){feedback.textContent='Añade una cuenta desde Conexiones para empezar.';button.disabled=true;return}
+  container.innerHTML=`<div class="live-toolbar"><label>Mostrar<select id="live-limit" aria-label="Cantidad de conversaciones"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label></div><p id="live-auto-status" class="live-auto-status" role="status">Actualización automática al mantener abierta esta pantalla</p><p id="live-feedback" class="live-feedback" role="status"></p><div class="live-inbox-layout"><section class="live-sidebar" aria-label="Lista de conversaciones"><label class="search"><span aria-hidden="true">⌕</span><input id="live-search" type="search" placeholder="Buscar nombre o mensaje" aria-label="Buscar en conversaciones cargadas"></label><div class="tabs"><button data-live-filter="all" class="active" aria-pressed="true">Todas</button><button data-live-filter="unread" aria-pressed="false">Pendientes</button><span id="live-count"></span></div><p class="live-search-hint">Búsqueda en las conversaciones cargadas</p><div id="live-list"></div></section><section id="live-messages" aria-label="Conversación"><p class="empty">Selecciona una conversación para consultar su historial.</p></section><aside id="live-contact-panel" class="live-contact-panel" aria-label="Ficha del contacto"><p class="empty">Selecciona una conversación.</p></aside></div>`;
+  const $=s=>container.querySelector(s), limit=$('#live-limit'),feedback=$('#live-feedback'),layout=$('.live-inbox-layout');
+  // The chosen account is read from the header on every use, so switching there
+  // takes effect without this screen owning a control of its own.
+  const select={get value(){return workspace.current()},set disabled(v){}};
+  if(!items.length){feedback.textContent='Añade una cuenta desde Conexiones para empezar.';return}
   let disposed=false,timer=null,chatTimer=null,pollTimer=null,interval=120,pause=0,syncBusy=false,messageBusy=0,chatNeedsRefresh=false;
   const canRefresh=()=>active()&&!disposed&&!document.hidden&&navigator.onLine;
   const autoStatus=$('#live-auto-status');
@@ -135,12 +139,11 @@ export async function renderLiveInbox(container){
     const show=()=>{panel.innerHTML=contactProfile(data.contact,labels,opportunities,activity);bind()};
     show();
     // Each extra call waits its turn so the shared per-account budget is respected.
-    setTimeout(async()=>{try{const fields=await request(`workspace/contact-fields?connectionId=${encodeURIComponent(select.value)}`);if(!active()||version!==chatGeneration)return;labels=Object.fromEntries(fields.items.map(field=>[field.id,field.name]));show()}catch{}},1100);
-    setTimeout(async()=>{
-     try{const result=await request(`workspace/opportunities?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`);if(!active()||version!==chatGeneration)return;opportunities=result}
-     catch(error){if(!active()||version!==chatGeneration)return;opportunities={error:error.message}}
-     show();
-    },2300);
+    request(`workspace/contact-fields?connectionId=${encodeURIComponent(select.value)}`)
+     .then(fields=>{if(!active()||version!==chatGeneration)return;labels=Object.fromEntries(fields.items.map(field=>[field.id,field.name]));show()}).catch(()=>{});
+    request(`workspace/opportunities?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`)
+     .then(result=>{opportunities=result}).catch(error=>{opportunities={error:error.message}})
+     .finally(()=>{if(active()&&version===chatGeneration)show()});
     const query=`connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`;
     const reload=async()=>{
      try{const result=await request(`workspace/activity?${query}&refresh=1`);if(!active()||version!==chatGeneration)return;activity=result}
@@ -185,20 +188,18 @@ export async function renderLiveInbox(container){
      };
     };
     bindActivity();
-    setTimeout(async()=>{
-     try{const result=await request(`workspace/activity?${query}`);if(!active()||version!==chatGeneration)return;activity=result}
-     catch(error){if(!active()||version!==chatGeneration)return;activity={error:error.message}}
-     show();
-    },3500);
+    request(`workspace/activity?${query}`)
+     .then(result=>{activity=result}).catch(error=>{activity={error:error.message}})
+     .finally(()=>{if(active()&&version===chatGeneration)show()});
    }
    catch(error){if(active()&&version===chatGeneration)panel.innerHTML=`<p class="empty">${esc(error.message)}</p>`}
   }
   function open(c){
    selected=c;chatNeedsRefresh=false;chatGeneration++;messages=new Map();cursor=null;list();layout.classList.add('chat-open');layout.classList.remove('contact-open');
-   $('#live-messages').innerHTML=`<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">←</button><span class="avatar">${esc(initials(c))}</span><div><h2>${esc(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div><button id="live-contact-toggle" aria-label="Ver ficha del contacto">ⓘ</button><button id="live-refresh" aria-label="Actualizar mensajes">↻</button></header><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
+   $('#live-messages').innerHTML=`<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">←</button><span class="avatar">${esc(initials(c))}</span><div><h2>${esc(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div><button id="live-contact-toggle" aria-label="Ver ficha del contacto">ⓘ</button></header><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
    $('#live-back').onclick=()=>{clearTimeout(pollTimer);layout.classList.remove('chat-open','contact-open');autoStatus.textContent='Actualización automática activa';$('#live-search').focus()};
    $('#live-contact-toggle').onclick=()=>layout.classList.toggle('contact-open');
-   $('#live-older').onclick=()=>page(true);$('#live-refresh').onclick=()=>open(selected);bindComposer(c);const profileVersion=chatGeneration;page().finally(()=>setTimeout(()=>{if(active()&&profileVersion===chatGeneration)loadContact(c,profileVersion)},1100));
+   $('#live-older').onclick=()=>page(true);bindComposer(c);const profileVersion=chatGeneration;page().finally(()=>{if(active()&&profileVersion===chatGeneration)loadContact(c,profileVersion)});
    autoStatus.textContent='Chat activo · actualización cada 10 segundos';scheduleChat();
   }
   async function load(preserve=false){
@@ -213,17 +214,17 @@ export async function renderLiveInbox(container){
     interval=Math.max(60,Number(data.syncIntervalSeconds)||120);
     pause=Math.max(pause,Number(data.state?.request_not_before)||0);
     conversations=data.items;limit.value=String(data.limit||20);list();
-    feedback.textContent=data.syncedAt?`Mostrando ${data.items.length} de ${data.total} conversaciones · Actualizado ${date(data.syncedAt)}${data.partial?' · Vista parcial':''}`:'Todavía no hay conversaciones cargadas. Comprueba la conexión y pulsa Actualizar.';
+    feedback.textContent=data.syncedAt?`Mostrando ${data.items.length} de ${data.total} conversaciones · Actualizado ${date(data.syncedAt)}${data.partial?' · Vista parcial':''}`:'Todavía no hay conversaciones cargadas. Se están pidiendo a la cuenta…';
     if(data.state?.last_error)feedback.textContent+=' No se pudo completar la última sincronización. Revisa Conexiones.';
     return changed;
    }catch(e){if(e.status===401)container.agoraLiveDispose();if(version===generation&&active())feedback.textContent=e.message;return false}
   }
   $('#live-search').oninput=list;
   container.querySelectorAll('[data-live-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.liveFilter;container.querySelectorAll('[data-live-filter]').forEach(n=>{n.classList.toggle('active',n===b);n.setAttribute('aria-pressed',String(n===b))});list()});
-  select.onchange=async()=>{clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);pause=0;await load();schedule(interval)};
+
   async function sync(automatic=false){
    if(syncBusy)return;syncBusy=true;clearTimeout(timer);clearTimeout(chatTimer);
-   const connection=select.value,requested=limit.value;button.disabled=true;select.disabled=true;limit.disabled=true;
+   const connection=select.value,requested=limit.value;limit.disabled=true;
    if(!automatic)feedback.textContent='Actualizando conversaciones…';
    let changed=false;
    try{await request(`workspace/sync?connectionId=${encodeURIComponent(connection)}&limit=${requested}`,'POST',me.csrf);if(active()&&connection===select.value)changed=await load(true);autoStatus.textContent='Actualización automática activa';}
@@ -232,14 +233,15 @@ export async function renderLiveInbox(container){
     else {pause=Math.max(pause,Date.now()/1000+(e.retryAfter||interval));if(active()&&connection===select.value)changed=await load(true);if(active())autoStatus.textContent=e.retryAfter?'Actualización automática · En espera para respetar el intervalo':e.message;}
     if(!automatic&&active())feedback.textContent=e.message;
    }finally{
-    syncBusy=false;button.disabled=false;select.disabled=false;limit.disabled=false;
+    syncBusy=false;limit.disabled=false;
     chatNeedsRefresh=chatNeedsRefresh||changed;
     if(canRefresh()&&chatNeedsRefresh&&selected&&!messageBusy&&pause<=Date.now()/1000+1){const version=chatGeneration;chatTimer=setTimeout(()=>{if(canRefresh()&&version===chatGeneration&&!messageBusy)page(false,true)},1200);}
     schedule(Math.max(interval,pause-Date.now()/1000));
    }
   }
-  button.onclick=()=>sync();limit.onchange=()=>sync();
-  await load();schedule(interval);
+  limit.onchange=()=>sync();
+  // A first visit with nothing loaded yet refreshes itself instead of asking.
+  await load();if(!conversations.length)sync(true);schedule(interval);
 
  }catch(e){if(!active())return;container.innerHTML=`<h2>Conversaciones</h2><p class="settings-notice">${esc(e.message)} Inicia sesión con tu cuenta de equipo.</p><button id="live-login" class="primary">Iniciar sesión</button>`;container.querySelector('#live-login').onclick=()=>document.querySelector('#connect').click()}
 }

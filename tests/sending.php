@@ -21,8 +21,16 @@ try{
  verifySend(issue(fn()=>$sender->send($connection,array_replace($conversation,['locationId'=>'foreign']),$input))==='invalid_contact','foreign destination refused');
  verifySend(issue(fn()=>$sender->send($connection,$conversation,array_replace($input,['channel'=>'SMS'])))==='unsupported_channel','client cannot choose another channel');
  $input['requestId']=str_repeat('b',32);$input['message']='Second';
- verifySend(issue(fn()=>$sender->send($connection,$conversation,$input))==='send_paused','quota blocks before sending');
- query('UPDATE ghl_sync_state SET request_not_before=0 WHERE connection_id=?',[$id]);
+ // An exhausted burst window must stop the send before it reaches the channel.
+ $before=$calls;
+ query('UPDATE ghl_sync_state SET rate_window_start=UNIX_TIMESTAMP(),rate_window_count=1000 WHERE connection_id=?',[$id]);
+ verifySend(issue(fn()=>$sender->send($connection,$conversation,$input))==='send_paused'&&$calls===$before,'an exhausted burst window blocks before sending');
+ query('UPDATE ghl_sync_state SET request_not_before=0,rate_window_start=0,rate_window_count=0 WHERE connection_id=?',[$id]);
+ // Consecutive reads no longer wait a second between them.
+ $windowBefore=$calls;$sender->send($connection,$conversation,array_replace($input,['requestId'=>str_repeat('w',32),'message'=>'Burst one']));
+ $sender->send($connection,$conversation,array_replace($input,['requestId'=>str_repeat('x',32),'message'=>'Burst two']));
+ verifySend($calls===$windowBefore+2,'two sends in the same second are both delivered');
+ query('UPDATE ghl_sync_state SET request_not_before=0,rate_window_start=0,rate_window_count=0 WHERE connection_id=?',[$id]);
  $response=['status'=>0,'body'=>false];
  verifySend(issue(fn()=>$sender->send($connection,$conversation,$input))==='send_unconfirmed','transport uncertainty recorded without retry');
  $before=$calls;$senderError=issue(fn()=>$sender->send($connection,$conversation,$input));verifySend($senderError==='send_unconfirmed'&&$calls===$before,'uncertain request blocked on replay');

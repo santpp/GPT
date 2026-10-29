@@ -53,7 +53,6 @@ with sync_playwright() as p:
         page.route('**/api/**',api)
         page.goto(os.getenv('TEST_BASE_URL','http://127.0.0.1:8080/'))
         page.wait_for_selector('[data-live-id]')
-        assert page.locator('button[data-view="live"]').is_visible()
         assert page.locator('button[data-view="inbox"]').get_attribute('class').endswith('active')
         assert page.locator('#inbox-view').is_hidden()
         assert 'Instagram' in page.locator('#live-list').inner_text()
@@ -116,7 +115,7 @@ with sync_playwright() as p:
         page.wait_for_timeout(100)
         assert 'WRONG CONVERSATION' not in page.locator('#live-messages').inner_text()
         if width==390:page.locator('#live-back').click()
-        page.locator('#live-connection').select_option('2')
+        page.locator('#account').select_option('2')
         page.wait_for_function("document.querySelectorAll('[data-live-id]').length===0")
         assert page.locator('#live-log').count()==0
         assert not errors,errors

@@ -31,6 +31,12 @@ final class GhlClient {
         return $this->get('/opportunities/search?'.http_build_query(['location_id'=>$location,'contact_id'=>$contact,'status'=>'all','limit'=>$limit]),'2021-07-28');
     }
     public function pipelines(string $location):array {return $this->get('/opportunities/pipelines?'.http_build_query(['locationId'=>$location]),'2021-07-28');}
+    public function locationContacts(string $location,?string $query,int $limit=50):array {
+        return $this->get('/contacts/?'.http_build_query(array_filter(['locationId'=>$location,'query'=>$query,'limit'=>$limit],fn($v)=>$v!==null&&$v!=='')),'2021-07-28');
+    }
+    public function locationOpportunities(string $location,?string $pipeline,int $limit=100):array {
+        return $this->get('/opportunities/search?'.http_build_query(array_filter(['location_id'=>$location,'pipeline_id'=>$pipeline,'status'=>'open','limit'=>$limit],fn($v)=>$v!==null&&$v!=='')),'2021-07-28');
+    }
     public function contactTasks(string $contact):array {return $this->get('/contacts/'.rawurlencode($contact).'/tasks','2021-07-28');}
     public function contactNotes(string $contact):array {return $this->get('/contacts/'.rawurlencode($contact).'/notes','2021-07-28');}
     public function contactAppointments(string $contact):array {return $this->get('/contacts/'.rawurlencode($contact).'/appointments','2021-07-28');}

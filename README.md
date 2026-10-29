@@ -46,7 +46,7 @@ El puerto de desarrollo es 8080, enlazado sólo a loopback. `/api/health` consul
 
 No hay usuario predeterminado. Para crear el único administrador nativo, mantener `GHL_LOCATION_ID` como identificador inicial del tenant en `.env` (es una limitación del bootstrap actual, no el token de la integración), recrear api y ejecutar `docker compose exec -T api php bin/create-user.php usuario@empresa.test`, suministrando la contraseña por stdin desde una fuente segura. El comando rechaza crear una segunda cuenta local. El equipo se importa desde las conexiones y entra con su correo sincronizado y un código temporal; no recibe contraseñas locales.
 
-Iniciar sesión en la app, abrir **Conexiones**, añadir nombre, Location ID y Private Integration Token. La comprobación utiliza `locations.readonly`; otros scopes se añadirán según los módulos que se habiliten. La bandeja y las respuestas usan `conversations.readonly`, `conversations/message.readonly` y `conversations/message.write`; el equipo importado necesita `users.readonly`; la ficha del contacto, `contacts.readonly` y `locations/customFields.readonly`; el canal de acceso, `contacts.readonly`, `contacts.write` y `conversations/message.write`; el contexto de oportunidad, `opportunities.readonly`; y las tareas, notas y citas, `contacts.readonly`, más `contacts.write` para las acciones rápidas. El token sólo se envía una vez al backend desde el formulario administrador y no se devuelve después. Usar HTTPS en el despliegue real. No enviar tokens en chat ni introducirlos en una demo pública o un equipo ajeno.
+Iniciar sesión en la app, abrir **Conexiones**, añadir nombre, Location ID y Private Integration Token. La comprobación utiliza `locations.readonly`; otros scopes se añadirán según los módulos que se habiliten. La bandeja y las respuestas usan `conversations.readonly`, `conversations/message.readonly` y `conversations/message.write`; el equipo importado necesita `users.readonly`; la ficha del contacto, `contacts.readonly` y `locations/customFields.readonly`; el canal de acceso, `contacts.readonly`, `contacts.write` y `conversations/message.write`; el contexto de oportunidad, `opportunities.readonly`; las tareas, notas y citas, `contacts.readonly`, más `contacts.write` para las acciones rápidas; y las pantallas de contactos y oportunidades, `contacts.readonly` y `opportunities.readonly`. El token sólo se envía una vez al backend desde el formulario administrador y no se devuelve después. Usar HTTPS en el despliegue real. No enviar tokens en chat ni introducirlos en una demo pública o un equipo ajeno.
 
 Cada administrador accede sólo a las conexiones de su empresa. La selección de subcuenta y la separación de recursos por conexión en el inbox son el siguiente desarrollo; no se anuncia un SaaS multiempresa terminado.
 
@@ -66,10 +66,14 @@ docker compose exec -T api php tests/installation.php
 docker compose exec -T api php tests/access-channel.php
 docker compose exec -T api php tests/opportunities.php
 docker compose exec -T api php tests/contact-activity.php
+docker compose exec -T api php tests/directories.php
 docker compose exec -T api php tests/external-auth.php
 # Con Playwright Python y Chromium disponibles:
 python3 tests/ui.py
+python3 tests/shell-ui.py
 ```
+
+`tests/directories.php` cubre las pantallas de contactos y oportunidades con un cliente de API simulado y MariaDB real: endpoints y versiones documentados, aislamiento por cuenta, agrupación por embudo y etapa reales, totales por columna, filtro `assignedDataOnly` y respuestas con forma inesperada. `tests/shell-ui.py` comprueba que sin sesión sólo se ve la pantalla de acceso, que el menú no ofrece pantallas de ejemplo, y que el selector de subcuenta de la cabecera gobierna todas las vistas.
 
 `tests/contact-activity.php` cubre tareas, notas, citas y acciones rápidas con un cliente de API simulado y MariaDB real: endpoints, métodos, versiones y cargas documentadas, aislamiento por contacto, orden y normalización, permiso de módulo de citas, acciones denegadas a un usuario de sólo lectura, fechas de vencimiento inválidas, repeticiones con la misma clave y con clave nueva, rechazos y resultados inciertos.
 

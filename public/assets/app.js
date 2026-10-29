@@ -1,70 +1,148 @@
-import {contacts} from './demo.js';
+import {workspace} from './workspace.js';
 import {renderIntegrations} from './integrations.js';
 import {renderLiveInbox} from './live-inbox.js';
-const $ = s => document.querySelector(s);
-const escape = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let selected = contacts.find(c=>location.pathname.endsWith(c.id)) || contacts[0], filter='all', noteMode=false;
-const money = n => new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
+import {renderContacts} from './contacts.js';
+import {renderBoard} from './board.js';
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const view=$('#view');
+
+const VIEWS={
+  inbox:{path:'/bandeja',title:'Conversaciones',heading:'Cada conversación cuenta.',subtitle:'Todo el contexto. Un solo lugar.',render:renderLiveInbox,account:true},
+  contacts:{path:'/contactos',title:'Contactos',heading:'Personas, no registros.',subtitle:'Tu siguiente conversación empieza aquí.',render:renderContacts,account:true},
+  board:{path:'/oportunidades',title:'Oportunidades',heading:'De la conexión al cierre.',subtitle:'Una vista clara de cada oportunidad abierta.',render:renderBoard,account:true},
+  settings:{path:'/conexiones',title:'Conexiones',heading:'Configura tu espacio.',subtitle:'Gestiona las cuentas conectadas desde tu usuario administrador.',render:renderIntegrations,account:false},
+};
+const byPath=path=>Object.keys(VIEWS).find(name=>VIEWS[name].path===path);
+// A host that cannot rewrite paths can still deep-link with a hash.
+const requested=()=>byPath(location.pathname)||byPath('/'+location.hash.replace(/^#\/?/,''));
+
+let currentView='inbox';
 let toastTimer;
 function toast(text){$('#toast').textContent=text;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,4500)}
-function dialog(title,copy,form=''){ $('#dialog-content').innerHTML=`<span class="eyebrow">ÁGORA DIGITAL</span><h2 style="margin-top:12px">${escape(title)}</h2><p class="dialog-copy">${escape(copy)}</p>${form}`;$('#action-dialog').showModal() }
-function list(){const search=$('#search').value.toLowerCase();const items=contacts.filter(c=>(filter!=='unread'||c.unread)&&(filter!=='mine'||c.mine)&&`${c.name} ${c.preview}`.toLowerCase().includes(search));$('#inbox-count').textContent=items.length;$('#conversation-list').innerHTML=items.map(c=>`<button class="conversation-item ${c===selected?'selected':''}" data-contact="${c.id}" aria-label="Abrir conversación de ${escape(c.name)}"><span class="avatar ${c.mine?'olive':''}">${c.initials}</span><span class="conversation-info"><header><strong>${escape(c.name)}</strong><time>${c.time}</time></header><p>${escape(c.preview)}</p><footer><span class="channel">${c.channel==='WhatsApp'?'◉':'◌'} ${c.channel}</span>${c.unread?`<b class="unread">${c.unread}</b>`:'<span class="channel">✓✓</span>'}</footer></span></button>`).join('')||'<p class="empty">No hay conversaciones con este filtro.</p>'}
-function render(){list();const c=selected;$('#chat-avatar').textContent=c.initials;$('#chat-name').textContent=c.name;$('#chat-channel').textContent=`${c.channel} · Datos de demostración`;$('#context-summary').textContent=`${c.stage} · ${c.assigned}`;$('#composer-channel').textContent=c.channel;$('#messages').innerHTML='<div class="day-label">──── Hoy · conversación de ejemplo ────</div>'+c.messages.map(([direction,text,time])=>`<div class="bubble ${direction==='out'?'out':direction==='note'?'note':''}">${escape(text)}<time>${escape(time)} ${direction==='out'?'✓✓':''}</time></div>`).join('');$('#messages').scrollTop=$('#messages').scrollHeight;
-$('#contact-details').innerHTML=`<div class="contact-identity"><span class="avatar olive">${c.initials}</span><h3>${escape(c.name)}</h3><p>Cliente potencial · Ejemplo</p></div><div class="contact-links"><button data-action="Llamar">↗ Llamar</button><button data-action="Agendar">▦ Agendar</button></div><div class="section-label">INFORMACIÓN DEL CONTACTO</div>${[['Teléfono',c.phone],['Email',c.email],['Ejecutivo',c.assigned],['Fuente',c.source],['Última actividad',c.time]].map(([a,b])=>`<div class="detail-row"><span>${a}</span><strong>${escape(b)}</strong></div>`).join('')}<div class="section-label">ETIQUETAS</div>${c.tags.map((t,i)=>`<span class="tag ${i?'warm':''}">${escape(t)}</span>`).join('')}<div class="section-label">OPORTUNIDAD ACTIVA</div><div class="opportunity"><h3>Proyecto de ${escape(c.name.split(' ')[0])}</h3><strong>${money(c.value)}</strong><p>Pipeline comercial / ${c.stage}</p><div class="stage-progress"><i></i><i></i><i></i><i></i></div></div><div class="section-label">PRÓXIMO PASO</div><div class="task">◷ Confirmar disponibilidad<small>Mañana · ${escape(c.assigned)}</small></div><div class="section-label">ACCIONES RÁPIDAS</div><div class="quick-actions">${['Crear tarea','Crear oportunidad','Cambiar etapa','Reasignar','Agregar etiqueta','Ejecutar workflow','Crear nota','Campos personalizados','Historial'].map(a=>`<button data-action="${a}">${a}</button>`).join('')}</div>`;}
-document.addEventListener('click',e=>{const contact=e.target.closest('[data-contact]');if(contact){selected=contacts.find(c=>c.id===contact.dataset.contact);$('#inbox-view').classList.add('chat-open');history.replaceState(null,'',`/conversations/${selected.id}`);render()}const action=e.target.closest('[data-action]');if(action)actionDialog(action.dataset.action)});
-function actionDialog(action){if(action==='Crear nota'){$('#message-input').focus();noteMode=true;$('#note-mode').textContent='Nota interna · activa';toast('La nota de ejemplo será visible sólo en esta sesión.');return}if(action==='Campos personalizados'||action==='Historial'){dialog(action,'Aquí se mostrarán los datos de la subcuenta. Esta vista todavía usa información ficticia.');return}dialog(action,`Acción de demostración para ${selected.name}. Los cambios de ejemplo sólo afectan a esta sesión.`,`<form id="quick-form" class="dialog-form"><label>${action==='Cambiar etapa'?'Nueva etapa':'Detalle'}<input name="value" required maxlength="100" placeholder="${action==='Cambiar etapa'?'En seguimiento':'Escribe un detalle'}"></label><button class="primary">Guardar ejemplo</button></form>`);$('#quick-form').onsubmit=e=>{e.preventDefault();const v=new FormData(e.target).get('value').trim();if(!v)return;if(action==='Cambiar etapa')selected.stage=v;if(action==='Reasignar')selected.assigned=v;if(action==='Agregar etiqueta')selected.tags.push(v);if(action==='Crear tarea')selected.messages.push(['note',`Tarea de ejemplo: ${v}`,'Ahora']);$('#action-dialog').close();render();toast('Ejemplo guardado en esta sesión.')};}
-$('#search').oninput=list;document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(t=>t.classList.toggle('active',t===b));list()});$('#filter-toggle').onclick=()=>document.querySelector('[data-filter="unread"]').click();$('#back-list').onclick=()=>$('#inbox-view').classList.remove('chat-open');$('#context-toggle').onclick=()=>$('#contact-panel').classList.toggle('open');$('#close-context').onclick=()=>$('#contact-panel').classList.remove('open');$('#stage-action').onclick=()=>{$('#contact-panel').classList.add('open')};$('#call').onclick=()=>actionDialog('Llamar');$('#note-mode').onclick=()=>{noteMode=!noteMode;$('#note-mode').textContent=noteMode?'Nota interna · activa':'Nota interna';$('#message-input').placeholder=noteMode?'Añade una nota para tu equipo…':'Escribe una respuesta…'};
-$('#composer').onsubmit=e=>{e.preventDefault();const text=$('#message-input').value.trim();if(!text)return;selected.messages.push([noteMode?'note':'out',text,new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})]);if(!noteMode)selected.preview=text;$('#message-input').value='';render();toast(noteMode?'Nota de ejemplo añadida.':'Mensaje de ejemplo añadido. No se ha enviado al contacto.')};
-$('#notifications').onclick=()=>dialog('Tu centro de notificaciones','Aquí aparecerán tus avisos. Las notificaciones en el teléfono todavía no están activadas.');
-$('#connect').onclick=()=>{
- dialog('Acceder a Ágora','Usa el mismo correo con el que formas parte del equipo.',`<form id="team-login-request" class="dialog-form"><label>Correo del equipo<input type="email" name="email" autocomplete="username" required></label><button class="primary">Recibir código</button><p id="team-request-result" class="dialog-copy" role="status"></p></form><form id="team-login-verify" class="dialog-form" hidden><input type="hidden" name="email"><label>Código de 6 cifras<input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><button class="primary">Entrar</button><p id="team-verify-result" class="dialog-copy" role="status"></p></form><details class="admin-login"><summary>Acceso administrador</summary><form id="login-form" class="dialog-form"><label>Email<input type="email" name="email" autocomplete="username" required></label><label>Contraseña<input type="password" name="password" autocomplete="current-password" required></label><button class="primary">Acceder como administrador</button><p id="login-result" class="dialog-copy" role="status"></p></form></details>`);
- const requestForm=$('#team-login-request'),verifyForm=$('#team-login-verify');
- requestForm.onsubmit=async e=>{e.preventDefault();const b=e.target.querySelector('button'),email=new FormData(e.target).get('email');b.disabled=true;try{const r=await fetch('/api/team-login/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});const data=await r.json();$('#team-request-result').textContent=data.message||data.error||'No se ha podido solicitar el código.';if(r.ok){verifyForm.elements.email.value=email;verifyForm.hidden=false;verifyForm.elements.code.focus()}}catch{$('#team-request-result').textContent='No se ha podido conectar con el backend.'}finally{b.disabled=false}};
- verifyForm.onsubmit=async e=>{e.preventDefault();const b=e.target.querySelector('button');b.disabled=true;try{const r=await fetch('/api/team-login/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});const data=await r.json();if(r.ok){window.dispatchEvent(new Event('agora:login'));$('#action-dialog').close()}else $('#team-verify-result').textContent=data.error||'No se ha podido acceder.'}catch{$('#team-verify-result').textContent='No se ha podido conectar con el backend.'}finally{b.disabled=false}};
- $('#login-form').onsubmit=async e=>{e.preventDefault();const b=e.target.querySelector('button');b.disabled=true;try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});const data=await r.json();if(r.ok){window.dispatchEvent(new Event('agora:login'));$('#action-dialog').close()}else $('#login-result').textContent=data.error||'No se ha podido acceder.'}catch{$('#login-result').textContent='No se ha podido conectar con el backend.'}finally{b.disabled=false}};
-};
-let fromLocation=false, liveSession=false;
-const titles={live:['Conversaciones','Tus conversaciones, conectadas.','Tus cuentas y mensajes en un mismo lugar.'],settings:['Conexiones','Configura tu espacio de trabajo.','Gestiona las cuentas conectadas desde tu usuario administrador.'],inbox:['Conversaciones','Cada conversación cuenta.','Todo el contexto. Un solo lugar. Sigue donde lo dejaste.'],contacts:['Contactos','Personas, no registros.','Tu siguiente conversación empieza aquí.'],pipeline:['Oportunidades','De la conexión al cierre.','Una vista clara de cada oportunidad.'],calendar:['Calendario','Dale espacio a lo importante.','Tu agenda comercial, sin perder el contexto.'],tasks:['Mis tareas','El siguiente paso, claro.','Pequeñas acciones que hacen avanzar tus oportunidades.']};
-document.querySelectorAll('button[data-view]').forEach(b=>b.onclick=()=>{$('#other-view').agoraLiveDispose?.();const v=b.dataset.view==='inbox'&&liveSession?'live':b.dataset.view;const target=v==='settings'?'/conexiones':v==='live'?'/bandeja':'/';if(!fromLocation&&(location.pathname!==target||location.hash))history.pushState(null,'',target);document.querySelectorAll('button[data-view]').forEach(n=>n.classList.toggle('active',v==='live'?n.dataset.view==='inbox':n===b));$('#breadcrumb').textContent=titles[v][0];$('#page-title').textContent=titles[v][1];$('#page-subtitle').textContent=titles[v][2];$('#inbox-view').hidden=v!=='inbox';$('#other-view').hidden=v==='inbox';$('.stats').hidden=['settings','live'].includes(v);$('.heading-detail').hidden=['settings','live'].includes(v);$('#other-view').dataset.view=v;if(v==='settings'){renderIntegrations($('#other-view'));return}if(v==='live'){renderLiveInbox($('#other-view'));return}$('#other-view').innerHTML=v==='contacts'?`<div class="cards">${contacts.map(c=>`<button class="card" data-contact="${c.id}" data-open-chat><span class="avatar olive">${c.initials}</span><h3>${c.name}</h3><p>${c.email}<br>${c.assigned}</p></button>`).join('')}</div>`:v==='pipeline'?`<div class="kanban">${['Nuevo lead','En seguimiento','Propuesta enviada'].map(s=>`<div><h2>${s}</h2>${contacts.filter(c=>c.stage===s).map(c=>`<div class="card"><span class="channel">${c.channel}</span><h3>${c.name}</h3><p>Proyecto comercial</p><strong>${money(c.value)}</strong><span class="tag">${c.assigned}</span></div>`).join('')}</div>`).join('')}</div>`:`<div class="section-label">${v==='calendar'?'AGENDA DE EJEMPLO':'TAREAS DE EJEMPLO'}</div><div class="cards">${contacts.slice(0,3).map((c,i)=>`<div class="card"><span class="channel">${v==='calendar'?['10:00','12:30','16:00'][i]:'Pendiente'}</span><h3>${v==='calendar'?'Demo de proyecto':'Confirmar disponibilidad'}</h3><p>${c.name}<br>${c.assigned}</p></div>`).join('')}</div>`});
-document.addEventListener('click',e=>{if(e.target.closest('[data-open-chat]'))document.querySelector('button[data-view="inbox"]').click()});
-function network(){ $('#network').textContent=navigator.onLine?'● En línea':'○ Sin conexión'; }window.addEventListener('online',network);window.addEventListener('offline',network);document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();$('#search').focus()}});render();network();
-if('serviceWorker' in navigator){
- navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(reg=>{
-  function offerUpdate(worker){
-   if(document.querySelector('#app-update'))return;
-   const button=document.createElement('button');button.id='app-update';button.className='primary';button.textContent='Actualizar';
-   document.querySelector('.top-actions').prepend(button);
-   button.onclick=()=>{
-    if(document.querySelector('#action-dialog').open){toast('Termina o cierra el formulario antes de actualizar.');return}
-    dialog('Hay una nueva versión','Los cambios que no hayas guardado se perderán al recargar.','<button id="apply-update" class="primary">Actualizar aplicación</button>');
-    document.querySelector('#apply-update').onclick=()=>worker.postMessage({type:'ACTIVATE'});
-   };
-  }
-  if(reg.waiting)offerUpdate(reg.waiting);
-  reg.addEventListener('updatefound',()=>{const worker=reg.installing;worker.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)offerUpdate(worker)})});
-  let refreshing=false,hadController=!!navigator.serviceWorker.controller;
-  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!hadController){hadController=true;return}if(!refreshing){refreshing=true;location.reload()}});
- }).catch(()=>toast('La caché offline no está disponible en este navegador.'));
-}
-async function refreshSession(){
- try{const r=await fetch('/api/me',{cache:'no-store'});const data=r.ok?await r.json():null;
-  const isAdmin=data?.user?.role==='administrator';
-  liveSession=!!(isAdmin||data?.user?.capabilities?.viewConversations);
-  document.querySelectorAll('[data-admin-only]').forEach(n=>n.hidden=!isAdmin);
-  document.querySelectorAll('[data-live-only]').forEach(n=>n.hidden=!liveSession);
-  $('#nav-count').hidden=liveSession;
-  document.querySelector('#connect small').textContent=data?.user?data.user.email:'Iniciar sesión';
-  document.querySelector('.sidebar-bottom .connection').textContent=liveSession?'Espacio conectado':'Espacio de demostración';
-  if(liveSession&&(!$('#inbox-view').hidden||$('#other-view').dataset.view==='live'))document.querySelector('button[data-view="inbox"]').click();
- }catch{liveSession=false;document.querySelectorAll('[data-admin-only]').forEach(n=>n.hidden=true)}
-}
-window.addEventListener('agora:login',refreshSession);
-window.addEventListener('agora:logout',()=>{liveSession=false;$('#other-view').agoraLiveInstance=null;$('#other-view').innerHTML='';document.querySelector('button[data-view="inbox"]').click();refreshSession()});
-refreshSession();
 
-function openLocationView(){
- const path=location.pathname.replace(/\/$/,'')||'/';
- const requested=['/conexiones','/conexiones.html'].includes(path)||location.hash==='#conexiones'?'settings':path==='/bandeja'||location.hash==='#bandeja'?'live':'inbox';
- fromLocation=true;document.querySelector(`button[data-view="${requested}"]`).click();fromLocation=false;
+async function api(path,method='GET',body=null,csrf=''){
+  const r=await fetch('/api/'+path,{method,cache:'no-store',...(body!==null?{body:JSON.stringify(body)}:{}),headers:{'Content-Type':'application/json',...(csrf?{'X-CSRF-Token':csrf}:{})}});
+  let data;try{data=await r.json()}catch{throw Object.assign(Error(`El servidor devolvió una respuesta no válida (HTTP ${r.status}).`),{status:r.status})}
+  if(!r.ok)throw Object.assign(Error(data.error||'Error de conexión'),{status:r.status,code:data.code});
+  return data;
 }
-window.addEventListener('popstate',openLocationView);window.addEventListener('hashchange',openLocationView);openLocationView();
+
+function show(name,{push=true}={}){
+  const target=VIEWS[name]?name:'inbox';
+  view.agoraLiveDispose?.();
+  currentView=target;
+  const meta=VIEWS[target];
+  if(push&&location.pathname!==meta.path)history.pushState(null,'',meta.path);
+  document.querySelectorAll('button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===target));
+  $('#breadcrumb').textContent=meta.title;
+  $('#page-title').innerHTML=esc(meta.heading).replace(/\.$/,'<span>.</span>');
+  $('#page-subtitle').textContent=meta.subtitle;
+  $('.account-switch').hidden=!meta.account;
+  view.dataset.view=target;
+  view.innerHTML='';
+  meta.render(view);
+}
+
+function renderAccounts(){
+  const select=$('#account');
+  select.innerHTML=workspace.connections.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+  select.value=workspace.current();
+  select.disabled=workspace.connections.length<2;
+  $('#account-name').textContent=workspace.name()||'Sin cuenta';
+  $('.account-switch').hidden=!VIEWS[currentView].account||!workspace.connections.length;
+}
+
+async function startSession(){
+  const me=await api('me');
+  workspace.setProfile(me);
+  $('#signin').hidden=true;$('#app').hidden=false;
+  $('#user-email').firstChild.textContent=me.user.email||'Mi cuenta';
+  $('#user-initials').textContent=(me.user.email||'··').slice(0,2).toUpperCase();
+  document.querySelectorAll('[data-admin-only]').forEach(n=>n.hidden=me.user.role!=='administrator');
+  try{const {items}=await api('workspace/connections');workspace.setConnections(items)}
+  catch{workspace.setConnections([])}
+  renderAccounts();
+  show(requested()||'inbox',{push:false});
+}
+
+function showSignin(){
+  workspace.reset();
+  $('#app').hidden=true;$('#signin').hidden=false;
+  view.agoraLiveDispose?.();
+  view.innerHTML='';
+}
+
+$('#account').onchange=e=>{if(workspace.select(e.target.value))renderAccounts()};
+workspace.onChange(()=>{renderAccounts();if(VIEWS[currentView].account)show(currentView,{push:false})});
+document.querySelectorAll('button[data-view]').forEach(b=>b.onclick=()=>show(b.dataset.view));
+window.addEventListener('popstate',()=>{const name=requested();if(name)show(name,{push:false})});
+
+$('#signout').onclick=async()=>{
+  try{await api('logout','POST',null,workspace.me?.csrf||'')}catch{}
+  window.dispatchEvent(new Event('agora:logout'));
+  showSignin();
+};
+window.addEventListener('agora:logout',()=>{if(!$('#app').hidden)showSignin()});
+
+const requestForm=$('#team-login-request'),verifyForm=$('#team-login-verify');
+requestForm.onsubmit=async e=>{
+  e.preventDefault();const button=e.target.querySelector('button'),email=new FormData(e.target).get('email');button.disabled=true;
+  try{
+    const r=await fetch('/api/team-login/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    const data=await r.json();
+    $('#team-request-result').textContent=data.message||data.error||'No se ha podido solicitar el código.';
+    if(r.ok){verifyForm.elements.email.value=email;verifyForm.hidden=false;verifyForm.elements.code.focus()}
+  }catch{$('#team-request-result').textContent='No se ha podido conectar con el servidor.'}
+  finally{button.disabled=false}
+};
+verifyForm.onsubmit=async e=>{
+  e.preventDefault();const button=e.target.querySelector('button');button.disabled=true;
+  try{
+    const r=await fetch('/api/team-login/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
+    const data=await r.json();
+    if(r.ok)await startSession();else $('#team-verify-result').textContent=data.error||'No se ha podido acceder.';
+  }catch{$('#team-verify-result').textContent='No se ha podido conectar con el servidor.'}
+  finally{button.disabled=false}
+};
+$('#login-form').onsubmit=async e=>{
+  e.preventDefault();const button=e.target.querySelector('button');button.disabled=true;
+  try{
+    const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
+    const data=await r.json();
+    if(r.ok)await startSession();else $('#login-result').textContent=data.error||'No se ha podido acceder.';
+  }catch{$('#login-result').textContent='No se ha podido conectar con el servidor.'}
+  finally{button.disabled=false}
+};
+
+function network(){$('#network').textContent=navigator.onLine?'● En línea':'○ Sin conexión'}
+window.addEventListener('online',network);window.addEventListener('offline',network);network();
+
+// Offline shell. The banner is about a new build of Ágora, not about refreshing
+// data: conversations and screens keep themselves up to date on their own.
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(registration=>{
+    const offer=worker=>{
+      if(document.querySelector('#app-update'))return;
+      const button=document.createElement('button');
+      button.id='app-update';button.className='primary';button.textContent='Nueva versión';
+      document.querySelector('.top-actions').prepend(button);
+      button.onclick=()=>{toast('Actualizando Ágora…');worker.postMessage({type:'ACTIVATE'})};
+    };
+    if(registration.waiting)offer(registration.waiting);
+    registration.addEventListener('updatefound',()=>{
+      const worker=registration.installing;
+      worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)offer(worker)});
+    });
+    let reloading=false,hadController=!!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(!hadController){hadController=true;return}
+      if(!reloading){reloading=true;location.reload()}
+    });
+  }).catch(()=>toast('La caché offline no está disponible en este navegador.'));
+}
+
+// A visit always starts from the real session: there is no sample workspace.
+startSession().catch(showSignin);
+export {toast};

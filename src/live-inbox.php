@@ -65,6 +65,26 @@ if(preg_match('~^/api/workspace/activity(/note|/task|/task-state)?$~',$path,$act
     catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la actividad del contacto. Revisa el permiso de contactos.','code'=>'activity_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'La actividad recibida no tiene el formato esperado.','code'=>'activity_invalid_response'],424);}
 }
+if($path==='/api/workspace/contacts'&&$method==='GET'){
+    if(!($membership['capabilities']['viewContacts']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar contactos.'],403);
+    require_once __DIR__.'/ContactDirectory.php';
+    $search=$_GET['query']??null;
+    if($search!==null&&(!is_string($search)||mb_strlen($search)>100))respond(['error'=>'Búsqueda demasiado larga'],422);
+    try{respond((new ContactDirectory())->get($connection,$search,$membership,($_GET['refresh']??'')==='1'));}
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La lista está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la lista de contactos. Revisa el permiso de contactos.','code'=>'contacts_upstream_'.$e->status],424);}
+    catch(Throwable $e){respond(['error'=>'La lista recibida no tiene el formato esperado.','code'=>'contacts_invalid_response'],424);}
+}
+if($path==='/api/workspace/board'&&$method==='GET'){
+    if(!($membership['capabilities']['viewOpportunities']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar oportunidades.'],403);
+    require_once __DIR__.'/OpportunityBoard.php';
+    $pipeline=$_GET['pipelineId']??null;
+    if($pipeline!==null&&(!is_string($pipeline)||!preg_match('/^[A-Za-z0-9_-]{0,80}$/D',$pipeline)))respond(['error'=>'Pipeline inválido'],422);
+    try{respond((new OpportunityBoard())->get($connection,$pipeline!==null&&$pipeline!==''?$pipeline:null,$membership,($_GET['refresh']??'')==='1'));}
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'El tablero está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>'No se pudo consultar el tablero. Revisa el permiso de oportunidades.','code'=>'board_upstream_'.$e->status],424);}
+    catch(Throwable $e){respond(['error'=>'El tablero recibido no tiene el formato esperado.','code'=>'board_invalid_response'],424);}
+}
 if($path==='/api/workspace/opportunities'&&$method==='GET'){
     if(!($membership['capabilities']['viewOpportunities']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar oportunidades.'],403);
     $conversation=$_GET['conversationId']??'';
@@ -111,6 +131,7 @@ if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $met
         respond($cursor?$feed->older($connection,$conversation,$cursor):$feed->recent($connection,$conversation,($_GET['refresh']??'')==='1'));
     } catch(GhlCooldown $e) {header('Retry-After: '.$e->retryAfter);respond(['error'=>'Consulta pausada para respetar la cuota. Vuelve a intentarlo más tarde.','retryAfter'=>$e->retryAfter],429);}
     catch(GhlApiException $e){respond(['error'=>'No se pudieron leer los mensajes. Código del canal: '.$e->status.'. Revisa los permisos de lectura.','code'=>'messages_upstream_'.$e->status],424);}
+    catch(HistoryFormatException $e) {respond(['error'=>'El historial recibido no tiene el formato esperado.','code'=>'messages_'.$e->reason],424);}
     catch(Throwable $e) {respond(['error'=>'El historial recibido no tiene el formato esperado. Código: messages_invalid_response.','code'=>'messages_invalid_response'],424);}
 }
 respond(['error'=>'Not found'],404);

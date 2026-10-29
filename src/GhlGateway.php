@@ -8,6 +8,11 @@ final class GhlCooldown extends RuntimeException {
 final class GhlGateway {
     // The conservative local budget is a safety cap, not a claim about PIT quotas.
     private const DAILY_BUDGET=5000;
+    // The published OAuth burst limit is 100 requests per 10 seconds per resource.
+    // A fifth of that leaves room for anything else using the same credential,
+    // while letting one screen make its handful of reads without waiting.
+    private const BURST=20;
+    private const WINDOW=10;
     public function __construct(private readonly ?Closure $factory=null) {}
     public function execute(array $connection,Closure $operation,bool $disableOnForbidden=true):array {
         $id=(int)$connection['id'];$key='agora-api:'.$id;
@@ -20,7 +25,10 @@ final class GhlGateway {
             if((int)$state['request_not_before']>$now)throw new GhlCooldown((int)$state['request_not_before']-$now);
             $used=$state['budget_day']===$day?(int)$state['requests_today']:0;
             if($used>=self::DAILY_BUDGET)throw new GhlCooldown(strtotime('tomorrow UTC')-$now);
-            query('UPDATE ghl_sync_state SET budget_day=?,requests_today=?,request_not_before=? WHERE connection_id=?',[$day,$used+1,$now+1,$id]);
+            $windowStart=(int)($state['rate_window_start']??0);$windowCount=(int)($state['rate_window_count']??0);
+            if($now-$windowStart>=self::WINDOW){$windowStart=$now;$windowCount=0;}
+            if($windowCount>=self::BURST)throw new GhlCooldown(max(1,$windowStart+self::WINDOW-$now));
+            query('UPDATE ghl_sync_state SET budget_day=?,requests_today=?,rate_window_start=?,rate_window_count=? WHERE connection_id=?',[$day,$used+1,$windowStart,$windowCount+1,$id]);
             $client=$this->factory ? ($this->factory)($connection) : new GhlClient(TokenVault::fromEnvironment()->open($connection['token_ciphertext'],(int)$connection['tenant_id'],$connection['location_id']));
             try {
                 $result=$operation($client);

@@ -5,7 +5,7 @@ $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 if (!str_starts_with($path, '/api/')) {
     $file = realpath(__DIR__.$path);
     if ($file && str_starts_with($file, __DIR__.DIRECTORY_SEPARATOR) && is_file($file) && pathinfo($file, PATHINFO_EXTENSION) !== 'php') return false;
-    if (in_array($path,['/','/conexiones','/conexiones.html','/conexiones/','/bandeja','/bandeja/'],true) || preg_match('~^/conversations/[A-Za-z0-9_-]+$~', $path)) { readfile(__DIR__.'/index.html'); return true; }
+    if (in_array(rtrim($path,'/')?:'/',['/','/conexiones','/conexiones.html','/bandeja','/contactos','/oportunidades'],true) || preg_match('~^/conversations/[A-Za-z0-9_-]+$~', $path)) { readfile(__DIR__.'/index.html'); return true; }
     http_response_code(404); exit;
 }
 require $appRoot.'/src/bootstrap.php';
