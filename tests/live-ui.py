@@ -9,7 +9,7 @@ with sync_playwright() as p:
         page=context.new_page();errors=[];calls=[];fail=[True];held=[]
         page.on('pageerror',lambda e:errors.append(str(e)))
         saved=[]
-        contact={'name':'Ángeles García','phone':'+34123456789','email':'angeles@example.test','source':'Formulario web','assignedName':'Ana Responsable','lastActivity':'2026-10-28T11:00:00Z','tags':['Interesada'],'customFields':[{'id':'f1','label':'Campo personalizado','value':'Consulta'}]}
+        contact={'name':'Ángeles García','phone':'+34123456789','email':'angeles@example.test','source':'Formulario web','assignedName':'Ana Responsable','lastActivity':'2026-10-28T11:00:00Z','tags':['Interesada'],'customFields':[{'id':'f1','label':'Campo personalizado','value':'Precio'}],'address1':'Calle Uno','city':'Caracas','website':'https://example.test','dnd':False,'assignedTo':'u1','dateOfBirth':'1990-04-12'}
         actions=[]
         tasks=[{'id':'t1','title':'Confirmar disponibilidad','body':'Llamar por la tarde','dueDate':'2026-11-05T10:00:00Z','completed':False,'assignedName':'Ana Responsable'}]
         notes=[{'id':'n1','body':'Pidió presupuesto','dateAdded':'2026-10-28T10:00:00Z','authorName':'Ana Responsable'}]
@@ -32,8 +32,12 @@ with sync_playwright() as p:
                 contact['name']='Ángeles G. Nueva';contact['tags']=['Interesada','Prioritaria']
                 data={'state':'accepted','id':'c1'}
             elif path.startswith('workspace/contact?'):
-                data={'contact':dict(contact),'canEdit':True,
-                      'channels':[]}
+                data={'contact':dict(contact),'canEdit':True,'channels':[],
+                      'fields':[{'id':'f1','name':'Tipo de consulta','dataType':'SINGLE_OPTIONS','options':['Precio','Soporte'],'placeholder':None,'position':1},
+                                {'id':'f2','name':'Presupuesto','dataType':'NUMERICAL','options':[],'placeholder':'En euros','position':2},
+                                {'id':'f3','name':'Canales','dataType':'MULTIPLE_OPTIONS','options':['Email','Teléfono'],'placeholder':None,'position':3},
+                                {'id':'f4','name':'Acepta promociones','dataType':'CHECKBOX','options':[],'placeholder':None,'position':4}],
+                      'assignees':[{'id':'u1','name':'Ana Responsable'},{'id':'u2','name':'David López'}]}
             elif path.startswith('workspace/contact-fields?'):
                 data={'items':[]}
             elif path.startswith('workspace/activity/task-state'):
@@ -99,7 +103,22 @@ with sync_playwright() as p:
         page.locator('#live-edit-contact').evaluate('(n)=>n.click()')
         page.wait_for_selector('#live-contact-form',state='attached')
         page.locator('#live-contact-form [name="name"]').evaluate("(n)=>n.value='Ángeles G. Nueva'")
-        page.locator('#live-contact-form [data-field="f1"]').evaluate("(n)=>n.value='Otra consulta'")
+        # Every field the account defines is offered with its own control.
+        assert page.locator('#live-contact-form [name="address1"]').input_value()=='Calle Uno', 'address parts are shown, not only the joined line'
+        assert page.locator('#live-contact-form [name="dateOfBirth"]').input_value()=='1990-04-12'
+        assert page.locator('#live-contact-form [name="assignedTo"]').input_value()=='u1'
+        assert page.locator('#live-contact-form [data-field="f1"]').evaluate('(n)=>n.tagName')=='SELECT', 'a choice field is a select'
+        assert page.locator('#live-contact-form [data-field="f1"]').input_value()=='Precio'
+        assert page.locator('#live-contact-form [data-field="f2"]').evaluate('(n)=>n.type')=='number', 'a numeric field asks for a number'
+        assert page.locator('#live-contact-form [data-field="f2"]').input_value()=='', 'a defined field with no value is offered empty'
+        assert page.locator('#live-contact-form [data-field="f3"] [data-option]').count()==2, 'a multiple-choice field lists its options'
+        assert page.locator('#live-contact-form [data-field="f4"]').evaluate('(n)=>n.type')=='checkbox'
+        page.locator('#live-contact-form [data-field="f1"]').evaluate("(n)=>n.value='Soporte'")
+        page.locator('#live-contact-form [data-field="f2"]').evaluate("(n)=>n.value='2400'")
+        page.locator('#live-contact-form [data-field="f3"] [data-option="Email"]').evaluate('(n)=>n.click()')
+        page.locator('#live-contact-form [data-field="f4"]').evaluate('(n)=>n.click()')
+        page.locator('#live-contact-form [name="dnd"]').evaluate('(n)=>n.click()')
+        page.locator('#live-contact-form [name="assignedTo"]').evaluate("(n)=>n.value='u2'")
         page.locator('#live-new-tag').evaluate("(n)=>n.value='Prioritaria'")
         page.locator('#live-add-tag').evaluate('(n)=>n.click()')
         page.locator('#live-contact-form [data-drop-tag="Interesada"]').evaluate('(n)=>n.click()')
@@ -108,7 +127,9 @@ with sync_playwright() as p:
         assert len(saved)==1, saved
         sent=saved[0]
         assert sent['fields']['name']=='Ángeles G. Nueva'
-        assert sent['fields']['customFields']==[{'id':'f1','value':'Otra consulta'}]
+        assert sent['fields']['dnd'] is True and sent['fields']['assignedTo']=='u2'
+        assert sent['fields']['customFields']==[{'id':'f1','value':'Soporte'},{'id':'f2','value':'2400'},{'id':'f3','value':['Email']},{'id':'f4','value':True}], sent['fields']['customFields']
+        assert 'address1' not in sent['fields'], 'an untouched field is never rewritten'
         assert sent['addTags']==['Prioritaria'] and sent['removeTags']==['Interesada']
         assert 'tags' not in sent['fields'], 'tags never ride in the update field'
         assert len(sent['requestId'])>=16

@@ -175,17 +175,41 @@ export async function renderLiveInbox(container){
    const forms=activity.canEdit?`<div class="live-quick-actions"><details><summary>+ Crear tarea</summary><form id="live-task-form"><label class="sr-only" for="live-task-title">Título de la tarea</label><input id="live-task-title" maxlength="190" placeholder="Título de la tarea" required><label class="sr-only" for="live-task-due">Vencimiento</label><input id="live-task-due" type="date" required><label class="sr-only" for="live-task-body">Detalle</label><textarea id="live-task-body" maxlength="2000" rows="2" placeholder="Detalle (opcional)"></textarea><button class="primary">Crear tarea</button></form></details><details><summary>+ Crear nota</summary><form id="live-note-form"><label class="sr-only" for="live-note-body">Nota</label><textarea id="live-note-body" maxlength="5000" rows="3" placeholder="Escribe una nota…" required></textarea><button class="primary">Guardar nota</button></form></details><p id="live-activity-status" role="status"></p></div>`:'<p id="live-activity-status" role="status"></p>';
    return `<div class="section-label">TAREAS</div><div class="live-tasks">${tasks}</div><div class="section-label">NOTAS</div><div class="live-notes">${notes}</div><div class="section-label">CITAS</div><div class="live-appointments">${appointments}</div>${forms}`;
   }
-  const EDITABLE=[['name','Nombre'],['firstName','Nombre de pila'],['lastName','Apellido'],['email','Correo'],['phone','Teléfono'],['companyName','Empresa'],['address1','Dirección'],['city','Ciudad'],['state','Provincia'],['postalCode','Código postal'],['country','País'],['website','Sitio web'],['source','Fuente'],['timezone','Zona horaria']];
-  function contactForm(profile,labels={}){
-   const fields=EDITABLE.map(([key,label])=>`<label>${esc(label)}<input name="${key}" value="${esc(profile[key]??'')}" maxlength="250"></label>`).join('');
-   const custom=asList(profile.customFields).map(field=>`<label>${esc(labels[field.id]||field.label||'Campo personalizado')}<input data-field="${esc(field.id)}" value="${esc(field.value??'')}" maxlength="1000"></label>`).join('');
+  const EDITABLE=[['name','Nombre completo','text'],['firstName','Nombre','text'],['lastName','Apellido','text'],['email','Correo','email'],['phone','Teléfono','tel'],['companyName','Empresa','text'],['website','Sitio web','url'],['address1','Dirección','text'],['city','Ciudad','text'],['state','Provincia o estado','text'],['postalCode','Código postal','text'],['country','País','text'],['source','Fuente','text'],['timezone','Zona horaria','text'],['dateOfBirth','Fecha de nacimiento','date']];
+  const READ_ONLY_TYPES=['FILE_UPLOAD','SIGNATURE'];
+  // One control per published field type, so every field can actually be filled.
+  function customControl(field,current){
+   const id=esc(field.id),name=esc(field.name||'Campo personalizado'),hint=field.placeholder?` placeholder="${esc(field.placeholder)}"`:'';
+   const value=current?.value??'';
+   const chosen=asList(current?.values).length?asList(current.values):(value?String(value).split(', ').filter(Boolean):[]);
+   if(READ_ONLY_TYPES.includes(field.dataType))return `<label>${name}<input value="${esc(value)}" disabled></label>`;
+   if(field.dataType==='CHECKBOX')return `<label class="live-check"><input type="checkbox" data-field="${id}" data-type="CHECKBOX"${current?.checked||value==='Sí'?' checked':''}>${name}</label>`;
+   if(field.dataType==='MULTIPLE_OPTIONS'&&field.options?.length)
+    return `<div class="live-field-group" data-field="${id}" data-type="MULTIPLE_OPTIONS"><span class="live-field-name">${name}</span>${field.options.map(option=>`<label class="live-check"><input type="checkbox" data-option="${esc(option)}"${chosen.includes(option)?' checked':''}>${esc(option)}</label>`).join('')}</div>`;
+   if((field.dataType==='SINGLE_OPTIONS'||field.dataType==='RADIO')&&field.options?.length)
+    return `<label>${name}<select data-field="${id}" data-type="SINGLE_OPTIONS"><option value="">Sin elegir</option>${field.options.map(option=>`<option${option===value?' selected':''}>${esc(option)}</option>`).join('')}</select></label>`;
+   if(field.dataType==='LARGE_TEXT'||field.dataType==='TEXTBOX_LIST')
+    return `<label>${name}<textarea data-field="${id}" data-type="${esc(field.dataType)}" rows="3" maxlength="5000"${hint}>${esc(value)}</textarea></label>`;
+   const type=field.dataType==='NUMERICAL'||field.dataType==='MONETORY'?'number':field.dataType==='DATE'?'date':field.dataType==='EMAIL'?'email':field.dataType==='PHONE'?'tel':'text';
+   return `<label>${name}<input type="${type}" data-field="${id}" data-type="${esc(field.dataType)}" value="${esc(value)}" maxlength="1000"${hint}></label>`;
+  }
+  function contactForm(profile,directory=[],assignees=[]){
+   const fields=EDITABLE.map(([key,label,type])=>`<label>${esc(label)}<input type="${type}" name="${key}" value="${esc(profile[key]??'')}" maxlength="250"></label>`).join('')
+    +`<label class="live-check"><input type="checkbox" name="dnd"${profile.dnd?' checked':''}>No contactar</label>`
+    +(asList(assignees).length?`<label>Responsable<select name="assignedTo"><option value="">Sin asignar</option>${assignees.map(user=>`<option value="${esc(user.id)}"${user.id===profile.assignedTo?' selected':''}>${esc(user.name)}</option>`).join('')}</select></label>`:'');
+   // Every field the account defines is offered, even the ones with no value yet.
+   const values=new Map(asList(profile.customFields).map(field=>[field.id,field]));
+   const defined=asList(directory);
+   const extra=asList(profile.customFields).filter(field=>!defined.some(d=>d.id===field.id)).map(field=>({id:field.id,name:'Campo personalizado',dataType:'TEXT',options:[]}));
+   const custom=[...defined,...extra].map(field=>customControl(field,values.get(field.id))).join('')
+    ||'<span class="muted">Esta cuenta no define campos personalizados.</span>';
    const tags=asList(profile.tags).map(tag=>`<span class="tag">${esc(tag)}<button type="button" data-drop-tag="${esc(tag)}" aria-label="Quitar etiqueta ${esc(tag)}">×</button></span>`).join('')||'<span class="muted">Sin etiquetas</span>';
-   return `<form id="live-contact-form" class="live-contact-form"><header class="live-profile-header"><div><span class="section-label">EDITAR FICHA</span><h2>${esc(profile.name)}</h2></div><button type="button" id="live-edit-cancel" aria-label="Cancelar edición">×</button></header>${fields}${custom?`<div class="section-label">CAMPOS PERSONALIZADOS</div>${custom}`:''}<div class="section-label">ETIQUETAS</div><div class="live-profile-tags" id="live-tag-list">${tags}</div><label>Añadir etiqueta<input id="live-new-tag" maxlength="100" placeholder="Escribe y pulsa Añadir"></label><button type="button" id="live-add-tag">Añadir etiqueta</button><button class="primary" id="live-save-contact">Guardar ficha</button><p id="live-contact-status" role="status"></p></form>`;
+   return `<form id="live-contact-form" class="live-contact-form"><header class="live-profile-header"><div><span class="section-label">EDITAR FICHA</span><h2>${esc(profile.name)}</h2></div><button type="button" id="live-edit-cancel" aria-label="Cancelar edición">×</button></header>${fields}<div class="section-label">CAMPOS PERSONALIZADOS</div>${custom}<div class="section-label">ETIQUETAS</div><div class="live-profile-tags" id="live-tag-list">${tags}</div><label>Añadir etiqueta<input id="live-new-tag" maxlength="100" placeholder="Escribe y pulsa Añadir"></label><button type="button" id="live-add-tag">Añadir etiqueta</button><button class="primary" id="live-save-contact">Guardar ficha</button><p id="live-contact-status" role="status"></p></form>`;
   }
   function contactProfile(profile,labels={},opportunities=null,activity=null){
-   const details=[['Teléfono',profile.phone],['Email',profile.email],['Empresa',profile.companyName],['Fuente',profile.source],['Responsable',profile.assignedName],['Última actividad',date(profile.lastActivity)],['Zona horaria',profile.timezone],['Dirección',profile.address]].filter(([,value])=>value);
+   const details=[['Teléfono',profile.phone],['Email',profile.email],['Empresa',profile.companyName],['Sitio web',profile.website],['Fuente',profile.source],['Responsable',profile.assignedName],['Última actividad',date(profile.lastActivity)],['Alta',date(profile.dateAdded)],['Nacimiento',profile.dateOfBirth],['Zona horaria',profile.timezone],['Dirección',profile.address],['No contactar',profile.dnd?'Sí':null]].filter(([,value])=>value);
    const phone=String(profile.phone||'').replace(/[^0-9+]/g,'');
-   return `<header class="live-profile-header"><div><span class="section-label">CONTEXTO DEL CONTACTO</span><h2>${esc(profile.name)}</h2></div><div class="live-profile-controls">${profile.canEdit?'<button id="live-edit-contact">Editar</button>':''}<button id="live-profile-close" aria-label="Cerrar ficha">×</button></div></header>${phone||profile.email?`<div class="live-profile-actions">${phone?`<a href="tel:${esc(phone)}">Llamar</a>`:''}${profile.email?`<a href="mailto:${encodeURIComponent(profile.email)}">Email</a>`:''}</div>`:''}<div class="live-profile-details">${details.map(([label,value])=>`<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div><div class="section-label">ETIQUETAS</div><div class="live-profile-tags">${profile.tags?.length?profile.tags.map(tag=>`<span class="tag">${esc(tag)}</span>`).join(''):'<span class="muted">Sin etiquetas</span>'}</div><div class="section-label">CAMPOS PERSONALIZADOS</div><div class="live-profile-fields">${profile.customFields?.length?profile.customFields.map(field=>`<div><span>${esc(labels[field.id]||field.label)}</span><strong>${esc(field.value)}</strong></div>`).join(''):'<span class="muted">Sin campos con valor</span>'}</div><div class="section-label">OPORTUNIDAD ACTIVA</div><div class="live-profile-opportunities">${opportunitySection(opportunities)}</div><div class="live-profile-activity">${activitySection(activity)}</div>`;
+   return `<header class="live-profile-header"><div><span class="section-label">CONTEXTO DEL CONTACTO</span><h2>${esc(profile.name)}</h2></div><div class="live-profile-controls">${profile.canEdit?'<button id="live-edit-contact">Editar</button>':''}<button id="live-profile-close" aria-label="Cerrar ficha">×</button></div></header>${phone||profile.email?`<div class="live-profile-actions">${phone?`<a href="tel:${esc(phone)}">Llamar</a>`:''}${profile.email?`<a href="mailto:${encodeURIComponent(profile.email)}">Email</a>`:''}</div>`:''}<div class="live-profile-details">${details.map(([label,value])=>`<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div><div class="section-label">ETIQUETAS</div><div class="live-profile-tags">${profile.tags?.length?profile.tags.map(tag=>`<span class="tag">${esc(tag)}</span>`).join(''):'<span class="muted">Sin etiquetas</span>'}</div><div class="section-label">CAMPOS PERSONALIZADOS</div><div class="live-profile-fields">${asList(profile.customFields).filter(field=>field.value!==''&&field.value!=null).map(field=>`<div><span>${esc(labels[field.id]||field.label)}</span><strong>${esc(field.value)}</strong></div>`).join('')||'<span class="muted">Sin campos con valor</span>'}</div><div class="section-label">OPORTUNIDAD ACTIVA</div><div class="live-profile-opportunities">${opportunitySection(opportunities)}</div><div class="live-profile-activity">${activitySection(activity)}</div>`;
   }
   async function loadContact(c,version){
    const panel=$('#live-contact-panel');panel.innerHTML='<p class="empty">Cargando ficha…</p>';
@@ -203,10 +227,10 @@ export async function renderLiveInbox(container){
      if(edit)edit.onclick=()=>{editing=true;show()};
      bindActivity();
     };
-    let labels={},opportunities=null,activity=null,editing=false;
+    let labels=Object.fromEntries(asList(data.fields).map(field=>[field.id,field.name])),opportunities=null,activity=null,editing=false;
     data.contact.canEdit=data.canEdit===true;
     const show=()=>{
-     if(editing){panel.innerHTML=contactForm(data.contact,labels);bindEdit();return}
+     if(editing){panel.innerHTML=contactForm(data.contact,data.fields,data.assignees);bindEdit();return}
      panel.innerHTML=contactProfile(data.contact,labels,opportunities,activity);bind();
     };
     let added=[],dropped=[];
@@ -243,9 +267,26 @@ export async function renderLiveInbox(container){
        const input=form.querySelector(`[name="${key}"]`);
        if(input&&input.value.trim()!==String(data.contact[key]??''))fields[key]=input.value.trim();
       }
-      const customFields=[...form.querySelectorAll('[data-field]')]
-       .map(input=>({id:input.dataset.field,value:input.value}))
-       .filter(field=>field.value!==String((data.contact.customFields||[]).find(f=>f.id===field.id)?.value??''));
+      const dnd=form.querySelector('[name="dnd"]');
+      if(dnd&&dnd.checked!==(data.contact.dnd===true))fields.dnd=dnd.checked;
+      const assigned=form.querySelector('[name="assignedTo"]');
+      if(assigned&&assigned.value!==String(data.contact.assignedTo??''))fields.assignedTo=assigned.value;
+      // Each control reports its own shape: a box is a boolean, a group is a list.
+      const previous=new Map(asList(data.contact.customFields).map(field=>[field.id,field]));
+      const customFields=[];
+      for(const node of form.querySelectorAll('[data-field]')){
+       if(node.disabled)continue;
+       const id=node.dataset.field,was=previous.get(id);
+       let value;
+       if(node.dataset.type==='MULTIPLE_OPTIONS')value=[...node.querySelectorAll('[data-option]')].filter(box=>box.checked).map(box=>box.dataset.option);
+       else if(node.type==='checkbox')value=node.checked;
+       else value=node.value;
+       const before=Array.isArray(value)?asList(was?.values).join('\u0000')
+        :typeof value==='boolean'?(was?.checked===true)
+        :String(was?.value??'');
+       const now=Array.isArray(value)?value.join('\u0000'):value;
+       if(now!==before)customFields.push({id,value});
+      }
       if(customFields.length)fields.customFields=customFields;
       const payload={fields,addTags:added,removeTags:dropped,requestId:crypto.randomUUID().replace(/-/g,'')};
       try{
@@ -312,7 +353,9 @@ export async function renderLiveInbox(container){
     // One read at a time: the account's budget is shared with the chat poll,
     // and racing for the same lock only turns into a queue with errors.
     (async()=>{
-     try{const fields=await request(`workspace/contact-fields?connectionId=${encodeURIComponent(select.value)}`);if(!active()||version!==chatGeneration)return;labels=Object.fromEntries(fields.items.map(field=>[field.id,field.name]));show()}catch{}
+     if(!asList(data.fields).length){
+      try{const fields=await request(`workspace/contact-fields?connectionId=${encodeURIComponent(select.value)}`);if(!active()||version!==chatGeneration)return;data.fields=fields.items;labels=Object.fromEntries(fields.items.map(field=>[field.id,field.name]));show()}catch{}
+     }
      if(!active()||version!==chatGeneration)return;
      try{opportunities=await request(`workspace/opportunities?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`)}
      catch(error){opportunities={error:error.message}}

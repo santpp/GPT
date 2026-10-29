@@ -35,11 +35,20 @@ if($path==='/api/workspace/contact'&&$method==='GET'){
     $contactId=$known[$position]['contactId']??'';if(!is_string($contactId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))respond(['error'=>'La conversación no contiene un contacto válido'],422);
     require_once __DIR__.'/ContactProfile.php';
     require_once __DIR__.'/MessageSender.php';
-    try{respond([
-        'contact'=>(new ContactProfile())->get($connection,$contactId,($_GET['refresh']??'')==='1'),
-        'channels'=>($membership['capabilities']['sendMessages']??false)?MessageSender::availableChannels($connection,$known[$position]):[],
-        'canEdit'=>($membership['capabilities']['editContacts']??false)===true,
-    ]);}
+    require_once __DIR__.'/ContactFieldDirectory.php';
+    try{
+        $profile=(new ContactProfile())->get($connection,$contactId,($_GET['refresh']??'')==='1');
+        $canEdit=($membership['capabilities']['editContacts']??false)===true;
+        respond([
+            'contact'=>$profile,
+            'channels'=>($membership['capabilities']['sendMessages']??false)?MessageSender::availableChannels($connection,$known[$position]):[],
+            'canEdit'=>$canEdit,
+            // The definitions come from the stored directory so the sheet costs no
+            // extra request; the separate route refreshes it when it has expired.
+            'fields'=>(new ContactFieldDirectory())->cached($connection)??[],
+            'assignees'=>$canEdit?query('SELECT external_user_id AS id,display_name AS name FROM external_users WHERE connection_id=? AND active=TRUE ORDER BY display_name',[$connection['id']])->fetchAll():[],
+        ]);
+    }
     catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La ficha está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
     catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la ficha. Revisa el permiso de contactos.','code'=>'contact_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'La ficha recibida no tiene el formato esperado.','code'=>'contact_invalid_response'],424);}

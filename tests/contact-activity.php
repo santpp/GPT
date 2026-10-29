@@ -205,6 +205,29 @@ try {
  $forbidden=null;try{$actions->contact($connection,'contact-1',$readOnly,['requestId'=>key16(),'fields'=>['name'=>'X']]);}catch(ActionProblem $e){$forbidden=$e->reason;}
  activityCheck($forbidden==='action_forbidden','a read-only member cannot edit the contact');
 
+ // ---- every documented field, including the typed custom ones ---------------
+ $api->reset();clearBudget($connectionId);
+ $actions->contact($connection,'contact-1',$full,['requestId'=>key16(),'fields'=>[
+   'dateOfBirth'=>'1990-04-12','dnd'=>true,'assignedTo'=>'seller-1','website'=>'https://example.test','postalCode'=>'1010',
+   'customFields'=>[['id'=>'texto','value'=>'Hola'],['id'=>'numero','value'=>42],['id'=>'casilla','value'=>true],['id'=>'varias','value'=>['Precio','Soporte','Precio']]],
+ ]]);
+ $written=$api->calls[0][3];
+ activityCheck($written['dateOfBirth']==='1990-04-12'&&$written['dnd']===true&&$written['website']==='https://example.test'&&$written['postalCode']==='1010','birth date, do-not-contact, website and postal code are written');
+ activityCheck($written['assignedTo']==='seller-1','a responsible from the imported team is accepted');
+ activityCheck($written['customFields']===[['id'=>'texto','field_value'=>'Hola'],['id'=>'numero','field_value'=>42],['id'=>'casilla','field_value'=>true],['id'=>'varias','field_value'=>['Precio','Soporte']]],'text, number, checkbox and multiple choice each keep their own shape');
+
+ foreach([['dateOfBirth'=>'12/04/1990'],['dateOfBirth'=>'1990-02-31']] as $bad) {
+  $reason=null;try{$actions->contact($connection,'contact-1',$full,['requestId'=>key16(),'fields'=>$bad]);}catch(ActionProblem $e){$reason=$e->reason;}
+  activityCheck($reason==='invalid_birth_date','an unusable birth date is refused: '.reset($bad));
+ }
+ $stranger=null;
+ try{$actions->contact($connection,'contact-1',$full,['requestId'=>key16(),'fields'=>['assignedTo'=>'de-otra-cuenta']]);}
+ catch(ActionProblem $e){$stranger=$e->reason;}
+ activityCheck($stranger==='unknown_assignee','a responsible outside the imported team is refused before any request');
+ $api->reset();clearBudget($connectionId);
+ $actions->contact($connection,'contact-1',$full,['requestId'=>key16(),'fields'=>['assignedTo'=>'','dnd'=>false]]);
+ activityCheck($api->calls[0][3]['assignedTo']===''&&$api->calls[0][3]['dnd']===false,'the responsible and the do-not-contact flag can be cleared');
+
  $api->reset();clearBudget($connectionId);
  $onlyTags=$actions->contact($connection,'contact-1',$full,['requestId'=>key16(),'addTags'=>['Sola']]);
  activityCheck($onlyTags['state']==='accepted'&&$api->paths()===['POST /contacts/contact-1/tags'],'a tag-only change writes no contact update');

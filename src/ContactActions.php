@@ -70,13 +70,45 @@ final class ContactActions {
         }
         if(($payload['email']??'')!==''&&!filter_var($payload['email'],FILTER_VALIDATE_EMAIL))throw new ActionProblem('invalid_contact_email',422,'El correo no tiene un formato válido.');
         if(($payload['phone']??'')!==''&&!preg_match('/^\+?[0-9 ()\-.]{5,60}$/D',$payload['phone']))throw new ActionProblem('invalid_contact_phone',422,'El teléfono sólo puede tener números y los signos + ( ) - . y espacios.');
+        // The account publishes no birth-date format for writing, so only a plain
+        // calendar date is accepted and it is sent exactly as the schema lists it.
+        if(array_key_exists('dateOfBirth',$fields)) {
+            $birth=$fields['dateOfBirth'];
+            if($birth===null||$birth==='')$payload['dateOfBirth']='';
+            elseif(is_string($birth)&&preg_match('/^\d{4}-\d{2}-\d{2}$/D',$birth)&&checkdate((int)substr($birth,5,2),(int)substr($birth,8,2),(int)substr($birth,0,4)))$payload['dateOfBirth']=$birth;
+            else throw new ActionProblem('invalid_birth_date',422,'La fecha de nacimiento debe ser una fecha real en formato AAAA-MM-DD.');
+        }
+        if(array_key_exists('dnd',$fields)) {
+            if(!is_bool($fields['dnd']))throw new ActionProblem('invalid_contact_fields',422,'El indicador de no contactar debe ser sí o no.');
+            $payload['dnd']=$fields['dnd'];
+        }
+        // Only a member imported from this very account may be made responsible.
+        if(array_key_exists('assignedTo',$fields)) {
+            $assignee=$fields['assignedTo'];
+            if($assignee===null||$assignee==='')$payload['assignedTo']='';
+            elseif(is_string($assignee)&&preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$assignee)
+                &&query('SELECT 1 FROM external_users WHERE connection_id=? AND external_user_id=? AND active=TRUE LIMIT 1',[$connection['id'],$assignee])->fetchColumn())$payload['assignedTo']=$assignee;
+            else throw new ActionProblem('unknown_assignee',422,'Ese responsable no pertenece al equipo importado de esta cuenta.');
+        }
         $custom=[];
-        foreach(is_array($fields['customFields']??null)?array_slice($fields['customFields'],0,100):[] as $field) {
+        foreach(is_array($fields['customFields']??null)?array_slice($fields['customFields'],0,200):[] as $field) {
             if(!is_array($field)||!is_string($field['id']??null)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$field['id']))continue;
             $value=$field['value']??'';
-            if(!is_scalar($value)||mb_strlen((string)$value)>1000)throw new ActionProblem('invalid_contact_fields',422,'Un campo personalizado supera el tamaño admitido.');
+            if(is_array($value)) {
+                // A multiple-choice field answers with the chosen options.
+                $choices=[];
+                foreach(array_slice($value,0,50) as $choice) {
+                    if(!is_scalar($choice))throw new ActionProblem('invalid_contact_fields',422,'Una opción de un campo personalizado no tiene un formato válido.');
+                    $choice=trim((string)$choice);
+                    if($choice!==''&&mb_strlen($choice)<=300)$choices[]=$choice;
+                }
+                $custom[]=['id'=>$field['id'],'field_value'=>array_values(array_unique($choices))];
+                continue;
+            }
+            if(is_bool($value)){$custom[]=['id'=>$field['id'],'field_value'=>$value];continue;}
+            if(!is_scalar($value)||mb_strlen((string)$value)>5000)throw new ActionProblem('invalid_contact_fields',422,'Un campo personalizado supera el tamaño admitido.');
             // The account reads custom values as "value" but writes them as "field_value".
-            $custom[]=['id'=>$field['id'],'field_value'=>(string)$value];
+            $custom[]=['id'=>$field['id'],'field_value'=>is_int($value)||is_float($value)?$value:(string)$value];
         }
         if($custom)$payload['customFields']=$custom;
         $add=self::tagList($input['addTags']??[]);
