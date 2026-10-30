@@ -96,6 +96,20 @@ try {
         require $appRoot.'/src/integrations.php';
     }
     if ($path === '/api/devices') require_once dirname(__DIR__).'/src/PushDelivery.php';
+    // What a browser needs to subscribe. Public by design, and created the
+    // first time it is asked for so nobody has to generate anything by hand.
+    if ($path === '/api/push-key' && $method === 'GET') {
+        require_once dirname(__DIR__).'/src/WebPush.php';
+        WebPush::ensureKeys(null,'mailto:soporte@'.(parse_url((string)getenv('APP_ORIGIN'),PHP_URL_HOST)?:'agoradigital.app'));
+        $push=new WebPush();
+        respond($push->configured()?['key'=>$push->publicKey(),'ready'=>true]:['key'=>null,'ready'=>false]);
+    }
+    if ($path === '/api/devices' && $method === 'GET') {
+        if(($u['identity_type'] ?? 'native')!=='native' || $u['role']!=='administrator')respond(['error'=>'Acceso restringido'],403);
+        $rows=query('SELECT id,platform,label,created_at,last_seen_at,last_sent_at FROM push_devices WHERE tenant_id=? ORDER BY last_seen_at DESC LIMIT 100',[$u['tenant_id']])->fetchAll();
+        require_once dirname(__DIR__).'/src/PushDelivery.php';
+        respond(['items'=>$rows,'browser'=>PushDelivery::browserConfigured(),'android'=>PushDelivery::firebaseConfigured()]);
+    }
     if ($path === '/api/me' && $method === 'GET') respond(['user'=>array_intersect_key($u,array_flip(['id','email','role','identity_type','capabilities'])),'csrf'=>$_SESSION['csrf']]);
     // A phone registers the token its own system gives it, so Ágora can notify
     // it. Nothing else about the device is stored, and the token belongs to the
@@ -107,9 +121,19 @@ try {
         if($method==='DELETE'){query('DELETE FROM push_devices WHERE tenant_id=? AND token=?',[$u['tenant_id'],$token]);respond(['registered'=>false]);}
         $platform=($body['platform'] ?? 'android')==='web'?'web':'android';
         $type=($u['identity_type'] ?? 'native')==='native'?'native':'external';
-        query('INSERT INTO push_devices(tenant_id,identity_type,actor_id,token,platform) VALUES(?,?,?,?,?)
-            ON DUPLICATE KEY UPDATE tenant_id=VALUES(tenant_id),identity_type=VALUES(identity_type),actor_id=VALUES(actor_id),platform=VALUES(platform),last_seen_at=CURRENT_TIMESTAMP',
-            [$u['tenant_id'],$type,$u['id'],$token,$platform]);
+        // A browser subscription is an address plus the two keys its own system
+        // generated; without them nothing could be encrypted for it.
+        $p256dh=$auth=null;
+        if($platform==='web') {
+            $p256dh=$body['keys']['p256dh'] ?? null;$auth=$body['keys']['auth'] ?? null;
+            if(!is_string($p256dh)||!is_string($auth)||!preg_match('/^[A-Za-z0-9_-]{20,255}$/D',$p256dh)||!preg_match('/^[A-Za-z0-9_-]{10,64}$/D',$auth))
+                respond(['error'=>'La suscripción de este navegador no es válida.'],422);
+        }
+        $label=$body['label'] ?? null;
+        $label=is_string($label)&&trim($label)!==''?mb_substr(preg_replace('/[^\p{L}\p{N} .,()\/-]/u','',trim($label)),0,80):null;
+        query('INSERT INTO push_devices(tenant_id,identity_type,actor_id,token,platform,p256dh,auth,label) VALUES(?,?,?,?,?,?,?,?)
+            ON DUPLICATE KEY UPDATE tenant_id=VALUES(tenant_id),identity_type=VALUES(identity_type),actor_id=VALUES(actor_id),platform=VALUES(platform),p256dh=VALUES(p256dh),auth=VALUES(auth),label=VALUES(label),last_seen_at=CURRENT_TIMESTAMP',
+            [$u['tenant_id'],$type,$u['id'],$token,$platform,$p256dh,$auth,$label]);
         respond(['registered'=>true,'notifications'=>PushDelivery::configured()]);
     }
     if ($path === '/api/logout' && $method === 'POST') { $_SESSION=[]; session_destroy(); respond(['ok'=>true]); }

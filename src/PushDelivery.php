@@ -21,13 +21,22 @@ final class PushDelivery {
 
     private ?string $access=null;
     private int $expires=0;
+    private ?WebPush $browser=null;
 
     /** @param ?Closure(string,array,array):array $transport only tests inject this */
-    public function __construct(private readonly ?Closure $transport=null,private readonly ?string $credentialsFile=null) {}
+    public function __construct(private readonly ?Closure $transport=null,private readonly ?string $credentialsFile=null,?WebPush $browser=null) {$this->browser=$browser;}
 
+    /** Either transport being ready is enough for the delivery pass to be worth running. */
     public static function configured():bool {
+        return self::firebaseConfigured()||self::browserConfigured();
+    }
+    public static function firebaseConfigured():bool {
         $file=getenv('FCM_CREDENTIALS_FILE');
         return is_string($file)&&$file!==''&&is_file($file);
+    }
+    public static function browserConfigured():bool {
+        require_once __DIR__.'/WebPush.php';
+        return (new WebPush())->configured();
     }
 
     /** Sends up to $batch pending notices. Returns what happened, for the cron. */
@@ -45,7 +54,8 @@ final class PushDelivery {
             $retry=false;
             foreach($recipients as $recipient) {
                 try {
-                    $this->send($recipient['token'],$notice);
+                    $this->deliver($recipient,$notice);
+                    query('UPDATE push_devices SET last_sent_at=CURRENT_TIMESTAMP WHERE id=?',[$recipient['device']]);
                     $sent++;
                 } catch(PushProblem $e) {
                     if($e->reason==='unregistered'){query('DELETE FROM push_devices WHERE id=?',[$recipient['device']]);$dropped++;continue;}
@@ -65,6 +75,16 @@ final class PushDelivery {
             query("UPDATE push_queue SET state='sent',sent_at=CURRENT_TIMESTAMP,attempts=attempts+1 WHERE id=?",[$notice['id']]);
         }
         return ['notices'=>$notices,'sent'=>$sent,'retried'=>$failed,'dropped'=>$dropped];
+    }
+
+    /** Each device by the road its own system uses. */
+    private function deliver(array $recipient,array $notice):void {
+        if(($recipient['platform']??'android')==='web') {
+            require_once __DIR__.'/WebPush.php';
+            ($this->browser??=new WebPush())->send($recipient,$notice);
+            return;
+        }
+        $this->send((string)$recipient['token'],$notice);
     }
 
     /** One message, in the shape the published HTTP v1 request declares. */

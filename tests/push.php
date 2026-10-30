@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require __DIR__.'/../src/bootstrap.php';
 require __DIR__.'/../src/PushDelivery.php';
+require __DIR__.'/../src/WebPush.php';
 
 $tenants=[];$suffix=bin2hex(random_bytes(6));$checks=0;$keyFile=null;
 function pushCheck(bool $ok,string $label):void{global $checks;if(!$ok)throw new RuntimeException($label);$checks++;echo 'PASS '.$label.PHP_EOL;}
@@ -119,6 +120,27 @@ try {
  $none=$delivery()->run();
  pushCheck($fcm->sends()===[]&&$none['sent']===0,'with no device registered nothing is sent');
  pushCheck(query('SELECT state FROM push_queue WHERE conversation_id=?',['conv-6'])->fetchColumn()==='sent','and the notice is closed rather than piling up');
+
+ // ---- a browser subscription travels by its own road ---------------------------
+ $fcm->reset();
+ $webKey=tempnam(sys_get_temp_dir(),'agora-webpush-');@unlink($webKey);
+ WebPush::ensureKeys($webKey,'mailto:pruebas@example.test');
+ $browserCalls=[];
+ $browser=new WebPush(function(string $url,array $headers,string $body)use(&$browserCalls):array{
+  $browserCalls[]=['url'=>$url,'headers'=>$headers];return ['status'=>201,'body'=>''];
+ },$webKey);
+ query('INSERT INTO push_devices(tenant_id,identity_type,actor_id,token,platform,p256dh,auth,label) VALUES(?,?,?,?,?,?,?,?)',
+  [$tenant,'native',$ownerId,'https://push.example.test/suscripcion-'.$suffix,'web',
+   WebPush::encode(WebPush::point(openssl_pkey_new(['curve_name'=>'prime256v1','private_key_type'=>OPENSSL_KEYTYPE_EC]))),
+   WebPush::encode(random_bytes(16)),'iPhone (instalada)']);
+ query('INSERT INTO push_devices(tenant_id,identity_type,actor_id,token,platform) VALUES(?,?,?,?,?)',[$tenant,'native',$ownerId,'token-owner-again-'.$suffix,'android']);
+ $queue('conv-7',null);
+ $mixed=(new PushDelivery($fcm->transport(),$keyFile,$browser))->run();
+ pushCheck(count($browserCalls)===1&&str_starts_with($browserCalls[0]['url'],'https://push.example.test/'),'a browser is notified through its own subscription address');
+ pushCheck(count($fcm->sends())===1,'and an Android phone through the other road, in the same pass');
+ pushCheck($mixed['sent']===2,'both count as delivered');
+ pushCheck((int)query('SELECT COUNT(*) FROM push_devices WHERE tenant_id=? AND last_sent_at IS NOT NULL',[$tenant])->fetchColumn()===2,'and each device records when it was last told, for the diagnostics');
+ @unlink($webKey);
 
  // ---- not configured ----------------------------------------------------------
  $missing=new PushDelivery($fcm->transport(),'/does/not/exist.json');

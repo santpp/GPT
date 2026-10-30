@@ -118,6 +118,23 @@ try {
  pulseCheck($api->calls===[]&&$quiet['refreshed']===false,'a connection nobody verified is never read');
  query("UPDATE ghl_connections SET status='connected' WHERE id=?",[$connectionId]);
 
+ // ---- the pass that runs with every app closed -------------------------------
+ // This is what makes a notification possible at all: nobody is looking, so no
+ // pulse arrives, and the schedule has to discover the message by itself.
+ pulseDue($connectionId);$api->reset();
+ query('DELETE FROM push_queue WHERE connection_id=?',[$connectionId]);
+ $api->conversations=[$conversation('a',9,'1730009000000','Mensaje de madrugada','seller-1')];
+ $swept=$pulse->sweep($connection);
+ pulseCheck($swept===true&&count($api->calls)===1,'the schedule reads the account with nobody looking at any screen');
+ pulseCheck((int)query('SELECT COUNT(*) FROM push_queue WHERE connection_id=?',[$connectionId])->fetchColumn()===1,'and leaves the notice ready, which is what lets a sleeping phone be told');
+ $api->reset();
+ pulseCheck($pulse->sweep($connection)===false&&$api->calls===[],'a second pass inside the interval reads nothing again');
+ query("UPDATE ghl_connections SET status='untested' WHERE id=?",[$connectionId]);
+ $unverified=query('SELECT * FROM ghl_connections WHERE id=?',[$connectionId])->fetch();
+ pulseDue($connectionId);$api->reset();
+ pulseCheck($pulse->sweep($unverified)===false&&$api->calls===[],'and a connection nobody verified is left alone by the schedule too');
+ query("UPDATE ghl_connections SET status='connected' WHERE id=?",[$connectionId]);
+
  echo 'PASS '.$checks.' live sync checks (simulated API client, real MariaDB)'.PHP_EOL;
 } finally {
  foreach($tenants as $id){query('DELETE FROM ghl_connections WHERE tenant_id=?',[$id]);query('DELETE FROM tenants WHERE id=?',[$id]);}

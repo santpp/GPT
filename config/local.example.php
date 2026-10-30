@@ -13,6 +13,9 @@ return [
     // Android notifications. The Firebase service account JSON, kept OUTSIDE
     // public_html and out of Git. Leave it out and Ágora simply does not notify.
     // 'FCM_CREDENTIALS_FILE'=>dirname(__DIR__).'/var/fcm-service-account.json',
+    // Avisos en el navegador y en el móvil sin tienda de aplicaciones. Ágora
+    // crea este archivo solo la primera vez; mantenlo fuera de public_html.
+    'WEBPUSH_KEY_FILE'=>dirname(__DIR__).'/var/webpush.json',
     // Access codes are delivered by the connected account chosen in
     // Conexiones → Canal de acceso. No mail server credentials belong here.
 ];

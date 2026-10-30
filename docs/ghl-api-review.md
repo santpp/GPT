@@ -315,3 +315,21 @@ El pase que descubre el mensaje deja el aviso en cola con una huella del propio 
 La cuenta de servicio vive fuera de `public_html`, su ruta está en la configuración privada y nunca entra en Git ni llega al navegador. Sin ella Ágora no notifica y lo dice.
 
 **Lo que no se ha podido comprobar aquí.** La entrega está probada contra un servicio simulado con esa forma de petición y un JWT real firmado con una clave generada en la prueba, pero **no contra Firebase ni contra un teléfono**: este entorno no tiene acceso a `googleapis.com` ni el SDK de Android. Queda pendiente una prueba de extremo a extremo con el proyecto real.
+
+## Avisos en el teléfono sin tienda de aplicaciones 0.19.0
+
+Esta versión no añade ningún uso nuevo de la cuenta: los endpoints y scopes son los mismos de 0.18.0. Lo que cambia es quién dispara el pase compartido y por dónde viaja el aviso.
+
+**El pase, también desde el reloj.** Hasta ahora el pase que lee la cuenta lo disparaba el pulso del navegador, de modo que con todas las aplicaciones cerradas nadie leía nada y ningún aviso llegaba a existir: justo el caso para el que sirven las notificaciones. El cron de cada minuto ejecuta ahora ese mismo pase (`Pulse::sweep`), con el mismo bloqueo, el mismo intervalo mínimo y el mismo respeto del presupuesto. Peor caso con todo cerrado: unos 60 segundos entre el mensaje y el aviso.
+
+**Web Push (RFC 8291 y RFC 8292), sin Firebase ni APK.** El navegador se suscribe a su propio servicio —Google en Android, Apple en iPhone, Mozilla en Firefox— y entrega una dirección y dos claves. El servidor guarda una pareja de claves propia (P-256), creada sola la primera vez y fuera de `public_html`: la mitad pública es la que el navegador necesita para suscribirse, la privada firma cada envío.
+
+Cada aviso se cifra para esa suscripción concreta: clave efímera por mensaje, secreto compartido ECDH con la clave del navegador, derivación HKDF-SHA256 y AES-128-GCM, con la cabecera `aes128gcm` que indica la especificación. El servicio que lo reenvía no puede leer ni el nombre ni el texto. La prueba automática lo verifica desde el lado receptor: descifra el aviso con la clave de la suscripción y comprueba que sale exactamente lo enviado, acentos incluidos, y además valida la firma del envío contra la clave pública.
+
+Una suscripción que el servicio declara desconocida (400, 401, 403, 404 o 410) se borra; un 5xx se reintenta con la misma espera creciente que ya había.
+
+**iOS.** Funciona desde iOS 16.4 y **sólo** con la aplicación añadida a la pantalla de inicio desde Safari. El botón detecta ese caso y explica cómo instalarla en lugar de pedir el permiso: en iPhone un permiso denegado no se puede volver a pedir, así que gastarlo sería el peor resultado posible. Todo aviso se muestra —no hay envíos silenciosos—, que es además lo que Apple exige.
+
+**Android.** Funciona instalada o como pestaña. Las capas de ahorro de batería de algunos fabricantes pueden retrasar la entrega, igual que a cualquier aplicación.
+
+**Lo que no se ha podido comprobar aquí.** La criptografía y la firma están verificadas de extremo a extremo contra un receptor real implementado en la propia prueba, pero el envío no ha salido a un servicio real ni ha llegado a un teléfono: este entorno no tiene salida a esos servicios. Queda la comprobación con dos teléfonos, que es corta.

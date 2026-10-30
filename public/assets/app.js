@@ -4,6 +4,7 @@ import {renderLiveInbox} from './live-inbox.js';
 import {renderContacts} from './contacts.js';
 import {renderDashboard} from './dashboard.js';
 import {connectDevice,releaseDevice,isNative} from './native.js';
+import {enable as enablePush,disable as disablePush,state as pushState,isApple,installed} from './push.js';
 import {renderBoard} from './board.js';
 
 const $=s=>document.querySelector(s);
@@ -49,6 +50,46 @@ function show(name,{push=true}={}){
   meta.render(view);
 }
 
+// Notifications on this very device. Nothing is asked until the person asks:
+// on iOS a refused prompt cannot be shown again, so the button explains first.
+const PUSH_TEXT={
+  off:'Activar avisos en este dispositivo',
+  on:'Avisos activados · tocar para desactivar',
+  blocked:'Avisos bloqueados en los ajustes del navegador',
+  'needs-install':'Para recibir avisos, añade Ágora a la pantalla de inicio',
+  unconfigured:'Los avisos aún no están configurados en el servidor',
+  unsupported:'Este navegador no admite avisos',
+};
+let pushNow='off';
+async function paintPush(){
+  const button=$('#push-toggle');if(!button)return;
+  if(isNative()){button.hidden=true;return}
+  pushNow=await pushState();
+  button.hidden=false;
+  button.disabled=['unsupported','unconfigured'].includes(pushNow);
+  button.dataset.state=pushNow;
+  $('#push-label').textContent=PUSH_TEXT[pushNow]||PUSH_TEXT.off;
+}
+$('#push-toggle').onclick=async()=>{
+  const button=$('#push-toggle');
+  if(pushNow==='needs-install'){
+    toast(isApple()
+      ? 'En iPhone: toca Compartir en Safari y elige «Añadir a pantalla de inicio». Abre Ágora desde ese icono y vuelve a pulsar aquí.'
+      : 'Instala Ágora desde el menú del navegador («Instalar aplicación») y vuelve a pulsar aquí.');
+    return;
+  }
+  if(pushNow==='blocked'){toast('Los avisos están bloqueados para este sitio. Actívalos en los ajustes del navegador y vuelve a pulsar aquí.');return}
+  button.disabled=true;
+  try{
+    const result=pushNow==='on'?await disablePush(workspace.me?.csrf||''):await enablePush(workspace.me?.csrf||'');
+    if(result==='on')toast('Listo: este dispositivo avisará de los mensajes nuevos.');
+    else if(result==='blocked')toast('El dispositivo no ha dado permiso para avisar.');
+    else if(result==='unconfigured')toast('El servidor todavía no tiene los avisos preparados.');
+    else if(result==='off'&&pushNow==='on')toast('Este dispositivo ya no recibirá avisos.');
+  }catch(error){toast(error.message||'No se pudo cambiar los avisos de este dispositivo.')}
+  finally{await paintPush();button.disabled=['unsupported','unconfigured'].includes(pushNow)}
+};
+
 function renderAccounts(){
   const select=$('#account');
   select.innerHTML=workspace.connections.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
@@ -69,6 +110,7 @@ async function startSession(){
   catch{workspace.setConnections([])}
   renderAccounts();
   show(requested()||'inbox',{push:false});
+  paintPush();
   // Inside the Android shell the phone registers itself so it can be notified.
   if(isNative())connectDevice(me.csrf,path=>{const name=byPath(path);if(name)show(name);else if(path.startsWith('/conversations/'))history.pushState(null,'',path),show('inbox',{push:false})})
     .then(result=>{globalThis.agoraDeviceToken=result.token;if(result.state==='denied')toast('Activa las notificaciones del sistema para recibir avisos de mensajes nuevos.')})

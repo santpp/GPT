@@ -56,6 +56,15 @@ final class Pulse {
     }
 
     /**
+     * The shared pass, for the cron. Nobody may have the app open, and that is
+     * precisely when a notice matters most, so the schedule runs it anyway.
+     */
+    public function sweep(array $connection):bool {
+        if($connection['status']!=='connected')return false;
+        return $this->refreshIfDue($connection,max(self::FLOOR,(int)$connection['sync_interval_seconds']));
+    }
+
+    /**
      * Reads the account at most once per interval per connection. A pass that
      * is already running is not waited for: its result arrives on the next
      * pulse, which is seconds away.

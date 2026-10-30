@@ -7,6 +7,24 @@ async function api(path,method='GET',data){
  let b;try{b=await r.json()}catch{throw Error('El backend no está disponible.')}
  if(!r.ok){const e=Error(b.error||'No se ha podido completar la operación.');e.status=r.status;e.code=b.code;e.reference=b.reference;throw e}return b;
 }
+/**
+ * Which devices will be told about a new message, and when each was last told.
+ * It is the quickest way to tell a delivery problem from a sending one.
+ */
+async function devicePanel(container){
+ const panel=container.querySelector('#device-panel');if(!panel)return;
+ let data;
+ try{data=await api('devices')}catch{panel.innerHTML='';return}
+ const names={web:'Navegador o aplicación instalada',android:'Aplicación Android'};
+ const when=value=>value?String(value).replace('T',' ').slice(0,16):null;
+ const ready=[data.browser?'navegador':null,data.android?'Android':null].filter(Boolean).join(' y ');
+ panel.innerHTML=`<div class="section-label">AVISOS EN DISPOSITIVOS</div><p class="settings-notice">${ready
+   ? `Preparado para avisar por ${esc(ready)}. Cada persona activa los avisos desde su propio dispositivo.`
+   : 'Todavía no hay avisos preparados en el servidor. Revisa la configuración privada antes de activarlos en un dispositivo.'}</p><div class="device-list">${
+  (data.items||[]).map(d=>`<article class="card"><h3>${esc(d.label||names[d.platform]||'Dispositivo')}</h3><small>${esc(names[d.platform]||d.platform)}<br>Registrado: ${esc(when(d.created_at)||'—')}<br>Visto: ${esc(when(d.last_seen_at)||'—')}<br>Último aviso enviado: ${esc(when(d.last_sent_at)||'Ninguno todavía')}</small></article>`).join('')
+  ||'<p class="empty">Ningún dispositivo ha activado los avisos todavía.</p>'}</div>`;
+}
+
 export async function renderIntegrations(container){
  const instance=Symbol();container.agoraIntegrationsInstance=instance;const active=()=>container.agoraIntegrationsInstance===instance&&container.dataset.view==='settings';
  container.innerHTML='<p class="empty">Comprobando tu sesión…</p>';
@@ -17,7 +35,8 @@ export async function renderIntegrations(container){
  const installation=await api('admin/diagnostics');if(!active())return;
  if(!installation.ready){renderSetup(container,installation);return}
  const {items,accessChannel={connectionId:null,ready:false}}=await api('admin/integrations');if(!active())return;
- container.innerHTML=`<div class="integration-heading"><div><span class="eyebrow">ADMINISTRACIÓN</span><h2 style="margin-top:8px">Cuentas conectadas</h2></div><div><button id="test-access-channel"${accessChannel.ready?'':' disabled'}>Probar canal de acceso</button> <button id="add-integration" class="primary">+ Añadir subcuenta</button></div></div><p class="settings-notice">Tu cuenta es la única administración propia de Ágora. El equipo se importa desde cada cuenta conectada con sus permisos y asignaciones; no se crean contraseñas locales para empleados.</p>${accessPanel(items,accessChannel)}<div id="integration-cards">${items.map(i=>`<article class="card integration-card"><span class="integration-status">${statusNames[i.status]||'Pendiente'}</span><h3>${esc(i.name)}</h3><p>Identificador: ${esc(i.location_id)}<br>Clave protegida · intervalo: ${i.sync_interval_seconds} s<br>Última comprobación: ${esc(i.last_checked_at||'Sin comprobar')}<br>Consultas programadas: ${Number(i.sync_enabled)?'activadas':'desactivadas'}<br>Última lectura: ${esc(i.last_success_at||'Sin sincronizar')}<br>Equipo importado: ${Number(i.externalUsers)||0} · ${esc(i.users_last_success_at||'Sin sincronizar')}${i.accessChannel?'<br>Canal de acceso del equipo':''}</p><footer><button data-edit="${i.id}">Configurar conexión</button><button data-test="${i.id}">Comprobar conexión</button><button data-users="${i.id}">Equipo y permisos</button><button data-schedule="${i.id}" data-enabled="${Number(i.sync_enabled)||0}">${Number(i.sync_enabled)?'Pausar consultas':'Activar consultas'}</button><button data-remove="${i.id}" class="danger">Eliminar</button></footer></article>`).join('')||'<p class="empty">Todavía no tienes cuentas conectadas.<br>Añade una cuenta para empezar.</p>'}</div><p id="integration-feedback" class="dialog-copy" role="status"></p>`;
+ container.innerHTML=`<div class="integration-heading"><div><span class="eyebrow">ADMINISTRACIÓN</span><h2 style="margin-top:8px">Cuentas conectadas</h2></div><div><button id="test-access-channel"${accessChannel.ready?'':' disabled'}>Probar canal de acceso</button> <button id="add-integration" class="primary">+ Añadir subcuenta</button></div></div><p class="settings-notice">Tu cuenta es la única administración propia de Ágora. El equipo se importa desde cada cuenta conectada con sus permisos y asignaciones; no se crean contraseñas locales para empleados.</p>${accessPanel(items,accessChannel)}<div id="integration-cards">${items.map(i=>`<article class="card integration-card"><span class="integration-status">${statusNames[i.status]||'Pendiente'}</span><h3>${esc(i.name)}</h3><p>Identificador: ${esc(i.location_id)}<br>Clave protegida · intervalo: ${i.sync_interval_seconds} s<br>Última comprobación: ${esc(i.last_checked_at||'Sin comprobar')}<br>Consultas programadas: ${Number(i.sync_enabled)?'activadas':'desactivadas'}<br>Última lectura: ${esc(i.last_success_at||'Sin sincronizar')}<br>Equipo importado: ${Number(i.externalUsers)||0} · ${esc(i.users_last_success_at||'Sin sincronizar')}${i.accessChannel?'<br>Canal de acceso del equipo':''}</p><footer><button data-edit="${i.id}">Configurar conexión</button><button data-test="${i.id}">Comprobar conexión</button><button data-users="${i.id}">Equipo y permisos</button><button data-schedule="${i.id}" data-enabled="${Number(i.sync_enabled)||0}">${Number(i.sync_enabled)?'Pausar consultas':'Activar consultas'}</button><button data-remove="${i.id}" class="danger">Eliminar</button></footer></article>`).join('')||'<p class="empty">Todavía no tienes cuentas conectadas.<br>Añade una cuenta para empezar.</p>'}</div><p id="integration-feedback" class="dialog-copy" role="status"></p><section id="device-panel"></section>`;
+ devicePanel(container);
  container.querySelector('#add-integration').onclick=()=>edit(null,container);
  container.querySelector('#test-access-channel').onclick=async e=>{e.currentTarget.disabled=true;const feedback=container.querySelector('#integration-feedback');feedback.textContent='Enviando prueba…';try{await api('admin/access-channel/test','POST');feedback.textContent='Prueba entregada al correo del administrador. Revisa la bandeja y la carpeta de spam.'}catch(error){feedback.textContent=error.message}finally{e.currentTarget.disabled=false}};
  const channelSelect=container.querySelector('#access-channel-select');
