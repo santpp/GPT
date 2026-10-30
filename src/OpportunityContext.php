@@ -27,6 +27,7 @@ final class OpportunityContext {
             'items'=>$items,
             'total'=>count($items),
             'restricted'=>$restricted,
+            'canEdit'=>($membership['capabilities']['editOpportunities']??false)===true,
             // A truncated window is reported so the panel never implies a full list.
             'partial'=>count($records)>=self::LIMIT,
             'pipelineNamesAvailable'=>$names!==[],

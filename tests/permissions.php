@@ -12,3 +12,12 @@ $writer=PermissionPolicy::capabilities(['identity_type'=>'external','permissions
 policyCheck($writer['sendMessages'],'message write scope enables replies');
 $disabled=PermissionPolicy::capabilities(['identity_type'=>'external','permissions'=>['conversationsEnabled'=>false],'scopes'=>['conversations/message.write']]);
 policyCheck(!$disabled['viewConversations']&&!$disabled['sendMessages'],'disabled feature overrides write scope');
+// Opportunities: seeing them and changing them are different scopes, and the
+// board must never offer a write to a user whose key cannot perform it.
+$opportunityReader=PermissionPolicy::capabilities(['identity_type'=>'external','permissions'=>['opportunitiesEnabled'=>true],'scopes'=>['opportunities.readonly']]);
+policyCheck($opportunityReader['viewOpportunities']&&!$opportunityReader['editOpportunities'],'read scope shows opportunities without offering to change them');
+$opportunityWriter=PermissionPolicy::capabilities(['identity_type'=>'external','permissions'=>['opportunitiesEnabled'=>true],'scopes'=>['opportunities.write']]);
+policyCheck($opportunityWriter['viewOpportunities']&&$opportunityWriter['editOpportunities'],'write scope allows opening and editing opportunities');
+$opportunityOff=PermissionPolicy::capabilities(['identity_type'=>'external','permissions'=>['opportunitiesEnabled'=>false],'scopes'=>['opportunities.write']]);
+policyCheck(!$opportunityOff['viewOpportunities']&&!$opportunityOff['editOpportunities'],'a disabled module overrides the opportunity write scope');
+policyCheck($native['editOpportunities'],'the owner can change opportunities');

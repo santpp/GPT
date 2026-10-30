@@ -17,7 +17,7 @@ final class OpportunityBoard {
     public function get(array $connection,?string $pipelineId,array $membership,bool $refresh=false):array {
         $pipelineId=$pipelineId!==null&&preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$pipelineId)?$pipelineId:null;
         [$names,$records]=$this->read($connection,$pipelineId,$refresh);
-        if($names===[])return ['pipelines'=>[],'pipelineId'=>null,'stages'=>[],'total'=>0,'restricted'=>false,'partial'=>false,'unavailable'=>'pipelines'];
+        if($names===[])return ['pipelines'=>[],'pipelineId'=>null,'stages'=>[],'total'=>0,'restricted'=>false,'canEdit'=>false,'partial'=>false,'unavailable'=>'pipelines'];
         $selected=$pipelineId!==null&&isset($names[$pipelineId])?$pipelineId:array_key_first($names);
         $restricted=($membership['capabilities']['assignedDataOnly']??false)===true;
         $assignee=$membership['external_user_id']??null;
@@ -40,6 +40,7 @@ final class OpportunityBoard {
             'stages'=>$stages,
             'total'=>count($visible),
             'restricted'=>$restricted,
+            'canEdit'=>($membership['capabilities']['editOpportunities']??false)===true,
             'partial'=>count($records)>=self::LIMIT,
         ];
     }

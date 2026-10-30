@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/TokenVault.php';
 final class Installation {
-    public const VERSION='0.16.0';
+    public const VERSION='0.17.0';
     public static function checks(bool $autoMigrate=true):array {
         $checks=[];
         $runtime=PHP_VERSION_ID>=80300;
@@ -38,6 +38,7 @@ final class Installation {
             query('SELECT connection_id,cache_key,payload,fetched_at FROM directory_cache LIMIT 0');
             query('SELECT connection_id,conversation_id,payload,seen_at FROM conversation_index LIMIT 0');
             query('SELECT connection_id,request_id,contact_id,action,request_hash,state,result_id,error_code FROM contact_action_attempts LIMIT 0');
+            query('SELECT connection_id,request_id,subject_id,action,request_hash,state,result_id,error_code FROM opportunity_action_attempts LIMIT 0');
             $checks[]=['name'=>'schema','ready'=>true,'code'=>null];
         }catch(PDOException $e){$checks[]=['name'=>'schema','ready'=>false,'code'=>in_array($e->getCode(),['42S02','42S22'],true)?'schema_pending':'database_unavailable'];}
         if($autoMigrate)$checks=self::ensureSchema($checks);
@@ -49,7 +50,7 @@ final class Installation {
         if((int)query('SELECT GET_LOCK(?,0)',[$lock])->fetchColumn()!==1)throw new SetupException('database_unavailable');
         try {
             // Only additive, reviewed migrations; never import/reset core data.
-            foreach(['002-integrations.sql','003-api-sync.sql','004-messaging.sql','005-message-cache.sql','006-external-users.sql','007-external-auth.sql','008-contact-profile.sql','009-access-channel.sql','010-opportunity-context.sql','011-contact-activity.sql','012-rate-window.sql','013-directory-cache.sql','014-conversation-index.sql'] as $migration) {
+            foreach(['002-integrations.sql','003-api-sync.sql','004-messaging.sql','005-message-cache.sql','006-external-users.sql','007-external-auth.sql','008-contact-profile.sql','009-access-channel.sql','010-opportunity-context.sql','011-contact-activity.sql','012-rate-window.sql','013-directory-cache.sql','014-conversation-index.sql','015-opportunity-actions.sql'] as $migration) {
                 $sql=file_get_contents(dirname(__DIR__).'/database/'.$migration);
                 if($sql===false)throw new SetupException('schema_pending');
                 db()->exec($sql);

@@ -1,13 +1,13 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 30 de octubre de 2026. Versión publicada: 0.16.0.
+Estado actualizado: 30 de octubre de 2026. Versión publicada: 0.17.0.
 
 ## Completado y desplegable
 
 - Base PWA móvil, PHP 8.3 y MariaDB; instalación nativa en CyberPanel.
 - Entrada directa al espacio real: pantalla de acceso y, al entrar, datos de la cuenta. Sin vistas de ejemplo.
 - Selector de subcuenta en la cabecera que manda en toda la aplicación.
-- Pantallas reales de contactos y de oportunidades por embudo.
+- Pantallas reales de contactos y de oportunidades por embudo, con edición de la oportunidad desde el tablero.
 - Tablero con las cifras de la cuenta: conversaciones, pendientes, contactos y oportunidades abiertas por etapa.
 - Ficha de contacto completa y editable desde la pantalla de contactos, con todos los campos, los campos personalizados y las etiquetas.
 - Login propio, roles base y administración de conexiones por subcuenta.
@@ -30,7 +30,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Ficha del contacto: teléfono, email, empresa, fuente, etiquetas, campos personalizados, actividad y ejecutivo: implementada en 0.8.0.
 - Oportunidades: oportunidad activa, pipeline, etapa, estado, valor y responsable dentro del chat, con acceso a todas las oportunidades del contacto: implementadas en 0.9.0, con nombres reales de pipeline y etapa, caché de 60 segundos por contacto y una hora para el directorio, y respeto de permisos y `assignedDataOnly`.
 - Tareas, notas y citas dentro del chat, con crear nota, crear tarea y completar o reabrir tarea: implementadas en 0.10.0, con protección contra duplicados por clave de petición.
-- Acciones rápidas pendientes: agendar cita, crear o editar oportunidad, cambiar etapa y reasignar. Crear nota, crear tarea, completar tarea y etiquetar ya están disponibles.
+- Acciones rápidas: crear nota, crear tarea, completar tarea, etiquetar, y desde 0.17.0 crear oportunidad, editarla, moverla de etapa, cambiar su estado y reasignarla, tanto en la conversación como en el tablero.
 
 ## Operación del equipo
 
@@ -52,7 +52,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## Evolución
 
 - Contactos y tablero de oportunidades: implementados en 0.11.0; contactos rediseñado con ficha editable en 0.16.0.
-- Fuera de alcance por decisión de producto: calendario y workflows. Los workflows se gestionan directamente en la cuenta.
+- Fuera de alcance por decisión de producto: calendario, agendar cita y workflows. Los workflows se gestionan directamente en la cuenta; las citas ya creadas se siguen viendo en la ficha del contacto.
 - Pendiente como pantalla propia: tareas, que hoy sólo aparecen dentro de la conversación.
 - Resúmenes y sugerencias con IA, intención, clasificación y scoring.
 - Tablero: primera versión en 0.16.0. Pendientes: evolución temporal, objetivos y reportes exportables.

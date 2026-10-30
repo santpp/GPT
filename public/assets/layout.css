@@ -265,3 +265,21 @@ body.agora-focus .live-composer{padding-bottom:calc(10px + env(safe-area-inset-b
  .dashboard-tiles,.dashboard-stages,#dashboard-body .section-label,#dashboard-body .board-empty,.dashboard-links{padding-left:15px;padding-right:15px}
  .dashboard-links .primary{width:100%;min-height:44px}
 }
+
+/* Opportunity editing: the same form in the conversation panel and the board. */
+.opportunity-form{display:grid;gap:10px;margin:10px 0 16px}
+.opportunity-form label{display:block;font-size:11px;color:var(--muted)}
+.opportunity-form input,.opportunity-form select{display:block;width:100%;margin-top:5px;padding:10px;border:1px solid var(--line);border-radius:5px;font-size:12px;color:var(--ink);background:var(--paper)}
+.opportunity-form .section-label{margin:0}
+.opportunity-form-actions{display:flex;gap:8px;flex-wrap:wrap}
+.opportunity-form-actions [data-cancel]{border:1px solid var(--line);border-radius:5px;padding:10px 14px;font-size:11px;color:var(--muted)}
+.opportunity-form [data-status]{font-size:10px;color:var(--muted);line-height:1.7}
+.live-opportunity-edit,.live-opportunity-new{border:1px solid var(--line);border-radius:5px;padding:8px 12px;font-size:10px;color:var(--green);margin-top:10px}
+.live-opportunity-new{display:block;width:100%}
+.board-editor{border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin:0 22px 18px;background:#f8faf4;max-width:420px}
+@media(max-width:600px){
+ .opportunity-form input,.opportunity-form select{font-size:16px;padding:12px}
+ .opportunity-form-actions button{min-height:44px;flex:1}
+ .live-opportunity-edit,.live-opportunity-new{min-height:44px;font-size:12px}
+ .board-editor{margin:0 15px 16px;padding:14px;max-width:none}
+}

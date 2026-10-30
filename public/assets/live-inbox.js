@@ -1,4 +1,5 @@
 import {contactForm,readContactForm,bindTagEditor} from './contact-editor.js';
+import {opportunityForm,readOpportunityForm,bindPipelineChoice} from './opportunity-editor.js';
 import {workspace} from './workspace.js';
 const drafts=new Map();
 window.addEventListener('agora:logout',()=>{drafts.clear();for(const key of Object.keys(sessionStorage))if(key.startsWith('agora-send:'))sessionStorage.removeItem(key)});
@@ -199,19 +200,28 @@ export async function renderLiveInbox(container){
    };
   }
   const amount=value=>typeof value==='number'&&isFinite(value)?new Intl.NumberFormat('es-ES',{maximumFractionDigits:2,useGrouping:'always'}).format(value):null;
-  function opportunityCard(item){
+  function opportunityCard(item,canEdit=false){
    const rows=[['Pipeline',item.pipelineName],['Etapa',item.stageName],['Estado',item.statusLabel],['Valor',amount(item.monetaryValue)],['Responsable',item.assignedName],['Fuente',item.source]].filter(([,value])=>value);
-   return `<div class="live-opportunity"><h3>${esc(item.name||'Oportunidad sin nombre')}</h3>${rows.map(([label,value])=>`<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div>`;
+   return `<div class="live-opportunity"><h3>${esc(item.name||'Oportunidad sin nombre')}</h3>${rows.map(([label,value])=>`<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}${canEdit?`<button class="live-opportunity-edit" data-edit-opportunity="${esc(item.id)}">Editar oportunidad</button>`:''}</div>`;
   }
-  function opportunitySection(opportunities){
+  function opportunitySection(opportunities,editor={}){
    if(!opportunities)return '<span class="muted">Cargando oportunidades…</span>';
    if(opportunities.error)return `<span class="muted">${esc(opportunities.error)}</span>`;
    const items=asList(opportunities.items);
-   if(!items.length||!opportunities.active)return `<span class="muted">${opportunities.restricted?'Sin oportunidades asignadas a tu usuario.':'Este contacto no tiene oportunidades.'}</span>`;
+   const canEdit=opportunities.canEdit===true;
+   // While a form is open it takes the block, so the state being changed is one.
+   if(editor.open)return (editor.pipelines
+     ? opportunityForm({pipelines:editor.pipelines.pipelines,assignees:editor.pipelines.assignees,opportunity:editor.open==='new'?null:items.find(item=>item.id===editor.open)||null})
+     : '<span class="muted">Cargando embudos…</span>')
+    +(editor.notice?`<span class="muted">${esc(editor.notice)}</span>`:'');
+   const add=canEdit?'<button class="live-opportunity-new" data-new-opportunity>+ Nueva oportunidad</button>':'';
+   const notice=editor.notice?`<span class="muted">${esc(editor.notice)}</span>`:'';
+   if(!items.length||!opportunities.active)return `<span class="muted">${opportunities.restricted?'Sin oportunidades asignadas a tu usuario.':'Este contacto no tiene oportunidades.'}</span>${add}${notice}`;
    const others=items.filter(item=>item.id!==opportunities.active.id);
-   return opportunityCard(opportunities.active)
-    +(others.length?`<details class="live-opportunity-all"><summary>Ver todas las oportunidades (${items.length})</summary>${others.map(opportunityCard).join('')}</details>`:'')
-    +(opportunities.partial?'<span class="muted">Se muestran las oportunidades más recientes de este contacto.</span>':'');
+   return opportunityCard(opportunities.active,canEdit)
+    +(others.length?`<details class="live-opportunity-all"><summary>Ver todas las oportunidades (${items.length})</summary>${others.map(item=>opportunityCard(item,canEdit)).join('')}</details>`:'')
+    +(opportunities.partial?'<span class="muted">Se muestran las oportunidades más recientes de este contacto.</span>':'')
+    +add+notice;
   }
   const dayOnly=value=>{if(!value)return '';const d=new Date(value);return Number.isNaN(d.getTime())?'':new Intl.DateTimeFormat('es',{dateStyle:'medium'}).format(d)};
   const asList=value=>Array.isArray(value)?value:[];
@@ -227,10 +237,10 @@ export async function renderLiveInbox(container){
    const forms=activity.canEdit?`<div class="live-quick-actions"><details><summary>+ Crear tarea</summary><form id="live-task-form"><label class="sr-only" for="live-task-title">Título de la tarea</label><input id="live-task-title" maxlength="190" placeholder="Título de la tarea" required><label class="sr-only" for="live-task-due">Vencimiento</label><input id="live-task-due" type="date" required><label class="sr-only" for="live-task-body">Detalle</label><textarea id="live-task-body" maxlength="2000" rows="2" placeholder="Detalle (opcional)"></textarea><button class="primary">Crear tarea</button></form></details><details><summary>+ Crear nota</summary><form id="live-note-form"><label class="sr-only" for="live-note-body">Nota</label><textarea id="live-note-body" maxlength="5000" rows="3" placeholder="Escribe una nota…" required></textarea><button class="primary">Guardar nota</button></form></details><p id="live-activity-status" role="status"></p></div>`:'<p id="live-activity-status" role="status"></p>';
    return `<div class="section-label">TAREAS</div><div class="live-tasks">${tasks}</div><div class="section-label">NOTAS</div><div class="live-notes">${notes}</div><div class="section-label">CITAS</div><div class="live-appointments">${appointments}</div>${forms}`;
   }
-  function contactProfile(profile,labels={},opportunities=null,activity=null){
+  function contactProfile(profile,labels={},opportunities=null,activity=null,editor={}){
    const details=[['Teléfono',profile.phone],['Email',profile.email],['Empresa',profile.companyName],['Sitio web',profile.website],['Fuente',profile.source],['Responsable',profile.assignedName],['Última actividad',date(profile.lastActivity)],['Alta',date(profile.dateAdded)],['Nacimiento',profile.dateOfBirth],['Zona horaria',profile.timezone],['Dirección',profile.address],['No contactar',profile.dnd?'Sí':null]].filter(([,value])=>value);
    const phone=String(profile.phone||'').replace(/[^0-9+]/g,'');
-   return `<header class="live-profile-header"><div><span class="section-label">CONTEXTO DEL CONTACTO</span><h2>${esc(profile.name)}</h2></div><div class="live-profile-controls">${profile.canEdit?'<button id="live-edit-contact">Editar</button>':''}<button id="live-profile-close" aria-label="Cerrar ficha">×</button></div></header>${profile.email?`<div class="live-profile-actions"><a href="mailto:${encodeURIComponent(profile.email)}">Escribir por correo</a></div>`:''}<div class="live-profile-details">${details.map(([label,value])=>`<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div><div class="section-label">ETIQUETAS</div><div class="live-profile-tags">${profile.tags?.length?profile.tags.map(tag=>`<span class="tag">${esc(tag)}</span>`).join(''):'<span class="muted">Sin etiquetas</span>'}</div><div class="section-label">CAMPOS PERSONALIZADOS</div><div class="live-profile-fields">${asList(profile.customFields).filter(field=>field.value!==''&&field.value!=null).map(field=>`<div><span>${esc(labels[field.id]||field.label)}</span><strong>${esc(field.value)}</strong></div>`).join('')||'<span class="muted">Sin campos con valor</span>'}</div><div class="section-label">OPORTUNIDAD ACTIVA</div><div class="live-profile-opportunities">${opportunitySection(opportunities)}</div><div class="live-profile-activity">${activitySection(activity)}</div>`;
+   return `<header class="live-profile-header"><div><span class="section-label">CONTEXTO DEL CONTACTO</span><h2>${esc(profile.name)}</h2></div><div class="live-profile-controls">${profile.canEdit?'<button id="live-edit-contact">Editar</button>':''}<button id="live-profile-close" aria-label="Cerrar ficha">×</button></div></header>${profile.email?`<div class="live-profile-actions"><a href="mailto:${encodeURIComponent(profile.email)}">Escribir por correo</a></div>`:''}<div class="live-profile-details">${details.map(([label,value])=>`<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div><div class="section-label">ETIQUETAS</div><div class="live-profile-tags">${profile.tags?.length?profile.tags.map(tag=>`<span class="tag">${esc(tag)}</span>`).join(''):'<span class="muted">Sin etiquetas</span>'}</div><div class="section-label">CAMPOS PERSONALIZADOS</div><div class="live-profile-fields">${asList(profile.customFields).filter(field=>field.value!==''&&field.value!=null).map(field=>`<div><span>${esc(labels[field.id]||field.label)}</span><strong>${esc(field.value)}</strong></div>`).join('')||'<span class="muted">Sin campos con valor</span>'}</div><div class="section-label">OPORTUNIDAD ACTIVA</div><div class="live-profile-opportunities">${opportunitySection(opportunities,editor)}</div><div class="live-profile-activity">${activitySection(activity)}</div>`;
   }
   async function loadContact(c,version){
    const panel=$('#live-contact-panel');panel.innerHTML='<p class="empty">Cargando ficha…</p>';
@@ -241,18 +251,20 @@ export async function renderLiveInbox(container){
      const draft=drafts.get(select.value+':'+c.id);
      if(draft)applyChannels(c,chatChannels,draft);
     }
-    let bindActivity=()=>{};
+    let bindActivity=()=>{},bindOpportunities=()=>{};
     const bind=()=>{
      $('#live-profile-close').onclick=()=>layout.classList.remove('contact-open');
      const edit=$('#live-edit-contact');
      if(edit)edit.onclick=()=>{editing=true;show()};
      bindActivity();
+     bindOpportunities();
     };
     let labels=Object.fromEntries(asList(data.fields).map(field=>[field.id,field.name])),opportunities=null,activity=null,editing=false;
+    const editor={open:null,pipelines:null,notice:''};
     data.contact.canEdit=data.canEdit===true;
     const show=()=>{
      if(editing){panel.innerHTML=contactForm(data.contact,data.fields,data.assignees);bindEdit();return}
-     panel.innerHTML=contactProfile(data.contact,labels,opportunities,activity);bind();
+     panel.innerHTML=contactProfile(data.contact,labels,opportunities,activity,editor);bind();
     };
     let tags={added:[],dropped:[]};
     function bindEdit(){
@@ -324,6 +336,57 @@ export async function renderLiveInbox(container){
       noteForm.querySelector('button').disabled=true;
       await act('note',{body},'Guardando nota…','Nota guardada.');
      };
+    };
+    // Opportunities: open one for this contact, or edit the one shown. The form
+    // only ever offers the pipelines, stages and team the account publishes.
+    const openEditor=async(which)=>{
+     editor.open=which;editor.notice='';show();
+     if(!editor.pipelines) {
+      try{editor.pipelines=await request(`workspace/pipelines?connectionId=${encodeURIComponent(select.value)}`)}
+      catch(error){editor.open=null;editor.notice=error.message}
+      if(!active()||version!==chatGeneration)return;
+      show();
+     }
+    };
+    const saveOpportunity=async(form)=>{
+     const status=form.querySelector('[data-status]'),save=form.querySelector('[data-save]');
+     const target=editor.open==='new'?null:asList(opportunities?.items).find(item=>item.id===editor.open)||null;
+     const payload=readOpportunityForm(form,target);
+     if(!payload.name&&!target){status.textContent='Escribe un nombre para la oportunidad.';return}
+     if(Object.keys(payload).length===0){status.textContent='No has cambiado nada en la oportunidad.';return}
+     save.disabled=true;status.textContent='Guardando la oportunidad…';
+     // One key per content, so a retry can never open a second opportunity.
+     const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(editor.open+JSON.stringify(payload)));
+     const storageKey='agora-opportunity:'+c.id+':'+Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+     const requestId=sessionStorage.getItem(storageKey)||crypto.randomUUID().replace(/-/g,'');
+     sessionStorage.setItem(storageKey,requestId);
+     const where=editor.open==='new'
+      ? `workspace/opportunity/new?connectionId=${encodeURIComponent(select.value)}&contactId=${encodeURIComponent(data.contact.id)}`
+      : `workspace/opportunity/edit?connectionId=${encodeURIComponent(select.value)}&opportunityId=${encodeURIComponent(editor.open)}`;
+     try{
+      await request(where,'POST',me.csrf,{...payload,requestId});
+      sessionStorage.removeItem(storageKey);
+      try{opportunities=await request(`workspace/opportunities?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}&refresh=1`)}
+      catch(error){opportunities={error:error.message}}
+      if(!active()||version!==chatGeneration)return;
+      editor.open=null;editor.notice='Oportunidad guardada.';show();
+     }catch(error){
+      if(['action_rejected','invalid_opportunity_name','invalid_opportunity_value','unknown_pipeline','unknown_stage','unknown_assignee','assignee_forbidden','invalid_status','nothing_to_change','action_forbidden'].includes(error.code))sessionStorage.removeItem(storageKey);
+      const failed=panel.querySelector('[data-status]');
+      if(failed)failed.textContent=error.message;
+      const button=panel.querySelector('[data-save]');if(button)button.disabled=false;
+     }
+    };
+    bindOpportunities=()=>{
+     const add=panel.querySelector('[data-new-opportunity]');
+     if(add)add.onclick=()=>openEditor('new');
+     panel.querySelectorAll('[data-edit-opportunity]').forEach(button=>button.onclick=()=>openEditor(button.dataset.editOpportunity));
+     const form=panel.querySelector('.opportunity-form');
+     if(form) {
+      if(editor.pipelines)bindPipelineChoice(form,editor.pipelines.pipelines);
+      form.querySelector('[data-cancel]').onclick=()=>{editor.open=null;editor.notice='';show()};
+      form.onsubmit=event=>{event.preventDefault();saveOpportunity(form)};
+     }
     };
     bindActivity();
     // One read at a time: the account's budget is shared with the chat poll,

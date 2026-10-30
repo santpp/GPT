@@ -92,6 +92,55 @@ if(preg_match('~^/api/workspace/activity(/note|/task|/task-state|/contact)?$~',$
     catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la actividad del contacto. Revisa el permiso de contactos.','code'=>'activity_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'La actividad recibida no tiene el formato esperado.','code'=>'activity_invalid_response'],424);}
 }
+// Opportunities: open one for a contact, edit it, move its stage, change its
+// status or reassign it. Each route names its own subject, never a conversation.
+if(preg_match('~^/api/workspace/opportunity/(new|edit|status)$~',$path,$opportunityMatch)&&$method==='POST'){
+    if(!($membership['capabilities']['viewOpportunities']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar oportunidades.'],403);
+    require_once __DIR__.'/OpportunityActions.php';
+    $actions=new OpportunityActions();$input=body();
+    try {
+        if($opportunityMatch[1]==='new'){
+            $contactId=$_GET['contactId']??'';
+            if(!is_string($contactId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))respond(['error'=>'Contacto inválido'],422);
+            // The contact must exist in this very account before anything is opened for it.
+            require_once __DIR__.'/ContactProfile.php';
+            $owner=(new ContactProfile())->get($connection,$contactId);
+            if(($membership['capabilities']['assignedDataOnly']??false)===true&&$owner['assignedTo']!==($membership['external_user_id']??null))
+                respond(['error'=>'Este contacto no está asignado a tu usuario.'],403);
+            respond($actions->create($connection,$contactId,$membership,$input));
+        }
+        $opportunityId=$_GET['opportunityId']??'';
+        if(!is_string($opportunityId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$opportunityId))respond(['error'=>'Oportunidad inválida'],422);
+        respond($opportunityMatch[1]==='edit'
+            ?$actions->update($connection,$opportunityId,$membership,$input)
+            :$actions->status($connection,$opportunityId,$membership,$input));
+    }
+    catch(ActionProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La acción está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>'No se pudo completar la acción sobre la oportunidad.','code'=>'opportunity_upstream_'.$e->status],424);}
+    catch(Throwable $e){respond(['error'=>'La respuesta recibida no tiene el formato esperado.','code'=>'opportunity_invalid_response'],424);}
+}
+// The pipelines and stages a write may name, with the team that may be made
+// responsible: the form offers only what the account really publishes.
+if($path==='/api/workspace/pipelines'&&$method==='GET'){
+    if(!($membership['capabilities']['viewOpportunities']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar oportunidades.'],403);
+    require_once __DIR__.'/PipelineDirectory.php';
+    try{
+        $names=(new PipelineDirectory())->get($connection);
+        respond([
+            'pipelines'=>array_values(array_map(fn(string $id):array=>[
+                'id'=>$id,
+                'name'=>$names[$id]['name'],
+                'stages'=>array_values(array_map(fn(string $stage):array=>['id'=>$stage,'name'=>$names[$id]['stages'][$stage]],array_keys($names[$id]['stages']))),
+            ],array_keys($names))),
+            'assignees'=>($membership['capabilities']['editOpportunities']??false)?query('SELECT external_user_id AS id,display_name AS name FROM external_users WHERE connection_id=? AND active=TRUE ORDER BY display_name',[$connection['id']])->fetchAll():[],
+            'canEdit'=>($membership['capabilities']['editOpportunities']??false)===true,
+        ]);
+    }
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'Los embudos están en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>'No se pudieron consultar los embudos. Revisa el permiso de oportunidades.','code'=>'pipelines_upstream_'.$e->status],424);}
+    catch(Throwable $e){respond(['error'=>'Los embudos recibidos no tienen el formato esperado.','code'=>'pipelines_invalid_response'],424);}
+}
 if($path==='/api/workspace/dashboard'&&$method==='GET'){
     require_once __DIR__.'/Dashboard.php';
     try{respond((new Dashboard())->get($connection,$membership));}

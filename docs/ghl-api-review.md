@@ -258,3 +258,33 @@ El tablero no usa ningún endpoint nuevo: son lecturas que Ágora ya hacía, agr
 **Ficha editable fuera del chat.** La pantalla de contactos abre la ficha por `contactId`, sin pasar por una conversación. La autorización no puede apoyarse entonces en el índice de conversaciones: se lee primero el registro en la cuenta de la conexión elegida, de modo que un `contactId` de otra cuenta no existe para esa clave, y a un integrante limitado a sus datos se le niega un contacto que no tenga asignado, tanto al abrir como al guardar. El guardado reutiliza el mismo editor que la conversación: sólo viajan los campos cambiados, las etiquetas por sus endpoints propios (nunca por el campo `tags` del update, que según su propia documentación reemplaza todas), y cada intento lleva su clave de petición.
 
 **Calendario y workflows: fuera de alcance.** Por decisión de producto no se replican. Los workflows se siguen gestionando directamente en la cuenta.
+
+## Oportunidades: crear, editar, mover y reasignar 0.17.0
+
+Misma fuente oficial y mismo commit `0af86a4cbd48c66a4071c7e509d1079f9f10ed17`.
+
+| Uso | Método y endpoint | Scope publicado | Version |
+| --- | --- | --- | --- |
+| Abrir una oportunidad | `POST /opportunities/` | `opportunities.write` | 2021-07-28 |
+| Leerla antes de escribirla | `GET /opportunities/{id}` | `opportunities.readonly` | 2021-07-28 |
+| Editarla, moverla de etapa o reasignarla | `PUT /opportunities/{id}` | `opportunities.write` | 2021-07-28 |
+| Cambiar sólo el estado | `PUT /opportunities/{id}/status` | `opportunities.write` | 2021-07-28 |
+| Embudos y etapas que se pueden nombrar | `GET /opportunities/pipelines` | `opportunities.readonly` | 2021-07-28 |
+
+`CreateDto` exige `pipelineId`, `locationId`, `name`, `status` y `contactId`, y admite `pipelineStageId`, `monetaryValue`, `assignedTo` y `customFields`. `UpdateOpportunityDto` no exige nada y admite los mismos campos menos `contactId` y `locationId`: una oportunidad no cambia de cuenta ni de contacto, y Ágora tampoco lo ofrece. Sólo viajan los campos que la persona cambió.
+
+**Permiso nuevo: `opportunities.write`.** Hasta ahora bastaba `opportunities.readonly`. Ver el embudo y cambiarlo pasan a ser capacidades distintas (`viewOpportunities` y `editOpportunities`): sin el permiso de escritura en la clave de la cuenta, el tablero y la ficha no ofrecen ningún botón de edición, en lugar de ofrecerlo y fallar al guardar.
+
+**El estado, por su endpoint.** `status` aparece en los tres esquemas, pero existe además `PUT /opportunities/{id}/status`, el único que publica `lostReasonId`. Cambiar sólo el estado usa ese endpoint; un cambio junto con otros campos va en el update general.
+
+**Enumeración de estado.** `open`, `won`, `lost`, `abandoned` y `all`. `all` es un valor de búsqueda, no un estado real, así que no se acepta al escribir: la interfaz ofrece abierta, ganada, perdida y abandonada.
+
+**Motivos de pérdida: no implementados.** `GET /opportunities/lost-reason` existe y `UpdateStatusDto` admite `lostReasonId`, pero `LostReasonSchema` **no publica ninguna propiedad**, de modo que no hay forma documentada de leer el id ni el texto de cada motivo. Marcar como perdida funciona sin motivo, que el esquema declara opcional. Queda pendiente de comprobar contra una cuenta real qué forma tienen esos registros.
+
+**Embudo y etapa siempre reales.** Toda escritura nombra un embudo y una etapa del directorio de la cuenta: si el navegador manda otra, se rechaza antes de salir. Si no se indica etapa al crear, se usa la primera del embudo. El responsable sólo puede ser un integrante activo importado de esa misma cuenta, y un integrante limitado a sus datos sólo puede asignarse a sí mismo (lo que abre queda a su nombre, para que no deje de verlo).
+
+**Se lee antes de escribir.** Editar una oportunidad empieza por `GET /opportunities/{id}`: así un identificador de otra cuenta simplemente no existe para esa clave, y a un integrante limitado a sus datos se le niega una oportunidad que no tenga asignada. Comparar con el registro recibido es también lo que permite enviar sólo lo que cambió.
+
+**Repeticiones.** Crear no es idempotente: la misma petición dos veces abriría dos oportunidades. Cada intento se guarda con la clave que genera el navegador (`opportunity_action_attempts`), con los mismos estados que las acciones de contacto y el envío de mensajes: una repetición con la misma clave devuelve la primera respuesta, un contenido idéntico mientras el resultado es incierto se bloquea, y un rechazo queda registrado como tal.
+
+**Citas: fuera de alcance.** Agendar cita sale del roadmap por decisión de producto, junto con calendario y workflows. Las citas existentes se siguen viendo en la ficha del contacto, que las lee de los endpoints de contacto, no de los de calendario.
