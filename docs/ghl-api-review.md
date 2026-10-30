@@ -288,3 +288,30 @@ Misma fuente oficial y mismo commit `0af86a4cbd48c66a4071c7e509d1079f9f10ed17`.
 **Repeticiones.** Crear no es idempotente: la misma petición dos veces abriría dos oportunidades. Cada intento se guarda con la clave que genera el navegador (`opportunity_action_attempts`), con los mismos estados que las acciones de contacto y el envío de mensajes: una repetición con la misma clave devuelve la primera respuesta, un contenido idéntico mientras el resultado es incierto se bloquea, y un rechazo queda registrado como tal.
 
 **Citas: fuera de alcance.** Agendar cita sale del roadmap por decisión de producto, junto con calendario y workflows. Las citas existentes se siguen viendo en la ficha del contacto, que las lee de los endpoints de contacto, no de los de calendario.
+
+## Ventana, actualización en vivo y notificaciones 0.18.0
+
+Misma fuente oficial y mismo commit `0af86a4cbd48c66a4071c7e509d1079f9f10ed17` para la parte de la cuenta.
+
+| Uso | Método y endpoint | Scope publicado | Version |
+| --- | --- | --- | --- |
+| Página siguiente de la bandeja | `GET /conversations/search` con `startAfterDate` | `conversations.readonly` | 2021-04-15 |
+| Pase compartido que mantiene la bandeja al día | `GET /conversations/search` | `conversations.readonly` | 2021-04-15 |
+
+**La ventana.** `GET /conversations/search` publica `startAfterDate`, descrito como «debe contener el valor de ordenación del último documento». Con `sortBy=last_message_date` ese valor es el `lastMessageDate` de la última conversación de la página. Aquí hay una discrepancia que conviene anotar: **`ConversationSchema` no publica `lastMessageDate`**, aunque la cuenta real sí lo devuelve y la lista lo viene usando para la hora de cada conversación desde la primera versión. Ágora continúa la lista con ese valor cuando llega, y cuando no llega no ofrece continuar en lugar de inventar una posición. Dos conversaciones pueden compartir el mismo valor: la página siguiente se compara con lo ya cargado y, si no aporta ninguna conversación nueva, la lista se cierra ahí en lugar de pedir la misma página otra vez. La copia de respaldo sigue siendo sólo la primera página sin filtros.
+
+**En vivo sin webhooks, y sin multiplicar peticiones.** El navegador pregunta a Ágora, nunca a la cuenta: un *pulso* devuelve un token calculado sobre lo que la cuenta mostró la última vez, y ese token sólo cambia cuando cambia el contenido (fecha, texto, canal, pendientes o responsable de alguna conversación). Mientras no cambia, ninguna pantalla se recarga y la cuenta no recibe nada.
+
+La cuenta la lee **un solo pase compartido por conexión**, espaciado por el intervalo de esa conexión (mínimo 10 segundos), lo pida quien lo pida. Diez personas sobre la misma subcuenta cuestan lo que una. El pase se programa *antes* de leer, de modo que una cuenta que falla no convierte el pulso en un bucle de peticiones, y si el presupuesto está en pausa el pulso lo dice con cuántos segundos faltan.
+
+Esto **reduce** las peticiones respecto a 0.17.0: el chat abierto preguntaba a la cuenta cada 10 segundos por navegador; ahora pregunta cuando hay algo nuevo, y la consulta periódica queda como red de seguridad cada 60 segundos. La latencia real es el intervalo del pase más el del pulso: entre 10 y 15 segundos.
+
+**Marcar como leída** también mueve el token, así que lo que una persona lee desaparece de los pendientes de las demás sin que nadie recargue.
+
+**Notificaciones (Firebase Cloud Messaging, HTTP v1).** Es un servicio ajeno a la cuenta y su contrato es el de Google, no el de la cuenta: `POST https://fcm.googleapis.com/v1/projects/{project}/messages:send` con un token de acceso obtenido en `https://oauth2.googleapis.com/token` mediante una aserción JWT RS256 firmada con la cuenta de servicio, alcance `https://www.googleapis.com/auth/firebase.messaging`. El aviso lleva `notification.title`, `notification.body`, `data.path` para abrir la conversación y `android.priority: high`.
+
+El pase que descubre el mensaje deja el aviso en cola con una huella del propio mensaje, de modo que el mismo mensaje no se notifica dos veces aunque lo vean varios pases. Quién lo recibe se resuelve al entregarlo, con la misma regla que las pantallas: el propietario recibe todo lo de su espacio, un integrante sin restricción recibe lo de su cuenta, y un integrante limitado a sus datos sólo lo que tiene asignado. Un dispositivo que el servicio declara desconocido (`UNREGISTERED`, 404, `SENDER_ID_MISMATCH`) se borra; un 5xx reintenta con espera creciente y se rinde tras cinco intentos.
+
+La cuenta de servicio vive fuera de `public_html`, su ruta está en la configuración privada y nunca entra en Git ni llega al navegador. Sin ella Ágora no notifica y lo dice.
+
+**Lo que no se ha podido comprobar aquí.** La entrega está probada contra un servicio simulado con esa forma de petición y un JWT real firmado con una clave generada en la prueba, pero **no contra Firebase ni contra un teléfono**: este entorno no tiene acceso a `googleapis.com` ni el SDK de Android. Queda pendiente una prueba de extremo a extremo con el proyecto real.

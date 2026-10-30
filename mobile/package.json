@@ -1,0 +1,19 @@
+{
+  "name": "agora-android",
+  "version": "0.18.0",
+  "private": true,
+  "description": "Android shell for the Agora workspace",
+  "scripts": {
+    "sync": "cap sync android",
+    "open": "cap open android",
+    "build": "cd android && ./gradlew assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "6.2.0",
+    "@capacitor/core": "6.2.0",
+    "@capacitor/push-notifications": "6.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "6.2.0"
+  }
+}

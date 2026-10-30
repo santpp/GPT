@@ -24,6 +24,9 @@ final class FakeInboxApi {
                 if(isset($q['lastMessageType']))$items=array_values(array_filter($items,fn($c)=>($c['lastMessageType']??null)===$q['lastMessageType']));
                 if(isset($q['assignedTo']))$items=array_values(array_filter($items,fn($c)=>($c['assignedTo']??null)===$q['assignedTo']));
                 if(isset($q['query']))$items=array_values(array_filter($items,fn($c)=>str_contains(mb_strtolower($c['contactName']??''),mb_strtolower($q['query']))));
+                // The account continues after the position of the last conversation shown.
+                if(isset($q['startAfterDate']))$items=array_values(array_filter($items,fn($c)=>(int)($c['lastMessageDate']??0)<(int)$q['startAfterDate']));
+                $items=array_slice($items,0,(int)($q['limit']??20));
                 return ['status'=>200,'body'=>json_encode(['conversations'=>$items,'total'=>$this->total?:count($items)])];
             }
             if($method==='PUT'&&preg_match('~^/conversations/[^/]+$~',$path))return ['status'=>200,'body'=>json_encode(['conversation'=>['id'=>'c1']])];
@@ -46,9 +49,9 @@ try {
 
  $api=new FakeInboxApi($location);
  $api->conversations=[
-  ['id'=>'c1','locationId'=>$location,'contactName'=>'Richard Perez','lastMessageType'=>'TYPE_INSTAGRAM','unreadCount'=>2,'assignedTo'=>'seller-1','contactId'=>'ct1'],
-  ['id'=>'c2','locationId'=>$location,'contactName'=>'Raissa Moreno','lastMessageType'=>'TYPE_WHATSAPP','unreadCount'=>0,'assignedTo'=>'seller-2','contactId'=>'ct2'],
-  ['id'=>'c3','locationId'=>$location,'contactName'=>'Luis Robles','lastMessageType'=>'TYPE_WHATSAPP','unreadCount'=>5,'assignedTo'=>'seller-2','contactId'=>'ct3'],
+  ['id'=>'c1','locationId'=>$location,'contactName'=>'Richard Perez','lastMessageType'=>'TYPE_INSTAGRAM','unreadCount'=>2,'assignedTo'=>'seller-1','contactId'=>'ct1','lastMessageDate'=>'1730000300000'],
+  ['id'=>'c2','locationId'=>$location,'contactName'=>'Raissa Moreno','lastMessageType'=>'TYPE_WHATSAPP','unreadCount'=>0,'assignedTo'=>'seller-2','contactId'=>'ct2','lastMessageDate'=>'1730000200000'],
+  ['id'=>'c3','locationId'=>$location,'contactName'=>'Luis Robles','lastMessageType'=>'TYPE_WHATSAPP','unreadCount'=>5,'assignedTo'=>'seller-2','contactId'=>'ct3','lastMessageDate'=>'1730000100000'],
  ];
  $api->total=12;
  $open=['external_user_id'=>null,'capabilities'=>['viewConversations'=>true,'assignedDataOnly'=>false]];
@@ -132,6 +135,33 @@ try {
  $foreign=$feed->load($connection,20,[],$open);
  feedCheck($foreign['stale']===true,'a list naming another account is refused and the fallback is used');
  feedCheck(InboxFeed::known($connectionId,'intruso')===null,'a conversation of another account is never remembered');
+
+ // ---- beyond the window ----------------------------------------------------
+ $api->reset();freeFeed($connectionId);
+ $api->conversations=[
+  ['id'=>'p1','locationId'=>$location,'contactName'=>'Primera','lastMessageType'=>'TYPE_WHATSAPP','unreadCount'=>0,'contactId'=>'ct-p1','lastMessageDate'=>'1730000300000'],
+  ['id'=>'p2','locationId'=>$location,'contactName'=>'Segunda','lastMessageType'=>'TYPE_WHATSAPP','unreadCount'=>0,'contactId'=>'ct-p2','lastMessageDate'=>'1730000200000'],
+  ['id'=>'p3','locationId'=>$location,'contactName'=>'Tercera','lastMessageType'=>'TYPE_WHATSAPP','unreadCount'=>0,'contactId'=>'ct-p3','lastMessageDate'=>'1730000100000'],
+ ];
+ $api->total=3;
+ $page=$feed->load($connection,20,[],$open);
+ feedCheck($page['nextCursor']==='1730000100000'&&$page['hasMore']===false,'a page that fits the window hands back a position but offers no continuation');
+
+ $api->reset();freeFeed($connectionId);
+ $kept=json_decode(query('SELECT payload FROM ghl_inbox_snapshots WHERE connection_id=?',[$connectionId])->fetchColumn(),true);
+ $continued=$feed->load($connection,20,[],$open,'1730000200000');
+ feedCheck(str_contains($api->calls[0][1],'startAfterDate=1730000200000'),'a continuation asks the account to begin after the position it gave');
+ feedCheck(array_column($continued['items'],'id')===['p3'],'and answers only what comes after it');
+ feedCheck(json_decode(query('SELECT payload FROM ghl_inbox_snapshots WHERE connection_id=?',[$connectionId])->fetchColumn(),true)===$kept,'a continuation leaves the fallback list as the first page left it');
+ feedCheck(InboxFeed::known($connectionId,'p3')!==null,'conversations from a later page can be opened like any other');
+
+ $api->reset();freeFeed($connectionId);
+ $stale=$feed->load($connection,20,[],$open,'1730000100000');
+ feedCheck($stale['items']===[]&&$stale['hasMore']===false&&$stale['nextCursor']===null,'the end of the list offers nothing more to load');
+
+ feedCheck(InboxFeed::sortValue('1730000100000')==='1730000100000'&&InboxFeed::sortValue(1730000100000)==='1730000100000','a position is accepted as the account gives it, number or text');
+ feedCheck(InboxFeed::sortValue('2026-10-29T18:05:00Z')==='1793297100000','a date is turned into the same unit the account sorts by');
+ feedCheck(InboxFeed::sortValue(null)===null&&InboxFeed::sortValue('mañana')===null&&InboxFeed::sortValue(0)===null,'anything unusable gives no position, so no continuation is offered');
 
  echo 'PASS '.$checks.' inbox feed checks (simulated API client, real MariaDB)'.PHP_EOL;
 } finally {

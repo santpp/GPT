@@ -95,7 +95,23 @@ try {
         if (getenv('APP_ENV') !== 'development' && parse_url(getenv('APP_ORIGIN') ?: '', PHP_URL_SCHEME) !== 'https') respond(['error'=>'HTTPS required'],503);
         require $appRoot.'/src/integrations.php';
     }
+    if ($path === '/api/devices') require_once dirname(__DIR__).'/src/PushDelivery.php';
     if ($path === '/api/me' && $method === 'GET') respond(['user'=>array_intersect_key($u,array_flip(['id','email','role','identity_type','capabilities'])),'csrf'=>$_SESSION['csrf']]);
+    // A phone registers the token its own system gives it, so Ágora can notify
+    // it. Nothing else about the device is stored, and the token belongs to the
+    // signed-in person: signing out on that phone removes it.
+    if ($path === '/api/devices' && in_array($method,['POST','DELETE'],true)) {
+        $body=body();
+        $token=$body['token'] ?? null;
+        if(!is_string($token)||!preg_match('/^[A-Za-z0-9_:.~-]{32,255}$/D',$token))respond(['error'=>'Identificador de dispositivo inválido'],422);
+        if($method==='DELETE'){query('DELETE FROM push_devices WHERE tenant_id=? AND token=?',[$u['tenant_id'],$token]);respond(['registered'=>false]);}
+        $platform=($body['platform'] ?? 'android')==='web'?'web':'android';
+        $type=($u['identity_type'] ?? 'native')==='native'?'native':'external';
+        query('INSERT INTO push_devices(tenant_id,identity_type,actor_id,token,platform) VALUES(?,?,?,?,?)
+            ON DUPLICATE KEY UPDATE tenant_id=VALUES(tenant_id),identity_type=VALUES(identity_type),actor_id=VALUES(actor_id),platform=VALUES(platform),last_seen_at=CURRENT_TIMESTAMP',
+            [$u['tenant_id'],$type,$u['id'],$token,$platform]);
+        respond(['registered'=>true,'notifications'=>PushDelivery::configured()]);
+    }
     if ($path === '/api/logout' && $method === 'POST') { $_SESSION=[]; session_destroy(); respond(['ok'=>true]); }
     if ($path === '/api/conversations' && $method === 'GET') {
         if(($u['identity_type']??'native')!=='native')respond(['error'=>'Utiliza la bandeja conectada para consultar tus conversaciones.'],403);

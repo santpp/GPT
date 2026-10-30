@@ -31,22 +31,55 @@ export async function renderLiveInbox(container){
   // takes effect without this screen owning a control of its own.
   const select={get value(){return workspace.current()},set disabled(v){}};
   if(!items.length){feedback.textContent='Añade una cuenta desde Conexiones para empezar.';return}
+  const PULSE=5,CHAT_FALLBACK=60;
   let disposed=false,timer=null,chatTimer=null,pollTimer=null,interval=120,pause=0,syncBusy=false,messageBusy=0,chatNeedsRefresh=false;
   try{if(localStorage.getItem('agora-focus')==='1')document.body.classList.add('agora-focus')}catch{}
   const canRefresh=()=>active()&&!disposed&&!document.hidden&&navigator.onLine;
   const autoStatus=$('#live-auto-status');
   function schedule(seconds=interval){clearTimeout(timer);if(!canRefresh())return;timer=setTimeout(tick,Math.max(1,seconds)*1000)}
-  function scheduleChat(seconds=10){clearTimeout(pollTimer);if(!canRefresh()||!selected||!layout.classList.contains('chat-open'))return;pollTimer=setTimeout(pollChat,Math.max(2,seconds)*1000)}
+  // The chat no longer asks the account on a timer: the pulse says when there is
+  // something new. This stays as a slow safety net in case a change is missed.
+  function scheduleChat(seconds=CHAT_FALLBACK){clearTimeout(pollTimer);if(!canRefresh()||!selected||!layout.classList.contains('chat-open'))return;pollTimer=setTimeout(pollChat,Math.max(2,seconds)*1000)}
+  /**
+   * Near-live updates. The pulse asks Ágora, never the account, so it is free of
+   * the account's budget: it answers a token that only changes when the
+   * conversations changed, and one shared pass per account does the reading
+   * however many people are looking.
+   */
+  function schedulePulse(seconds=PULSE){clearTimeout(pulseTimer);if(!canRefresh())return;pulseTimer=setTimeout(pulseTick,Math.max(2,seconds)*1000)}
+  async function pulseTick(){
+   if(!canRefresh())return;
+   if(syncBusy||messageBusy||[...drafts.values()].some(d=>d.sending)){schedulePulse(3);return}
+   const connection=select.value;
+   try{
+    const beat=await request(`workspace/pulse?connectionId=${encodeURIComponent(connection)}`);
+    if(!active()||connection!==select.value)return;
+    if(beat.retryAfter)pause=Math.max(pause,Date.now()/1000+Number(beat.retryAfter));
+    window.dispatchEvent(new CustomEvent('agora:unread',{detail:Number(beat.unread)||0}));
+    autoStatus.textContent=beat.reason==='paused'?'Actualización automática · en espera para respetar la cuota'
+     :beat.reason==='failed'?'Actualización automática · reintentando'
+     :selected?'Chat activo · en vivo':'Actualización automática · en vivo';
+    if(beat.token&&beat.token!==pulseToken){
+     const first=pulseToken===null;
+     pulseToken=beat.token;
+     if(!first){
+      await load(true);
+      if(active()&&selected&&!messageBusy)await page(false,true);
+     }
+    }
+   }catch(e){if(e.status===401){container.agoraLiveDispose();return}}
+   finally{schedulePulse()}
+  }
   async function pollChat(){
    if(!canRefresh()||!selected)return;
    if(syncBusy||messageBusy||drafts.get(select.value+':'+selected.id)?.sending){scheduleChat(3);return}
    await page(false,true);
   }
-  function wake(){clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);if(canRefresh()){autoStatus.textContent=selected?'Chat activo · actualización frecuente':'Actualización automática activa';schedule(Math.max(1,pause-Date.now()/1000));scheduleChat(1)}else autoStatus.textContent=navigator.onLine?'Actualización pausada mientras la pantalla está oculta':'Sin conexión · Se reanudará automáticamente'}
-  container.agoraLiveDispose=()=>{disposed=true;document.body.classList.remove('agora-focus');clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);document.removeEventListener('visibilitychange',wake);window.removeEventListener('online',wake);window.removeEventListener('offline',wake)};
+  function wake(){clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);clearTimeout(pulseTimer);if(canRefresh()){autoStatus.textContent=selected?'Chat activo · en vivo':'Actualización automática · en vivo';schedule(Math.max(1,pause-Date.now()/1000));scheduleChat();schedulePulse(1)}else autoStatus.textContent=navigator.onLine?'Actualización pausada mientras la pantalla está oculta':'Sin conexión · Se reanudará automáticamente'}
+  container.agoraLiveDispose=()=>{disposed=true;document.body.classList.remove('agora-focus');clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);clearTimeout(pulseTimer);document.removeEventListener('visibilitychange',wake);window.removeEventListener('online',wake);window.removeEventListener('offline',wake)};
   document.addEventListener('visibilitychange',wake);window.addEventListener('online',wake);window.addEventListener('offline',wake);
   async function tick(){if(!canRefresh())return;if(syncBusy||messageBusy||[...drafts.values()].some(d=>d.sending)){schedule(5);return}if(pause>Date.now()/1000){schedule(pause-Date.now()/1000);return}await sync(true)}
-  let generation=0, chatGeneration=0, conversations=[], selected=null, filter='all', messages=new Map(), cursor=null, chatChannel=null, chatChannels=null, channelFilter='', searchTerm='', searchTimer=null, channelNames={};
+  let generation=0, chatGeneration=0, conversations=[], selected=null, filter='all', nextCursor=null, hasMore=false, loadingMore=false, pulseToken=null, pulseTimer=null, messages=new Map(), cursor=null, chatChannel=null, chatChannels=null, channelFilter='', searchTerm='', searchTimer=null, channelNames={};
   const inboxQuery=()=>{
    const parts=[`connectionId=${encodeURIComponent(select.value)}`,`limit=${encodeURIComponent(limit.value||'20')}`];
    if(filter==='unread')parts.push('status=unread');
@@ -59,7 +92,33 @@ export async function renderLiveInbox(container){
    const visible=conversations;
    $('#live-count').textContent=visible.length;
    $('#live-list').innerHTML=visible.map(c=>`<button class="conversation-item live-conversation ${selected?.id===c.id?'selected':''}" data-live-id="${esc(c.id)}" aria-label="Abrir conversación de ${esc(name(c))}" aria-pressed="${selected?.id===c.id}"><span class="avatar">${esc(initials(c))}</span><span class="conversation-info"><header><strong>${esc(name(c))}</strong></header><p>${esc(c.lastMessageBody||'Sin vista previa')}</p><footer><span class="channel">${channel(c.lastMessageType)}</span>${Number(c.unreadCount)>0?`<b class="unread">${Number(c.unreadCount)}<span class="sr-only"> pendientes</span></b>`:''}</footer><time>${esc(date(c.lastMessageDate))}</time></span></button>`).join('')||'<p class="empty">No hay conversaciones con este filtro.</p>';
+   // The account keeps a position to continue from, so the list is not confined
+   // to the window of 20, 50 or 100.
+   if(hasMore)$('#live-list').insertAdjacentHTML('beforeend',`<button id="live-more" class="live-more"${loadingMore?' disabled':''}>${loadingMore?'Cargando…':'Cargar más conversaciones'}</button>`);
    container.querySelectorAll('[data-live-id]').forEach(b=>b.onclick=()=>open(conversations.find(c=>c.id===b.dataset.liveId)));
+   const more=$('#live-more');
+   if(more)more.onclick=()=>page_more();
+  }
+  async function page_more(){
+   if(loadingMore||!nextCursor)return;
+   loadingMore=true;list();
+   const connection=select.value,version=generation,cursor=nextCursor;
+   try{
+    const data=await request(`workspace/inbox?${inboxQuery()}&startAfter=${encodeURIComponent(cursor)}`);
+    if(version!==generation||!active()||connection!==select.value)return;
+    const known=new Set(conversations.map(c=>c.id));
+    const added=asList(data.items).filter(c=>!known.has(c.id));
+    conversations=conversations.concat(added);
+    nextCursor=data.nextCursor||null;
+    // Two conversations can share a position; a page that adds nothing new ends
+    // the list instead of asking for the same page again.
+    hasMore=data.hasMore===true&&!!nextCursor&&added.length>0;
+    feedback.textContent=`${conversations.length} de ${data.total} conversaciones`;
+   }catch(e){
+    if(e.status===401)container.agoraLiveDispose();
+    if(active())feedback.textContent=e.message;
+    hasMore=false;
+   }finally{loadingMore=false;if(active())list()}
   }
   const IMAGE=/\.(png|jpe?g|gif|webp|avif|bmp|svg)(\?|$)/i;
   // Only the account's own https links are followed, and the name shown is the
@@ -104,7 +163,8 @@ export async function renderLiveInbox(container){
    }catch(e){if(e.retryAfter)pause=Math.max(pause,Date.now()/1000+e.retryAfter);if(e.status===401)container.agoraLiveDispose();if(active()&&current===chatGeneration){if(!refresh||!messages.size){$('#live-chat-status').textContent=e.message;retry.hidden=false;retry.onclick=()=>page(older)}else autoStatus.textContent='Chat activo · reintentando actualización'}}
    finally{messageBusy--;if(active()&&current===chatGeneration){more.disabled=false;if(refresh)scheduleChat(effectiveChatDelay())}}
   }
-  function effectiveChatDelay(){return Math.max(10,pause-Date.now()/1000)}
+  // The pulse says when there is something new, so this is only the safety net.
+  function effectiveChatDelay(){return Math.max(CHAT_FALLBACK,pause-Date.now()/1000)}
   // Simple marks drawn here, not official brand artwork: enough to recognise the
   // channel at a glance without redistributing anyone's logo files.
   const channelMarks={
@@ -411,7 +471,7 @@ export async function renderLiveInbox(container){
   function open(c){
    selected=c;chatNeedsRefresh=false;chatGeneration++;messages=new Map();cursor=null;chatChannel=sendChannels[c.lastMessageType]||null;chatChannels=null;list();layout.classList.add('chat-open');layout.classList.remove('contact-open');
    $('#live-messages').innerHTML=`<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">←</button><span class="avatar">${esc(initials(c))}</span><div><h2>${esc(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div><button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">⤢</button><button id="live-contact-toggle" aria-label="Ver ficha del contacto">ⓘ</button></header><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
-   $('#live-back').onclick=()=>{clearTimeout(pollTimer);document.body.classList.remove('agora-focus');layout.classList.remove('chat-open','contact-open');autoStatus.textContent='Actualización automática activa';$('#live-search').focus()};
+   $('#live-back').onclick=()=>{clearTimeout(pollTimer);document.body.classList.remove('agora-focus');layout.classList.remove('chat-open','contact-open');autoStatus.textContent='Actualización automática · en vivo';$('#live-search').focus()};
    $('#live-contact-toggle').onclick=()=>layout.classList.toggle('contact-open');
    if(Number(c.unreadCount)>0&&me?.csrf){
     request(`workspace/read?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`,'POST',me.csrf)
@@ -425,7 +485,7 @@ export async function renderLiveInbox(container){
    focus.onclick=()=>{document.body.classList.toggle('agora-focus');try{localStorage.setItem('agora-focus',document.body.classList.contains('agora-focus')?'1':'0')}catch{}paintFocus()};
    paintFocus();
    bindComposer(c);const profileVersion=chatGeneration;page().finally(()=>{if(active()&&profileVersion===chatGeneration)loadContact(c,profileVersion)});
-   autoStatus.textContent='Chat activo · actualización cada 10 segundos';scheduleChat();
+   autoStatus.textContent='Chat activo · en vivo';scheduleChat();schedulePulse(2);
   }
   async function load(preserve=false){
    const version=++generation,connection=select.value;
@@ -439,6 +499,7 @@ export async function renderLiveInbox(container){
     interval=Math.max(60,Number(data.syncIntervalSeconds)||120);
     pause=Math.max(pause,Number(data.state?.request_not_before)||0);
     conversations=data.items;limit.value=String(data.limit||20);
+    nextCursor=data.nextCursor||null;hasMore=data.hasMore===true&&!!nextCursor;
     if(data.channels&&Object.keys(data.channels).length){channelNames=data.channels;paintChannelFilters()}
     list();
     window.dispatchEvent(new CustomEvent('agora:unread',{detail:Number(data.unread)||0}));
@@ -494,7 +555,7 @@ export async function renderLiveInbox(container){
   }
   limit.onchange=()=>sync();
   // A first visit with nothing loaded yet refreshes itself instead of asking.
-  await load();if(!conversations.length)sync(true);schedule(interval);
+  await load();if(!conversations.length)sync(true);schedule(interval);schedulePulse(2);
 
  }catch(e){if(!active())return;container.innerHTML=`<h2>Conversaciones</h2><p class="settings-notice">${esc(e.message)} Inicia sesión con tu cuenta de equipo.</p><button id="live-login" class="primary">Iniciar sesión</button>`;container.querySelector('#live-login').onclick=()=>document.querySelector('#connect').click()}
 }

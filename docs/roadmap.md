@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 30 de octubre de 2026. Versión publicada: 0.17.0.
+Estado actualizado: 30 de octubre de 2026. Versión publicada: 0.18.0.
 
 ## Completado y desplegable
 
@@ -39,14 +39,17 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Entrega de los códigos a través del correo de una cuenta conectada elegida como canal de acceso: implementada en 0.8.1. Sustituye por completo al SMTP propio; Ágora ya no necesita servidor de correo ni credenciales de buzón. El propietario conserva su acceso con contraseña como recuperación.
 - Permisos efectivos y filtro de conversaciones asignadas: implementados para la bandeja; se aplicarán del mismo modo a cada módulo nuevo.
 - Asignación, filtros “mis conversaciones” y registro de acciones.
-- Sincronización incremental de listas más allá de la ventana 20/50/100.
+- Lista sin ventana: la bandeja continúa más allá de 20/50/100 con la posición que da la cuenta (0.18.0).
+- Actualización en vivo sin webhooks: un pulso contra Ágora y un pase compartido por cuenta (0.18.0).
+
 - Monitorización, copias de seguridad y herramientas seguras para resolver envíos con resultado incierto.
 
 ## Android y notificaciones
 
-- Firebase Cloud Messaging, registro de dispositivos y contadores.
-- Deep links a conversación, contacto, tarea, cita u oportunidad.
-- Capacitor para Android; PWA y recursos web actualizables desde el servidor.
+- Capacitor para Android: proyecto en `mobile/`, envoltorio que carga la web desplegada, de modo que cada despliegue llega al teléfono sin publicar versión nueva (0.18.0).
+- Firebase Cloud Messaging: registro del dispositivo, cola de avisos, entrega por cron y apertura de la conversación al tocar el aviso (0.18.0). Pendiente de prueba contra el proyecto real y un teléfono.
+- Contadores de la aplicación en el icono y agrupación de avisos por conversación.
+- Deep links a contacto y oportunidad (la conversación ya funciona).
 - Cola offline para operaciones compatibles y reconciliación al recuperar conexión.
 
 ## Evolución

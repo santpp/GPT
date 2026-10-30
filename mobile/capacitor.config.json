@@ -1,0 +1,21 @@
+{
+  "appId": "app.agoradigital.workspace",
+  "appName": "Ágora",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  },
+  "server": {
+    "url": "https://nueva.agoradigital.app",
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": [
+        "alert",
+        "sound"
+      ]
+    }
+  }
+}

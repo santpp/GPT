@@ -1,0 +1,10 @@
+node_modules/
+# Per-project Firebase client file and signing material never belong in Git.
+android/app/google-services.json
+android/local.properties
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+*.keystore
+*.jks

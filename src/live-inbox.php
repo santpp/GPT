@@ -240,13 +240,25 @@ if(in_array($path,['/api/workspace/inbox','/api/ghl/inbox'],true) && $method==='
     if(!in_array($limit,[20,50,100],true))$limit=20;
     query('INSERT INTO connection_preferences(connection_id,inbox_limit) VALUES(?,?) ON DUPLICATE KEY UPDATE inbox_limit=VALUES(inbox_limit)',[$id,$limit]);
     ['filters'=>$filters]=InboxFeed::readFilters($_GET,$membership);
+    // The position to continue from is the one the previous page handed back.
+    $cursor=$_GET['startAfter']??null;
+    if($cursor!==null&&(!is_string($cursor)||!preg_match('/^[0-9]{1,16}$/D',$cursor)))respond(['error'=>'Referencia de página inválida'],422);
     try{
-        $feed=(new InboxFeed())->load($connection,$limit,$filters,$membership);
+        $feed=(new InboxFeed())->load($connection,$limit,$filters,$membership,$cursor!==null?$cursor:null);
         respond($feed+['syncIntervalSeconds'=>max(60,(int)$connection['sync_interval_seconds']),'limit'=>$limit,'state'=>$state?:null]);
     }
     catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la bandeja. Revisa los permisos de lectura.','code'=>'inbox_upstream_'.$e->status],424);}
     catch(InvalidArgumentException $e){respond(['error'=>'Comprueba la conexión antes de consultar la bandeja.'],422);}
     catch(Throwable $e){respond(['error'=>'La bandeja recibida no tiene el formato esperado.','code'=>'inbox_invalid_response'],424);}
+}
+// Near-live updates: the browser asks Ágora, never the account. The answer is a
+// token that only changes when the conversations changed, and the account itself
+// is read by one shared pass per connection however many people are looking.
+if($path==='/api/workspace/pulse'&&$method==='GET'){
+    session_write_close();
+    require_once __DIR__.'/Pulse.php';
+    try{respond((new Pulse())->read($connection,$membership,($_GET['refresh']??'1')!=='0'));}
+    catch(Throwable $e){respond(['error'=>'No se pudo comprobar si hay novedades.','code'=>'pulse_failed'],424);}
 }
 if($path==='/api/workspace/read'&&$method==='POST'){
     $conversation=$_GET['conversationId']??'';

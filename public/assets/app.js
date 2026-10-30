@@ -3,6 +3,7 @@ import {renderIntegrations} from './integrations.js';
 import {renderLiveInbox} from './live-inbox.js';
 import {renderContacts} from './contacts.js';
 import {renderDashboard} from './dashboard.js';
+import {connectDevice,releaseDevice,isNative} from './native.js';
 import {renderBoard} from './board.js';
 
 const $=s=>document.querySelector(s);
@@ -68,6 +69,10 @@ async function startSession(){
   catch{workspace.setConnections([])}
   renderAccounts();
   show(requested()||'inbox',{push:false});
+  // Inside the Android shell the phone registers itself so it can be notified.
+  if(isNative())connectDevice(me.csrf,path=>{const name=byPath(path);if(name)show(name);else if(path.startsWith('/conversations/'))history.pushState(null,'',path),show('inbox',{push:false})})
+    .then(result=>{globalThis.agoraDeviceToken=result.token;if(result.state==='denied')toast('Activa las notificaciones del sistema para recibir avisos de mensajes nuevos.')})
+    .catch(()=>{});
 }
 
 function showSignin(){
@@ -83,6 +88,7 @@ document.querySelectorAll('button[data-view]').forEach(b=>b.onclick=()=>show(b.d
 window.addEventListener('popstate',()=>{const name=requested();if(name)show(name,{push:false})});
 
 $('#signout').onclick=async()=>{
+  await releaseDevice(workspace.me?.csrf||'');
   try{await api('logout','POST',null,workspace.me?.csrf||'')}catch{}
   window.dispatchEvent(new Event('agora:logout'));
   showSignin();

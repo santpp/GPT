@@ -283,3 +283,8 @@ body.agora-focus .live-composer{padding-bottom:calc(10px + env(safe-area-inset-b
  .live-opportunity-edit,.live-opportunity-new{min-height:44px;font-size:12px}
  .board-editor{margin:0 15px 16px;padding:14px;max-width:none}
 }
+
+/* The list continues past the window the account answers in one page. */
+.live-more{display:block;width:calc(100% - 24px);margin:12px;padding:10px;border:1px solid var(--line);border-radius:6px;font-size:11px;color:var(--green);background:var(--paper)}
+.live-more:disabled{color:var(--muted)}
+@media(max-width:600px){.live-more{min-height:44px;font-size:13px}}

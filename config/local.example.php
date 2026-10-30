@@ -10,6 +10,9 @@ return [
     'GHL_LOCATION_ID'=>'agora-workspace', // Initial workspace reference, not a PIT.
     'APP_KEY_FILE'=>dirname(__DIR__).'/var/integration.key',
     'GHL_WEBHOOKS_ENABLED'=>'0',
+    // Android notifications. The Firebase service account JSON, kept OUTSIDE
+    // public_html and out of Git. Leave it out and Ágora simply does not notify.
+    // 'FCM_CREDENTIALS_FILE'=>dirname(__DIR__).'/var/fcm-service-account.json',
     // Access codes are delivered by the connected account chosen in
     // Conexiones → Canal de acceso. No mail server credentials belong here.
 ];
