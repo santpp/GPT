@@ -1,23 +1,42 @@
 import {workspace} from './workspace.js';
+import {contactForm,readContactForm,bindTagEditor} from './contact-editor.js';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const initials=name=>String(name||'·').split(/\s+/).slice(0,2).map(part=>[...part][0]||'').join('').toUpperCase()||'··';
+const asList=value=>Array.isArray(value)?value:[];
 
-async function request(path){
-  const r=await fetch('/api/'+path,{cache:'no-store',headers:{'Content-Type':'application/json'}});
+async function request(path,method='GET',body=null){
+  const r=await fetch('/api/'+path,{method,cache:'no-store',...(body!==null?{body:JSON.stringify(body)}:{}),headers:{'Content-Type':'application/json'}});
   let data;try{data=await r.json()}catch{throw Object.assign(Error(`El servidor devolvió una respuesta no válida (HTTP ${r.status}).`),{status:r.status})}
   if(!r.ok)throw Object.assign(Error((data.error||'Error de conexión')+(data.retryAfter?` Espera ${data.retryAfter} segundos.`:'')),{status:r.status,code:data.code});
   return data;
 }
+
+const DETAILS=[['email','Correo'],['phone','Teléfono'],['companyName','Empresa'],['website','Sitio web'],['address','Dirección'],['country','País'],['timezone','Zona horaria'],['source','Fuente'],['dateOfBirth','Fecha de nacimiento'],['assignedName','Responsable']];
 
 export async function renderContacts(container){
   const instance=Symbol();container.agoraViewInstance=instance;
   const active=()=>container.agoraViewInstance===instance&&container.dataset.view==='contacts';
   const connection=workspace.current();
   if(!connection){container.innerHTML='<p class="empty">Añade una cuenta desde Conexiones para ver contactos.</p>';return}
-  container.innerHTML=`<div class="live-toolbar"><label class="search"><span aria-hidden="true">⌕</span><input id="contact-search" type="search" placeholder="Buscar por nombre, correo o teléfono" aria-label="Buscar contactos"></label></div><p id="contact-feedback" class="live-feedback" role="status">Cargando contactos…</p><div id="contact-results"></div>`;
+  container.innerHTML=`<div class="records-layout" id="records-layout">
+   <div class="records-list">
+    <div class="live-toolbar"><label class="search"><span aria-hidden="true">⌕</span><input id="contact-search" type="search" placeholder="Buscar por nombre, correo o teléfono" aria-label="Buscar contactos"></label></div>
+    <p id="contact-feedback" class="live-feedback" role="status">Cargando contactos…</p>
+    <div id="contact-results" role="list"></div>
+   </div>
+   <section class="records-record" id="contact-record" aria-live="polite"><p class="empty">Elige una persona de la lista para ver y editar su ficha.</p></section>
+  </div>`;
   const $=s=>container.querySelector(s);
-  let timer=null,generation=0;
+  const layout=$('#records-layout');
+  let timer=null,generation=0,selected=null;
+
+  function rows(items){
+    return items.map(c=>`<button class="record-row${c.id===selected?' selected':''}" data-contact="${esc(c.id)}" role="listitem">
+      <span class="avatar olive">${esc(initials(c.name))}</span>
+      <span class="record-row-text"><strong>${esc(c.name)}</strong><small>${esc(c.email||c.phone||c.companyName||'Sin datos de contacto')}</small>${asList(c.tags).length?`<span class="record-row-tags">${c.tags.slice(0,3).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</span>`:''}</span>
+    </button>`).join('');
+  }
 
   async function load(search=''){
     const version=++generation;
@@ -28,16 +47,90 @@ export async function renderContacts(container){
       $('#contact-feedback').textContent=data.total
         ? `${data.total} contacto${data.total===1?'':'s'}${data.restricted?' asignados a tu usuario':''}${data.partial?' · se muestran los más recientes':''}`
         : (search?'Ningún contacto coincide con esa búsqueda.':'Esta cuenta todavía no tiene contactos.');
-      $('#contact-results').innerHTML=data.items.map(c=>{
-        const rows=[['Correo',c.email],['Teléfono',c.phone],['Empresa',c.companyName],['Responsable',c.assignedName]].filter(([,v])=>v);
-        return `<article class="card contact-card"><header><span class="avatar olive">${esc(initials(c.name))}</span><h3>${esc(c.name)}</h3></header>${rows.map(([label,value])=>`<div class="detail-row"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}${c.tags.length?`<div class="live-profile-tags">${c.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}</article>`;
-      }).join('');
+      $('#contact-results').innerHTML=rows(asList(data.items));
+      bindRows();
     }catch(error){
       if(!active()||version!==generation)return;
       $('#contact-feedback').textContent=error.message;
       $('#contact-results').innerHTML='';
       if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
     }
+  }
+
+  function bindRows(){
+    container.querySelectorAll('[data-contact]').forEach(button=>button.onclick=()=>open(button.dataset.contact));
+  }
+
+  let record=null,editing=false,tags={added:[],dropped:[]};
+
+  async function open(contactId){
+    selected=contactId;editing=false;record=null;
+    layout.classList.add('record-open');
+    container.querySelectorAll('[data-contact]').forEach(b=>b.classList.toggle('selected',b.dataset.contact===contactId));
+    $('#contact-record').innerHTML='<p class="empty">Abriendo la ficha…</p>';
+    try{
+      const data=await request(`workspace/record?connectionId=${encodeURIComponent(connection)}&contactId=${encodeURIComponent(contactId)}`);
+      if(!active()||selected!==contactId)return;
+      record=data;show();
+    }catch(error){
+      if(!active()||selected!==contactId)return;
+      $('#contact-record').innerHTML=`<p class="empty">${esc(error.message)}</p>`;
+      if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
+    }
+  }
+
+  function show(){
+    const panel=$('#contact-record');
+    const contact=record.contact;
+    if(editing){
+      panel.innerHTML=contactForm(contact,asList(record.fields),asList(record.assignees));
+      tags=bindTagEditor(panel,contact);
+      panel.querySelector('#live-edit-cancel').onclick=()=>{editing=false;show()};
+      panel.querySelector('#live-contact-form').onsubmit=save;
+      return;
+    }
+    const details=DETAILS.map(([key,label])=>contact[key]?`<div><span>${esc(label)}</span><strong>${esc(contact[key])}</strong></div>`:'').join('')
+      ||'<div><span>Sin datos</span><strong>Esta ficha está vacía.</strong></div>';
+    const custom=asList(contact.customFields).filter(field=>field.value!==''&&field.value!==null&&field.value!==undefined)
+      .map(field=>`<div><span>${esc(field.name||'Campo personalizado')}</span><strong>${esc(Array.isArray(field.values)&&field.values.length?field.values.join(', '):field.value)}</strong></div>`).join('')
+      ||'<div><span>Campos personalizados</span><strong>Sin valores todavía.</strong></div>';
+    panel.innerHTML=`<header class="record-header">
+      <button class="mobile-back" id="record-back" aria-label="Volver a la lista">←</button>
+      <span class="avatar olive">${esc(initials(contact.name))}</span>
+      <div><h2>${esc(contact.name)}</h2><p>${esc(contact.email||contact.phone||'Sin datos de contacto')}</p></div>
+      ${record.canEdit?'<button class="primary" id="record-edit">Editar ficha</button>':''}
+     </header>
+     ${contact.dnd?'<p class="record-flag">Marcado como no contactar.</p>':''}
+     <div class="record-columns">
+      <div><div class="section-label">DATOS</div><div class="live-profile-details">${details}</div></div>
+      <div><div class="section-label">CAMPOS PERSONALIZADOS</div><div class="live-profile-fields">${custom}</div>
+       <div class="section-label">ETIQUETAS</div><div class="live-profile-tags">${asList(contact.tags).length?contact.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join(''):'<span class="muted">Sin etiquetas</span>'}</div></div>
+     </div>
+     <p id="record-status" class="live-feedback" role="status"></p>`;
+    panel.querySelector('#record-back').onclick=()=>{layout.classList.remove('record-open')};
+    const edit=panel.querySelector('#record-edit');
+    if(edit)edit.onclick=()=>{editing=true;show()};
+  }
+
+  async function save(event){
+    event.preventDefault();
+    const form=event.target,status=form.querySelector('#live-contact-status'),button=form.querySelector('#live-save-contact');
+    const fields=readContactForm(form,record.contact);
+    if(Object.keys(fields).length===0&&!tags.added.length&&!tags.dropped.length){status.textContent='No has cambiado nada todavía.';return}
+    button.disabled=true;status.textContent='Guardando la ficha…';
+    try{
+      await request(`workspace/record?connectionId=${encodeURIComponent(connection)}&contactId=${encodeURIComponent(selected)}`,'POST',
+        {fields,addTags:tags.added,removeTags:tags.dropped,requestId:crypto.randomUUID().replace(/-/g,'')});
+      const fresh=await request(`workspace/record?connectionId=${encodeURIComponent(connection)}&contactId=${encodeURIComponent(selected)}&refresh=1`);
+      if(!active())return;
+      record=fresh;editing=false;show();
+      const row=container.querySelector(`[data-contact="${CSS.escape(selected)}"] strong`);
+      if(row)row.textContent=fresh.contact.name;
+    }catch(error){
+      if(!active())return;
+      status.textContent=error.message;
+      if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
+    }finally{if(active())button.disabled=false}
   }
 
   // The term is only sent once typing settles, so a search costs one read.

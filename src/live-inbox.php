@@ -92,6 +92,55 @@ if(preg_match('~^/api/workspace/activity(/note|/task|/task-state|/contact)?$~',$
     catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la actividad del contacto. Revisa el permiso de contactos.','code'=>'activity_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'La actividad recibida no tiene el formato esperado.','code'=>'activity_invalid_response'],424);}
 }
+if($path==='/api/workspace/dashboard'&&$method==='GET'){
+    require_once __DIR__.'/Dashboard.php';
+    try{respond((new Dashboard())->get($connection,$membership));}
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'El tablero está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>'No se pudo leer el tablero. Revisa los permisos de la cuenta.','code'=>'dashboard_upstream_'.$e->status],424);}
+    catch(Throwable $e){respond(['error'=>'El tablero recibido no tiene el formato esperado.','code'=>'dashboard_invalid_response'],424);}
+}
+// The contacts screen opens a record directly, without going through a chat.
+if($path==='/api/workspace/record'&&in_array($method,['GET','POST'],true)){
+    if(!($membership['capabilities']['viewContacts']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar contactos.'],403);
+    $contactId=$_GET['contactId']??'';
+    if(!is_string($contactId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))respond(['error'=>'Contacto inválido'],422);
+    require_once __DIR__.'/ContactProfile.php';
+    require_once __DIR__.'/ContactFieldDirectory.php';
+    if($method==='POST'){
+        require_once __DIR__.'/ContactActions.php';
+        try{
+            // The record is read first so the edit can never touch another account,
+            // nor a contact that is not this member's to edit.
+            $current=(new ContactProfile())->get($connection,$contactId);
+            if(($membership['capabilities']['assignedDataOnly']??false)===true&&$current['assignedTo']!==($membership['external_user_id']??null))
+                respond(['error'=>'Este contacto no está asignado a tu usuario.'],403);
+            respond((new ContactActions())->contact($connection,$contactId,$membership,body()));
+        }
+        catch(ActionProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
+        catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La ficha está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
+        catch(GhlApiException $e){respond(['error'=>'No se pudo abrir la ficha de ese contacto.','code'=>'record_upstream_'.$e->status],424);}
+        catch(Throwable $e){respond(['error'=>'La ficha recibida no tiene el formato esperado.','code'=>'record_invalid_response'],424);}
+    }
+    try{
+        $profile=(new ContactProfile())->get($connection,$contactId,($_GET['refresh']??'')==='1');
+        // A member restricted to assigned data only opens their own contacts.
+        if(($membership['capabilities']['assignedDataOnly']??false)===true&&$profile['assignedTo']!==($membership['external_user_id']??null))
+            respond(['error'=>'Este contacto no está asignado a tu usuario.'],403);
+        $canEdit=($membership['capabilities']['editContacts']??false)===true;
+        $directory=new ContactFieldDirectory();
+        $fields=$directory->cached($connection);
+        if($fields===null){try{$fields=$directory->get($connection);}catch(Throwable $e){$fields=[];}}
+        respond([
+            'contact'=>$profile,
+            'canEdit'=>$canEdit,
+            'fields'=>$fields,
+            'assignees'=>$canEdit?query('SELECT external_user_id AS id,display_name AS name FROM external_users WHERE connection_id=? AND active=TRUE ORDER BY display_name',[$connection['id']])->fetchAll():[],
+        ]);
+    }
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La ficha está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>'No se pudo abrir la ficha de ese contacto.','code'=>'record_upstream_'.$e->status],424);}
+    catch(Throwable $e){respond(['error'=>'La ficha recibida no tiene el formato esperado.','code'=>'record_invalid_response'],424);}
+}
 if($path==='/api/workspace/contacts'&&$method==='GET'){
     if(!($membership['capabilities']['viewContacts']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar contactos.'],403);
     require_once __DIR__.'/ContactDirectory.php';

@@ -2,6 +2,7 @@ import {workspace} from './workspace.js';
 import {renderIntegrations} from './integrations.js';
 import {renderLiveInbox} from './live-inbox.js';
 import {renderContacts} from './contacts.js';
+import {renderDashboard} from './dashboard.js';
 import {renderBoard} from './board.js';
 
 const $=s=>document.querySelector(s);
@@ -9,6 +10,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const view=$('#view');
 
 const VIEWS={
+  dashboard:{path:'/tablero',title:'Tablero',eyebrow:'TU DÍA',heading:'Así va tu cuenta.',subtitle:'Lo que espera respuesta y lo que está en juego.',render:renderDashboard,account:true},
   inbox:{path:'/bandeja',title:'Conversaciones',eyebrow:'BANDEJA',heading:'Cada conversación cuenta.',subtitle:'Todo el contexto, en un solo lugar.',render:renderLiveInbox,account:true},
   contacts:{path:'/contactos',title:'Contactos',eyebrow:'TU GENTE',heading:'Personas, no registros.',subtitle:'Tu siguiente conversación empieza aquí.',render:renderContacts,account:true},
   board:{path:'/oportunidades',title:'Oportunidades',eyebrow:'EMBUDO',heading:'De la conexión al cierre.',subtitle:'Cada oportunidad abierta, a la vista.',render:renderBoard,account:true},

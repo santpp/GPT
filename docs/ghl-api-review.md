@@ -234,3 +234,27 @@ Misma fuente oficial y mismo commit `0af86a4cbd48c66a4071c7e509d1079f9f10ed17`.
 **Adjuntos.** `GetMessageResponseDto` publica `attachments` como array. Ágora muestra los que llegan: sólo enlaces `https`, el nombre tomado de la ruta del archivo y nunca de texto del remitente, y las imágenes en línea. El envío de adjuntos necesitaría almacenamiento propio y no se incluye.
 
 **Plantillas de WhatsApp: no implementadas.** `GET /locations/{locationId}/templates` acepta `type=whatsapp` y declara el scope `locations/templates.readonly`, pero exige un parámetro `originId` cuyo significado no se documenta en ninguna parte del esquema, y la respuesta sólo publica estructuras para SMS y correo (`GetSmsTemplateResponseSchema`, `GetEmailTemplateResponseSchema`), sin esquema para WhatsApp. No se implementa a partir de un parámetro obligatorio adivinado; queda pendiente de comprobar contra una cuenta real qué valor espera.
+
+## Tablero y ficha completa de contacto 0.16.0
+
+Misma fuente oficial y mismo commit `0af86a4cbd48c66a4071c7e509d1079f9f10ed17`.
+
+| Uso | Método y endpoint | Scope publicado | Version |
+| --- | --- | --- | --- |
+| Totales de conversaciones y pendientes | `GET /conversations/search` | `conversations.readonly` | 2021-04-15 |
+| Número de contactos | `GET /contacts/` | `contacts.readonly` | 2021-07-28 |
+| Oportunidades abiertas | `GET /opportunities/search` | `opportunities.readonly` | 2021-07-28 |
+| Nombres de embudo y etapa | `GET /opportunities/pipelines` | `opportunities.readonly` | 2021-07-28 |
+| Ficha del contacto | `GET /contacts/{contactId}` | `contacts.readonly` | 2021-07-28 |
+| Guardar la ficha | `PUT /contacts/{contactId}` | `contacts.write` | 2021-07-28 |
+| Etiquetas | `POST` y `DELETE /contacts/{contactId}/tags` | `contacts.write` | 2021-07-28 |
+
+El tablero no usa ningún endpoint nuevo: son lecturas que Ágora ya hacía, agrupadas en una sola ranura de cuota. `SendConversationResponseDto` documenta `total` como «total de resultados encontrados para la consulta», así que el número de conversaciones y el de pendientes se piden con `limit=1` y se lee ese campo, sin traer listas que no se van a mostrar. Los pendientes son `status=unread`, valor que figura en la enumeración publicada.
+
+**Contactos y `count`.** `ContactsSearchSuccessfulResponseDto` publica `contacts` y `count`, pero **no documenta si `count` es el total encontrado o el tamaño de la página**. La pantalla de contactos lo viene tratando como total desde 0.11.0 y en cuentas reales se comporta como tal; el tablero hace lo mismo. Si alguna cuenta devolviera el tamaño de página, la cifra quedaría en 1 y habría que cambiarla por un recuento propio.
+
+**Sin alcance por responsable en contactos.** `GET /contacts/` publica `locationId`, `query`, `limit`, `startAfter` y `startAfterId`, pero ningún parámetro de asignación. A un integrante limitado a sus datos no se le muestra cifra de contactos, en lugar de mostrarle el total de la cuenta como si fuera suyo. Conversaciones y oportunidades sí admiten `assignedTo` y se piden ya filtradas.
+
+**Ficha editable fuera del chat.** La pantalla de contactos abre la ficha por `contactId`, sin pasar por una conversación. La autorización no puede apoyarse entonces en el índice de conversaciones: se lee primero el registro en la cuenta de la conexión elegida, de modo que un `contactId` de otra cuenta no existe para esa clave, y a un integrante limitado a sus datos se le niega un contacto que no tenga asignado, tanto al abrir como al guardar. El guardado reutiliza el mismo editor que la conversación: sólo viajan los campos cambiados, las etiquetas por sus endpoints propios (nunca por el campo `tags` del update, que según su propia documentación reemplaza todas), y cada intento lleva su clave de petición.
+
+**Calendario y workflows: fuera de alcance.** Por decisión de producto no se replican. Los workflows se siguen gestionando directamente en la cuenta.

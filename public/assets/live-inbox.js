@@ -1,3 +1,4 @@
+import {contactForm,readContactForm,bindTagEditor} from './contact-editor.js';
 import {workspace} from './workspace.js';
 const drafts=new Map();
 window.addEventListener('agora:logout',()=>{drafts.clear();for(const key of Object.keys(sessionStorage))if(key.startsWith('agora-send:'))sessionStorage.removeItem(key)});
@@ -226,37 +227,6 @@ export async function renderLiveInbox(container){
    const forms=activity.canEdit?`<div class="live-quick-actions"><details><summary>+ Crear tarea</summary><form id="live-task-form"><label class="sr-only" for="live-task-title">Título de la tarea</label><input id="live-task-title" maxlength="190" placeholder="Título de la tarea" required><label class="sr-only" for="live-task-due">Vencimiento</label><input id="live-task-due" type="date" required><label class="sr-only" for="live-task-body">Detalle</label><textarea id="live-task-body" maxlength="2000" rows="2" placeholder="Detalle (opcional)"></textarea><button class="primary">Crear tarea</button></form></details><details><summary>+ Crear nota</summary><form id="live-note-form"><label class="sr-only" for="live-note-body">Nota</label><textarea id="live-note-body" maxlength="5000" rows="3" placeholder="Escribe una nota…" required></textarea><button class="primary">Guardar nota</button></form></details><p id="live-activity-status" role="status"></p></div>`:'<p id="live-activity-status" role="status"></p>';
    return `<div class="section-label">TAREAS</div><div class="live-tasks">${tasks}</div><div class="section-label">NOTAS</div><div class="live-notes">${notes}</div><div class="section-label">CITAS</div><div class="live-appointments">${appointments}</div>${forms}`;
   }
-  const EDITABLE=[['name','Nombre completo','text'],['firstName','Nombre','text'],['lastName','Apellido','text'],['email','Correo','email'],['phone','Teléfono','tel'],['companyName','Empresa','text'],['website','Sitio web','url'],['address1','Dirección','text'],['city','Ciudad','text'],['state','Provincia o estado','text'],['postalCode','Código postal','text'],['country','País','text'],['source','Fuente','text'],['timezone','Zona horaria','text'],['dateOfBirth','Fecha de nacimiento','date']];
-  const READ_ONLY_TYPES=['FILE_UPLOAD','SIGNATURE'];
-  // One control per published field type, so every field can actually be filled.
-  function customControl(field,current){
-   const id=esc(field.id),name=esc(field.name||'Campo personalizado'),hint=field.placeholder?` placeholder="${esc(field.placeholder)}"`:'';
-   const value=current?.value??'';
-   const chosen=asList(current?.values).length?asList(current.values):(value?String(value).split(', ').filter(Boolean):[]);
-   if(READ_ONLY_TYPES.includes(field.dataType))return `<label>${name}<input value="${esc(value)}" disabled></label>`;
-   if(field.dataType==='CHECKBOX')return `<label class="live-check"><input type="checkbox" data-field="${id}" data-type="CHECKBOX"${current?.checked||value==='Sí'?' checked':''}>${name}</label>`;
-   if(field.dataType==='MULTIPLE_OPTIONS'&&field.options?.length)
-    return `<div class="live-field-group" data-field="${id}" data-type="MULTIPLE_OPTIONS"><span class="live-field-name">${name}</span>${field.options.map(option=>`<label class="live-check"><input type="checkbox" data-option="${esc(option)}"${chosen.includes(option)?' checked':''}>${esc(option)}</label>`).join('')}</div>`;
-   if((field.dataType==='SINGLE_OPTIONS'||field.dataType==='RADIO')&&field.options?.length)
-    return `<label>${name}<select data-field="${id}" data-type="SINGLE_OPTIONS"><option value="">Sin elegir</option>${field.options.map(option=>`<option${option===value?' selected':''}>${esc(option)}</option>`).join('')}</select></label>`;
-   if(field.dataType==='LARGE_TEXT'||field.dataType==='TEXTBOX_LIST')
-    return `<label>${name}<textarea data-field="${id}" data-type="${esc(field.dataType)}" rows="3" maxlength="5000"${hint}>${esc(value)}</textarea></label>`;
-   const type=field.dataType==='NUMERICAL'||field.dataType==='MONETORY'?'number':field.dataType==='DATE'?'date':field.dataType==='EMAIL'?'email':field.dataType==='PHONE'?'tel':'text';
-   return `<label>${name}<input type="${type}" data-field="${id}" data-type="${esc(field.dataType)}" value="${esc(value)}" maxlength="1000"${hint}></label>`;
-  }
-  function contactForm(profile,directory=[],assignees=[]){
-   const fields=EDITABLE.map(([key,label,type])=>`<label>${esc(label)}<input type="${type}" name="${key}" value="${esc(profile[key]??'')}" maxlength="250"></label>`).join('')
-    +`<label class="live-check"><input type="checkbox" name="dnd"${profile.dnd?' checked':''}>No contactar</label>`
-    +(asList(assignees).length?`<label>Responsable<select name="assignedTo"><option value="">Sin asignar</option>${assignees.map(user=>`<option value="${esc(user.id)}"${user.id===profile.assignedTo?' selected':''}>${esc(user.name)}</option>`).join('')}</select></label>`:'');
-   // Every field the account defines is offered, even the ones with no value yet.
-   const values=new Map(asList(profile.customFields).map(field=>[field.id,field]));
-   const defined=asList(directory);
-   const extra=asList(profile.customFields).filter(field=>!defined.some(d=>d.id===field.id)).map(field=>({id:field.id,name:'Campo personalizado',dataType:'TEXT',options:[]}));
-   const custom=[...defined,...extra].map(field=>customControl(field,values.get(field.id))).join('')
-    ||'<span class="muted">Esta cuenta no define campos personalizados.</span>';
-   const tags=asList(profile.tags).map(tag=>`<span class="tag">${esc(tag)}<button type="button" data-drop-tag="${esc(tag)}" aria-label="Quitar etiqueta ${esc(tag)}">×</button></span>`).join('')||'<span class="muted">Sin etiquetas</span>';
-   return `<form id="live-contact-form" class="live-contact-form"><header class="live-profile-header"><div><span class="section-label">EDITAR FICHA</span><h2>${esc(profile.name)}</h2></div><button type="button" id="live-edit-cancel" aria-label="Cancelar edición">×</button></header>${fields}<div class="section-label">CAMPOS PERSONALIZADOS</div>${custom}<div class="section-label">ETIQUETAS</div><div class="live-profile-tags" id="live-tag-list">${tags}</div><label>Añadir etiqueta<input id="live-new-tag" maxlength="100" placeholder="Escribe y pulsa Añadir"></label><button type="button" id="live-add-tag">Añadir etiqueta</button><button class="primary" id="live-save-contact">Guardar ficha</button><p id="live-contact-status" role="status"></p></form>`;
-  }
   function contactProfile(profile,labels={},opportunities=null,activity=null){
    const details=[['Teléfono',profile.phone],['Email',profile.email],['Empresa',profile.companyName],['Sitio web',profile.website],['Fuente',profile.source],['Responsable',profile.assignedName],['Última actividad',date(profile.lastActivity)],['Alta',date(profile.dateAdded)],['Nacimiento',profile.dateOfBirth],['Zona horaria',profile.timezone],['Dirección',profile.address],['No contactar',profile.dnd?'Sí':null]].filter(([,value])=>value);
    const phone=String(profile.phone||'').replace(/[^0-9+]/g,'');
@@ -284,68 +254,23 @@ export async function renderLiveInbox(container){
      if(editing){panel.innerHTML=contactForm(data.contact,data.fields,data.assignees);bindEdit();return}
      panel.innerHTML=contactProfile(data.contact,labels,opportunities,activity);bind();
     };
-    let added=[],dropped=[];
+    let tags={added:[],dropped:[]};
     function bindEdit(){
      const form=panel.querySelector('#live-contact-form');if(!form)return;
      const status=panel.querySelector('#live-contact-status');
-     panel.querySelector('#live-edit-cancel').onclick=()=>{editing=false;added=[];dropped=[];show()};
-     const newTag=panel.querySelector('#live-new-tag');
-     const addTag=()=>{
-      const value=newTag.value.trim();if(!value)return;
-      if(!added.includes(value))added.push(value);
-      dropped=dropped.filter(t=>t!==value);
-      newTag.value='';
-      const list=panel.querySelector('#live-tag-list');
-      list.insertAdjacentHTML('beforeend',`<span class="tag">${esc(value)}<button type="button" data-drop-tag="${esc(value)}" aria-label="Quitar etiqueta ${esc(value)}">×</button></span>`);
-      bindTagButtons();
-     };
-     panel.querySelector('#live-add-tag').onclick=addTag;
-     newTag.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();addTag()}};
-     function bindTagButtons(){
-      panel.querySelectorAll('[data-drop-tag]').forEach(button=>button.onclick=()=>{
-       const tag=button.dataset.dropTag;
-       added=added.filter(t=>t!==tag);
-       if((data.contact.tags||[]).includes(tag)&&!dropped.includes(tag))dropped.push(tag);
-       button.parentElement.remove();
-      });
-     }
-     bindTagButtons();
+     panel.querySelector('#live-edit-cancel').onclick=()=>{editing=false;show()};
+     tags=bindTagEditor(panel,data.contact);
      form.onsubmit=async event=>{
       event.preventDefault();
       const save=panel.querySelector('#live-save-contact');save.disabled=true;status.textContent='Guardando ficha…';
-      const fields={};
-      for(const [key] of EDITABLE){
-       const input=form.querySelector(`[name="${key}"]`);
-       if(input&&input.value.trim()!==String(data.contact[key]??''))fields[key]=input.value.trim();
-      }
-      const dnd=form.querySelector('[name="dnd"]');
-      if(dnd&&dnd.checked!==(data.contact.dnd===true))fields.dnd=dnd.checked;
-      const assigned=form.querySelector('[name="assignedTo"]');
-      if(assigned&&assigned.value!==String(data.contact.assignedTo??''))fields.assignedTo=assigned.value;
-      // Each control reports its own shape: a box is a boolean, a group is a list.
-      const previous=new Map(asList(data.contact.customFields).map(field=>[field.id,field]));
-      const customFields=[];
-      for(const node of form.querySelectorAll('[data-field]')){
-       if(node.disabled)continue;
-       const id=node.dataset.field,was=previous.get(id);
-       let value;
-       if(node.dataset.type==='MULTIPLE_OPTIONS')value=[...node.querySelectorAll('[data-option]')].filter(box=>box.checked).map(box=>box.dataset.option);
-       else if(node.type==='checkbox')value=node.checked;
-       else value=node.value;
-       const before=Array.isArray(value)?asList(was?.values).join('\u0000')
-        :typeof value==='boolean'?(was?.checked===true)
-        :String(was?.value??'');
-       const now=Array.isArray(value)?value.join('\u0000'):value;
-       if(now!==before)customFields.push({id,value});
-      }
-      if(customFields.length)fields.customFields=customFields;
-      const payload={fields,addTags:added,removeTags:dropped,requestId:crypto.randomUUID().replace(/-/g,'')};
+      const fields=readContactForm(form,data.contact);
+      const payload={fields,addTags:tags.added,removeTags:tags.dropped,requestId:crypto.randomUUID().replace(/-/g,'')};
       try{
        await request(`workspace/activity/contact?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`,'POST',me.csrf,payload);
        const fresh=await request(`workspace/contact?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}&refresh=1`);
        if(!active()||version!==chatGeneration)return;
        data.contact=fresh.contact;data.contact.canEdit=fresh.canEdit===true;
-       editing=false;added=[];dropped=[];show();
+       editing=false;show();
       }catch(error){
        const failed=panel.querySelector('#live-contact-status');
        if(failed)failed.textContent=error.message;

@@ -22,6 +22,8 @@ with sync_playwright() as p:
         elif path.startswith('workspace/sync'): data={'synced':True}
         elif path.startswith('workspace/contacts'):
             data={'items':[{'id':'c1','name':'Andreina Del Nogal','email':'a@x.test','phone':'+58414','companyName':None,'assignedName':'Maria Carvallo','tags':['VIP'],'dateAdded':None}],'total':1,'query':None,'restricted':False,'partial':False}
+        elif path.startswith('workspace/dashboard'):
+            data={'restricted':False,'conversations':{'total':47,'unread':5},'contacts':812,'opportunities':{'count':3,'value':3500.5,'stages':[{'name':'Pipeline comercial · Propuesta enviada','count':1,'value':2400.0}],'sampled':False},'readAt':'2026-01-01T10:00:00+00:00'}
         elif path.startswith('workspace/board'):
             data={'pipelines':[{'id':'p1','name':'Pipeline comercial'}],'pipelineId':'p1','stages':[{'id':'s1','name':'Nuevo lead','items':[{'id':'o1','name':'Proyecto X','contactName':'Andreina','monetaryValue':2400,'assignedName':'Maria'}],'total':1,'value':2400.0}],'total':1,'restricted':False,'partial':False}
         elif path=='admin/diagnostics': data={'ready':True,'version':'0.11.0','checks':[]}
@@ -48,10 +50,10 @@ with sync_playwright() as p:
     print('PASS signing in enters the workspace with the account selector ready')
     nav=page.locator('.sidebar nav').inner_text()
     assert 'Calendario' not in nav and 'Mis tareas' not in nav, nav
-    assert 'Conversaciones' in nav and 'Contactos' in nav and 'Oportunidades' in nav and 'Conexiones' in nav
+    assert 'Conversaciones' in nav and 'Contactos' in nav and 'Oportunidades' in nav and 'Conexiones' in nav and 'Tablero' in nav
     print('PASS menu offers only the real screens')
     page.locator('[data-view="contacts"]').click()
-    page.wait_for_selector('.contact-card',state='attached')
+    page.wait_for_selector('.record-row',state='attached')
     assert 'Andreina Del Nogal' in page.locator('#contact-results').inner_text()
     assert page.url.endswith('/contactos')
     print('PASS contacts screen shows real account data')
@@ -61,6 +63,13 @@ with sync_playwright() as p:
     assert 'Pipeline comercial' in board and 'Proyecto X' in board and '2.400' in board
     assert page.url.endswith('/oportunidades')
     print('PASS opportunity board shows real stages and cards')
+    page.locator('[data-view="dashboard"]').click()
+    page.wait_for_selector('.board-tile',state='attached')
+    board_view=page.locator('#view').inner_text()
+    assert '47' in board_view and 'Sin leer' in board_view and '812' in board_view
+    assert 'Pipeline comercial · Propuesta enviada' in board_view
+    assert page.url.endswith('/tablero')
+    print('PASS the board screen shows what the account answered')
     page.locator('[data-view="inbox"]').click()
     page.wait_for_selector('#live-list',state='attached')
     toolbar=page.locator('.live-toolbar').inner_text()

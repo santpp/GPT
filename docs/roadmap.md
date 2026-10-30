@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 29 de octubre de 2026. Versión publicada: 0.15.0.
+Estado actualizado: 30 de octubre de 2026. Versión publicada: 0.16.0.
 
 ## Completado y desplegable
 
@@ -8,6 +8,8 @@ Estado actualizado: 29 de octubre de 2026. Versión publicada: 0.15.0.
 - Entrada directa al espacio real: pantalla de acceso y, al entrar, datos de la cuenta. Sin vistas de ejemplo.
 - Selector de subcuenta en la cabecera que manda en toda la aplicación.
 - Pantallas reales de contactos y de oportunidades por embudo.
+- Tablero con las cifras de la cuenta: conversaciones, pendientes, contactos y oportunidades abiertas por etapa.
+- Ficha de contacto completa y editable desde la pantalla de contactos, con todos los campos, los campos personalizados y las etiquetas.
 - Login propio, roles base y administración de conexiones por subcuenta.
 - Credenciales cifradas en el servidor; el navegador nunca recibe la clave privada.
 - Bandeja real con 20/50/100 conversaciones, búsqueda local, pendientes y canales legibles.
@@ -28,7 +30,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Ficha del contacto: teléfono, email, empresa, fuente, etiquetas, campos personalizados, actividad y ejecutivo: implementada en 0.8.0.
 - Oportunidades: oportunidad activa, pipeline, etapa, estado, valor y responsable dentro del chat, con acceso a todas las oportunidades del contacto: implementadas en 0.9.0, con nombres reales de pipeline y etapa, caché de 60 segundos por contacto y una hora para el directorio, y respeto de permisos y `assignedDataOnly`.
 - Tareas, notas y citas dentro del chat, con crear nota, crear tarea y completar o reabrir tarea: implementadas en 0.10.0, con protección contra duplicados por clave de petición.
-- Acciones rápidas pendientes: agendar cita, crear o editar oportunidad, cambiar etapa, reasignar, etiquetar y ejecutar workflow. Crear nota, crear tarea y completar tarea ya están disponibles.
+- Acciones rápidas pendientes: agendar cita, crear o editar oportunidad, cambiar etapa y reasignar. Crear nota, crear tarea, completar tarea y etiquetar ya están disponibles.
 
 ## Operación del equipo
 
@@ -49,7 +51,10 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## Evolución
 
-- Contactos y tablero de oportunidades: implementados en 0.11.0. Pendientes como pantallas propias: calendario y tareas, que hoy sólo aparecen dentro de la conversación.
+- Contactos y tablero de oportunidades: implementados en 0.11.0; contactos rediseñado con ficha editable en 0.16.0.
+- Fuera de alcance por decisión de producto: calendario y workflows. Los workflows se gestionan directamente en la cuenta.
+- Pendiente como pantalla propia: tareas, que hoy sólo aparecen dentro de la conversación.
 - Resúmenes y sugerencias con IA, intención, clasificación y scoring.
-- Dashboards, reportes, Ágora Digital ERP, cobranza, facturación y pagos.
+- Tablero: primera versión en 0.16.0. Pendientes: evolución temporal, objetivos y reportes exportables.
+- Reportes, Ágora Digital ERP, cobranza, facturación y pagos.
 - Varias subcuentas por empresa y posterior arquitectura SaaS multiempresa.
