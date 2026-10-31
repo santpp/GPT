@@ -81,10 +81,11 @@ $('#push-toggle').onclick=async()=>{
   if(pushNow==='blocked'){toast('Los avisos están bloqueados para este sitio. Actívalos en los ajustes del navegador y vuelve a pulsar aquí.');return}
   button.disabled=true;
   try{
-    const result=pushNow==='on'?await disablePush(workspace.me?.csrf||''):await enablePush(workspace.me?.csrf||'');
+    const answer=pushNow==='on'?await disablePush(workspace.me?.csrf||''):await enablePush(workspace.me?.csrf||'');
+    const result=typeof answer==='string'?answer:answer.state;
     if(result==='on')toast('Listo: este dispositivo avisará de los mensajes nuevos.');
     else if(result==='blocked')toast('El dispositivo no ha dado permiso para avisar.');
-    else if(result==='unconfigured')toast('El servidor todavía no tiene los avisos preparados.');
+    else if(result==='unconfigured')toast(answer.reason||'El servidor todavía no tiene los avisos preparados.');
     else if(result==='off'&&pushNow==='on')toast('Este dispositivo ya no recibirá avisos.');
   }catch(error){toast(error.message||'No se pudo cambiar los avisos de este dispositivo.')}
   finally{await paintPush();button.disabled=['unsupported','unconfigured'].includes(pushNow)}
@@ -176,7 +177,7 @@ window.addEventListener('agora:unread',event=>{
   badge.setAttribute('aria-label',`${count} conversaciones sin leer`);
 });
 
-function network(){$('#network').textContent=navigator.onLine?'● En línea':'○ Sin conexión'}
+function network(){const mark=$('#network');mark.textContent='○ Sin conexión';mark.hidden=navigator.onLine}
 window.addEventListener('online',network);window.addEventListener('offline',network);network();
 
 // Offline shell. A new build installs itself: nobody should have to press

@@ -100,14 +100,27 @@ try {
     // first time it is asked for so nobody has to generate anything by hand.
     if ($path === '/api/push-key' && $method === 'GET') {
         require_once dirname(__DIR__).'/src/WebPush.php';
-        WebPush::ensureKeys(null,'mailto:soporte@'.(parse_url((string)getenv('APP_ORIGIN'),PHP_URL_HOST)?:'agoradigital.app'));
-        $push=new WebPush();
-        respond($push->configured()?['key'=>$push->publicKey(),'ready'=>true]:['key'=>null,'ready'=>false]);
+        // Whatever goes wrong here must name itself: a generic failure would
+        // leave the person tapping a button that never explains anything.
+        try {
+            $configured=is_string(getenv('WEBPUSH_KEY_FILE'))&&getenv('WEBPUSH_KEY_FILE')!=='';
+            if(!$configured)respond(['key'=>null,'ready'=>false,'code'=>'push_not_configured','error'=>'Falta indicar dónde guardar las claves de avisos en la configuración privada del servidor.']);
+            WebPush::ensureKeys(null,'mailto:soporte@'.(parse_url((string)getenv('APP_ORIGIN'),PHP_URL_HOST)?:'agoradigital.app'));
+            $push=new WebPush();
+            if(!$push->configured())respond(['key'=>null,'ready'=>false,'code'=>'push_key_unwritable','error'=>'El servidor no pudo crear las claves de avisos. Revisa que la carpeta privada var sea escribible.']);
+            respond(['key'=>$push->publicKey(),'ready'=>true]);
+        } catch(Throwable $e) {
+            respond(['key'=>null,'ready'=>false,'code'=>'push_key_failed','error'=>'No se pudieron preparar las claves de avisos en el servidor.']);
+        }
     }
     if ($path === '/api/devices' && $method === 'GET') {
         if(($u['identity_type'] ?? 'native')!=='native' || $u['role']!=='administrator')respond(['error'=>'Acceso restringido'],403);
-        $rows=query('SELECT id,platform,label,created_at,last_seen_at,last_sent_at FROM push_devices WHERE tenant_id=? ORDER BY last_seen_at DESC LIMIT 100',[$u['tenant_id']])->fetchAll();
         require_once dirname(__DIR__).'/src/PushDelivery.php';
+        try {$rows=query('SELECT id,platform,label,created_at,last_seen_at,last_sent_at FROM push_devices WHERE tenant_id=? ORDER BY last_seen_at DESC LIMIT 100',[$u['tenant_id']])->fetchAll();}
+        catch(PDOException $e) {
+            // A pending database update must say so, not look like a broken server.
+            respond(['items'=>[],'browser'=>false,'android'=>false,'code'=>'push_schema_pending','error'=>'Falta aplicar la última actualización de la base de datos.'],200);
+        }
         respond(['items'=>$rows,'browser'=>PushDelivery::browserConfigured(),'android'=>PushDelivery::firebaseConfigured()]);
     }
     if ($path === '/api/me' && $method === 'GET') respond(['user'=>array_intersect_key($u,array_flip(['id','email','role','identity_type','capabilities'])),'csrf'=>$_SESSION['csrf']]);
@@ -117,9 +130,14 @@ try {
     if ($path === '/api/devices' && in_array($method,['POST','DELETE'],true)) {
         $body=body();
         $token=$body['token'] ?? null;
-        if(!is_string($token)||!preg_match('/^[A-Za-z0-9_:.~-]{32,255}$/D',$token))respond(['error'=>'Identificador de dispositivo inválido'],422);
+        // A browser hands out an address, with a host and slashes, and only over
+        // https; a phone hands out a plain identifier. Both are accepted, and the
+        // shape decides which, so removing one never depends on how it was named.
+        $browser=is_string($token)&&strlen($token)<=512&&preg_match('~^https://[A-Za-z0-9.-]+(?::\d+)?/[\x21-\x7e]{8,}$~D',$token);
+        $phone=is_string($token)&&preg_match('/^[A-Za-z0-9_:.~-]{32,255}$/D',$token);
+        if(!$browser&&!$phone)respond(['error'=>'Este dispositivo no ha dado una dirección de avisos válida.','code'=>'invalid_device'],422);
+        $platform=$browser?'web':'android';
         if($method==='DELETE'){query('DELETE FROM push_devices WHERE tenant_id=? AND token=?',[$u['tenant_id'],$token]);respond(['registered'=>false]);}
-        $platform=($body['platform'] ?? 'android')==='web'?'web':'android';
         $type=($u['identity_type'] ?? 'native')==='native'?'native':'external';
         // A browser subscription is an address plus the two keys its own system
         // generated; without them nothing could be encrypted for it.

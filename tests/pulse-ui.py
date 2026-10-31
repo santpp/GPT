@@ -91,8 +91,9 @@ with sync_playwright() as b_pw:
     page.wait_for_function('()=>document.querySelector(".live-conversation .unread")!==null',timeout=15000)
     assert len([c for c in calls if c.startswith('workspace/inbox')])>len(before)
     print('PASS and reloads the list by itself, with no button to press')
-    status=page.locator('#live-auto-status').inner_text()
-    assert 'vivo' in status, status
+    # While everything works the screen says nothing about itself.
+    assert page.locator('#live-auto-status').is_hidden(), page.locator('#live-auto-status').text_content()
+    assert page.locator('#network').is_hidden(), 'being online is the normal state and needs no badge'
     for word in ['GoHighLevel','GHL','LeadConnector','pulse','token']:
         assert word not in page.locator('body').inner_text(), word
     print('PASS the screen says it is live without naming anything technical')

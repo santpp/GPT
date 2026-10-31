@@ -23,7 +23,7 @@ export async function renderLiveInbox(container){
  container.innerHTML='<p class="empty">Cargando conversaciones…</p>';
  try{
   const me=await request('me');const {items}=await request('workspace/connections');if(!active())return;
-  container.innerHTML=`<div class="live-toolbar"><label>Mostrar<select id="live-limit" aria-label="Cantidad de conversaciones"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label></div><p id="live-auto-status" class="live-auto-status" role="status">Actualización automática al mantener abierta esta pantalla</p><p id="live-feedback" class="live-feedback" role="status"></p><div class="live-inbox-layout"><section class="live-sidebar" aria-label="Lista de conversaciones"><label class="search"><span aria-hidden="true">⌕</span><input id="live-search" type="search" placeholder="Buscar nombre o mensaje" aria-label="Buscar en conversaciones cargadas"></label><div class="tabs"><button data-live-filter="all" class="active" aria-pressed="true">Todas</button><button data-live-filter="unread" aria-pressed="false">No leídas</button><button data-live-filter="mine" aria-pressed="false" id="live-filter-mine" hidden>Mías</button><span id="live-count"></span></div><div class="live-channel-filters" id="live-channel-filters" role="group" aria-label="Filtrar por canal"></div><p class="live-search-hint">La búsqueda y los filtros se resuelven en la cuenta</p><div id="live-list"></div></section><section id="live-messages" aria-label="Conversación"><p class="empty">Selecciona una conversación para consultar su historial.</p></section><aside id="live-contact-panel" class="live-contact-panel" aria-label="Ficha del contacto"><p class="empty">Selecciona una conversación.</p></aside></div>`;
+  container.innerHTML=`<div class="live-toolbar"><label>Mostrar<select id="live-limit" aria-label="Cantidad de conversaciones"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label></div><p id="live-auto-status" class="live-auto-status" role="status" hidden></p><p id="live-feedback" class="live-feedback" role="status"></p><div class="live-inbox-layout"><section class="live-sidebar" aria-label="Lista de conversaciones"><label class="search"><span aria-hidden="true">⌕</span><input id="live-search" type="search" placeholder="Buscar nombre o mensaje" aria-label="Buscar en conversaciones cargadas"></label><div class="tabs"><button data-live-filter="all" class="active" aria-pressed="true">Todas</button><button data-live-filter="unread" aria-pressed="false">No leídas</button><button data-live-filter="mine" aria-pressed="false" id="live-filter-mine" hidden>Mías</button><span id="live-count"></span></div><div class="live-channel-filters" id="live-channel-filters" role="group" aria-label="Filtrar por canal"></div><div id="live-list"></div></section><section id="live-messages" aria-label="Conversación"><p class="empty">Selecciona una conversación para consultar su historial.</p></section><aside id="live-contact-panel" class="live-contact-panel" aria-label="Ficha del contacto"></aside></div>`;
   const $=s=>container.querySelector(s), limit=$('#live-limit'),feedback=$('#live-feedback'),layout=$('.live-inbox-layout');
   const mineButton=$('#live-filter-mine');
   if(mineButton&&me?.user?.identity_type==='external')mineButton.hidden=false;
@@ -36,6 +36,9 @@ export async function renderLiveInbox(container){
   try{if(localStorage.getItem('agora-focus')==='1')document.body.classList.add('agora-focus')}catch{}
   const canRefresh=()=>active()&&!disposed&&!document.hidden&&navigator.onLine;
   const autoStatus=$('#live-auto-status');
+  // Nothing is said while everything works: a line that is always there stops
+  // being read, and then it cannot warn about anything.
+  function say(text=''){autoStatus.textContent=text;autoStatus.hidden=text==='';}
   function schedule(seconds=interval){clearTimeout(timer);if(!canRefresh())return;timer=setTimeout(tick,Math.max(1,seconds)*1000)}
   // The chat no longer asks the account on a timer: the pulse says when there is
   // something new. This stays as a slow safety net in case a change is missed.
@@ -56,9 +59,9 @@ export async function renderLiveInbox(container){
     if(!active()||connection!==select.value)return;
     if(beat.retryAfter)pause=Math.max(pause,Date.now()/1000+Number(beat.retryAfter));
     window.dispatchEvent(new CustomEvent('agora:unread',{detail:Number(beat.unread)||0}));
-    autoStatus.textContent=beat.reason==='paused'?'Actualización automática · en espera para respetar la cuota'
-     :beat.reason==='failed'?'Actualización automática · reintentando'
-     :selected?'Chat activo · en vivo':'Actualización automática · en vivo';
+    say(beat.reason==='paused'?'En espera unos segundos para respetar la cuota de la cuenta'
+     :beat.reason==='failed'?'Reintentando la conexión con la cuenta'
+     :'');
     if(beat.token&&beat.token!==pulseToken){
      const first=pulseToken===null;
      pulseToken=beat.token;
@@ -75,7 +78,7 @@ export async function renderLiveInbox(container){
    if(syncBusy||messageBusy||drafts.get(select.value+':'+selected.id)?.sending){scheduleChat(3);return}
    await page(false,true);
   }
-  function wake(){clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);clearTimeout(pulseTimer);if(canRefresh()){autoStatus.textContent=selected?'Chat activo · en vivo':'Actualización automática · en vivo';schedule(Math.max(1,pause-Date.now()/1000));scheduleChat();schedulePulse(1)}else autoStatus.textContent=navigator.onLine?'Actualización pausada mientras la pantalla está oculta':'Sin conexión · Se reanudará automáticamente'}
+  function wake(){clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);clearTimeout(pulseTimer);if(canRefresh()){say();schedule(Math.max(1,pause-Date.now()/1000));scheduleChat();schedulePulse(1)}else say(navigator.onLine?'En pausa mientras la pantalla está oculta':'Sin conexión · se reanudará solo')}
   container.agoraLiveDispose=()=>{disposed=true;document.body.classList.remove('agora-focus');clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);clearTimeout(pulseTimer);document.removeEventListener('visibilitychange',wake);window.removeEventListener('online',wake);window.removeEventListener('offline',wake)};
   document.addEventListener('visibilitychange',wake);window.addEventListener('online',wake);window.addEventListener('offline',wake);
   async function tick(){if(!canRefresh())return;if(syncBusy||messageBusy||[...drafts.values()].some(d=>d.sending)){schedule(5);return}if(pause>Date.now()/1000){schedule(pause-Date.now()/1000);return}await sync(true)}
@@ -158,9 +161,9 @@ export async function renderLiveInbox(container){
     for(const m of r.items)messages.set(m.id,m);
     if(!refresh||!hadMessages)cursor=r.hasMore&&r.lastMessageId&&r.lastMessageId!==previous?r.lastMessageId:null;
     chatNeedsRefresh=false;renderMessages();more.hidden=!cursor;$('#live-chat-status').textContent=r.hasMore&&!cursor?'No se recibió una referencia válida para continuar el historial.':'';
-    if(refresh)autoStatus.textContent='Chat activo · actualizado automáticamente';
+    if(refresh)say();
     log.scrollTop=older?top+log.scrollHeight-height:refresh&&height-top-log.clientHeight>60?top:log.scrollHeight;
-   }catch(e){if(e.retryAfter)pause=Math.max(pause,Date.now()/1000+e.retryAfter);if(e.status===401)container.agoraLiveDispose();if(active()&&current===chatGeneration){if(!refresh||!messages.size){$('#live-chat-status').textContent=e.message;retry.hidden=false;retry.onclick=()=>page(older)}else autoStatus.textContent='Chat activo · reintentando actualización'}}
+   }catch(e){if(e.retryAfter)pause=Math.max(pause,Date.now()/1000+e.retryAfter);if(e.status===401)container.agoraLiveDispose();if(active()&&current===chatGeneration){if(!refresh||!messages.size){$('#live-chat-status').textContent=e.message;retry.hidden=false;retry.onclick=()=>page(older)}else say('Reintentando la actualización del chat')}}
    finally{messageBusy--;if(active()&&current===chatGeneration){more.disabled=false;if(refresh)scheduleChat(effectiveChatDelay())}}
   }
   // The pulse says when there is something new, so this is only the safety net.
@@ -471,7 +474,7 @@ export async function renderLiveInbox(container){
   function open(c){
    selected=c;chatNeedsRefresh=false;chatGeneration++;messages=new Map();cursor=null;chatChannel=sendChannels[c.lastMessageType]||null;chatChannels=null;list();layout.classList.add('chat-open');layout.classList.remove('contact-open');
    $('#live-messages').innerHTML=`<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">←</button><span class="avatar">${esc(initials(c))}</span><div><h2>${esc(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div><button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">⤢</button><button id="live-contact-toggle" aria-label="Ver ficha del contacto">ⓘ</button></header><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
-   $('#live-back').onclick=()=>{clearTimeout(pollTimer);document.body.classList.remove('agora-focus');layout.classList.remove('chat-open','contact-open');autoStatus.textContent='Actualización automática · en vivo';$('#live-search').focus()};
+   $('#live-back').onclick=()=>{clearTimeout(pollTimer);document.body.classList.remove('agora-focus');layout.classList.remove('chat-open','contact-open');say();$('#live-search').focus()};
    $('#live-contact-toggle').onclick=()=>layout.classList.toggle('contact-open');
    if(Number(c.unreadCount)>0&&me?.csrf){
     request(`workspace/read?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`,'POST',me.csrf)
@@ -485,7 +488,7 @@ export async function renderLiveInbox(container){
    focus.onclick=()=>{document.body.classList.toggle('agora-focus');try{localStorage.setItem('agora-focus',document.body.classList.contains('agora-focus')?'1':'0')}catch{}paintFocus()};
    paintFocus();
    bindComposer(c);const profileVersion=chatGeneration;page().finally(()=>{if(active()&&profileVersion===chatGeneration)loadContact(c,profileVersion)});
-   autoStatus.textContent='Chat activo · en vivo';scheduleChat();schedulePulse(2);
+   say();scheduleChat();schedulePulse(2);
   }
   async function load(preserve=false){
    const version=++generation,connection=select.value;
@@ -541,10 +544,10 @@ export async function renderLiveInbox(container){
    const connection=select.value,requested=limit.value;limit.disabled=true;
    if(!automatic)feedback.textContent='Actualizando conversaciones…';
    let changed=false;
-   try{await request(`workspace/sync?connectionId=${encodeURIComponent(connection)}&limit=${requested}`,'POST',me.csrf);if(active()&&connection===select.value)changed=await load(true);autoStatus.textContent='Actualización automática activa';}
+   try{await request(`workspace/sync?connectionId=${encodeURIComponent(connection)}&limit=${requested}`,'POST',me.csrf);if(active()&&connection===select.value)changed=await load(true);say();}
    catch(e){
-    if(e.status===401){container.agoraLiveDispose();autoStatus.textContent='Inicia sesión para reanudar';}
-    else {pause=Math.max(pause,Date.now()/1000+(e.retryAfter||interval));if(active()&&connection===select.value)changed=await load(true);if(active())autoStatus.textContent=e.retryAfter?'Actualización automática · En espera para respetar el intervalo':e.message;}
+    if(e.status===401){container.agoraLiveDispose();say('Inicia sesión para reanudar');}
+    else {pause=Math.max(pause,Date.now()/1000+(e.retryAfter||interval));if(active()&&connection===select.value)changed=await load(true);if(active())say(e.retryAfter?'En espera unos segundos para respetar la cuota de la cuenta':e.message);}
     if(!automatic&&active())feedback.textContent=e.message;
    }finally{
     syncBusy=false;limit.disabled=false;

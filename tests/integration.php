@@ -42,7 +42,7 @@ try {
  check($code===200&&$recovered['ready']===true,'a pending database update is applied on its own, with no button to press');
  check(in_array('directory_cache',array_column(query('SHOW TABLES')->fetchAll(PDO::FETCH_NUM),0),true),'the missing table is back after that single request');
  [$code,$diagnostics]=request('admin/diagnostics');
- check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.19.0','administrator sees installation readiness and version');
+ check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.19.1','administrator sees installation readiness and version');
  check(!str_contains(json_encode($diagnostics),'APP_KEY_FILE')&&!str_contains(json_encode($diagnostics),'integration.key'),'diagnostics expose no configuration values or key paths');
  check(request('admin/installation/encryption','POST')[0]===403,'preparation requires CSRF');
  [$code,$profile]=request('me');check($code===200&&!array_key_exists('ghl_user_id',$profile['user'])&&$profile['user']['capabilities']['configureConnections'],'public profile exposes capabilities without provider-specific fields');
@@ -119,6 +119,26 @@ try {
  check($exit===0,'worker executes');
  check((int)query('SELECT COUNT(*) FROM resources WHERE tenant_id=? AND kind=?',[$tenants[0],'message'])->fetchColumn()===1,'event projected into message read model');
  check((int)query('SELECT COUNT(*) FROM notifications WHERE tenant_id=?',[$tenants[0]])->fetchColumn()===1,'notification persisted for later FCM delivery');
+ // ---- a phone registering itself for notices --------------------------------
+ // A browser hands out an address with slashes, not an identifier: it has to be
+ // accepted as it comes, and anything else has to be refused.
+ [$code,$fresh]=request('login','POST',['email'=>$email,'password'=>$password]);
+ $headers=['X-CSRF-Token: '.($fresh['csrf'] ?? '')];
+ $endpoint='https://fcm.googleapis.com/fcm/send/dGVzdDpBUEE5MWJF-x_0123456789abcdef';
+ $subscription=['token'=>$endpoint,'platform'=>'web','label'=>'Android (instalada)','keys'=>['p256dh'=>str_repeat('B',87),'auth'=>'bXktYXV0aC1zZWNyZXQ']];
+ [$code,$saved]=request('devices','POST',$subscription,$headers);
+ check($code===200&&($saved['registered']??false)===true,'a browser subscription address is accepted as the browser gives it');
+ [$code,$again]=request('devices','POST',$subscription,$headers);
+ check($code===200&&(int)query('SELECT COUNT(*) FROM push_devices WHERE token=?',[$endpoint])->fetchColumn()===1,'registering the same device twice keeps one entry');
+ [$code,$listed]=request('devices','GET',null,$headers);
+ check($code===200&&count(array_filter($listed['items']??[],fn($d)=>($d['label']??'')==='Android (instalada)'))===1,'and it appears in the device list the owner sees');
+ check(request('devices','POST',['token'=>'http://inseguro.example/x','platform'=>'web','keys'=>['p256dh'=>str_repeat('B',87),'auth'=>'x']],$headers)[0]===422,'an address that is not https is refused');
+ check(request('devices','POST',['token'=>'corto','platform'=>'android'],$headers)[0]===422,'and so is an identifier that is not one');
+ [$code,$removed]=request('devices','DELETE',['token'=>$endpoint],$headers);
+ check($code===200&&(int)query('SELECT COUNT(*) FROM push_devices WHERE token=?',[$endpoint])->fetchColumn()===0,'signing out of a device stops it being notified');
+ [$code,$pushKey]=request('push-key','GET',null,$headers);
+ check($code===200&&isset($pushKey['ready']),'the subscription key route answers whether notices are ready, never an unexplained failure');
+
  echo "PASS $checks integration checks\n";
 } finally {
  foreach($tenants as $t){foreach(['notifications','resources','webhook_events','ghl_connections','users','tenants'] as $table)query('DELETE FROM '.$table.' WHERE '.($table==='tenants'?'id':'tenant_id').'=?',[$t]);}

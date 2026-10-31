@@ -45,14 +45,14 @@ export async function state(){
 export async function enable(csrf){
   if(!supported())return 'unsupported';
   if(isApple()&&!installed())return 'needs-install';
-  const {key,ready}=await api('push-key',undefined,'','GET');
-  if(!ready||!key)return 'unconfigured';
+  const answer=await api('push-key',undefined,'','GET');
+  if(!answer.ready||!answer.key)return {state:'unconfigured',reason:answer.error||null};
   const permission=await Notification.requestPermission();
   if(permission!=='granted')return 'blocked';
   const registration=await navigator.serviceWorker.ready;
   // userVisibleOnly is required, and on iOS every notice must be shown anyway.
   const subscription=await registration.pushManager.getSubscription()
-    ||await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decode(key)});
+    ||await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decode(answer.key)});
   const json=subscription.toJSON();
   await api('devices',{token:subscription.endpoint,platform:'web',label:label(),
     keys:{p256dh:json.keys?.p256dh||encode(subscription.getKey('p256dh')),auth:json.keys?.auth||encode(subscription.getKey('auth'))}},csrf);

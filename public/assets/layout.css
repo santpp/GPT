@@ -301,3 +301,20 @@ body.agora-focus .live-composer{padding-bottom:calc(10px + env(safe-area-inset-b
 .device-list .card{padding:12px}
 .device-list h3{margin:0 0 4px;font-size:12px}
 .device-list small{color:var(--muted);line-height:1.6}
+
+/* A quieter workspace: what is working says nothing, and the eye goes to the list. */
+.live-auto-status{color:var(--green)}
+.live-toolbar{align-items:center;padding:14px 20px 10px}
+.live-toolbar label{flex-direction:row;align-items:center;gap:8px;font-size:10px;letter-spacing:.3px;color:var(--muted)}
+.live-toolbar select{font-size:12px;padding:7px 9px;width:auto;min-width:68px}
+.live-feedback{padding:0 20px 12px}
+.live-search-hint{display:none}
+.live-contact-panel:empty{background:#fdfefb}
+.other-view[data-view="inbox"] .live-sidebar .search{margin:14px 16px 2px}
+.live-channel-filters{padding-bottom:4px}
+/* The notifications button: present, not shouting. */
+.push-toggle{color:var(--ink);border-color:var(--line);background:var(--paper);font-size:10px}
+.push-toggle .push-mark{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.push-toggle[data-state="on"] .push-mark{background:#4b9b6e}
+.push-toggle[data-state="blocked"] .push-mark,.push-toggle[data-state="needs-install"] .push-mark{background:var(--muted)}
+.push-toggle:hover{border-color:#d9d8de}
