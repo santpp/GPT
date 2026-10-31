@@ -84,6 +84,7 @@ with sync_playwright() as p:
     page.wait_for_timeout(600)
     assert 'Cuenta B' in page.locator('#account-name').inner_text()
     print('PASS the header switch changes the account for the whole workspace')
+    page.locator('#profile:visible, #profile-top:visible').first.click();page.wait_for_selector('#signout')
     page.locator('#signout').click()
     page.wait_for_selector('#signin:not([hidden])')
     print('PASS signing out returns to the sign-in screen')

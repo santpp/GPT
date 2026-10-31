@@ -50,9 +50,28 @@ try {
     session_start();
     require_once $appRoot.'/src/ExternalAuth.php';
     require_once $appRoot.'/src/Actor.php';
+    require_once $appRoot.'/src/DeviceSession.php';
+    require_once $appRoot.'/src/Passkeys.php';
+    // La sesión del servidor caduca pronto; la del dispositivo dura 60 días y la
+    // rehace aquí, antes de comprobar nada más. Una sesión cerrada desde otro
+    // dispositivo se corta en la siguiente petición.
+    $signedIn=(isset($_SESSION['uid'])||isset($_SESSION['external_identity_id']))&&($_SESSION['expires']??0)>=time();
+    if($signedIn&&!DeviceSession::refresh($_SESSION)){$_SESSION=[];$signedIn=false;DeviceSession::forget();}
+    if(!$signedIn&&($restored=DeviceSession::resume($_COOKIE[DeviceSession::COOKIE]??null))!==null){session_regenerate_id(true);$_SESSION=$restored;DeviceSession::refresh($_SESSION);}
+    $agent=substr((string)($_SERVER['HTTP_USER_AGENT']??''),0,400);
+    $passkeyTrouble=function(PasskeyProblem $e):never {
+        respond(match($e->reason){
+            'unknown_credential'=>['error'=>'Esta llave de acceso ya no está registrada en Ágora. Entra con tu correo y vuelve a activarla.','code'=>'passkey_unknown'],
+            'inactive'=>['error'=>'Tu acceso a Ágora ya no está activo.','code'=>'passkey_inactive'],
+            'not_yours'=>['error'=>'Esa llave de acceso es de otra persona.','code'=>'passkey_not_yours'],
+            'challenge_expired'=>['error'=>'Ha pasado demasiado tiempo. Vuelve a intentarlo.','code'=>'passkey_expired'],
+            'already_registered'=>['error'=>'Este dispositivo ya tiene una llave de acceso para ti.','code'=>'passkey_exists'],
+            default=>['error'=>'No se pudo comprobar la llave de acceso. Vuelve a intentarlo.','code'=>'passkey_'.$e->reason],
+        },in_array($e->reason,['unknown_credential','inactive','not_yours'],true)?401:400);
+    };
     if ($method !== 'GET') {
         if (($_SERVER['HTTP_ORIGIN'] ?? '') !== getenv('APP_ORIGIN')) respond(['error'=>'El dominio de acceso no coincide con la configuración de la aplicación.'],403);
-        if (!in_array($path,['/api/login','/api/team-login/request','/api/team-login/verify'],true) && !hash_equals($_SESSION['csrf'] ?? '', $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '!')) respond(['error'=>'La sesión de seguridad ha cambiado. Actualiza la página y vuelve a intentarlo.'],403);
+        if (!in_array($path,['/api/login','/api/team-login/request','/api/team-login/verify','/api/passkey-login/options','/api/passkey-login'],true) && !hash_equals($_SESSION['csrf'] ?? '', $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '!')) respond(['error'=>'La sesión de seguridad ha cambiado. Actualiza la página y vuelve a intentarlo.'],403);
     }
     if ($path === '/api/team-login/request' && $method === 'POST') {
         $b=body();
@@ -69,7 +88,8 @@ try {
         catch(OverflowException $e){respond(['error'=>'Espera unos minutos antes de volver a intentarlo.'],429);}
         catch(InvalidArgumentException $e){respond(['error'=>'El código no es válido o ha caducado.'],401);}
         session_regenerate_id(true);
-        $_SESSION=['external_identity_id'=>$identity,'csrf'=>bin2hex(random_bytes(32)),'expires'=>time()+28800];
+        $_SESSION=['external_identity_id'=>$identity,'csrf'=>bin2hex(random_bytes(32)),'expires'=>time()+28800,'seen'=>time()];
+        $_SESSION['device_id']=DeviceSession::start($_SESSION,$_SESSION['csrf'],$agent);
         respond(['csrf'=>$_SESSION['csrf']]);
     }
     if ($path === '/api/login' && $method === 'POST') {
@@ -82,12 +102,72 @@ try {
         $dummy = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi';
         if (!password_verify((string)($b['password'] ?? ''), $u['password_hash'] ?? $dummy) || !$u) respond(['error'=>'Credenciales incorrectas'],401);
         session_regenerate_id(true);
-        $_SESSION = ['uid'=>$u['id'],'csrf'=>bin2hex(random_bytes(32)),'expires'=>time()+28800];
+        $_SESSION = ['uid'=>$u['id'],'csrf'=>bin2hex(random_bytes(32)),'expires'=>time()+28800,'seen'=>time()];
+        $_SESSION['device_id']=DeviceSession::start($_SESSION,$_SESSION['csrf'],$agent);
+        respond(['csrf'=>$_SESSION['csrf']]);
+    }
+    // Entrar con huella o cara. El teléfono ofrece las llaves que tiene para
+    // este dominio; no hace falta escribir el correo.
+    if ($path === '/api/passkey-login/options' && $method === 'POST') {
+        $key='passkey|'.hash('sha256',$_SERVER['REMOTE_ADDR'] ?? '');
+        query('INSERT INTO login_attempts(key_hash,attempts,window_start) VALUES(?,1,?) ON DUPLICATE KEY UPDATE attempts=IF(window_start < UNIX_TIMESTAMP()-900,1,attempts+1), window_start=IF(window_start < UNIX_TIMESTAMP()-900,UNIX_TIMESTAMP(),window_start)',[hash('sha256',$key),time()]);
+        if ((int)query('SELECT attempts FROM login_attempts WHERE key_hash=?',[hash('sha256',$key)])->fetchColumn() > 120) respond(['error'=>'Intenta más tarde'],429);
+        respond(['publicKey'=>Passkeys::assertionOptions($_SESSION,'login')]);
+    }
+    if ($path === '/api/passkey-login' && $method === 'POST') {
+        $b=body();
+        try {$who=Passkeys::verify($_SESSION,'login',is_array($b['credential']??null)?$b['credential']:[]);}
+        catch(PasskeyProblem $e) {$passkeyTrouble($e);}
+        session_regenerate_id(true);
+        $_SESSION=$who+['csrf'=>bin2hex(random_bytes(32)),'expires'=>time()+28800,'seen'=>time()];
+        $_SESSION['device_id']=DeviceSession::start($_SESSION,$_SESSION['csrf'],$agent);
         respond(['csrf'=>$_SESSION['csrf']]);
     }
     if ((!isset($_SESSION['uid'])&&!isset($_SESSION['external_identity_id'])) || ($_SESSION['expires'] ?? 0) < time()) respond(['error'=>'Inicia sesión para continuar.'],401);
     $u = Actor::fromSession($_SESSION);
     if (!$u) respond(['error'=>'Inicia sesión para continuar.'],401);
+    $admin=$u['role']==='administrator';
+    // Bloqueo por inactividad: mientras dure, sólo se puede desbloquear o salir.
+    if (DeviceSession::locked($_SESSION) && !in_array($path,['/api/me','/api/logout','/api/passkey-unlock/options','/api/passkey-unlock'],true))
+        respond(['error'=>'Ágora está bloqueada. Desbloquéala con tu huella o tu cara.','code'=>'locked'],423);
+    if ($path === '/api/passkey-unlock/options' && $method === 'POST') respond(['publicKey'=>Passkeys::assertionOptions($_SESSION,'unlock',$u)]);
+    if ($path === '/api/passkey-unlock' && $method === 'POST') {
+        $b=body();
+        try {Passkeys::verify($_SESSION,'unlock',is_array($b['credential']??null)?$b['credential']:[],$u);}
+        catch(PasskeyProblem $e) {$passkeyTrouble($e);}
+        unset($_SESSION['locked']);$_SESSION['seen']=time();
+        respond(['unlocked'=>true]);
+    }
+    if ($path === '/api/security' && $method === 'GET') {
+        respond(['passkeys'=>Passkeys::list($u,false),'sessions'=>DeviceSession::list($u,false,$_SESSION['device_id']??null),
+            'team'=>$admin?['passkeys'=>Passkeys::list($u,true),'sessions'=>DeviceSession::list($u,true,$_SESSION['device_id']??null)]:null,
+            'lockMinutes'=>$_SESSION['lock_minutes']??null,'lockChoices'=>DeviceSession::LOCK_CHOICES,'deviceRemembered'=>!empty($_SESSION['device_id'])]);
+    }
+    if ($path === '/api/passkeys/options' && $method === 'POST') respond(['publicKey'=>Passkeys::registrationOptions($u,$_SESSION)]);
+    if ($path === '/api/passkeys' && $method === 'POST') {
+        $b=body();
+        try {$id=Passkeys::register($u,$_SESSION,is_array($b['credential']??null)?$b['credential']:[],DeviceSession::label($agent));}
+        catch(PasskeyProblem $e) {$passkeyTrouble($e);}
+        respond(['registered'=>true,'id'=>$id],201);
+    }
+    if (preg_match('~^/api/passkeys/(\d+)$~',$path,$m) && $method === 'DELETE') {
+        if(!Passkeys::remove($u,$admin,(int)$m[1]))respond(['error'=>'Esa llave ya no existe.'],404);
+        // Sin llaves, el bloqueo no se podría quitar: se apaga con ellas.
+        if(Passkeys::count($u)===0)query('UPDATE device_sessions SET lock_minutes=NULL WHERE tenant_id=? AND identity_type=? AND actor_id=?',[$u['tenant_id'],$u['identity_type'],$u['id']]);
+        respond(['removed'=>true]);
+    }
+    if ($path === '/api/security/lock' && $method === 'POST') {
+        $b=body();$minutes=$b['minutes']??null;
+        if($minutes!==null&&(!is_int($minutes)||!in_array($minutes,DeviceSession::LOCK_CHOICES,true)))respond(['error'=>'Elige uno de los tiempos de la lista.'],422);
+        if($minutes!==null&&Passkeys::count($u)===0)respond(['error'=>'Activa primero la entrada con huella o cara en este dispositivo.','code'=>'passkey_required'],409);
+        if(empty($_SESSION['device_id']))respond(['error'=>'Vuelve a entrar en Ágora para poder usar el bloqueo en este dispositivo.','code'=>'device_unknown'],409);
+        DeviceSession::setLock($_SESSION,$minutes);$_SESSION['lock_minutes']=$minutes;
+        respond(['lockMinutes'=>$minutes]);
+    }
+    if (preg_match('~^/api/sessions/(\d+)$~',$path,$m) && $method === 'DELETE') {
+        if(!DeviceSession::revoke($u,$admin,(int)$m[1]))respond(['error'=>'Esa sesión ya estaba cerrada.'],404);
+        respond(['revoked'=>true,'current'=>(int)$m[1]===(int)($_SESSION['device_id']??0)]);
+    }
     if ($path==='/api/admin/installation/migrations' && $method==='POST') {
         if($u['role']!=='administrator')respond(['error'=>'Acceso restringido'],403);
         require_once $appRoot.'/src/Installation.php';
@@ -165,7 +245,7 @@ try {
         try {respond(['results'=>(new PushDelivery())->test((int)$u['tenant_id'],$type,(int)$u['id'])]);}
         catch(Throwable $e){respond(['error'=>'No se pudo enviar el aviso de prueba.','code'=>'push_test_failed'],200);}
     }
-    if ($path === '/api/me' && $method === 'GET') respond(['user'=>array_intersect_key($u,array_flip(['id','email','role','identity_type','capabilities'])),'csrf'=>$_SESSION['csrf']]);
+    if ($path === '/api/me' && $method === 'GET') respond(['user'=>array_intersect_key($u,array_flip(['id','email','role','identity_type','capabilities'])),'csrf'=>$_SESSION['csrf'],'locked'=>!empty($_SESSION['locked']),'passkeys'=>Passkeys::count($u),'lockMinutes'=>$_SESSION['lock_minutes']??null]);
     // A phone registers the token its own system gives it, so Ágora can notify
     // it. Nothing else about the device is stored, and the token belongs to the
     // signed-in person: signing out on that phone removes it.
@@ -196,7 +276,7 @@ try {
             [$u['tenant_id'],$type,$u['id'],$token,$platform,$p256dh,$auth,$label]);
         respond(['registered'=>true,'notifications'=>PushDelivery::configured()]);
     }
-    if ($path === '/api/logout' && $method === 'POST') { $_SESSION=[]; session_destroy(); respond(['ok'=>true]); }
+    if ($path === '/api/logout' && $method === 'POST') { DeviceSession::end($_SESSION); $_SESSION=[]; session_destroy(); respond(['ok'=>true]); }
     if ($path === '/api/conversations' && $method === 'GET') {
         if(($u['identity_type']??'native')!=='native')respond(['error'=>'Utiliza la bandeja conectada para consultar tus conversaciones.'],403);
         $sql = 'SELECT ghl_id,payload,updated_at FROM resources WHERE tenant_id=? AND kind=?';

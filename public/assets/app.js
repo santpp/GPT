@@ -6,6 +6,7 @@ import {renderDashboard} from './dashboard.js';
 import {connectDevice,releaseDevice,isNative} from './native.js';
 import {enable as enablePush,disable as disablePush,state as pushState,isApple,installed} from './push.js';
 import {renderBoard} from './board.js';
+import {supported as passkeysSupported,platformReady,remembered as passkeyRemembered,remember as rememberPasskey,create as createPasskey,sign as signPasskey,trouble as passkeyTrouble} from './passkeys.js';
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -103,9 +104,13 @@ function renderAccounts(){
 async function startSession(){
   const me=await api('me');
   workspace.setProfile(me);
-  $('#signin').hidden=true;$('#app').hidden=false;
+  if(me.passkeys>0)rememberPasskey(true);
+  // Rehecha desde el dispositivo con el bloqueo puesto: primero la huella.
+  if(me.locked){showLock();return}
+  $('#signin').hidden=true;$('#lock').hidden=true;$('#app').hidden=false;
   $('#user-email').firstChild.textContent=me.user.email||'Mi cuenta';
   $('#user-initials').textContent=(me.user.email||'··').slice(0,2).toUpperCase();
+  $('#user-initials-top').textContent=(me.user.email||'··').slice(0,2).toUpperCase();
   document.querySelectorAll('[data-admin-only]').forEach(n=>n.hidden=me.user.role!=='administrator');
   try{const {items}=await api('workspace/connections');workspace.setConnections(items)}
   catch{workspace.setConnections([])}
@@ -120,7 +125,8 @@ async function startSession(){
 
 function showSignin(){
   workspace.reset();
-  $('#app').hidden=true;$('#signin').hidden=false;
+  $('#app').hidden=true;$('#lock').hidden=true;$('#signin').hidden=false;
+  $('#passkey-login').hidden=!(passkeysSupported()&&passkeyRemembered());
   view.agoraLiveDispose?.();
   view.innerHTML='';
 }
@@ -130,12 +136,123 @@ workspace.onChange(()=>{renderAccounts();if(VIEWS[currentView].account)show(curr
 document.querySelectorAll('button[data-view]').forEach(b=>b.onclick=()=>show(b.dataset.view));
 window.addEventListener('popstate',()=>{const name=requested();if(name)show(name,{push:false})});
 
-$('#signout').onclick=async()=>{
+async function signOut(){
+  $('#action-dialog').open&&$('#action-dialog').close();
   await releaseDevice(workspace.me?.csrf||'');
   try{await api('logout','POST',null,workspace.me?.csrf||'')}catch{}
   window.dispatchEvent(new Event('agora:logout'));
   showSignin();
+}
+$('#lock-signout').onclick=signOut;
+
+// ---- Bloqueo: lo decide el servidor; la página sólo pide la huella ----------------
+function showLock(){
+  view.agoraLiveDispose?.();view.innerHTML='';
+  if($('#action-dialog').open)$('#action-dialog').close();
+  $('#app').hidden=true;$('#signin').hidden=true;$('#lock').hidden=false;
+  $('#unlock-result').textContent='';
+}
+$('#unlock').onclick=async e=>{
+  const button=e.currentTarget;button.disabled=true;$('#unlock-result').textContent='';
+  try{
+    const csrf=workspace.me?.csrf||'';
+    const {publicKey}=await api('passkey-unlock/options','POST',{},csrf);
+    await api('passkey-unlock','POST',{credential:await signPasskey(publicKey)},csrf);
+    await startSession();
+  }catch(error){$('#unlock-result').textContent=error.status?error.message:passkeyTrouble(error)}
+  finally{button.disabled=false}
 };
+// Cualquier pantalla que reciba «bloqueada» lleva a la pantalla de bloqueo.
+const plainFetch=window.fetch.bind(window);
+window.fetch=async(...args)=>{
+  const response=await plainFetch(...args);
+  try{if(response.status===423&&String(args[0]?.url??args[0]).includes('/api/'))window.dispatchEvent(new Event('agora:locked'))}catch{}
+  return response;
+};
+window.addEventListener('agora:locked',()=>{if(!$('#app').hidden)showLock()});
+
+// ---- Entrar con huella o cara ------------------------------------------------------
+$('#passkey-login').onclick=async e=>{
+  const button=e.currentTarget;button.disabled=true;$('#passkey-login-result').textContent='';
+  try{
+    const {publicKey}=await api('passkey-login/options','POST',{});
+    await api('passkey-login','POST',{credential:await signPasskey(publicKey)});
+    rememberPasskey(true);
+    await startSession();
+  }catch(error){
+    if(error.code==='passkey_unknown')rememberPasskey(false);
+    $('#passkey-login-result').textContent=error.status?error.message:passkeyTrouble(error);
+  }finally{button.disabled=false}
+};
+
+/** Tras entrar con contraseña o código, una vez: «¿la próxima vez con la huella?». */
+async function offerPasskey(){
+  const me=workspace.me;
+  if(!me||me.passkeys>0||!(await platformReady()))return;
+  try{if(localStorage.getItem('agora-passkey-later')==='1')return}catch{}
+  const dialog=$('#action-dialog');if(dialog.open)return;
+  $('#dialog-content').innerHTML=`<h2>Entra con tu huella o tu cara</h2><p class="dialog-copy">La próxima vez no tendrás que escribir nada: Ágora te pedirá la huella, Face ID o el PIN de este dispositivo. Tu huella o tu cara nunca salen del teléfono.</p><div class="dialog-actions"><button id="offer-yes" class="primary">Activar</button><button id="offer-later" class="link-button">Ahora no</button></div><p id="offer-result" class="dialog-copy" role="status"></p>`;
+  dialog.showModal();
+  $('#offer-later').onclick=()=>{try{localStorage.setItem('agora-passkey-later','1')}catch{};dialog.close()};
+  $('#offer-yes').onclick=async e=>{
+    e.currentTarget.disabled=true;
+    try{await enrollPasskey();dialog.close();toast('Listo. La próxima vez entra con tu huella o tu cara.')}
+    catch(error){$('#offer-result').textContent=error.status?error.message:passkeyTrouble(error);e.target.disabled=false}
+  };
+}
+async function enrollPasskey(){
+  const csrf=workspace.me?.csrf||'';
+  const {publicKey}=await api('passkeys/options','POST',{},csrf);
+  await api('passkeys','POST',{credential:await createPasskey(publicKey)},csrf);
+  rememberPasskey(true);
+  if(workspace.me)workspace.me.passkeys=(workspace.me.passkeys||0)+1;
+}
+
+// ---- Seguridad y sesión -------------------------------------------------------------
+const when=value=>{if(!value)return 'todavía no';const d=new Date(value);return Number.isNaN(d.getTime())?'':new Intl.DateTimeFormat('es',{dateStyle:'medium',timeStyle:'short'}).format(d)};
+async function openSecurity(){
+  const dialog=$('#action-dialog');
+  $('#dialog-content').innerHTML='<h2>Seguridad y sesión</h2><p class="dialog-copy">Cargando…</p>';
+  if(!dialog.open)dialog.showModal();
+  let data;
+  try{data=await api('security')}catch(error){$('#dialog-content').innerHTML=`<h2>Seguridad y sesión</h2><p class="dialog-copy">${esc(error.message)}</p><button id="signout" class="primary">Cerrar sesión</button>`;$('#signout').onclick=signOut;return}
+  data={team:null,lockMinutes:null,deviceRemembered:false,...data};
+  for(const key of ['passkeys','sessions'])if(!Array.isArray(data[key]))data[key]=[];
+  if(!Array.isArray(data.lockChoices))data.lockChoices=[5,15,30,60];
+  const canPasskey=passkeysSupported();
+  const hasKey=data.passkeys.length>0;
+  const lockOptions=[['','Nunca'],...data.lockChoices.map(m=>[String(m),m<60?`Tras ${m} minutos sin usarla`:'Tras 1 hora sin usarla'])];
+  const item=(title,detail,action)=>`<li><span><b>${esc(title)}</b><small>${esc(detail)}</small></span>${action||''}</li>`;
+  const sessions=list=>list.map(s=>item(s.label+(s.current?' · este dispositivo':''),`${s.mine?'':s.email+' · '}Último uso: ${when(s.lastUsedAt)}`,s.current?'':`<button class="link-button" data-close-session="${s.id}">Cerrar</button>`)).join('');
+  const keys=list=>list.map(k=>item(k.label||'Llave de acceso',`${k.mine?'':k.email+' · '}Último uso: ${when(k.lastUsedAt)}`,`<button class="link-button" data-remove-key="${k.id}">Quitar</button>`)).join('');
+  const others=data.team?{sessions:data.team.sessions.filter(s=>!s.mine),keys:data.team.passkeys.filter(k=>!k.mine)}:null;
+  $('#dialog-content').innerHTML=`<h2>Seguridad y sesión</h2>
+   <section class="security-block"><h3>Este dispositivo</h3>
+    ${canPasskey?(hasKey?'<p class="dialog-copy">Puedes entrar con tu huella, Face ID o el PIN del dispositivo.</p>':'<p class="dialog-copy">Entra sin escribir nada, con tu huella, Face ID o el PIN de este dispositivo.</p><button id="add-passkey" class="primary">Activar huella o Face ID</button>'):'<p class="dialog-copy">Este navegador no admite entrar con huella o cara.</p>'}
+    <label class="security-lock">Pedir la huella o la cara al volver<select id="lock-minutes" ${hasKey&&data.deviceRemembered?'':'disabled'}>${lockOptions.map(([v,l])=>`<option value="${v}"${String(data.lockMinutes??'')===v?' selected':''}>${l}</option>`).join('')}</select></label>
+    ${hasKey?'':'<small class="security-hint">Disponible cuando actives la huella o Face ID.</small>'}
+    <p id="security-result" class="dialog-copy" role="status"></p>
+   </section>
+   ${hasKey?`<section class="security-block"><h3>Tus llaves de acceso</h3><ul class="security-list">${keys(data.passkeys)}</ul></section>`:''}
+   <section class="security-block"><h3>Sesiones abiertas</h3><p class="dialog-copy">Cada dispositivo sigue dentro 60 días desde su último uso. Cierra la de un teléfono que ya no tengas.</p><ul class="security-list">${sessions(data.sessions)}</ul></section>
+   ${others&&(others.sessions.length||others.keys.length)?`<section class="security-block"><h3>Equipo</h3>${others.sessions.length?`<ul class="security-list">${sessions(others.sessions)}</ul>`:''}${others.keys.length?`<h4>Llaves de acceso del equipo</h4><ul class="security-list">${keys(others.keys)}</ul>`:''}</section>`:''}
+   <button id="signout" class="primary signout-button">Cerrar sesión en este dispositivo</button>`;
+  const csrf=workspace.me?.csrf||'';
+  const result=$('#security-result');
+  $('#signout').onclick=signOut;
+  const add=$('#add-passkey');
+  if(add)add.onclick=async()=>{add.disabled=true;try{await enrollPasskey();await openSecurity();toast('Listo. La próxima vez entra con tu huella o tu cara.')}catch(error){result.textContent=error.status?error.message:passkeyTrouble(error);add.disabled=false}};
+  $('#lock-minutes').onchange=async e=>{
+    const value=e.target.value;e.target.disabled=true;
+    try{await api('security/lock','POST',{minutes:value===''?null:Number(value)},csrf);result.textContent=value?'Hecho. Al volver tras ese tiempo se pedirá tu huella o tu cara.':'Hecho. Ya no se pedirá al volver.'}
+    catch(error){result.textContent=error.message}
+    finally{e.target.disabled=false}
+  };
+  document.querySelectorAll('[data-close-session]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await api('sessions/'+b.dataset.closeSession,'DELETE',null,csrf);await openSecurity()}catch(error){result.textContent=error.message;b.disabled=false}});
+  document.querySelectorAll('[data-remove-key]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await api('passkeys/'+b.dataset.removeKey,'DELETE',null,csrf);const me=await api('me');workspace.setProfile(me);if(!me.passkeys)rememberPasskey(false);await openSecurity()}catch(error){result.textContent=error.message;b.disabled=false}});
+}
+$('#profile').onclick=openSecurity;
+$('#profile-top').onclick=openSecurity;
 window.addEventListener('agora:logout',()=>{if(!$('#app').hidden)showSignin()});
 
 const requestForm=$('#team-login-request'),verifyForm=$('#team-login-verify');
@@ -154,7 +271,7 @@ verifyForm.onsubmit=async e=>{
   try{
     const r=await fetch('/api/team-login/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
     const data=await r.json();
-    if(r.ok)await startSession();else $('#team-verify-result').textContent=data.error||'No se ha podido acceder.';
+    if(r.ok){await startSession();offerPasskey()}else $('#team-verify-result').textContent=data.error||'No se ha podido acceder.';
   }catch{$('#team-verify-result').textContent='No se ha podido conectar con el servidor.'}
   finally{button.disabled=false}
 };
@@ -163,7 +280,7 @@ $('#login-form').onsubmit=async e=>{
   try{
     const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
     const data=await r.json();
-    if(r.ok)await startSession();else $('#login-result').textContent=data.error||'No se ha podido acceder.';
+    if(r.ok){await startSession();offerPasskey()}else $('#login-result').textContent=data.error||'No se ha podido acceder.';
   }catch{$('#login-result').textContent='No se ha podido conectar con el servidor.'}
   finally{button.disabled=false}
 };

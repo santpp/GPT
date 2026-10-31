@@ -493,3 +493,25 @@ body.agora-focus .live-composer{padding-bottom:calc(10px + env(safe-area-inset-b
 .live-composer:has(.live-channel-single) #live-channel-name{visibility:hidden}
 /* En el teléfono el menú de abajo ya lleva a esas pantallas. */
 @media(max-width:600px){.dashboard-links{display:none}}
+/* 0.23 · huella o cara, bloqueo y seguridad */
+.passkey-button{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:48px;margin:4px 0 6px;border:1px solid var(--ink);border-radius:8px;background:var(--paper);color:var(--ink);font-size:14px;font-weight:600}
+.passkey-button svg{width:22px;height:22px}
+.passkey-button.primary-passkey{background:var(--green);border-color:var(--green);color:#fff}
+.lock-screen .signin-card{text-align:center}.lock-screen .brand-logo{margin:0 auto 18px}
+.link-button{background:none;border:0;color:var(--green);font-size:12px;padding:8px 4px;text-decoration:underline;text-underline-offset:3px}
+.profile-top{display:none;padding:0;min-height:0!important}
+.profile-top .avatar{width:34px;height:34px;font-size:11px}
+@media(max-width:850px){.profile-top{display:inline-grid}}
+.dialog-actions{display:flex;align-items:center;gap:14px;margin-top:6px}
+.security-block{border-top:1px solid var(--line);padding:14px 0 6px;margin-top:12px}
+.security-block h3{font-size:13px;margin-bottom:6px}.security-block h4{font-size:11px;margin:12px 0 4px;color:var(--muted)}
+.security-block .dialog-copy{margin:6px 0 10px}
+.security-lock{display:block;font-size:12px;margin:12px 0 4px}
+.security-lock select{display:block;width:100%;margin-top:7px;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);font-size:13px}
+.security-hint{color:var(--muted);font-size:11px}
+.security-list{list-style:none;margin:0;padding:0}
+.security-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.security-list li:last-child{border-bottom:0}
+.security-list b{display:block;font-size:12px;font-weight:600}.security-list small{color:var(--muted);font-size:11px;margin-top:3px}
+.signout-button{width:100%;margin-top:14px;min-height:44px}
+#action-dialog{max-height:90dvh;overflow:auto}

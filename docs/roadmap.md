@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.22.2.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.23.0.
 
 ## Completado y desplegable
 
@@ -20,6 +20,7 @@ Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.22.2.
 
 - Validar 0.5.0 con conversaciones reales y confirmar que desaparece el fallo 502.
 - Validar un envío real por cada canal habilitado y documentar sus restricciones.
+- Siguiente versión (0.24): plantillas de WhatsApp para escribir pasadas las 24 horas, con el número de WhatsApp de la subcuenta (`fromNumberId`) en la configuración de cada conexión, selector de plantilla y sus variables.
 - Añadir confirmación de lectura y estados de entrega donde la API lo permita.
 - Adjuntos con miniatura, visor, audio y vídeo en el chat; motivo de los envíos fallidos e iconos propios en la cabecera (0.22.0). Pendiente: notas internas.
 - Avisos con el texto real del último mensaje entrante, o «Envió una foto / nota de voz / vídeo / documento» (0.22.1).
@@ -43,14 +44,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Lista sin ventana: la bandeja continúa más allá de 20/50/100 con la posición que da la cuenta (0.18.0).
 - Actualización en vivo sin webhooks: un pulso contra Ágora y un pase compartido por cuenta (0.18.0).
 
-- **Sesión persistente (antes de v1.0).** Hoy la cookie de sesión es de navegador y PHP la caduca a los 24 minutos sin uso, de modo que la app instalada pide entrar a menudo. Plan: un token «recordar este dispositivo» propio (selector y verificador, guardado sólo como hash, cookie `HttpOnly`, `Secure`, `SameSite=Lax`, 60 días renovables con el uso y rotado en cada renovación). Se revoca al cerrar sesión, al cambiar la contraseña, al dar de baja al usuario en la cuenta sincronizada y desde una lista de «dispositivos con sesión abierta» del propietario. Funciona para el propietario y para los usuarios con código por correo.
-- **Acceso con huella o cara (passkeys), antes de v1.0, junto con la sesión persistente.** Llaves de acceso WebAuthn: el teléfono guarda una llave ligada al dominio de Ágora y la desbloquea con Face ID, Touch ID, huella o el PIN del dispositivo. Ágora sólo guarda la parte pública; ni la huella ni la cara salen nunca del teléfono, y no hay contraseña que robar ni que se pueda usar en una web falsa. Funciona en la app instalada desde el navegador (iPhone con iOS 16 o posterior, Android 9 o posterior con Chrome) y en el APK. Plan:
-  - Tras entrar, Ágora ofrece «Entrar con huella o Face ID en este dispositivo». Desde ese momento la pantalla de acceso tiene un botón que entra sin escribir nada.
-  - Para los usuarios con código por correo, la llave sustituye al código en los siguientes accesos.
-  - Bloqueo opcional al abrir la app tras un tiempo sin uso (por ejemplo 15 minutos): pide la huella o la cara aunque la sesión de 60 días siga abierta.
-  - Lista de llaves en el perfil, y para el propietario en Equipo, para quitar las de un teléfono perdido. Una baja en la cuenta sincronizada las anula.
-  - Recuperación: el propietario conserva la contraseña y los demás el código por correo.
-  - Recordar credenciales: Ágora no guardará contraseñas por su cuenta. Los campos de acceso se marcarán para que el gestor de contraseñas del teléfono (llavero de iCloud o Google) los guarde y rellene.
+- Sesión persistente de 60 días por dispositivo (0.23.0): cookie protegida, secreto rotado cada día y guardado sólo como huella, cierre desde cualquier dispositivo, baja sincronizada que la anula.
+- Entrar con huella, Face ID o PIN mediante llaves de acceso WebAuthn (0.23.0): ES256 y RS256, verificación del usuario obligatoria, sólo la parte pública en el servidor, comprobación de origen y dominio, contador contra copias. Oferta única tras entrar, botón en la pantalla de acceso, panel «Seguridad y sesión» con llaves y dispositivos (y los del equipo para el administrador), y bloqueo opcional al volver que aplica el servidor. Las contraseñas las guarda el gestor del teléfono, no Ágora.
+- Pendiente de validar en teléfonos reales: iPhone instalada y Android con Chrome. En el APK, la huella depende del visor; la sesión de 60 días funciona igual.
 - Monitorización, copias de seguridad y herramientas seguras para resolver envíos con resultado incierto.
 
 ## Android y notificaciones
@@ -73,6 +69,15 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 - 0.22.2: marca de Ágora en la cabecera, iconos dibujados en el menú, bandeja más compacta con hora corta, sin estados de entrega en lo recibido, sin canal repetido en el cuadro de respuesta, buscador de contactos completo, sin avisos técnicos y errores del navegador explicados en castellano.
 - Pendiente: revisar Conexiones, ficha del contacto y oportunidades en el teléfono con datos reales; modo oscuro al final.
+
+## Para la v1.0
+
+- Plantillas de WhatsApp (0.24).
+- Proteger mejor la dirección secreta de revisión: secreto en cabecera y contraseña antes de mostrarla.
+- Validación real por canal y de la huella en iPhone y Android.
+- Copias de seguridad de la base de datos y de `var/`.
+- Quitar las migraciones automáticas antes del despliegue de la v1.0.
+- Modo oscuro, al final.
 
 ## Evolución
 

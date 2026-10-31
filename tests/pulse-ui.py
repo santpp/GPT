@@ -106,6 +106,7 @@ with sync_playwright() as b_pw:
     assert devices and devices[0]['method']=='POST', devices
     assert devices[0]['body']=={'token':'simulated-device-token-0123456789abcdef','platform':'android'}, devices
     print('PASS inside the Android shell the phone registers itself for notifications')
+    page.locator('#profile:visible, #profile-top:visible').first.click();page.wait_for_selector('#signout')
     page.locator('#signout').click()
     page.wait_for_selector('#signin:not([hidden])')
     assert any(d['method']=='DELETE' for d in devices), devices
