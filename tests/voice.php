@@ -40,8 +40,8 @@ try {
  $voice=new VoiceNote($gateway,$put);
  $free();$result=$voice->send($connection,$conversation,str_repeat('v',20),'audio/ogg; codecs=opus',$ogg);
  $init=$calls[0][2];
- vox($calls[0][1]==='/conversations/messages/upload/initiate'&&$init['channel']==='WHATSAPP'&&$init['contentType']==='audio/ogg; codecs=opus'&&$init['filename']==='nota-de-voz.ogg'&&$init['conversationId']==='conv'&&$init['locationId']===$location&&$init['fileSize']===strlen($ogg),'se pide la subida a la cuenta, indicando que es para WhatsApp');
- vox(count($puts)===1&&$puts[0][1]==='audio/ogg; codecs=opus'&&$puts[0][2]===strlen($ogg),'los bytes del audio van al almacén firmado, tal cual');
+ vox($calls[0][1]==='/conversations/messages/upload/initiate'&&$init['channel']==='WHATSAPP'&&$init['contentType']==='audio/ogg'&&$init['filename']==='nota-de-voz.ogg'&&$init['conversationId']==='conv'&&$init['locationId']===$location&&$init['fileSize']===strlen($ogg),'se pide la subida a la cuenta, indicando que es para WhatsApp');
+ vox(count($puts)===1&&$puts[0][1]==='audio/ogg'&&$puts[0][2]===strlen($ogg),'los bytes del audio van al almacén firmado, tal cual');
  vox($calls[1][1]==='/conversations/messages/upload/complete'&&$calls[1][2]['uploadId']==='up-1'&&$calls[1][2]['filePath']==='location/x/nota-de-voz.ogg','se confirma la subida con lo que devolvió la cuenta');
  $sent=$calls[2][2];
  vox($calls[2][1]==='/conversations/messages'&&$sent['type']==='WhatsApp'&&$sent['contactId']==='contact'&&$sent['attachments']===[$uploadedUrl]&&!isset($sent['message']),'se envía por WhatsApp al contacto de la conversación, con el audio como adjunto y sin texto');

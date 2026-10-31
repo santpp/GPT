@@ -31,8 +31,15 @@ final class VoiceNote {
         if($connection['status']!=='connected')throw new SendProblem('connection_unverified',422,'Comprueba la conexión antes de enviar.');
 
         $url=$this->upload($connection,$conversationId,$mime,$bytes);
-        $result=(new MessageSender($this->gateway))->send($connection,$conversation,['requestId'=>$requestId,'channel'=>'WhatsApp'],
-            ['attachments'=>[$url],'fingerprint'=>hash('sha256',$conversationId.'|'.$bytes)]);
+        try {
+            $result=(new MessageSender($this->gateway))->send($connection,$conversation,['requestId'=>$requestId,'channel'=>'WhatsApp'],
+                ['attachments'=>[$url],'fingerprint'=>hash('sha256',$conversationId.'|'.$bytes)]);
+        } catch(SendProblem $e) {
+            // Para diagnosticar: cómo sirve el almacén el archivo que la cuenta no pudo entregar.
+            if($e->reason!=='send_rejected')throw $e;
+            $served=$this->put?'':self::servedType($url);
+            throw new SendProblem($e->reason,$e->httpStatus,$e->getMessage().($served!==''?' El archivo se sirve como «'.$served.'».':''),$e->retryAfter);
+        }
         return $result+['url'=>$url];
     }
 
@@ -55,8 +62,8 @@ final class VoiceNote {
     /** Subida en dos pasos: pedir la dirección, subir los bytes y confirmar para obtener la dirección pública. */
     private function upload(array $connection,string $conversationId,string $mime,string $bytes):string {
         $ext=self::TYPES[$mime];$name='nota-de-voz.'.$ext;$location=$connection['location_id'];
-        // WhatsApp lista el audio de las notas de voz como OGG con códec Opus: así se etiqueta la subida.
-        $label=$mime==='audio/ogg'?'audio/ogg; codecs=opus':$mime;
+        // La subida con `; codecs=opus` fue rechazada por la cuenta; con el tipo simple sube bien.
+        $label=$mime;
         try {
             $start=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->initiateUpload(['locationId'=>$location,'conversationId'=>$conversationId,'filename'=>$name,'contentType'=>$label,'fileSize'=>strlen($bytes),'channel'=>'WHATSAPP']),false);
             $signed=$start['uploadUrl']??null;$uploadId=$start['uploadId']??null;$path=$start['filePath']??null;
@@ -83,11 +90,19 @@ final class VoiceNote {
             &&(strcasecmp($parts['host'],'storage.googleapis.com')===0||str_ends_with(strtolower($parts['host']),'.storage.googleapis.com'));
     }
 
+    /** Tipo con el que se sirve la dirección pública del audio (sólo cabecera, sin descargarlo). */
+    private static function servedType(string $url):string {
+        $ch=curl_init($url);
+        curl_setopt_array($ch,[CURLOPT_NOBODY=>true,CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>4,CURLOPT_TIMEOUT=>6,CURLOPT_FOLLOWLOCATION=>false]);
+        curl_exec($ch);$type=(string)curl_getinfo($ch,CURLINFO_CONTENT_TYPE);$status=curl_getinfo($ch,CURLINFO_RESPONSE_CODE);curl_close($ch);
+        return preg_replace('/[^\w\/.;= +-]/','',$type!==''?$type:'sin tipo (HTTP '.$status.')');
+    }
+
     private function putBytes(string $url,string $mime,string $bytes):void {
         if($this->put){($this->put)($url,$mime,$bytes);return;}
         $ch=curl_init($url);
         curl_setopt_array($ch,[CURLOPT_CUSTOMREQUEST=>'PUT',CURLOPT_POSTFIELDS=>$bytes,CURLOPT_HTTPHEADER=>['Content-Type: '.$mime],CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>8,CURLOPT_TIMEOUT=>40]);
         curl_exec($ch);$status=curl_getinfo($ch,CURLINFO_RESPONSE_CODE);curl_close($ch);
-        if($status<200||$status>=300)throw new GhlApiException($status?:502);
+        if($status<200||$status>=300)throw new RuntimeException('Signed upload failed: '.$status);
     }
 }
