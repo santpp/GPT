@@ -115,4 +115,4 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Plantillas de WhatsApp, en pausa hasta tener el WABA ID.
 - **Hecho en 1.2.0:** asignar la conversación (responsable del contacto y de sus oportunidades abiertas), sólo para administradores de la subcuenta y el propietario; el responsable del contacto y de la oportunidad sólo lo cambian ellos.
 - **Descartado por el usuario:** gestionar usuarios desde Ágora (y con ello el permiso `users.write`), y etiquetar desde el chat.
-- Ideas sin decidir: respuestas rápidas, «+ Nuevo contacto».
+- **Descartado por el usuario:** respuestas rápidas y «+ Nuevo contacto».
