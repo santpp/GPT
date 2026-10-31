@@ -113,4 +113,8 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## Pendiente
 - Que pruebes en el teléfono: la comisión por cierre en la otra subcuenta, que el aviso abra la conversación y una novedad de prueba.
 - Plantillas de WhatsApp, en pausa hasta tener el WABA ID.
-- Ideas sin decidir: respuestas rápidas, asignar la conversación a un compañero, «+ Nuevo contacto», etiquetar desde el chat, gestión de usuarios desde Ágora.
+- **Acordado, sin hacer todavía:**
+  - **Asignar la conversación a un compañero**, sólo para los administradores de esa subcuenta y para el propietario de Ágora. La cuenta no permite asignar una conversación directamente (su actualización sólo admite leído, destacada y valoración): se asigna al **responsable del contacto**, que es de quien depende la conversación.
+  - **Gestionar usuarios desde Ágora** (crear, editar rol y permisos, quitar), sólo para los administradores de esa subcuenta y para el propietario. Requiere el permiso `users.write` en la clave de la subcuenta y el `companyId` de la agencia; se prueba antes con una comprobación que diga qué devolvió la cuenta.
+- **Descartado:** etiquetar desde el chat.
+- Ideas sin decidir: respuestas rápidas, «+ Nuevo contacto».
