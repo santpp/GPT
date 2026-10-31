@@ -325,19 +325,6 @@ if($path==='/api/workspace/templates'&&$method==='GET') {
     catch(GhlApiException $e){respond(['error'=>in_array($e->status,[401,403],true)?'La clave de la cuenta no permite leer plantillas. Hay que añadirle el permiso de plantillas.':'No se pudieron leer las plantillas de la cuenta.','code'=>'templates_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'No se pudieron leer las plantillas de la cuenta.','code'=>'templates_failed'],424);}
 }
-// Nota de voz por WhatsApp: el navegador manda el audio a Ágora, que lo sube a la
-// conversación y lo envía. El cuerpo es el audio tal cual; la clave va en la dirección.
-if($path==='/api/workspace/voice'&&$method==='POST'){
-    if(!($membership['capabilities']['sendMessages']??false))respond(['error'=>'Tu usuario tiene acceso de lectura, pero no permiso para responder.'],403);
-    $conversation=$_GET['conversationId']??'';$requestId=$_GET['requestId']??'';
-    if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation)||!is_string($requestId))respond(['error'=>'Petición inválida'],422);
-    $record=InboxFeed::known($id,$conversation);
-    if(!$record||!Actor::filterConversations([$record],$membership))respond(['error'=>'Conversación no disponible en esta subcuenta'],404);
-    require_once __DIR__.'/VoiceNote.php';
-    $audio=file_get_contents('php://input',false,null,0,VoiceNote::MAX_BYTES+1);
-    try{respond((new VoiceNote())->send($connection,$record,$requestId,(string)($_SERVER['CONTENT_TYPE']??''),$audio===false?'':$audio));}
-    catch(SendProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
-}
 // Asignar una conversación: pasa a ser responsable el compañero elegido, tanto del
 // contacto como de sus oportunidades abiertas. Sólo administradores de la subcuenta.
 if($path==='/api/workspace/assign'&&$method==='POST'){
