@@ -102,3 +102,10 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Comentario interno por contacto: ya se pueden crear notas desde el chat; falta verlas y crearlas también desde la ficha de Contactos, destacadas como comentario del equipo.
 - A estudiar, sólo si el usuario lo confirma: gestionar usuarios del equipo desde Ágora (crear, editar rol y permisos, quitar) con `POST/PUT/DELETE /users`, que exigen el permiso `users.write`, el `companyId` de la agencia y una prueba real.
 - Descartado por el usuario: plantillas con imagen, estados de entrega y lectura, informes por mes, agrupar avisos, enlaces directos, uso sin conexión, pantalla de tareas, IA y ERP.
+
+## Cambios pendientes (acordados, sin hacer todavía)
+
+1. **Tablero: sin administradores entre los vendedores.** Quien tenga rol de administrador (de subcuenta o de agencia) no sale en la lista del equipo. Sus ventas siguen contando en el total del mes, la ganancia y las comisiones. Opción «Cuenta como vendedor» en Cifras del mes para un admin que sí vende.
+2. **Comisiones editables por subcuenta, en porcentaje o en monto fijo.** Hoy es sólo un porcentaje (10 % por defecto) que se fija por subcuenta y mes. Se añade elegir el tipo de comisión de cada subcuenta: porcentaje de la venta, o un monto fijo (por cierre o por vendedor, a confirmar). Se guarda con las demás cifras del mes y la edita sólo el administrador.
+3. **Comentario interno por contacto** visible y editable desde la ficha de Contactos.
+4. **Nota de origen de cada cifra** en la rentabilidad del mes (de dónde sale y cómo se calcula).
