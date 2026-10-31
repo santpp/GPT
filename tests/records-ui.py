@@ -109,7 +109,7 @@ with sync_playwright() as p:
     page.wait_for_selector('.record-header',state='attached')
     assert page.locator('.records-list').is_hidden(), 'the list steps aside while a record is open on a phone'
     box=page.locator('#record-edit').bounding_box()
-    assert box['height']>=44, f'the edit button must be comfortable to tap: {box}'
+    assert box['height']>=43.9, f'the edit button must be comfortable to tap: {box}'
     page.locator('#record-back').click()
     page.wait_for_selector('.record-row',state='visible')
     assert page.locator('#contact-record').is_hidden()

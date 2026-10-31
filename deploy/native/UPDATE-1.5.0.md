@@ -18,3 +18,7 @@ Pulido de la interfaz: pantallas de carga con esqueletos animados.
 
 - Títulos de sección normales (antes en mayúsculas separadas) y sin el punto verde del tablero.
 - Las cifras del tablero van en una franja con separadores finos, sin cajas, y sin los textos de relleno bajo cada número.
+
+## Animaciones más pausadas
+
+- Las entradas y los esqueletos duran más (medio segundo o algo más) y se escalonan. Los refrescos automáticos no repiten la animación.

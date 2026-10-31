@@ -660,3 +660,24 @@ button:active:not(:disabled){transform:scale(.97)}
 .board-tile strong{font:600 28px var(--sans);letter-spacing:-.5px;margin:4px 0 2px}
 .board-tile small{font-size:11px}
 @media(max-width:600px){.dashboard-tiles{grid-template-columns:repeat(2,1fr)}.dashboard-tiles>.board-tile:nth-child(odd){border-left:0;padding-left:0}.dashboard-tiles>.board-tile:nth-child(even){padding-left:16px}}
+/* 1.5 · animaciones más pausadas, con sensación de web */
+:root{--ease:cubic-bezier(.22,.61,.36,1)}
+.sk{animation-duration:1.9s}
+.sk-bubble{animation:att-shimmer 1.9s linear infinite,sk-in .7s var(--ease) both;animation-delay:0s,calc(var(--i,0)*120ms)}
+.sk-row,.sk-tile,.sk-card{animation:sk-in .7s var(--ease) both;animation-delay:calc(var(--i,0)*110ms)}
+.fade-up{animation:fade-up .6s var(--ease) both}
+.conversation-item,.record-row{animation:fade-up .6s var(--ease) both}
+.conversation-item:nth-child(2),.record-row:nth-child(2){animation-delay:.06s}
+.conversation-item:nth-child(3),.record-row:nth-child(3){animation-delay:.12s}
+.conversation-item:nth-child(4),.record-row:nth-child(4){animation-delay:.18s}
+.conversation-item:nth-child(5),.record-row:nth-child(5){animation-delay:.24s}
+.conversation-item:nth-child(n+6),.record-row:nth-child(n+6){animation-delay:.3s}
+.bubble{animation:fade-up .45s var(--ease) both}
+.board-block,.board-tile,.board-stage,.board-goal,.records-record{animation:fade-up .7s var(--ease) both}
+.board-tile:nth-child(2){animation-delay:.07s}.board-tile:nth-child(3){animation-delay:.14s}.board-tile:nth-child(4){animation-delay:.21s}.board-tile:nth-child(n+5){animation-delay:.28s}
+@keyframes fade-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes sk-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+button,.primary,.link-button{transition-duration:.22s}
+dialog[open]{animation:fade-up .35s var(--ease)}
+@media(prefers-reduced-motion:reduce){.sk,.sk-bubble,.sk-row,.sk-tile,.sk-card,.fade-up,.conversation-item,.record-row,.bubble,.board-block,.board-tile,.board-stage,.board-goal,.records-record,dialog[open]{animation:none!important}}
+#live-log[data-painted] .bubble,#live-list[data-painted] .conversation-item{animation:none}

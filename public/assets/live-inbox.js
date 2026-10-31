@@ -103,6 +103,7 @@ export async function renderLiveInbox(container){
   function list(){
    const visible=conversations;
    $('#live-count').textContent=visible.length;
+   const listEl=$('#live-list');if(visible.length&&!listEl.dataset.painted)setTimeout(()=>{listEl.dataset.painted='1'},1200);
    $('#live-list').innerHTML=visible.map(c=>`<button class="conversation-item live-conversation ${selected?.id===c.id?'selected':''}" data-live-id="${esc(c.id)}" aria-label="Abrir conversación de ${esc(name(c))}" aria-pressed="${selected?.id===c.id}"><span class="avatar">${esc(initials(c))}</span><span class="conversation-info"><header><strong>${esc(name(c))}</strong><time title="${esc(date(c.lastMessageDate))}">${esc(when(c.lastMessageDate))}</time></header><p>${esc(c.lastMessageBody||'Sin vista previa')}</p><footer><span class="channel">${channel(c.lastMessageType)}</span>${Number(c.unreadCount)>0?`<b class="unread">${Number(c.unreadCount)}<span class="sr-only"> pendientes</span></b>`:''}</footer></span></button>`).join('')||(listLoading?skeleton('list',7):'<p class="empty">No hay conversaciones con este filtro.</p>');
    // The account keeps a position to continue from, so the list is not confined
    // to the window of 20, 50 or 100.
@@ -144,6 +145,8 @@ export async function renderLiveInbox(container){
     return `<div class="bubble ${m.direction==='outbound'?'out':''}${failed?' failed':''}" data-mid="${esc(m.id)}">${tag}${body}${files.length?`<div class="live-attachments">${files.map(attachmentMarkup).join('')}</div>`:''}${statusMarkup(m,date(m.dateAdded))}</div>`;
    }).join('')||'<p class="empty">No hay mensajes disponibles.</p>';
    bindAttachments(log);
+   // Las burbujas entran con animación sólo la primera vez; los refrescos no la repiten.
+   if(messages.size&&!log.dataset.painted)setTimeout(()=>{log.dataset.painted='1'},1200);
    // Si el contacto llegó (o escribió) por un comentario en una publicación, se dice arriba.
    const ordered=[...messages.values()].sort((a,b)=>(Date.parse(a.dateAdded)||0)-(Date.parse(b.dateAdded)||0));
    const firstComment=ordered.length&&commentTypes[ordered[0].messageType]?ordered[0]:null;
@@ -715,7 +718,7 @@ export async function renderLiveInbox(container){
    say();scheduleChat();schedulePulse(2);
   }
   async function load(preserve=false){
-   if(!preserve)listLoading=true;
+   if(!preserve){listLoading=true;const l=$('#live-list');if(l)delete l.dataset.painted}
    try{return await loadInner(preserve)}
    finally{if(listLoading){listLoading=false;list()}}
   }
