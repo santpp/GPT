@@ -106,6 +106,6 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## Cambios pendientes (acordados, sin hacer todavía)
 
 1. **Tablero: sin administradores entre los vendedores.** Quien tenga rol de administrador (de subcuenta o de agencia) no sale en la lista del equipo. Sus ventas siguen contando en el total del mes, la ganancia y las comisiones. Opción «Cuenta como vendedor» en Cifras del mes para un admin que sí vende.
-2. **Comisiones editables por subcuenta, en porcentaje o en monto fijo.** Hoy es sólo un porcentaje (10 % por defecto) que se fija por subcuenta y mes. Se añade elegir el tipo de comisión de cada subcuenta: porcentaje de la venta, o un monto fijo (por cierre o por vendedor, a confirmar). Se guarda con las demás cifras del mes y la edita sólo el administrador.
+2. **Comisiones editables por subcuenta, en porcentaje o en monto fijo.** Hoy es sólo un porcentaje (10 % por defecto) que se fija por subcuenta y mes. Se añade elegir el tipo de comisión de cada subcuenta: porcentaje de la venta, o un monto fijo **por cierre** (confirmado: la otra subcuenta conectada paga así; por ejemplo, 5 por cada venta ganada). El monto fijo por vendedor al mes queda fuera salvo que otra subcuenta lo pida. Se guarda con las demás cifras del mes y la edita sólo el administrador.
 3. **Comentario interno por contacto** visible y editable desde la ficha de Contactos.
 4. **Nota de origen de cada cifra** en la rentabilidad del mes (de dónde sale y cómo se calcula).
