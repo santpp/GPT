@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.22.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.22.1.
 
 ## Completado y desplegable
 
@@ -22,6 +22,7 @@ Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.22.0.
 - Validar un envío real por cada canal habilitado y documentar sus restricciones.
 - Añadir confirmación de lectura y estados de entrega donde la API lo permita.
 - Adjuntos con miniatura, visor, audio y vídeo en el chat; motivo de los envíos fallidos e iconos propios en la cabecera (0.22.0). Pendiente: notas internas.
+- Avisos con el texto real del último mensaje entrante, o «Envió una foto / nota de voz / vídeo / documento» (0.22.1).
 
 Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible puede tardar alrededor de 10 segundos, más latencia o pausas de cuota. SSE permitirá distribuir un resultado ya descubierto entre navegadores, pero no hará que el backend descubra antes el mensaje. El cron mantiene la lista cuando la app está cerrada; FCM se incorporará más adelante para avisos en Android.
 

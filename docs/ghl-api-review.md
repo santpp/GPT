@@ -440,3 +440,13 @@ Sin cambios en el uso de la cuenta.
 «Volver a escribirlo» devuelve el texto al cuadro de respuesta para revisarlo. No envía nada. A quien se dio de baja no se le ofrece.
 
 **Adjuntos.** Se siguen aceptando sólo enlaces `https`, y el nombre sale de la ruta del archivo. Las imágenes se ven en miniatura con su proporción, con un estado de carga, y al tocarlas se abren en un visor a pantalla completa, con enlace al original. Si no cargan, se sustituyen por un aviso y un enlace en vez de dejar un hueco. Audio y vídeo se reproducen en el propio chat; los documentos muestran su nombre y un botón para abrirlos.
+
+## Texto del aviso desde el propio mensaje 0.22.1
+
+**Síntoma.** El aviso llegaba con quién y por qué canal, pero el cuerpo decía «Envió un archivo o un mensaje sin texto» aunque el contacto hubiera escrito texto.
+
+**Causa.** El cuerpo salía de `lastMessageBody` de la búsqueda de conversaciones (`GET /conversations/search`). Leída cada 10 segundos, la conversación aparece ya con `unreadCount` subido mientras ese resumen todavía no trae el texto: el índice de búsqueda va por detrás del mensaje.
+
+**Arreglo.** Antes de enviar cada aviso, la entrega lee la primera página de `GET /conversations/{conversationId}/messages` (versión `2021-04-15`, el mismo endpoint y alcance `conversations/message.readonly` que ya usa el historial) y toma el mensaje entrante (`direction: inbound`) más reciente por `dateAdded`. Se normaliza con el mismo lector del historial, que rechaza mensajes de otra conversación o de otra cuenta. Del texto se quitan etiquetas HTML y entidades; sin texto, el adjunto se describe por la extensión de su enlace (foto, nota de voz, vídeo, documento, archivo). Se conserva «· N mensajes sin leer» y se guarda el cuerpo final en la cola, para que el diagnóstico muestre lo que vio el teléfono.
+
+**Coste y fallos.** Una lectura por aviso, por el gateway de siempre (bloqueo por conexión, 20 peticiones por 10 segundos, pausas por cuota) y sin desactivar la conexión ante un 403. Si falla o hay pausa, el aviso sale con el resumen; nunca se retrasa por esto. La notificación de prueba no lee nada.

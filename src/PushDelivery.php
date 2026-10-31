@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/PushQueue.php';
+require_once __DIR__.'/GhlGateway.php';
+require_once __DIR__.'/MessageHistory.php';
 
 final class PushProblem extends RuntimeException {
     public function __construct(public readonly string $reason,string $message) {parent::__construct($message);}
@@ -24,7 +26,9 @@ final class PushDelivery {
     private ?WebPush $browser=null;
 
     /** @param ?Closure(string,array,array):array $transport only tests inject this */
-    public function __construct(private readonly ?Closure $transport=null,private readonly ?string $credentialsFile=null,?WebPush $browser=null) {$this->browser=$browser;}
+    private array $texts=[];
+
+    public function __construct(private readonly ?Closure $transport=null,private readonly ?string $credentialsFile=null,?WebPush $browser=null,private readonly ?GhlGateway $gateway=null) {$this->browser=$browser;}
 
     /** Either transport being ready is enough for the delivery pass to be worth running. */
     public static function configured():bool {
@@ -72,6 +76,7 @@ final class PushDelivery {
                 query("UPDATE push_queue SET state='sent',sent_at=CURRENT_TIMESTAMP,attempts=attempts+1 WHERE id=?",[$notice['id']]);
                 continue;
             }
+            $notice=$this->withText($notice);
             $retry=false;$reason=null;
             foreach($recipients as $recipient) {
                 try {
@@ -140,6 +145,57 @@ final class PushDelivery {
         catch(Throwable $e){return null;}
         $value=is_string($raw)?json_decode($raw,true):null;
         return is_array($value)?$value:null;
+    }
+
+    /**
+     * El texto del aviso, sacado del propio mensaje. El resumen de la
+     * conversación que da la búsqueda puede ir por detrás del mensaje o venir
+     * recortado: leído cada 10 segundos, era fácil encontrar la conversación ya
+     * sin leer y su resumen todavía vacío. Una lectura por mensaje nuevo; si
+     * falla, se queda el resumen que hubiera.
+     */
+    private function withText(array $notice):array {
+        $conversation=(string)($notice['conversation_id']??'');
+        if($conversation===''||$conversation==='prueba'||empty($notice['connection_id']))return $notice;
+        if(!array_key_exists($conversation,$this->texts)) {
+            $this->texts[$conversation]=null;
+            try {
+                $connection=query('SELECT * FROM ghl_connections WHERE id=?',[(int)$notice['connection_id']])->fetch();
+                if($connection&&$connection['status']==='connected') {
+                    $data=($this->gateway??new GhlGateway())->execute($connection,fn(GhlClient $client)=>$client->conversationMessages($conversation),false);
+                    $items=MessageHistory::page($data,$conversation,$connection['location_id'],null)['items'];
+                    $inbound=array_values(array_filter($items,fn($m)=>($m['direction']??null)==='inbound'));
+                    $pool=$inbound?:$items;
+                    usort($pool,fn($a,$b)=>strcmp((string)($b['dateAdded']??''),(string)($a['dateAdded']??'')));
+                    $this->texts[$conversation]=$pool?self::say($pool[0]):null;
+                }
+            } catch(Throwable $e) {$this->texts[$conversation]=null;}
+        }
+        $text=$this->texts[$conversation];
+        if($text===null)return $notice;
+        // Lo que se dijo, conservando cuántos hay sin leer si eran varios.
+        $waiting=preg_match('/ · \d+ mensajes sin leer$/u',(string)$notice['body'],$m)?$m[0]:'';
+        $notice['body']=mb_substr($text,0,270).$waiting;
+        try {query('UPDATE push_queue SET body=? WHERE id=?',[$notice['body'],$notice['id']]);} catch(Throwable $e){}
+        return $notice;
+    }
+
+    /** Lo que dice un mensaje, o qué envió si no trae texto. */
+    public static function say(array $message):?string {
+        $text=$message['body']??null;
+        $text=is_string($text)?trim(preg_replace('/\s+/u',' ',html_entity_decode(strip_tags(str_ireplace(['<br>','<br/>','<br />','</p>'],' ',$text)),ENT_QUOTES|ENT_HTML5,'UTF-8'))):'';
+        if($text!=='')return $text;
+        $files=is_array($message['attachments']??null)?$message['attachments']:[];
+        if(!$files)return null;
+        $first=is_string($files[0])?$files[0]:(is_array($files[0])&&is_string($files[0]['url']??null)?$files[0]['url']:'');
+        $path=strtolower((string)parse_url($first,PHP_URL_PATH));
+        return match(true) {
+            (bool)preg_match('/\.(png|jpe?g|gif|webp|avif|heic)$/',$path)=>count($files)>1?'Envió '.count($files).' fotos':'Envió una foto',
+            (bool)preg_match('/\.(mp3|m4a|aac|ogg|oga|opus|wav|amr)$/',$path)=>'Envió una nota de voz',
+            (bool)preg_match('/\.(mp4|mov|webm|3gp|m4v)$/',$path)=>'Envió un vídeo',
+            str_ends_with($path,'.pdf')=>'Envió un documento',
+            default=>'Envió un archivo',
+        };
     }
 
     /** Each device by the road its own system uses. */

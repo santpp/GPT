@@ -3,6 +3,7 @@ declare(strict_types=1);
 require __DIR__.'/../src/bootstrap.php';
 require __DIR__.'/../src/PushDelivery.php';
 require __DIR__.'/../src/WebPush.php';
+require_once __DIR__.'/../src/GhlGateway.php';
 
 $tenants=[];$suffix=bin2hex(random_bytes(6));$checks=0;$keyFile=null;
 function pushCheck(bool $ok,string $label):void{global $checks;if(!$ok)throw new RuntimeException($label);$checks++;echo 'PASS '.$label.PHP_EOL;}
@@ -141,6 +142,38 @@ try {
  pushCheck($mixed['sent']===2,'both count as delivered');
  pushCheck((int)query('SELECT COUNT(*) FROM push_devices WHERE tenant_id=? AND last_sent_at IS NOT NULL',[$tenant])->fetchColumn()===2,'and each device records when it was last told, for the diagnostics');
  @unlink($webKey);
+
+ // ---- what the notice says ----------------------------------------------------
+ // The search summary can lag behind the message; the notice reads the message.
+ $messages=[];$reads=[];
+ $api=new GhlGateway(function()use(&$messages,&$reads):GhlClient{return new GhlClient('fake',function(string $path,string $version,string $method,?array $payload)use(&$messages,&$reads):array {
+  $reads[]=$path;
+  if($messages===null)throw new GhlApiException(500);
+  return ['status'=>200,'body'=>json_encode(['messages'=>['messages'=>$messages,'nextPage'=>false,'lastMessageId'=>null]])];
+ });});
+ $said=function(string $conversation,string $preview)use($connectionId,$fcm,$keyFile,$api):string {
+  query('UPDATE ghl_sync_state SET request_not_before=0,requests_today=0,rate_window_start=0,rate_window_count=0 WHERE connection_id=?',[$connectionId]);
+  query('INSERT INTO push_queue(connection_id,conversation_id,fingerprint,title,body) VALUES(?,?,?,?,?)',[$connectionId,$conversation,md5($conversation.uniqid()),'Raissa Moreno · WhatsApp',$preview]);
+  $fcm->reset();(new PushDelivery($fcm->transport(),$keyFile,null,$api))->run();
+  return (string)($fcm->sends()[0]['payload']['message']['notification']['body']??$fcm->sends()[0]['payload']['message']['data']['body']??'');
+ };
+ $messages=[
+  ['id'=>'m1','conversationId'=>'conv-text','locationId'=>$location,'direction'=>'inbound','body'=>'Hola, ¿tenéis cita el jueves?','dateAdded'=>'2026-10-31T10:00:00.000Z'],
+  ['id'=>'m2','conversationId'=>'conv-text','locationId'=>$location,'direction'=>'outbound','body'=>'Respuesta nuestra','dateAdded'=>'2026-10-31T10:01:00.000Z'],
+  ['id'=>'m3','conversationId'=>'conv-text','locationId'=>$location,'direction'=>'inbound','body'=>'<p>Y el <b>precio</b>&nbsp;por favor</p>','dateAdded'=>'2026-10-31T10:02:00.000Z'],
+ ];
+ $body=$said('conv-text','Envió un archivo o un mensaje sin texto · 2 mensajes sin leer');
+ pushCheck($body==='Y el precio por favor · 2 mensajes sin leer','the notice says what the newest incoming message says, even when the summary was still empty');
+ pushCheck(query('SELECT body FROM push_queue WHERE conversation_id=?',['conv-text'])->fetchColumn()==='Y el precio por favor · 2 mensajes sin leer','and the queue keeps the same text, so the diagnostics show what the phone saw');
+ $messages=[['id'=>'m4','conversationId'=>'conv-photo','locationId'=>$location,'direction'=>'inbound','body'=>'','attachments'=>['https://files.example.test/a/foto.JPG?x=1'],'dateAdded'=>'2026-10-31T10:03:00.000Z']];
+ pushCheck($said('conv-photo','Envió un archivo o un mensaje sin texto')==='Envió una foto','a photo without words is named as a photo');
+ $messages=[['id'=>'m5','conversationId'=>'conv-voice','locationId'=>$location,'direction'=>'inbound','attachments'=>['https://files.example.test/audio.ogg'],'dateAdded'=>'2026-10-31T10:04:00.000Z']];
+ pushCheck($said('conv-voice','x')==='Envió una nota de voz','and a voice note as a voice note');
+ $messages=null;
+ pushCheck($said('conv-down','Hola desde el resumen')==='Hola desde el resumen','when the message cannot be read the summary stays, and the notice still goes');
+ pushCheck(PushDelivery::say(['body'=>'','attachments'=>['https://x.test/c.pdf']])==='Envió un documento'&&PushDelivery::say(['body'=>' '])===null,'documents are named, and an empty message says nothing rather than something made up');
+ $before=count($reads);$said('prueba','Notificación de prueba');
+ pushCheck(count($reads)===$before,'the test notice reads nothing from the account');
 
  // ---- not configured ----------------------------------------------------------
  $missing=new PushDelivery($fcm->transport(),'/does/not/exist.json');
