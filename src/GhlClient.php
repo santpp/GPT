@@ -31,6 +31,9 @@ final class GhlClient {
     }
     /** Abre una conversación con un contacto que aún no tenía (POST /conversations/). */
     public function createConversation(string $location,string $contact):array {return $this->get('/conversations/','2021-04-15',['locationId'=>$location,'contactId'=>$contact]);}
+    /** Subida de un archivo a la conversación, en dos pasos: dirección firmada y confirmación. */
+    public function initiateUpload(array $payload):array {return $this->get('/conversations/messages/upload/initiate','2021-04-15',$payload);}
+    public function completeUpload(array $payload):array {return $this->get('/conversations/messages/upload/complete','2021-04-15',$payload);}
     public function sendMessage(array $payload):array {return $this->get('/conversations/messages','2021-04-15',$payload);}
     public function duplicateContact(string $location,string $email):array {
         return $this->get('/contacts/search/duplicate?'.http_build_query(['locationId'=>$location,'email'=>$email]),'2021-07-28');

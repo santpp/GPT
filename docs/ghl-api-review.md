@@ -484,3 +484,7 @@ En la cuenta real el chat no mostró ninguna plantilla aunque las hay. Como la f
 ## Comisión, novedades y destino de los avisos 1.1.0
 
 Ninguno de estos cambios usa endpoints nuevos de la cuenta. **Comisión:** se guarda en `commission_rules` (por subcuenta y mes de entrada en vigor) y se aplica a lo que ya se lee de las oportunidades ganadas; los administradores se excluyen de la lista de vendedores por el rol (`roles.role = admin` o `roles.type = agency`) que se importa con el equipo. **Novedades:** `announcements` y `announcement_reads`, por empresa. **Avisos:** el aviso web lleva la subcuenta (`connectionId`) y la app abre `/conversations/{id}?c={subcuenta}`, que se resuelve con `GET /api/workspace/conversation` desde el índice local de conversaciones, filtrado por permisos.
+
+## Notas de voz 1.4.0
+
+Subida de archivos a una conversación en dos pasos, ambos con versión `2021-04-15`: `POST /conversations/messages/upload/initiate` (conversación, nombre, tipo, tamaño y canal) devuelve una dirección firmada; los bytes se suben con `PUT` a esa dirección (Ágora sólo acepta `storage.googleapis.com`); `POST /conversations/messages/upload/complete` devuelve la dirección pública. Después `POST /conversations/messages` con `type: WhatsApp`, `contactId` y `attachments: [url]`. La documentación no dice si el audio OGG/Opus se presenta como nota de voz; se comprueba en la cuenta real.

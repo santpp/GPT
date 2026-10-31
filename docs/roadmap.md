@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.3.0. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.4.0. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -123,5 +123,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## 1.3.0
 - Responder citando un mensaje: botón en cada burbuja, tarjeta sobre el cuadro, envío con `replyMessageId` y cita visible en las respuestas enviadas desde Ágora. Pendiente de probar por canal.
 
+## 1.4.0
+- Notas de voz por WhatsApp (solo WhatsApp, por decisión del usuario): micrófono en el cuadro de escritura, grabación con cancelar/detener, escucha previa, descartar o enviar. El navegador reempaqueta WebM/Opus a OGG/Opus (lo único que WhatsApp muestra como nota de voz). Subida en dos pasos a la conversación y envío como adjunto, con la protección contra duplicados de siempre. Pendiente de probar en la cuenta real: que acepte `audio/ogg`, que WhatsApp lo muestre como nota de voz (iPhone/Safari graba AAC y saldría como audio) y la ventana de 24 h.
+
 ## Siguiente (a decidir)
-- **Mensajes de voz.** El usuario indica que la cuenta los envía de forma nativa. Queda por ver cómo: la API publicada sólo documenta archivos adjuntos y su subida, no una «nota de voz» como tal. Punto delicado: el formato de la grabación del teléfono (WebM en Chrome de Android, que WhatsApp, Instagram y Messenger no aceptan).
+- Plantillas de WhatsApp: en espera del WABA ID o de la salida de «Comprobar plantillas».
+- Motivos de pérdida de oportunidades: bloqueado, la cuenta no devuelve ninguno.

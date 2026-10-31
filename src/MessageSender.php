@@ -44,19 +44,24 @@ final class MessageSender {
         return $all;
     }
     public function __construct(private readonly GhlGateway $gateway=new GhlGateway()){}
-    public function send(array $connection,array $conversation,array $input):array {
+    public function send(array $connection,array $conversation,array $input,?array $internal=null):array {
         $id=(int)$connection['id'];$conversationId=$conversation['id']??'';
         $request=$input['requestId']??null;$text=$input['message']??null;
         $template=is_array($input['template']??null)?$input['template']:null;
         if(!is_string($request)||!preg_match('/^[A-Za-z0-9_-]{16,64}$/D',$request))throw new SendProblem('invalid_message',422,'Escribe un mensaje de hasta 4.000 caracteres.');
-        if(!$template&&(!is_string($text)||trim($text)===''||mb_strlen($text)>4000))throw new SendProblem('invalid_message',422,'Escribe un mensaje de hasta 4.000 caracteres.');
+        if(!$template&&!$internal&&(!is_string($text)||trim($text)===''||mb_strlen($text)>4000))throw new SendProblem('invalid_message',422,'Escribe un mensaje de hasta 4.000 caracteres.');
         // The choice is checked against the set the server computes, never trusted.
         $available=array_column(array_values(array_filter(self::availableChannels($connection,$conversation),fn(array $c):bool=>$c['available'])),'type');
         $channel=$input['channel']??null;
         if(!is_string($channel)||!in_array($channel,$available,true))throw new SendProblem('unsupported_channel',422,'Ese canal no está disponible para este contacto.');
         $contact=$conversation['contactId']??null;
         if(!is_string($contact)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contact)||($conversation['locationId']??null)!==$connection['location_id'])throw new SendProblem('invalid_contact',422,'Actualiza la conversación antes de responder.');
-        if($template)$payload=$this->templatePayload($connection,$contact,$channel,$template);
+        // Sólo el servidor puede adjuntar: lo que llega del navegador nunca trae direcciones.
+        if($internal) {
+            if($channel!=='WhatsApp')throw new SendProblem('unsupported_channel',422,'La nota de voz sólo se envía por WhatsApp.');
+            $payload=['type'=>$channel,'contactId'=>$contact,'attachments'=>array_values($internal['attachments'])];
+        }
+        elseif($template)$payload=$this->templatePayload($connection,$contact,$channel,$template);
         else $payload=['type'=>$channel,'contactId'=>$contact,'message'=>trim($text)];
         // Responder citando un mensaje concreto (el campo publicado `replyMessageId`).
         $reply=$input['replyTo']??null;
@@ -72,7 +77,8 @@ final class MessageSender {
             $payload['subject']=trim($subject);
         }
         // The destination is taken only from the tenant-scoped snapshot, never from input.
-        $hash=hash('sha256',json_encode([$conversationId,$payload],JSON_THROW_ON_ERROR));
+        $hashed=$internal?['type'=>$channel,'contactId'=>$contact,'voice'=>(string)($internal['fingerprint']??'')]:$payload;
+        $hash=hash('sha256',json_encode([$conversationId,$hashed],JSON_THROW_ON_ERROR));
         $lock='agora-send:'.$id.':'.substr(hash('sha256',$conversationId),0,32);
         if((int)query('SELECT GET_LOCK(?,0)',[$lock])->fetchColumn()!==1)throw new SendProblem('send_busy',409,'Hay un envío en curso. Espera antes de repetir.',2);
         try {
