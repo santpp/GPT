@@ -44,6 +44,13 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Actualización en vivo sin webhooks: un pulso contra Ágora y un pase compartido por cuenta (0.18.0).
 
 - **Sesión persistente (antes de v1.0).** Hoy la cookie de sesión es de navegador y PHP la caduca a los 24 minutos sin uso, de modo que la app instalada pide entrar a menudo. Plan: un token «recordar este dispositivo» propio (selector y verificador, guardado sólo como hash, cookie `HttpOnly`, `Secure`, `SameSite=Lax`, 60 días renovables con el uso y rotado en cada renovación). Se revoca al cerrar sesión, al cambiar la contraseña, al dar de baja al usuario en la cuenta sincronizada y desde una lista de «dispositivos con sesión abierta» del propietario. Funciona para el propietario y para los usuarios con código por correo.
+- **Acceso con huella o cara (passkeys), antes de v1.0, junto con la sesión persistente.** Llaves de acceso WebAuthn: el teléfono guarda una llave ligada al dominio de Ágora y la desbloquea con Face ID, Touch ID, huella o el PIN del dispositivo. Ágora sólo guarda la parte pública; ni la huella ni la cara salen nunca del teléfono, y no hay contraseña que robar ni que se pueda usar en una web falsa. Funciona en la app instalada desde el navegador (iPhone con iOS 16 o posterior, Android 9 o posterior con Chrome) y en el APK. Plan:
+  - Tras entrar, Ágora ofrece «Entrar con huella o Face ID en este dispositivo». Desde ese momento la pantalla de acceso tiene un botón que entra sin escribir nada.
+  - Para los usuarios con código por correo, la llave sustituye al código en los siguientes accesos.
+  - Bloqueo opcional al abrir la app tras un tiempo sin uso (por ejemplo 15 minutos): pide la huella o la cara aunque la sesión de 60 días siga abierta.
+  - Lista de llaves en el perfil, y para el propietario en Equipo, para quitar las de un teléfono perdido. Una baja en la cuenta sincronizada las anula.
+  - Recuperación: el propietario conserva la contraseña y los demás el código por correo.
+  - Recordar credenciales: Ágora no guardará contraseñas por su cuenta. Los campos de acceso se marcarán para que el gestor de contraseñas del teléfono (llavero de iCloud o Google) los guarde y rellene.
 - Monitorización, copias de seguridad y herramientas seguras para resolver envíos con resultado incierto.
 
 ## Android y notificaciones
@@ -57,7 +64,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Un solo cron revisa y entrega; el service worker nuevo ya no queda bloqueado tras iniciar sesión; un rechazo del servicio ya no borra el teléfono (0.21.1).
 - Revisión desde fuera con una dirección secreta, para cuando el cron del servidor no corre (0.21.2).
 - Avisos en 10–15 segundos con la app cerrada, con quién, canal y texto; aviso visible si el service worker se queda atrás (0.21.3).
-- Texto real del mensaje en el aviso (0.22.1). **Abierto:** en el teléfono sigue saliendo «Tienes un mensaje nuevo.», que es el texto de reserva del service worker cuando el aviso le llega sin cuerpo legible. El servidor siempre pone cuerpo, así que hay que mirar primero la cola (`push_queue`: `title`, `body`, `state`, `last_error`) y la versión del pie. Si la cola tiene el texto, la pista está en el service worker del teléfono o en cómo descifra el aviso; si no lo tiene, en la lectura del mensaje.
+- Texto real del mensaje en el aviso (0.22.1): confirmado en teléfono real. El título lleva quién y por qué canal y el cuerpo, lo que escribió.
 - **Cuota diaria propia (0.22.2, prioridad).** La revisión cada 10 segundos son unas 8.640 lecturas al día por subcuenta, y el tope de seguridad local de Ágora es de 5.000 al día. A media tarde (hora UTC) Ágora deja de leer la cuenta hasta medianoche UTC: sin avisos ni bandeja nueva. Respecto a los límites oficiales no hay problema (200.000 al día y 100 cada 10 segundos por subcuenta), así que hay que subir el tope a un valor alineado con ellos, por ejemplo 50.000, conservando la lectura de las cabeceras de cuota.
 - Deep links a contacto y oportunidad (la conversación ya funciona).
 - Cola offline para operaciones compatibles y reconciliación al recuperar conexión.
