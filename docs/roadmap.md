@@ -125,6 +125,8 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## 1.4.0
 - Se quita la cita de mensajes (ver arriba).
+- Conversaciones que empiezan con un comentario en una publicación de Instagram o Facebook: aviso arriba («Su primera interacción fue un comentario…»), etiqueta en cada comentario y respuesta como mensaje directo. Pendiente de probar: la API no documenta la respuesta privada a un comentario, y Meta sólo la permite durante unos días.
+- Si la cuenta rechaza un envío, el mensaje de error incluye el motivo que da (sin marcas), para diagnosticar. Primer caso: nota de voz rechazada con HTTP 400 tras subir el audio.
 - Notas de voz por WhatsApp (solo WhatsApp, por decisión del usuario): micrófono en el cuadro de escritura, grabación con cancelar/detener, escucha previa, descartar o enviar. El navegador reempaqueta WebM/Opus a OGG/Opus (lo único que WhatsApp muestra como nota de voz). Subida en dos pasos a la conversación y envío como adjunto, con la protección contra duplicados de siempre. Pendiente de probar en la cuenta real: que acepte `audio/ogg`, que WhatsApp lo muestre como nota de voz (iPhone/Safari graba AAC y saldría como audio) y la ventana de 24 h.
 
 ## Siguiente (a decidir)

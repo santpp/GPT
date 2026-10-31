@@ -65,3 +65,8 @@ try {
  vox(trouble(fn()=>$voice->send($connection,array_replace($conversation,['lastMessageType'=>'TYPE_EMAIL','contactId'=>null]),str_repeat('h',20),'audio/ogg',$ogg))!=='','una conversación sin contacto de WhatsApp no recibe notas de voz');
  echo "PASS $checks voice checks (real audio, simulated account, real MariaDB)\n";
 } finally {if($tenant){query('DELETE FROM ghl_connections WHERE tenant_id=?',[$tenant]);query('DELETE FROM tenants WHERE id=?',[$tenant]);}}
+
+// Lo que la cuenta explica al rechazar se conserva (sin marcas) para poder diagnosticar.
+$client=new GhlClient('tok',fn()=>['status'=>400,'headers'=>[],'body'=>json_encode(['message'=>['attachments must be supported by GoHighLevel'],'statusCode'=>400])]);
+try{$client->sendMessage(['type'=>'WhatsApp']);$detail='none';}catch(GhlApiException $e){$detail=$e->detail;}
+vox($detail==='attachments must be supported by la cuenta','the account\'s reason for a rejection is kept, without brand names');

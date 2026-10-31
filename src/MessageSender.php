@@ -5,7 +5,7 @@ final class SendProblem extends RuntimeException {
     public function __construct(public readonly string $reason,public readonly int $httpStatus,string $message,public readonly int $retryAfter=0){parent::__construct($message);}
 }
 final class MessageSender {
-    public const CHANNELS=['TYPE_SMS'=>'SMS','TYPE_WHATSAPP'=>'WhatsApp','TYPE_INSTAGRAM'=>'IG','TYPE_FACEBOOK'=>'FB','TYPE_EMAIL'=>'Email'];
+    public const CHANNELS=['TYPE_SMS'=>'SMS','TYPE_WHATSAPP'=>'WhatsApp','TYPE_INSTAGRAM'=>'IG','TYPE_FACEBOOK'=>'FB','TYPE_EMAIL'=>'Email','TYPE_INSTAGRAM_COMMENT'=>'IG','TYPE_FACEBOOK_COMMENT'=>'FB'];
     public const LABELS=['SMS'=>'SMS','WhatsApp'=>'WhatsApp','IG'=>'Instagram','FB'=>'Messenger','Email'=>'Email'];
     // A thread the contact opened can always be answered on its own channel. The
     // others need an address of the contact, so they are offered only when the
@@ -16,6 +16,8 @@ final class MessageSender {
     /** @return list<array{type:string,label:string,needsSubject:bool}> */
     public static function availableChannels(array $connection,array $conversation):array {
         $current=self::CHANNELS[$conversation['lastMessageType']??'']??null;
+        // Si lo último es un comentario en una publicación, la única respuesta posible es por mensaje directo.
+        $fromComment=in_array($conversation['lastMessageType']??'',['TYPE_INSTAGRAM_COMMENT','TYPE_FACEBOOK_COMMENT'],true);
         $contact=$conversation['contactId']??null;
         $profile=is_string($contact)&&preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contact)
             ? query('SELECT payload FROM contact_profile_cache WHERE connection_id=? AND contact_id=?',[$connection['id'],$contact])->fetchColumn()
@@ -35,7 +37,7 @@ final class MessageSender {
         foreach(self::LABELS as $type=>$label) {
             $usable=in_array($type,$allowed,true);
             $all[]=[
-                'type'=>$type,'label'=>$label,'available'=>$usable,'needsSubject'=>$type==='Email',
+                'type'=>$type,'label'=>$fromComment&&$type===$current?'Mensaje directo en '.$label:$label,'available'=>$usable,'needsSubject'=>$type==='Email',
                 'reason'=>$usable?null:(in_array($type,self::NEEDS_PHONE,true)?'needs_phone':(in_array($type,self::NEEDS_EMAIL,true)?'needs_email':'needs_thread')),
             ];
         }
@@ -98,7 +100,7 @@ final class MessageSender {
             }catch(GhlApiException $e){
                 if(in_array($e->status,[400,401,403,404,413,415,422,429],true)){
                     query("UPDATE message_send_attempts SET state='rejected',error_code=? WHERE connection_id=? AND request_id=?",['http_'.$e->status,$id,$request]);
-                    throw new SendProblem('send_rejected',422,'El canal rechazó el envío (HTTP '.$e->status.'). '.(in_array($e->status,[401,403],true)?'Revisa la credencial y los permisos de escritura.':($channel==='Email'?'Revisa el remitente de correo configurado y los datos del mensaje.':'Revisa los datos y las condiciones del canal.')));
+                    throw new SendProblem('send_rejected',422,'El canal rechazó el envío (HTTP '.$e->status.($e->detail!==''?': '.$e->detail:'').'). '.(in_array($e->status,[401,403],true)?'Revisa la credencial y los permisos de escritura.':($channel==='Email'?'Revisa el remitente de correo configurado y los datos del mensaje.':'Revisa los datos y las condiciones del canal.')));
                 }
                 $this->markUnknown($id,$request);throw $this->unknown();
             }catch(Throwable $e){$this->markUnknown($id,$request);throw $this->unknown();}

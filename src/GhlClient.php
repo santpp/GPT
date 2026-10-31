@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 final class GhlApiException extends RuntimeException {
-    public function __construct(public readonly int $status,public readonly int $retryAfter=0) {parent::__construct('GHL request failed: '.$status);}
+    public function __construct(public readonly int $status,public readonly int $retryAfter=0,public readonly string $detail='') {parent::__construct('GHL request failed: '.$status);}
 }
 final class GhlClient {
     public array $headers=[];
@@ -87,6 +87,16 @@ final class GhlClient {
     }
     private function put(string $path,string $version,array $payload):array {return $this->get($path,$version,$payload,'PUT');}
     private function delete(string $path,string $version,array $payload):array {return $this->get($path,$version,$payload,'DELETE');}
+    /** Lo que la cuenta explica al rechazar una petición (sin contenido de mensajes ni marcas), para poder diagnosticar. */
+    private function reason(string $raw):string {
+        $data=json_decode($raw,true);if(!is_array($data))return '';
+        $text=$data['message']??($data['error']??($data['msg']??''));
+        if(is_array($text))$text=implode('; ',array_map(fn($v)=>is_scalar($v)?(string)$v:'',$text));
+        if(!is_string($text))return '';
+        $text=preg_replace('/\s+/u',' ',trim(strip_tags($text)));
+        $text=preg_replace('/go\s?high\s?level|high\s?level|lead\s?connector|\bghl\b/i','la cuenta',$text);
+        return mb_substr($text,0,200);
+    }
     private function get(string $path,string $version,?array $payload=null,?string $verb=null):array {
         if($this->token==='')throw new RuntimeException('GHL credential missing');
         $this->headers=[];$this->status=0;
@@ -104,7 +114,7 @@ final class GhlClient {
         if($raw===false || $this->status<200 || $this->status>=300) {
             $retry=$this->headers['retry-after']??'';
             $seconds=ctype_digit((string)$retry)?(int)$retry:max(0,(strtotime((string)$retry)?:time())-time());
-            throw new GhlApiException($this->status,min(86400,$seconds));
+            throw new GhlApiException($this->status,min(86400,$seconds),$this->reason(is_string($raw)?$raw:''));
         }
         $result=json_decode($raw,true,64,JSON_THROW_ON_ERROR);
         if(!is_array($result))throw new RuntimeException('Invalid GHL response');

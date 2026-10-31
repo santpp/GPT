@@ -19,3 +19,8 @@ Notas de voz por WhatsApp. Se quita la cita de mensajes: WhatsApp no la mostraba
 - Es lo primero que se prueba: enviar una nota a tu propio WhatsApp. No se ha podido comprobar contra la cuenta real que acepte el audio ni cómo lo muestra WhatsApp.
 - WhatsApp sólo la muestra como nota de voz si es OGG con Opus. Chrome/Android la graba así (Ágora la convierte). iPhone/Safari graba AAC: llegaría como archivo de audio, no como nota de voz.
 - Sólo WhatsApp: en otros canales no aparece el micrófono.
+
+## También en esta versión
+
+- **Comentarios:** si el contacto llegó por un comentario en una publicación de Instagram o Facebook, la conversación lo dice arriba y marca cada comentario. Responder sale como **mensaje directo**. La API no documenta la respuesta privada a un comentario, así que hay que probarla; Meta sólo la admite durante unos días.
+- **Errores de envío:** el aviso incluye el motivo que da la cuenta. Si la nota de voz sigue rechazada, ese texto dice por qué.

@@ -65,7 +65,7 @@ final class VoiceNote {
             throw new SendProblem('send_paused',429,'Envío pausado. La nota de voz todavía no se ha enviado.',$e->retryAfter);
         } catch(GhlApiException $e) {
             throw new SendProblem('voice_upload_rejected',in_array($e->status,[413,415],true)?$e->status:424,
-                $e->status===413?'La cuenta no acepta un audio tan grande.':($e->status===415?'La cuenta no acepta este tipo de audio.':(in_array($e->status,[401,403],true)?'La clave de la cuenta no permite subir archivos a la conversación.':'La cuenta no pudo recibir el audio (código '.$e->status.'). Vuelve a intentarlo.')));
+                $e->status===413?'La cuenta no acepta un audio tan grande.':($e->status===415?'La cuenta no acepta este tipo de audio.':(in_array($e->status,[401,403],true)?'La clave de la cuenta no permite subir archivos a la conversación.':'La cuenta no pudo recibir el audio (código '.$e->status.($e->detail!==''?': '.$e->detail:'').'). Vuelve a intentarlo.')));
         } catch(SendProblem $e) {throw $e;}
         catch(Throwable $e) {throw new SendProblem('voice_upload_failed',424,'No se pudo subir el audio. Vuelve a intentarlo.');}
         $files=is_array($done['uploadedFiles']??null)?$done['uploadedFiles']:[];

@@ -5,9 +5,9 @@ import {workspace,friendly} from './workspace.js';
 import {supported as voiceSupported,record as voiceRecord,MAX_SECONDS as VOICE_MAX} from './voice.js';
 const drafts=new Map();
 window.addEventListener('agora:logout',()=>{drafts.clear();for(const key of Object.keys(sessionStorage))if(key.startsWith('agora-send:'))sessionStorage.removeItem(key)});
-const sendChannels={TYPE_SMS:'SMS',TYPE_WHATSAPP:'WhatsApp',TYPE_INSTAGRAM:'IG',TYPE_FACEBOOK:'FB',TYPE_EMAIL:'Email'};
+const sendChannels={TYPE_SMS:'SMS',TYPE_WHATSAPP:'WhatsApp',TYPE_INSTAGRAM:'IG',TYPE_FACEBOOK:'FB',TYPE_EMAIL:'Email',TYPE_INSTAGRAM_COMMENT:'IG',TYPE_FACEBOOK_COMMENT:'FB'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const channel=value=>({TYPE_WHATSAPP:'WhatsApp',TYPE_INSTAGRAM:'Instagram',TYPE_SMS:'SMS',TYPE_EMAIL:'Email',TYPE_FACEBOOK:'Messenger',TYPE_CALL:'Llamada',TYPE_LIVE_CHAT:'Chat web',TYPE_INTERNAL_COMMENTS:'Nota interna'}[value]||'Conversación');
+const channel=value=>({TYPE_WHATSAPP:'WhatsApp',TYPE_INSTAGRAM:'Instagram',TYPE_SMS:'SMS',TYPE_EMAIL:'Email',TYPE_FACEBOOK:'Messenger',TYPE_CALL:'Llamada',TYPE_LIVE_CHAT:'Chat web',TYPE_INTERNAL_COMMENTS:'Nota interna',TYPE_INSTAGRAM_COMMENT:'Comentario en Instagram',TYPE_FACEBOOK_COMMENT:'Comentario en Facebook'}[value]||'Conversación');
 const name=c=>c.contactName||c.fullName||[c.firstName,c.lastName].filter(Boolean).join(' ')||'Contacto sin nombre';
 const initials=c=>name(c).split(/\s+/).slice(0,2).map(s=>[...s][0]).join('').toUpperCase();
 // En la lista basta la hora si es de hoy, «Ayer», el día de la semana o la fecha corta.
@@ -139,9 +139,18 @@ export async function renderLiveInbox(container){
     const files=attachmentsOf(m);
     const body=m.body?esc(m.body):(files.length?'':'Mensaje sin texto');
     const failed=['failed','undelivered','opt_out'].includes(m.status);
-    return `<div class="bubble ${m.direction==='outbound'?'out':''}${failed?' failed':''}" data-mid="${esc(m.id)}">${body}${files.length?`<div class="live-attachments">${files.map(attachmentMarkup).join('')}</div>`:''}${statusMarkup(m,date(m.dateAdded))}</div>`;
+    const tag=commentTypes[m.messageType]?`<span class="comment-tag">Comentario en una publicación de ${commentTypes[m.messageType]}</span>`:'';
+    return `<div class="bubble ${m.direction==='outbound'?'out':''}${failed?' failed':''}" data-mid="${esc(m.id)}">${tag}${body}${files.length?`<div class="live-attachments">${files.map(attachmentMarkup).join('')}</div>`:''}${statusMarkup(m,date(m.dateAdded))}</div>`;
    }).join('')||'<p class="empty">No hay mensajes disponibles.</p>';
    bindAttachments(log);
+   // Si el contacto llegó (o escribió) por un comentario en una publicación, se dice arriba.
+   const ordered=[...messages.values()].sort((a,b)=>(Date.parse(a.dateAdded)||0)-(Date.parse(b.dateAdded)||0));
+   const firstComment=ordered.length&&commentTypes[ordered[0].messageType]?ordered[0]:null;
+   const anyComment=firstComment||ordered.find(m=>commentTypes[m.messageType]);
+   if(anyComment&&log.innerHTML.indexOf('class="empty"')<0){
+    const net=commentTypes[anyComment.messageType];
+    log.insertAdjacentHTML('afterbegin',`<p class="origin-note">${firstComment?`Su primera interacción fue un comentario en una publicación de ${net}.`:`Este contacto también comentó en una publicación de ${net}.`} Tu respuesta se envía como mensaje directo.</p>`);
+   }
    // Volver a escribir un mensaje que no salió: el texto vuelve al cuadro de
    // respuesta para revisarlo, y se envía sólo cuando la persona lo decide.
    log.querySelectorAll('[data-retry]').forEach(button=>button.onclick=()=>{
@@ -184,8 +193,9 @@ export async function renderLiveInbox(container){
    Email:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.8" y="5" width="18.4" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="m3.4 6.6 8.6 6 8.6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
   };
   const CHANNEL_REASONS={needs_phone:'Este contacto no tiene teléfono en su ficha.',needs_email:'Este contacto no tiene correo en su ficha.',needs_thread:'Sólo se puede responder por aquí si el contacto escribió primero.'};
+  const commentTypes={TYPE_INSTAGRAM_COMMENT:'Instagram',TYPE_FACEBOOK_COMMENT:'Facebook'};
   const threadChannel=c=>sendChannels[c.lastMessageType]
-    ? [{type:sendChannels[c.lastMessageType],label:channel(c.lastMessageType),needsSubject:sendChannels[c.lastMessageType]==='Email'}] : [];
+    ? [{type:sendChannels[c.lastMessageType],label:commentTypes[c.lastMessageType]?'Mensaje directo en '+commentTypes[c.lastMessageType]:channel(c.lastMessageType),needsSubject:sendChannels[c.lastMessageType]==='Email'}] : [];
   const usableChannels=offered=>asList(offered).filter(o=>o.available!==false);
   const pickerMarkup=offered=>{
    const list=asList(offered);
