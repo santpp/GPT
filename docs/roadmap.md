@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.0.2. Después de la v1.0 el usuario sólo quiere el comentario interno por contacto; el resto de ideas se descarta.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.0.2. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -99,13 +99,13 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## Plan después de la v1.0 (decisión del usuario)
 
-- Comentario interno por contacto: ya se pueden crear notas desde el chat; falta verlas y crearlas también desde la ficha de Contactos, destacadas como comentario del equipo.
 - A estudiar, sólo si el usuario lo confirma: gestionar usuarios del equipo desde Ágora (crear, editar rol y permisos, quitar) con `POST/PUT/DELETE /users`, que exigen el permiso `users.write`, el `companyId` de la agencia y una prueba real.
 - Descartado por el usuario: plantillas con imagen, estados de entrega y lectura, informes por mes, agrupar avisos, enlaces directos, uso sin conexión, pantalla de tareas, IA y ERP.
 
 ## Cambios pendientes (acordados, sin hacer todavía)
 
 1. **Tablero: sin administradores entre los vendedores.** Quien tenga rol de administrador (de subcuenta o de agencia) no sale en la lista del equipo. Sus ventas siguen contando en el total del mes, la ganancia y las comisiones. Opción «Cuenta como vendedor» en Cifras del mes para un admin que sí vende.
-2. **Comisiones editables por subcuenta, en porcentaje o en monto fijo.** Hoy es sólo un porcentaje (10 % por defecto) que se fija por subcuenta y mes. Se añade elegir el tipo de comisión de cada subcuenta: porcentaje de la venta, o un monto fijo **por cierre** (confirmado: la otra subcuenta conectada paga así; por ejemplo, 5 por cada venta ganada). El monto fijo por vendedor al mes queda fuera salvo que otra subcuenta lo pida. Se guarda con las demás cifras del mes y la edita sólo el administrador.
-3. **Comentario interno por contacto** visible y editable desde la ficha de Contactos.
-4. **Nota de origen de cada cifra** en la rentabilidad del mes (de dónde sale y cómo se calcula).
+2. **Comisiones editables por subcuenta, en porcentaje o en monto fijo.** Hoy es sólo un porcentaje (10 % por defecto) que se fija por subcuenta y mes. Se añade elegir el tipo de comisión de cada subcuenta: porcentaje de la venta, o un monto fijo **por cierre** (confirmado: la otra subcuenta conectada paga así; por ejemplo, 5 por cada venta ganada). El monto fijo por vendedor al mes queda fuera salvo que otra subcuenta lo pida. **Se configura sólo desde Conexiones, por subcuenta, y únicamente por el administrador** (sale de «Cifras del mes» del tablero). Propuesta pendiente de confirmar: vale desde el mes en que se cambia, y los meses anteriores conservan su regla.
+3. **Nota de origen de cada cifra** en la rentabilidad del mes (de dónde sale y cómo se calcula).
+4. **Cada aviso lleva a su conversación.** Hoy el aviso abre Ágora en la bandeja, no en la conversación de ese contacto: la dirección `/conversations/{id}` llega, pero la app la trata como la bandeja. Hay que abrir esa conversación, cambiando antes a su subcuenta si hace falta, y mostrar un aviso claro si ya no está disponible.
+5. **A estudiar: avisos internos de Ágora** («Esta versión incluye…», comunicados del administrador). Propuesta en dos partes: (a) una tarjeta «Novedades» que sale una vez al abrir la app tras actualizarse, con el texto de la versión escrito para el cliente; (b) comunicados del administrador desde Conexiones (título, texto, enlace opcional, quién lo ve, caducidad) que salen dentro de la app y, si el administrador lo marca, también como aviso del teléfono. Con campana y contador de no leídos por persona.
