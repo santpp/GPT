@@ -129,7 +129,7 @@ body:has(#view[data-view="inbox"]) .topbar{flex-shrink:0;height:58px}
 }
 
 /* Channel picker, contact editing and the brand mark in the header. */
-.breadcrumbs .brand-dot{display:inline-grid;place-items:center;width:26px;height:26px;margin-right:9px;border-radius:8px 2px 8px 2px;background:var(--green);color:#fff;font:600 15px/1 var(--serif);vertical-align:middle}
+.breadcrumbs .brand-dot{display:inline-block;width:26px;height:26px;margin:0 9px 0 0;vertical-align:middle}
 .live-channels{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .live-channels button{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:11px;color:var(--muted);background:var(--paper)}
 .live-channels button span{font-size:13px}
@@ -477,3 +477,19 @@ body.agora-focus .live-composer{padding-bottom:calc(10px + env(safe-area-inset-b
 .live-chat-header button{color:var(--ink)}
 #live-focus.active{color:var(--green)}
 @media(max-width:600px){.msg-why{font-size:12px}.msg-retry{min-height:44px;font-size:12px}.att-file{font-size:13px}.ui-icon{width:22px;height:22px}}
+/* 0.22.2 · limpieza antes del despliegue */
+.nav>span{display:inline-grid;place-items:center}.nav-icon{width:20px;height:20px;display:block}
+.breadcrumbs .brand-dot{display:inline-block!important}
+.live-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:nowrap}
+.live-toolbar .live-feedback{padding:0!important;margin:0;flex:1;min-width:0;font-size:11px}
+.live-toolbar label:has(#live-limit){flex:0 0 auto!important;max-width:none!important}
+.live-conversation .conversation-info header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.live-conversation .conversation-info header strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.live-conversation .conversation-info header time{flex:0 0 auto;margin:0;font-size:10px;color:var(--muted)}
+.live-conversation .conversation-info footer{margin-top:2px}
+.live-toolbar label:has(#live-limit){display:flex!important;flex-direction:row;align-items:center;gap:8px}
+.live-toolbar .search{flex:1;max-width:none!important;margin:0;display:flex!important;flex-direction:row;align-items:center;gap:8px}
+.live-toolbar select{min-height:36px;padding:6px 8px}
+.live-composer:has(.live-channel-single) #live-channel-name{visibility:hidden}
+/* En el teléfono el menú de abajo ya lleva a esas pantallas. */
+@media(max-width:600px){.dashboard-links{display:none}}

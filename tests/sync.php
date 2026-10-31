@@ -25,7 +25,7 @@ try{
  verify($limited&&(int)query('SELECT request_not_before FROM ghl_sync_state WHERE connection_id=?',[$id])->fetchColumn()>=time()+175,'429 Retry-After persists shared cooldown');
  $prior=$calls;try{$sync->sync($connection);}catch(GhlCooldown $e){}
  verify($calls===$prior,'cooldown shared across calls and no immediate retry');
- resetState($id);query('UPDATE ghl_sync_state SET requests_today=5000 WHERE connection_id=?',[$id]);$prior=$calls;
+ resetState($id);query('UPDATE ghl_sync_state SET requests_today='.GhlGateway::DAILY_BUDGET.' WHERE connection_id=?',[$id]);$prior=$calls;
  try{$sync->sync($connection);}catch(GhlCooldown $e){}
  verify($calls===$prior,'local daily budget prevents upstream calls');
  resetState($id);$response=['status'=>200,'headers'=>['X-RateLimit-Remaining'=>'0','X-RateLimit-Interval-Milliseconds'=>'10000'],'body'=>json_encode(['conversations'=>[],'total'=>0])];

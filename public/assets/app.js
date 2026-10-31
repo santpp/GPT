@@ -245,7 +245,7 @@ if('serviceWorker' in navigator){
       if(!hadController){hadController=true;return}
       if(!reloading){reloading=true;location.reload()}
     });
-  }).catch(()=>toast('La caché offline no está disponible en este navegador.'));
+  }).catch(()=>{});
 }
 
 // A visit always starts from the real session: there is no sample workspace.

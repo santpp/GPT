@@ -1,4 +1,4 @@
-import {workspace} from './workspace.js';
+import {workspace,friendly} from './workspace.js';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const asList=value=>Array.isArray(value)?value:[];
@@ -83,12 +83,12 @@ export async function renderDashboard(container){
       if(!active())return;
       paint(now,null);
       try{month=await request(`workspace/board-month?connectionId=${encodeURIComponent(connection)}&period=${period}`)}
-      catch(error){month={error:error.message}}
+      catch(error){month={error:friendly(error)}}
       if(!active())return;
       paint(now,month);
     }catch(error){
       if(!active())return;
-      $('#dashboard-feedback').textContent=error.message;
+      $('#dashboard-feedback').textContent=friendly(error);
       $('#dashboard-body').innerHTML='';
       if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
     }
@@ -176,7 +176,7 @@ export async function renderDashboard(container){
       period=pick.value;
       $('#board-month').innerHTML=monthBlock(null);
       try{month=await request(`workspace/board-month?connectionId=${encodeURIComponent(connection)}&period=${period}`)}
-      catch(error){month={error:error.message}}
+      catch(error){month={error:friendly(error)}}
       if(!active())return;
       $('#board-month').innerHTML=monthBlock(month);bindMonth();
     };
@@ -220,7 +220,7 @@ export async function renderDashboard(container){
         if(!active())return;
         dialog.close();
         $('#board-month').innerHTML=monthBlock(month);bindMonth();
-      }catch(error){status.textContent=error.message;button.disabled=false}
+      }catch(error){status.textContent=friendly(error);button.disabled=false}
     };
   }
 

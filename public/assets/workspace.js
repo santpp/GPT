@@ -32,3 +32,15 @@ export const workspace={
 };
 
 function notify(){for(const listener of [...listeners])listener(current)}
+
+/**
+ * Lo que se le dice a la persona cuando algo falla. Los mensajes del servidor ya
+ * vienen en castellano y se muestran tal cual; un fallo del propio navegador
+ * (sin red, o un dato que no se pudo pintar) no se enseña en inglés técnico.
+ */
+export function friendly(error){
+  if(!navigator.onLine)return 'Sin conexión. Se reintentará al volver la red.';
+  if(error instanceof TypeError||error instanceof RangeError||error instanceof ReferenceError||error instanceof SyntaxError)
+    return 'No se pudo mostrar esta información. Vuelve a entrar en un momento.';
+  return error?.message||'No se pudo completar. Vuelve a intentarlo.';
+}

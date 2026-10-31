@@ -6,8 +6,11 @@ final class GhlCooldown extends RuntimeException {
     public function __construct(public readonly int $retryAfter) {parent::__construct('API cooldown');}
 }
 final class GhlGateway {
-    // The conservative local budget is a safety cap, not a claim about PIT quotas.
-    private const DAILY_BUDGET=5000;
+    // A safety cap against a runaway loop, not the account's quota: the published
+    // limit is 200,000 a day per sub-account, and the response headers are obeyed
+    // well before this. The check every 10 seconds alone is about 8,640 a day, so
+    // the old cap of 5,000 stopped every read by mid-morning in New York.
+    public const DAILY_BUDGET=50000;
     // The published OAuth burst limit is 100 requests per 10 seconds per resource.
     // A fifth of that leaves room for anything else using the same credential,
     // while letting one screen make its handful of reads without waiting.

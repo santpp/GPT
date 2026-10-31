@@ -1,4 +1,4 @@
-import {workspace} from './workspace.js';
+import {workspace,friendly} from './workspace.js';
 import {opportunityForm,readOpportunityForm,bindPipelineChoice} from './opportunity-editor.js';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -57,7 +57,7 @@ export async function renderBoard(container){
     editing=id;notice='';show();
     if(!directory){
       try{directory=await request(`workspace/pipelines?connectionId=${encodeURIComponent(connection)}`)}
-      catch(error){editing=null;notice=error.message}
+      catch(error){editing=null;notice=friendly(error)}
       if(!active())return;
       show();
     }
@@ -85,7 +85,7 @@ export async function renderBoard(container){
       if(['action_rejected','invalid_opportunity_name','invalid_opportunity_value','unknown_pipeline','unknown_stage','unknown_assignee','assignee_forbidden','invalid_status','nothing_to_change','action_forbidden'].includes(error.code))sessionStorage.removeItem(storageKey);
       if(!active())return;
       const failed=container.querySelector('[data-status]');
-      if(failed)failed.textContent=error.message;
+      if(failed)failed.textContent=friendly(error);
       const retry=container.querySelector('[data-save]');if(retry)retry.disabled=false;
       if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
     }
@@ -105,7 +105,7 @@ export async function renderBoard(container){
       show();
     }catch(error){
       if(!active()||version!==generation)return;
-      container.innerHTML=`<p class="empty">${esc(error.message)}</p>`;
+      container.innerHTML=`<p class="empty">${esc(friendly(error))}</p>`;
       if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
     }
   }

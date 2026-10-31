@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.22.1.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.22.2.
 
 ## Completado y desplegable
 
@@ -65,9 +65,14 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Revisión desde fuera con una dirección secreta, para cuando el cron del servidor no corre (0.21.2).
 - Avisos en 10–15 segundos con la app cerrada, con quién, canal y texto; aviso visible si el service worker se queda atrás (0.21.3).
 - Texto real del mensaje en el aviso (0.22.1): confirmado en teléfono real. El título lleva quién y por qué canal y el cuerpo, lo que escribió.
-- **Cuota diaria propia (0.22.2, prioridad).** La revisión cada 10 segundos son unas 8.640 lecturas al día por subcuenta, y el tope de seguridad local de Ágora es de 5.000 al día. El contador se reinicia a medianoche UTC (20:00 en Nueva York en horario de verano, 19:00 en horario de invierno). Al ritmo de la revisión, sin contar pantallas abiertas, el tope se alcanza entre las 14:00 y las 17:00 UTC, es decir, a media mañana o hacia mediodía en Nueva York, y antes si hay pantallas abiertas. Desde ese momento y hasta las 19:00 o 20:00 de Nueva York Ágora no lee la cuenta: ni avisos ni bandeja nueva. Respecto a los límites oficiales no hay problema (200.000 al día y 100 cada 10 segundos por subcuenta), así que hay que subir el tope a un valor alineado con ellos, por ejemplo 50.000, conservando la lectura de las cabeceras de cuota.
+- Cuota diaria propia corregida en 0.22.2: el tope interno pasa de 5.000 a 50.000 consultas al día por subcuenta. Con 5.000, la revisión cada 10 segundos lo agotaba entre las 9:00 y las 13:00 de Nueva York y Ágora no leía la cuenta hasta las 19:00 o 20:00. Límite oficial: 200.000 al día y 100 cada 10 segundos; se siguen obedeciendo las cabeceras de cuota.
 - Deep links a contacto y oportunidad (la conversación ya funciona).
 - Cola offline para operaciones compatibles y reconciliación al recuperar conexión.
+
+## Limpieza de interfaz para el despliegue
+
+- 0.22.2: marca de Ágora en la cabecera, iconos dibujados en el menú, bandeja más compacta con hora corta, sin estados de entrega en lo recibido, sin canal repetido en el cuadro de respuesta, buscador de contactos completo, sin avisos técnicos y errores del navegador explicados en castellano.
+- Pendiente: revisar Conexiones, ficha del contacto y oportunidades en el teléfono con datos reales; modo oscuro al final.
 
 ## Evolución
 

@@ -1,4 +1,4 @@
-import {workspace} from './workspace.js';
+import {workspace,friendly} from './workspace.js';
 import {contactForm,readContactForm,bindTagEditor} from './contact-editor.js';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -51,7 +51,7 @@ export async function renderContacts(container){
       bindRows();
     }catch(error){
       if(!active()||version!==generation)return;
-      $('#contact-feedback').textContent=error.message;
+      $('#contact-feedback').textContent=friendly(error);
       $('#contact-results').innerHTML='';
       if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
     }
@@ -74,7 +74,7 @@ export async function renderContacts(container){
       record=data;show();
     }catch(error){
       if(!active()||selected!==contactId)return;
-      $('#contact-record').innerHTML=`<p class="empty">${esc(error.message)}</p>`;
+      $('#contact-record').innerHTML=`<p class="empty">${esc(friendly(error))}</p>`;
       if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
     }
   }
@@ -128,7 +128,7 @@ export async function renderContacts(container){
       if(row)row.textContent=fresh.contact.name;
     }catch(error){
       if(!active())return;
-      status.textContent=error.message;
+      status.textContent=friendly(error);
       if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
     }finally{if(active())button.disabled=false}
   }

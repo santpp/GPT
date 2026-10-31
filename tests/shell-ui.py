@@ -76,6 +76,10 @@ with sync_playwright() as p:
     assert 'Actualizar' not in toolbar, toolbar
     assert page.locator('#sync-live').count()==0 and page.locator('#live-connection').count()==0
     print('PASS inbox has no manual refresh and no dropdown of its own')
+    assert page.locator('.breadcrumbs img.brand-dot[src="/assets/agora-mark.svg"]').count()==1 and 'Á' not in page.locator('.breadcrumbs').inner_text()
+    assert page.locator('.sidebar .nav svg.nav-icon').count()==page.locator('.sidebar .nav').count()
+    assert 'caché' not in page.locator('#toast').inner_text().lower()
+    print('PASS the header carries the Ágora mark, the menu draws its own icons, and no technical notice appears')
     page.select_option('#account','2')
     page.wait_for_timeout(600)
     assert 'Cuenta B' in page.locator('#account-name').inner_text()

@@ -108,6 +108,8 @@ export function statusInfo(message){
 /** El pie de cada burbuja: hora, estado y, si no salió, el porqué a un toque. */
 export function statusMarkup(message,time){
   const info=statusInfo(message);
+  // En lo recibido, «Entregado» o «Leído» no dicen nada útil; sólo un fallo.
+  if(message?.direction==='inbound'&&info.tone!=='bad')info.label='';
   const line=`<time>${esc(time)}${info.label?` · <span class="msg-state ${esc(info.tone)}">${esc(info.label)}</span>`:''}</time>`;
   if(info.tone!=='bad')return line;
   const retry=message.direction==='outbound'&&typeof message.body==='string'&&message.body.trim()&&message.status!=='opt_out'
