@@ -55,11 +55,13 @@ final class VoiceNote {
     /** Subida en dos pasos: pedir la dirección, subir los bytes y confirmar para obtener la dirección pública. */
     private function upload(array $connection,string $conversationId,string $mime,string $bytes):string {
         $ext=self::TYPES[$mime];$name='nota-de-voz.'.$ext;$location=$connection['location_id'];
+        // WhatsApp lista el audio de las notas de voz como OGG con códec Opus: así se etiqueta la subida.
+        $label=$mime==='audio/ogg'?'audio/ogg; codecs=opus':$mime;
         try {
-            $start=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->initiateUpload(['locationId'=>$location,'conversationId'=>$conversationId,'filename'=>$name,'contentType'=>$mime,'fileSize'=>strlen($bytes),'channel'=>'WHATSAPP']),false);
+            $start=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->initiateUpload(['locationId'=>$location,'conversationId'=>$conversationId,'filename'=>$name,'contentType'=>$label,'fileSize'=>strlen($bytes),'channel'=>'WHATSAPP']),false);
             $signed=$start['uploadUrl']??null;$uploadId=$start['uploadId']??null;$path=$start['filePath']??null;
             if(!is_string($signed)||!self::signedHost($signed)||!is_string($uploadId)||!is_string($path))throw new RuntimeException('Unexpected upload answer');
-            $this->putBytes($signed,$mime,$bytes);
+            $this->putBytes($signed,$label,$bytes);
             $done=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->completeUpload(['uploadId'=>$uploadId,'filePath'=>$path,'locationId'=>$location,'conversationId'=>$conversationId,'filename'=>$name]),false);
         } catch(GhlCooldown $e) {
             throw new SendProblem('send_paused',429,'Envío pausado. La nota de voz todavía no se ha enviado.',$e->retryAfter);
