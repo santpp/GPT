@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.0.2.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.0.2. Después de la v1.0 el usuario sólo quiere el comentario interno por contacto; el resto de ideas se descarta.
 
 ## Completado y desplegable
 
@@ -96,3 +96,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Tablero: cifras de la cuenta en 0.16.0; rentabilidad del mes y desempeño del equipo con metas y semáforo en 0.20.0; lo invertido en Meta leído de la cuenta publicitaria conectada en 0.21.0. Pendientes: comparación entre meses y reportes exportables.
 - Reportes, Ágora Digital ERP, cobranza, facturación y pagos.
 - Varias subcuentas por empresa y posterior arquitectura SaaS multiempresa.
+
+## Plan después de la v1.0 (decisión del usuario)
+
+- Comentario interno por contacto: ya se pueden crear notas desde el chat; falta verlas y crearlas también desde la ficha de Contactos, destacadas como comentario del equipo.
+- A estudiar, sólo si el usuario lo confirma: gestionar usuarios del equipo desde Ágora (crear, editar rol y permisos, quitar) con `POST/PUT/DELETE /users`, que exigen el permiso `users.write`, el `companyId` de la agencia y una prueba real.
+- Descartado por el usuario: plantillas con imagen, estados de entrega y lectura, informes por mes, agrupar avisos, enlaces directos, uso sin conexión, pantalla de tareas, IA y ERP.
