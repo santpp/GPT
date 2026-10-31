@@ -226,7 +226,11 @@ async function openSecurity(){
   const sessions=list=>list.map(s=>item(s.label+(s.current?' · este dispositivo':''),`${s.mine?'':s.email+' · '}Último uso: ${when(s.lastUsedAt)}`,s.current?'':`<button class="link-button" data-close-session="${s.id}">Cerrar</button>`)).join('');
   const keys=list=>list.map(k=>item(k.label||'Llave de acceso',`${k.mine?'':k.email+' · '}Último uso: ${when(k.lastUsedAt)}`,`<button class="link-button" data-remove-key="${k.id}">Quitar</button>`)).join('');
   const others=data.team?{sessions:data.team.sessions.filter(s=>!s.mine),keys:data.team.passkeys.filter(k=>!k.mine)}:null;
-  $('#dialog-content').innerHTML=`<h2>Seguridad y sesión</h2>
+  const theme=globalThis.agoraTheme?.get?.()||'auto';
+  $('#dialog-content').innerHTML=`<h2>Mi cuenta</h2>
+   <section class="security-block"><h3>Apariencia</h3>
+    <label class="security-lock">Tema<select id="theme-choice"><option value="auto"${theme==='auto'?' selected':''}>Automático (como el dispositivo)</option><option value="light"${theme==='light'?' selected':''}>Claro</option><option value="dark"${theme==='dark'?' selected':''}>Oscuro</option></select></label>
+   </section>
    <section class="security-block"><h3>Este dispositivo</h3>
     ${canPasskey?(hasKey?'<p class="dialog-copy">Puedes entrar con tu huella, Face ID o el PIN del dispositivo.</p>':'<p class="dialog-copy">Entra sin escribir nada, con tu huella, Face ID o el PIN de este dispositivo.</p><button id="add-passkey" class="primary">Activar huella o Face ID</button>'):'<p class="dialog-copy">Este navegador no admite entrar con huella o cara.</p>'}
     <label class="security-lock">Pedir la huella o la cara al volver<select id="lock-minutes" ${hasKey&&data.deviceRemembered?'':'disabled'}>${lockOptions.map(([v,l])=>`<option value="${v}"${String(data.lockMinutes??'')===v?' selected':''}>${l}</option>`).join('')}</select></label>
@@ -240,6 +244,7 @@ async function openSecurity(){
   const csrf=workspace.me?.csrf||'';
   const result=$('#security-result');
   $('#signout').onclick=signOut;
+  $('#theme-choice').onchange=e=>globalThis.agoraTheme?.set?.(e.target.value);
   const add=$('#add-passkey');
   if(add)add.onclick=async()=>{add.disabled=true;try{await enrollPasskey();await openSecurity();toast('Listo. La próxima vez entra con tu huella o tu cara.')}catch(error){result.textContent=error.status?error.message:passkeyTrouble(error);add.disabled=false}};
   $('#lock-minutes').onchange=async e=>{

@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.25.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.26.0.
 
 ## Completado y desplegable
 
@@ -76,9 +76,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Confirmar el envío real de una plantilla de WhatsApp.
 - Dirección de revisión protegida (0.25.0): contraseña antes de crear la clave, clave en cabecera `X-Agora-Key` y último uso visible.
 - Validación real por canal y de la huella en iPhone y Android.
-- Copia de seguridad diaria (0.25.0): cifrada con frase e incluyendo las claves, restauración probada. Pendiente: que el usuario añada la frase y la tarea diaria.
-- Quitar las migraciones automáticas antes del despliegue de la v1.0.
-- Modo oscuro, al final.
+- Copias de seguridad: fuera del plan por decisión del usuario (los datos viven en la cuenta conectada). La herramienta de 0.25.0 queda disponible pero inactiva si no se configura.
+- Migraciones automáticas: se mantienen como están, por decisión del usuario.
+- Modo oscuro (0.26.0): automático según el dispositivo, o fijo en claro u oscuro desde Mi cuenta, sin parpadeo al abrir.
 
 ## Evolución
 

@@ -1,0 +1,167 @@
+/* Modo oscuro. Generado por tools/make-dark.py: no editar a mano. */
+html[data-theme="dark"] button:focus-visible,html[data-theme="dark"] a:focus-visible,html[data-theme="dark"] input:focus-visible,html[data-theme="dark"] textarea:focus-visible{outline:2px solid #ad103c}
+html[data-theme="dark"] .sidebar{background:#1d1f2b}
+html[data-theme="dark"] .brand-mark{color:#ffffff}
+html[data-theme="dark"] .workspace-label{color:#959893}
+html[data-theme="dark"] .nav{color:#8b8f8b}
+html[data-theme="dark"] .nav.active{background:#232634;color:#e9678c}
+html[data-theme="dark"] .nav b{color:#ffffff}
+html[data-theme="dark"] .connection{color:#8f928d}
+html[data-theme="dark"] .connection i,html[data-theme="dark"] .live-dot{background:#fabd4b}
+html[data-theme="dark"] .profile{border-top:1px solid #363a49}
+html[data-theme="dark"] .profile small{color:#8f928e}
+html[data-theme="dark"] .avatar{background:#473f33;color:#d2cec9}
+html[data-theme="dark"] .avatar.olive{background:#242736;color:#e9678c}
+html[data-theme="dark"] .breadcrumbs{color:#959894}
+html[data-theme="dark"] .breadcrumbs span{color:#a7aaa3}
+html[data-theme="dark"] .breadcrumbs strong{color:#cfd1ce}
+html[data-theme="dark"] .network{color:#8d8e96}
+html[data-theme="dark"] .dot{background:#bc805e}
+html[data-theme="dark"] .eyebrow{color:#e9678c}
+html[data-theme="dark"] h1>span{color:#939a83}
+html[data-theme="dark"] .page-heading p{color:#949793}
+html[data-theme="dark"] .heading-detail small{color:#959893}
+html[data-theme="dark"] .stats span{color:#91958e}
+html[data-theme="dark"] .stats strong small{color:#959893}
+html[data-theme="dark"] .stat-note .spark{color:#c2a878}
+html[data-theme="dark"] .stat-note p{color:#8e938a}
+html[data-theme="dark"] .inbox-layout{background:#1d1f2b}
+html[data-theme="dark"] .list-heading h2 span{background:#242837;color:#93978e}
+html[data-theme="dark"] .search{background:#1f222f;border:1px solid #363a49}
+html[data-theme="dark"] .search span{color:#949890}
+html[data-theme="dark"] .search kbd{color:#9da19a}
+html[data-theme="dark"] .tabs button{color:#999c97}
+html[data-theme="dark"] .tabs button.active{color:#e9678c;border-color:#ad103c}
+html[data-theme="dark"] .tabs span{background:#252837}
+html[data-theme="dark"] .conversation-item{border-bottom:1px solid #363a49}
+html[data-theme="dark"] .conversation-item.selected{background:#212431;border-left-color:#ad103c}
+html[data-theme="dark"] .conversation-info time{color:#999c95}
+html[data-theme="dark"] .conversation-info p{color:#949891}
+html[data-theme="dark"] .channel{color:#8e9097}
+html[data-theme="dark"] .unread{background:#ad103c;color:#ffffff}
+html[data-theme="dark"] .list-footer{color:#9da198}
+html[data-theme="dark"] .chat-person>span{color:#959992}
+html[data-theme="dark"] .chat-header .icon-btn{color:#93978f}
+html[data-theme="dark"] .conversation-context{background:#1e212d;color:#8e9097;border-bottom:1px solid #363a49}
+html[data-theme="dark"] .conversation-context button{color:#94998e}
+html[data-theme="dark"] .messages{background:radial-gradient(#2a2e3f33 .7px,transparent .7px)}
+html[data-theme="dark"] .day-label{color:#9b9e96}
+html[data-theme="dark"] .bubble{background:#212532;border:1px solid #363a49}
+html[data-theme="dark"] .bubble.out{background:#232634;border-color:#4e3b43}
+html[data-theme="dark"] .bubble.note{background:#50431e;border-color:#544c36}
+html[data-theme="dark"] .bubble time{color:#9ca097}
+html[data-theme="dark"] .composer-tabs{color:#989c93}
+html[data-theme="dark"] .composer-tabs strong{color:#e9678c}
+html[data-theme="dark"] .composer-tabs button{color:#9b9f96}
+html[data-theme="dark"] .composer-hint{color:#9c9f96}
+html[data-theme="dark"] .send,html[data-theme="dark"] .primary{color:#ffffff}
+html[data-theme="dark"] .contact-panel{background:#1e212c}
+html[data-theme="dark"] .panel-heading button{color:#9a9e95}
+html[data-theme="dark"] .contact-identity p{color:#979b92}
+html[data-theme="dark"] .contact-links a,html[data-theme="dark"] .contact-links button{border:1px solid #363a49;color:#c9cdc6}
+html[data-theme="dark"] .section-label{color:#9da197}
+html[data-theme="dark"] .detail-row>span{color:#959a90}
+html[data-theme="dark"] .tag{background:#232634;color:#e9678c}
+html[data-theme="dark"] .tag.warm{background:#4e3e1e;color:#d8b378}
+html[data-theme="dark"] .opportunity{border:1px solid #363a49;background:#1e212e}
+html[data-theme="dark"] .opportunity p{color:#959b8f}
+html[data-theme="dark"] .stage-progress i{background:#232634}
+html[data-theme="dark"] .stage-progress i:first-child,html[data-theme="dark"] .stage-progress i:nth-child(2){background:#ad103c}
+html[data-theme="dark"] .quick-actions button{border:1px solid #363a49}
+html[data-theme="dark"] .task{color:#cacdc7}
+html[data-theme="dark"] .task small{color:#9ca197}
+html[data-theme="dark"] .page-footer{color:#9c9f96}
+html[data-theme="dark"] .toast{background:#282e49;color:#ffffff;box-shadow:0 8px 30px #00000066}
+html[data-theme="dark"] .other-view{background:#1d1f2b}
+html[data-theme="dark"] .card{background:#202330}
+html[data-theme="dark"] .card p{color:#949890}
+html[data-theme="dark"] .empty{color:#95998f}
+html[data-theme="dark"] dialog{box-shadow:0 20px 100px #00000066}
+html[data-theme="dark"] dialog::backdrop{background:#282e4955}
+html[data-theme="dark"] .dialog-copy{color:#8f948c}
+html[data-theme="dark"] .integration-status{color:#d0c8cc}
+html[data-theme="dark"] .settings-notice{background:#202330}
+html[data-theme="dark"] .danger{color:#e9678c}
+html[data-theme="dark"] .dialog-form select{background:#1d1f2b}
+html[data-theme="dark"] .access-panel select{background:#1d1f2b}
+html[data-theme="dark"] .access-panel .access-state{color:#8f948c}
+@media(max-width:1250px){html[data-theme="dark"] .contact-panel.open{box-shadow:0 8px 60px #00000066;border:1px solid #363a49}}
+@media(max-width:600px){html[data-theme="dark"] .sidebar{border-top:1px solid #363a49;background:#202431}html[data-theme="dark"] .nav.active{color:#e9678c;border-top:2px solid #ad103c}}
+html[data-theme="dark"] .live-toolbar select{background:#1d1f2b}
+@media(max-width:1200px){html[data-theme="dark"] .live-inbox-layout.contact-open .live-contact-panel{background:#1d1f2b;box-shadow:0 18px 60px #00000066}}
+html[data-theme="dark"] .live-opportunity{background:#1e212e}
+html[data-theme="dark"] .live-channels button.selected{background:#232634}
+html[data-theme="dark"] .live-contact-form input:disabled{background:#1f222f}
+html[data-theme="dark"] .live-channels button.selected.channel-WhatsApp{border-color:#1faf54;background:#222634;color:#69e899}
+html[data-theme="dark"] .live-channels button.selected.channel-IG{border-color:#c13584;background:#222532;color:#db75af}
+html[data-theme="dark"] .live-channels button.selected.channel-FB{border-color:#0866ff;background:#1b2b48;color:#679ae9}
+html[data-theme="dark"] .live-channels button.selected.channel-SMS{border-color:#282e49;background:#222634;color:#d3d4dc}
+html[data-theme="dark"] .live-channels button.selected.channel-Email{background:#232634}
+html[data-theme="dark"] .live-channel-filters button.selected{background:#232634}
+html[data-theme="dark"] #nav-unread{color:#fff}
+html[data-theme="dark"] .record-row{border-bottom:1px solid #363a49}
+html[data-theme="dark"] .record-row.selected{background:#212431}
+html[data-theme="dark"] .board-tile{background:#202330}
+html[data-theme="dark"] .board-editor{background:#202330}
+html[data-theme="dark"] .push-toggle[data-state="on"]{background:#232634;border-color:#4e3b43}
+html[data-theme="dark"] .live-contact-panel:empty{background:#1e212c}
+html[data-theme="dark"] .push-toggle[data-state="on"] .push-mark{background:#4b9b6e}
+html[data-theme="dark"] .push-toggle:hover{border-color:#363a49}
+html[data-theme="dark"] .board-warning{color:#dfbe71;background:#4a3c1c;border:1px solid #554c35}
+html[data-theme="dark"] .waterfall-step i{background:#462d37}
+html[data-theme="dark"] .waterfall-step.up i{background:#492935}
+html[data-theme="dark"] .waterfall-step.down i{background:#2d3143}
+html[data-theme="dark"] .waterfall-step.missing i{background:repeating-linear-gradient(90deg,#262a3a 0 5px,transparent 5px 10px)}
+html[data-theme="dark"] .board-tile{background:#1e212d}
+html[data-theme="dark"] .board-stage{background:#1e212d}
+html[data-theme="dark"] .board-goal{background:#1e212d}
+html[data-theme="dark"] .board-state{background:#212532}
+html[data-theme="dark"] .board-state.ok{background:#242735;color:#cbd9d1}
+html[data-theme="dark"] .board-state.near{background:#4e3e1d;color:#dfbe71}
+html[data-theme="dark"] .board-state.behind{background:#381921}
+html[data-theme="dark"] .board-state.none{background:#212532}
+html[data-theme="dark"] .board-bar{background:#242736}
+html[data-theme="dark"] .board-bar.ok i{background:#4b9b6e}
+html[data-theme="dark"] .board-table td.up{color:#cbd9d1}
+@media(max-width:600px){html[data-theme="dark"] .board-table tr{background:#1e212d}}
+html[data-theme="dark"] .push-chain li{background:#1e212d}
+html[data-theme="dark"] .push-chain li::before{background:#4b9b6e}
+html[data-theme="dark"] .push-chain li.bad{background:#4a3c1c;border-color:#554c35;color:#e2bf6e}
+html[data-theme="dark"] .board-source.warn{color:#dfbe71}
+html[data-theme="dark"] .external-check{background:#1e212d}
+html[data-theme="dark"] .external-check button.primary{color:#ffffff}
+html[data-theme="dark"] .att-image{background:#242736}
+html[data-theme="dark"] .att-image.loading{background:linear-gradient(100deg,#242736 30%,#202330 50%,#242736 70%)}
+html[data-theme="dark"] .att-media video{background:#000}
+html[data-theme="dark"] .att-file.broken{background:#1e212d}
+html[data-theme="dark"] .viewer-bar{color:#fff}
+html[data-theme="dark"] .viewer-bar a{color:#fff}
+html[data-theme="dark"] .viewer-close{color:#fff}
+html[data-theme="dark"] .bubble.failed{border-color:#52373f}
+html[data-theme="dark"] .passkey-button.primary-passkey{color:#fff}
+html[data-theme="dark"] .live-window-hint{background:#50431e;color:#d7ba7a}
+html[data-theme="dark"] .tpl-preview{background:#232735;border:1px solid #3c4e3f;color:#dadedb}
+html[data-theme="dark"] .tpl-preview small{color:#cbcecc}
+html[data-theme="dark"] .tpl-preview mark{background:#564b21}
+html[data-theme="dark"] .tpl-preview mark.field{background:#262938;color:#cdcfd6}
+html[data-theme="dark"] .tpl-preview mark.empty{background:#4b1d27;color:#e9678c}
+html[data-theme="dark"] .tpl-buttons span{border:1px solid #3d4d40;color:#cbdacf;background:#1d1f2b}
+html[data-theme="dark"] .backup-notice.warn{background:#50431e;border-color:#544c36}
+/* ---- a mano: paleta base y piezas que el generador no puede adivinar ---- */
+html[data-theme="dark"]{color-scheme:dark;--ink:#e6e8f0;--muted:#9aa0b4;--line:#2f3445;--paper:#1b1f2c;--bg:#12151f;--green:#d13c63;--accent:#f5b84a}
+html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}
+html[data-theme="dark"] .sidebar,html[data-theme="dark"] .other-view,html[data-theme="dark"] .inbox-layout,html[data-theme="dark"] .signin-card,html[data-theme="dark"] dialog{background:var(--paper);color:var(--ink)}
+html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea{color:var(--ink);background-color:#151925;border-color:var(--line)}
+html[data-theme="dark"] .search{background:#151925;border-color:var(--line)}
+html[data-theme="dark"] .search input{background:transparent;border:0}
+html[data-theme="dark"] input::placeholder,html[data-theme="dark"] textarea::placeholder{color:#727891}
+html[data-theme="dark"] .primary,html[data-theme="dark"] .send,html[data-theme="dark"] .passkey-button.primary-passkey{background:#c0204b;border-color:#c0204b;color:#fff}
+html[data-theme="dark"] .toast{background:#e6e8f0;color:#12151f}
+html[data-theme="dark"] .avatar{background:#3a3428;color:#e8d9bf}
+html[data-theme="dark"] .avatar.olive{background:#43202c;color:#f0a3b8}
+html[data-theme="dark"] dialog::backdrop{background:#05070dcc}
+html[data-theme="dark"] .breadcrumbs strong{color:var(--ink)}
+html[data-theme="dark"] .waterfall-step i,html[data-theme="dark"] .waterfall-step.up i{background:#8c3352}
+html[data-theme="dark"] .waterfall-step.down i{background:#46506e}
+html[data-theme="dark"] .waterfall-step.total i{background:var(--green)}
+html[data-theme="dark"] img.brand-logo,html[data-theme="dark"] img.brand-dot{filter:brightness(1.25) saturate(1.1)}

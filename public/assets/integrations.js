@@ -133,7 +133,7 @@ function bindExternalCheck(container,panel){
 // La copia diaria: cuándo fue la última y si incluye las claves.
 function backupNotice(b){
  const day=86400000;
- if(!b)return '<p class="settings-notice backup-notice warn"><b>Copias de seguridad:</b> todavía no se ha hecho ninguna. Añade en el servidor la tarea diaria <code>php agora-private/bin/backup.php</code> (las instrucciones están en la nota de la versión).</p>';
+ if(!b)return ''; // Sin copias configuradas no se dice nada: son opcionales.
  const when=new Date(b.at);const old=Date.now()-when.getTime()>2*day;
  if(!b.ok)return `<p class="settings-notice backup-notice warn"><b>Copias de seguridad:</b> la última, el ${esc(when.toLocaleString('es-ES'))}, falló${b.error==='passphrase_short'?': la frase de cifrado necesita al menos 12 caracteres':'. Revisa los permisos de la carpeta de copias'}.</p>`;
  return `<p class="settings-notice backup-notice${old||!b.encrypted?' warn':''}"><b>Copias de seguridad:</b> la última, el ${esc(when.toLocaleString('es-ES'))}${old?' (hace más de dos días: revisa la tarea diaria)':''}. ${b.encrypted?'Cifrada, con la base de datos y las claves.':'Sólo la base de datos: añade una frase de cifrado para que incluya también las claves.'}</p>`;

@@ -1,5 +1,5 @@
 const CACHE='agora-shell-v22';
-const SHELL=['/','/bandeja','/contactos','/oportunidades','/tablero','/assets/app.css','/assets/layout.css','/assets/app.js','/assets/workspace.js','/assets/contacts.js','/assets/board.js','/assets/icon.svg','/assets/agora-logo.png','/assets/agora-mark.png','/assets/integrations.js','/assets/live-inbox.js','/assets/contact-editor.js','/assets/dashboard.js','/assets/opportunity-editor.js','/assets/native.js','/assets/push.js','/assets/message-view.js','/assets/passkeys.js','/manifest.webmanifest'];
+const SHELL=['/','/bandeja','/contactos','/oportunidades','/tablero','/assets/app.css','/assets/layout.css','/assets/dark.css','/assets/theme.js','/assets/app.js','/assets/workspace.js','/assets/contacts.js','/assets/board.js','/assets/icon.svg','/assets/agora-logo.png','/assets/agora-mark.png','/assets/integrations.js','/assets/live-inbox.js','/assets/contact-editor.js','/assets/dashboard.js','/assets/opportunity-editor.js','/assets/native.js','/assets/push.js','/assets/message-view.js','/assets/passkeys.js','/manifest.webmanifest'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL.map(url=>new Request(url,{cache:'reload'}))))));
 self.addEventListener('message',e=>{
  if(e.data?.type==='ACTIVATE')self.skipWaiting();
