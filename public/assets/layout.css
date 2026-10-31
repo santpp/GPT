@@ -681,3 +681,14 @@ button,.primary,.link-button{transition-duration:.22s}
 dialog[open]{animation:fade-up .35s var(--ease)}
 @media(prefers-reduced-motion:reduce){.sk,.sk-bubble,.sk-row,.sk-tile,.sk-card,.fade-up,.conversation-item,.record-row,.bubble,.board-block,.board-tile,.board-stage,.board-goal,.records-record,dialog[open]{animation:none!important}}
 #live-log[data-painted] .bubble,#live-list[data-painted] .conversation-item{animation:none}
+/* 1.5 · paso suave entre la lista, la conversación y la ficha */
+@keyframes slide-in-right{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:none}}
+@keyframes slide-in-left{from{opacity:0;transform:translateX(-32px)}to{opacity:1;transform:none}}
+@media(max-width:600px){
+ .live-inbox-layout.chat-open #live-messages{animation:slide-in-right .42s var(--ease) both}
+ .live-inbox-layout.contact-open .live-contact-panel{animation:slide-in-right .42s var(--ease) both}
+ .live-inbox-layout:not(.chat-open) .live-sidebar{animation:slide-in-left .42s var(--ease) both}
+}
+@media(min-width:601px) and (max-width:1200px){.live-inbox-layout.contact-open .live-contact-panel{animation:fade-up .35s var(--ease) both}}
+@media(prefers-reduced-motion:reduce){.live-inbox-layout.chat-open #live-messages,.live-inbox-layout.contact-open .live-contact-panel,.live-inbox-layout:not(.chat-open) .live-sidebar{animation:none!important}}
+.live-message-log{scroll-behavior:auto}

@@ -22,3 +22,9 @@ Pulido de la interfaz: pantallas de carga con esqueletos animados.
 ## Animaciones más pausadas
 
 - Las entradas y los esqueletos duran más (medio segundo o algo más) y se escalonan. Los refrescos automáticos no repiten la animación.
+
+## Movimiento dentro de la conversación
+
+- En el teléfono, al abrir una conversación o su ficha, el panel entra deslizando; al volver, la lista entra por el otro lado.
+- Al recibir o enviar un mensaje, la pantalla baja suavemente hasta él. Al abrir una conversación va directo al último mensaje.
+- Con «reducir movimiento» activado en el dispositivo, todo sigue quieto.

@@ -3,6 +3,8 @@ import {opportunityForm,readOpportunityForm,bindPipelineChoice} from './opportun
 import {attachmentsOf,attachmentMarkup,bindAttachments,statusMarkup,UI_ICONS} from './message-view.js';
 import {workspace,friendly} from './workspace.js';
 import {skeleton} from './skeleton.js';
+const calm=()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches}catch{return false}};
+const scrollEnd=(el,smooth)=>el.scrollTo({top:el.scrollHeight,behavior:smooth&&!calm()?'smooth':'auto'});
 const drafts=new Map();
 window.addEventListener('agora:logout',()=>{drafts.clear();for(const key of Object.keys(sessionStorage))if(key.startsWith('agora-send:'))sessionStorage.removeItem(key)});
 const sendChannels={TYPE_SMS:'SMS',TYPE_WHATSAPP:'WhatsApp',TYPE_INSTAGRAM:'IG',TYPE_FACEBOOK:'FB',TYPE_EMAIL:'Email',TYPE_INSTAGRAM_COMMENT:'IG',TYPE_FACEBOOK_COMMENT:'FB'};
@@ -181,7 +183,9 @@ export async function renderLiveInbox(container){
     if(!refresh||!hadMessages)cursor=r.hasMore&&r.lastMessageId&&r.lastMessageId!==previous?r.lastMessageId:null;
     chatNeedsRefresh=false;renderMessages();more.hidden=!cursor;$('#live-chat-status').textContent=r.hasMore&&!cursor?'No se recibió una referencia válida para continuar el historial.':'';
     if(refresh)say();
-    log.scrollTop=older?top+log.scrollHeight-height:refresh&&height-top-log.clientHeight>60?top:log.scrollHeight;
+    if(older)log.scrollTop=top+log.scrollHeight-height;
+    else if(refresh&&height-top-log.clientHeight>60)log.scrollTop=top;
+    else scrollEnd(log,refresh&&hadMessages);
    }catch(e){if(e.retryAfter)pause=Math.max(pause,Date.now()/1000+e.retryAfter);if(e.status===401)container.agoraLiveDispose();if(active()&&current===chatGeneration){if(!refresh||!messages.size){$('#live-log .sk-wrap')?.remove();$('#live-chat-status').textContent=friendly(e);retry.hidden=false;retry.onclick=()=>page(older)}else say('Reintentando la actualización del chat')}}
    finally{messageBusy--;if(active()&&current===chatGeneration){more.disabled=false;if(refresh)scheduleChat(effectiveChatDelay())}}
   }
@@ -428,7 +432,7 @@ export async function renderLiveInbox(container){
     if(version!==chatGeneration||!active())return;
     const shown=$('.tpl-preview')?.innerText||t.body;
     messages.set(result.messageId,{id:result.messageId,body:shown,direction:'outbound',dateAdded:new Date().toISOString(),status:result.deliveryStatus});
-    renderMessages();$('#live-log').scrollTop=$('#live-log').scrollHeight;
+    renderMessages();scrollEnd($('#live-log'),true);
     templates.open=false;templates.chosen='';templates.values={};
     const drafted=drafts.get(key);if(drafted){drafted.notice='Plantilla aceptada por el canal.';}
     const notice=$('#live-send-status');if(notice)notice.textContent='Plantilla aceptada por el canal.';
@@ -468,7 +472,7 @@ export async function renderLiveInbox(container){
      const requestId=sessionStorage.getItem(storageKey)||crypto.randomUUID();sessionStorage.setItem(storageKey,requestId);
      const result=await request(`workspace/send?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(c.id)}`,'POST',me.csrf,{...body,requestId});
      sessionStorage.removeItem(storageKey);draft.message='';draft.notice=result.deliveryStatus==='failed'?'El canal registró el mensaje como fallido. Revisa su configuración.':'Mensaje aceptado por el canal.';
-     if(active()&&version===chatGeneration){messages.set(result.messageId,{id:result.messageId,body:body.message,direction:'outbound',dateAdded:new Date().toISOString(),status:result.deliveryStatus});renderMessages();$('#live-log').scrollTop=$('#live-log').scrollHeight;c.lastMessageBody=body.message;list()}
+     if(active()&&version===chatGeneration){messages.set(result.messageId,{id:result.messageId,body:body.message,direction:'outbound',dateAdded:new Date().toISOString(),status:result.deliveryStatus});renderMessages();scrollEnd($('#live-log'),true);c.lastMessageBody=body.message;list()}
     }catch(error){draft.notice=friendly(error);if(storageKey&&['send_rejected','invalid_message','invalid_subject','unsupported_channel','invalid_contact','connection_unverified'].includes(error.code))sessionStorage.removeItem(storageKey)}
     finally{draft.sending=false;if(active()&&version===chatGeneration)show()}
    };
