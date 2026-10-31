@@ -58,6 +58,14 @@ final class MessageSender {
         if(!is_string($contact)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contact)||($conversation['locationId']??null)!==$connection['location_id'])throw new SendProblem('invalid_contact',422,'Actualiza la conversación antes de responder.');
         if($template)$payload=$this->templatePayload($connection,$contact,$channel,$template);
         else $payload=['type'=>$channel,'contactId'=>$contact,'message'=>trim($text)];
+        // Responder citando un mensaje concreto (el campo publicado `replyMessageId`).
+        $reply=$input['replyTo']??null;
+        if($reply!==null&&$reply!=='') {
+            require_once __DIR__.'/MessageReplies.php';
+            if(!is_string($reply)||!preg_match(MessageReplies::ID,$reply))throw new SendProblem('invalid_reply',422,'No se pudo citar ese mensaje. Elige otro o responde sin citar.');
+            if($channel==='Email'||$template)throw new SendProblem('reply_unsupported',422,'En correo y en plantillas no se cita un mensaje.');
+            $payload['replyMessageId']=$reply;
+        }
         if(!$template&&$channel==='Email'){
             $subject=$input['subject']??null;
             if(!is_string($subject)||trim($subject)===''||mb_strlen($subject)>200)throw new SendProblem('invalid_subject',422,'Añade un asunto de hasta 200 caracteres.');
@@ -85,6 +93,7 @@ final class MessageSender {
                 if(!is_string($data['messageId']??null)||!preg_match('/^[A-Za-z0-9_-]{1,100}$/D',$data['messageId'])||($data['conversationId']??null)!==$conversationId)throw new RuntimeException('Unconfirmed send response');
                 $delivery=in_array($data['status']??null,['pending','delivered','read','failed'],true)?$data['status']:'pending';
                 query("UPDATE message_send_attempts SET state='accepted',message_id=?,delivery_status=?,error_code=NULL WHERE connection_id=? AND request_id=?",[$data['messageId'],$delivery,$id,$request]);
+                if(isset($payload['replyMessageId']))MessageReplies::remember($id,$conversationId,$data['messageId'],$payload['replyMessageId']);
                 return ['state'=>'accepted','messageId'=>$data['messageId'],'deliveryStatus'=>$delivery,'requestId'=>$request];
             }catch(GhlCooldown $e){
                 query("UPDATE message_send_attempts SET state='retryable',error_code='cooldown' WHERE connection_id=? AND request_id=?",[$id,$request]);
