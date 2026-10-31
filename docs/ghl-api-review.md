@@ -350,3 +350,11 @@ Misma fuente oficial y mismo commit `0af86a4cbd48c66a4071c7e509d1079f9f10ed17`.
 **Lo que la cuenta no sabe.** Publicidad, costos fijos, porcentaje de comisión y metas no existen en ninguna API: los escribe el propietario por subcuenta y por mes, y se guardan en `board_settings`. Sin ellos el tablero no calcula ganancia ni avance: dice qué falta. Las comisiones se derivan del porcentaje guardado, nunca de un campo remoto.
 
 **Modo foco.** Corregido un fallo propio, sin relación con la cuenta: la preferencia de modo foco se recuperaba al entrar aunque no hubiera conversación abierta, y en un teléfono eso dejaba la pantalla sin lista y sin menú, sin forma de salir. Ahora sólo se aplica al abrir una conversación.
+
+## Avisos sobre la estructura desplegada 0.20.1
+
+Sin cambios en el uso de la cuenta. Fallo propio, documentado porque explica por qué las pruebas no lo vieron.
+
+En el servidor el código vive en `agora-private/src` y el router lo localiza con `$appRoot`. Las tres rutas de avisos añadidas en 0.19.0 cargaban sus clases con la ruta del árbol de desarrollo (`dirname(__DIR__).'/src'`), que sólo existe en este entorno. En producción el archivo no se encontraba y la petición acababa en el error genérico con referencia: activar los avisos era imposible en cualquier teléfono.
+
+Las pruebas HTTP corrían contra el árbol de desarrollo, y la del paquete servía la interfaz con las respuestas de la API simuladas, de modo que ninguna ejecutó PHP con la estructura desplegada. Hay ahora dos defensas: el empaquetador rechaza cualquier router que construya rutas con la estructura de desarrollo, y `tests/deployed-layout.sh` descomprime el paquete tal cual, lo sirve con PHP y base de datos reales y recorre lo que hace un teléfono al activar los avisos. Esa prueba falla con el paquete 0.20.0 —con el mismo error que vio el usuario— y pasa con 0.20.1.

@@ -95,11 +95,11 @@ try {
         if (getenv('APP_ENV') !== 'development' && parse_url(getenv('APP_ORIGIN') ?: '', PHP_URL_SCHEME) !== 'https') respond(['error'=>'HTTPS required'],503);
         require $appRoot.'/src/integrations.php';
     }
-    if ($path === '/api/devices') require_once dirname(__DIR__).'/src/PushDelivery.php';
+    if ($path === '/api/devices') require_once $appRoot.'/src/PushDelivery.php';
     // What a browser needs to subscribe. Public by design, and created the
     // first time it is asked for so nobody has to generate anything by hand.
     if ($path === '/api/push-key' && $method === 'GET') {
-        require_once dirname(__DIR__).'/src/WebPush.php';
+        require_once $appRoot.'/src/WebPush.php';
         // Whatever goes wrong here must name itself: a generic failure would
         // leave the person tapping a button that never explains anything.
         try {
@@ -115,7 +115,7 @@ try {
     }
     if ($path === '/api/devices' && $method === 'GET') {
         if(($u['identity_type'] ?? 'native')!=='native' || $u['role']!=='administrator')respond(['error'=>'Acceso restringido'],403);
-        require_once dirname(__DIR__).'/src/PushDelivery.php';
+        require_once $appRoot.'/src/PushDelivery.php';
         try {$rows=query('SELECT id,platform,label,created_at,last_seen_at,last_sent_at FROM push_devices WHERE tenant_id=? ORDER BY last_seen_at DESC LIMIT 100',[$u['tenant_id']])->fetchAll();}
         catch(PDOException $e) {
             // A pending database update must say so, not look like a broken server.

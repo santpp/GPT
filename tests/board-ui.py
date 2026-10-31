@@ -130,6 +130,18 @@ with sync_playwright() as pw:
     box=page.locator('#board-settings').bounding_box()
     assert box['height']>=44, box
     print('PASS en 390 px cabe sin desbordarse y el botón se puede tocar')
+    # Cada asesora es una tarjeta: el nombre en una o dos líneas, nunca letra a letra.
+    names=page.locator('.board-table th[scope="row"]')
+    for i in range(names.count()):
+        name=names.nth(i).bounding_box()
+        assert name['width']>=200, f'el nombre se estrecha hasta partirse: {name}'
+        assert name['height']<=48, f'el nombre ocupa demasiadas líneas: {name}'
+    cells=page.evaluate("[...document.querySelectorAll('.board-table td')].map(td=>getComputedStyle(td,'::before').content)")
+    assert all(c not in ('none','""') for c in cells), 'cada cifra lleva su rótulo en el teléfono'
+    bars=page.locator('.board-table .board-bar').first.bounding_box()
+    card=page.locator('.board-table tbody tr').first.bounding_box()
+    assert card['x']<=bars['x'] and bars['x']+bars['width']<=card['x']+card['width'], 'la barra de avance queda dentro de su tarjeta'
+    print('PASS en el teléfono el equipo se lee como tarjetas, sin nombres partidos ni barras fuera de sitio')
     assert not errors, errors
     context.close()
     b.close()

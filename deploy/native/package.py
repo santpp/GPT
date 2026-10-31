@@ -65,4 +65,8 @@ with zipfile.ZipFile(output) as archive:
     assert ('/'+prefix+'/app.js').encode() in archive.read('public_html/conexiones.html')
     assert version.encode() in archive.read('public_html/index.html'), 'the page must show the packaged version'
     assert b"Installation::VERSION" in archive.read('public_html/router.php'), 'the version header must be derived, not typed'
+    # The deployed tree keeps the code in agora-private, not next to public_html:
+    # a path built from the development layout works here and breaks on the server.
+    router=archive.read('public_html/router.php')
+    assert b"dirname(__DIR__).'/src/" not in router, 'the router must find the code through $appRoot, never the development layout'
 print(f'Built and checked {output.name}: version {version}, build {build}; no runtime secrets')

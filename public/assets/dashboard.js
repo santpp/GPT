@@ -57,10 +57,12 @@ function teamTable(data){
   </tr></thead><tbody>${rows.map(row=>{
     const [label,kind]=STATES[row.state]||STATES['sin-meta'];
     const width=Math.max(0,Math.min(100,Number(row.progress)||0));
-    return `<tr><th scope="row">${esc(row.name)}</th><td>${number(row.closings)}</td><td>${cell(row.goal)}</td><td>${cell(row.sold)}</td>
-      <td class="${Number(row.difference)<0?'down':'up'}">${row.difference===null?'—':(Number(row.difference)>=0?'+':'−')+esc(money(Math.abs(row.difference)))}</td>
-      <td><span class="board-bar ${esc(kind)}"><i style="width:${width}%"></i></span><b>${row.progress===null?'—':number(Math.round(row.progress))+' %'}</b></td>
-      <td><span class="board-state ${esc(kind)}">${esc(label)}</span></td></tr>`;
+    // Cada celda lleva su rótulo: en un teléfono la fila se lee como tarjeta.
+    const heading=esc(word[0].toUpperCase()+word.slice(1));
+    return `<tr><th scope="row">${esc(row.name)}</th><td data-label="${heading}">${number(row.closings)}</td><td data-label="Meta">${cell(row.goal)}</td><td data-label="Vendido">${cell(row.sold)}</td>
+      <td data-label="Diferencia" class="${Number(row.difference)<0?'down':'up'}">${row.difference===null?'—':(Number(row.difference)>=0?'+':'−')+esc(money(Math.abs(row.difference)))}</td>
+      <td data-label="Avance" class="board-progress"><span class="board-progress-line"><span class="board-bar ${esc(kind)}"><i style="width:${width}%"></i></span><b>${row.progress===null?'—':number(Math.round(row.progress))+' %'}</b></span></td>
+      <td data-label="Estado"><span class="board-state ${esc(kind)}">${esc(label)}</span></td></tr>`;
   }).join('')}</tbody></table></div>`;
 }
 

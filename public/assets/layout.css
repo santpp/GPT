@@ -375,7 +375,10 @@ body.agora-focus .live-composer{padding-bottom:calc(10px + env(safe-area-inset-b
 .board-table td.up{color:#2f6b49}
 .board-table td.down{color:var(--green)}
 .board-table td b{font-size:10px;margin-left:8px;font-weight:600}
-.board-table td:has(.board-bar){display:flex;align-items:center;gap:0;min-width:130px}
+.board-table th[scope="row"]{min-width:150px}
+.board-progress-line{display:inline-flex;align-items:center;gap:8px;min-width:130px;justify-content:flex-end}
+.board-progress-line .board-bar{flex:1}
+.board-table td b{margin-left:0}
 .board-note{font-size:9px;color:var(--muted);line-height:1.7;margin-top:12px}
 #dashboard-body .section-label{padding:0;margin:22px 0 12px}
 #dashboard-body .dashboard-tiles,#dashboard-body .dashboard-stages{padding:0}
@@ -394,4 +397,19 @@ body.agora-focus .live-composer{padding-bottom:calc(10px + env(safe-area-inset-b
  .board-month-pick input,#board-settings{min-height:44px}
  .waterfall{gap:8px}
  .waterfall-value{font-size:9px}
+}
+
+/* En un teléfono la tabla del equipo se lee como una tarjeta por asesora: el
+   nombre arriba, y debajo cada cifra con su rótulo. */
+@media(max-width:600px){
+ .board-table-wrap{overflow:visible}
+ .board-table,.board-table tbody,.board-table tr,.board-table th,.board-table td{display:block;width:100%}
+ .board-table thead{display:none}
+ .board-table tr{border:1px solid var(--line);border-radius:9px;padding:12px 14px;margin-bottom:10px;background:#fbfbfd}
+ .board-table th[scope="row"]{min-width:0;padding:0 0 8px;border:0;font-size:14px;text-align:left;white-space:normal;overflow-wrap:break-word}
+ .board-table td{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 0;border:0;border-top:1px solid var(--line);font-size:13px;text-align:right;white-space:nowrap}
+ .board-table td::before{content:attr(data-label);font-size:11px;color:var(--muted);text-align:left;white-space:nowrap}
+ .board-progress-line{min-width:0;flex:1;max-width:60%}
+ .board-table td b{font-size:12px}
+ .board-state{font-size:11px}
 }

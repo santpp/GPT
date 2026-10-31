@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.20.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.20.1.
 
 ## Completado y desplegable
 
@@ -47,7 +47,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## Android y notificaciones
 
 - Capacitor para Android: proyecto en `mobile/`, envoltorio que carga la web desplegada, de modo que cada despliegue llega al teléfono sin publicar versión nueva (0.18.0).
-- Avisos en Android e iPhone **sin tienda de aplicaciones**: Web Push propio, con la aplicación instalada desde el navegador (0.19.0). Pendiente de prueba con teléfonos reales.
+- Avisos en Android e iPhone **sin tienda de aplicaciones**: Web Push propio, con la aplicación instalada desde el navegador (0.19.0). La activación fallaba en el servidor por una ruta de desarrollo; corregido y probado sobre el paquete desplegado en 0.20.1. Pendiente de prueba con teléfonos reales.
 - Firebase Cloud Messaging para el APK: registro del dispositivo, cola de avisos y entrega por cron (0.18.0). Pendiente de prueba contra el proyecto real.
 - El pase que descubre mensajes corre también desde el reloj, de modo que hay aviso con todas las aplicaciones cerradas (0.19.0).
 - Contadores de la aplicación en el icono y agrupación de avisos por conversación.
