@@ -425,3 +425,15 @@ body.agora-focus .live-composer{padding-bottom:calc(10px + env(safe-area-inset-b
 
 .board-source{font-size:10px;color:var(--muted);line-height:1.6;margin:12px 0 0}
 .board-source.warn{color:#8a6a1f}
+
+/* La revisión desde fuera, cuando el cron del servidor no corre. */
+.external-check{border:1px solid var(--line);border-radius:9px;padding:14px 16px;margin:0 0 14px;background:#fbfbfd}
+.external-check h3{font-size:13px;margin:0 0 6px}
+.external-check p,.external-check li{font-size:11px;line-height:1.7;color:var(--ink)}
+.external-check ol{padding-left:18px;margin:10px 0}
+.external-check-url{display:flex;gap:8px;margin:10px 0}
+.external-check-url input{flex:1;min-width:0;border:1px solid var(--line);border-radius:6px;padding:9px;font:11px/1.4 ui-monospace,monospace;background:var(--paper);color:var(--ink)}
+.external-check button{border:1px solid var(--line);border-radius:6px;padding:8px 12px;font-size:11px;background:var(--paper)}
+.external-check button.primary{color:white;background:var(--green);border-color:var(--green)}
+.external-check button.danger{color:var(--green)}
+@media(max-width:600px){.external-check button{min-height:44px}.external-check-url{flex-direction:column}.external-check-url input{font-size:12px}}

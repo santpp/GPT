@@ -149,9 +149,12 @@ with sync_playwright() as pw:
         elif path=='admin/diagnostics': data={'ready':True,'version':'0.21.0','checks':[]}
         elif path.startswith('admin/integrations'): data={'items':[],'accessChannel':{'connectionId':None,'ready':False}}
         elif path=='devices/test': data={'results':[{'device':1,'label':'Android (instalada)','platform':'web','result':'sent'}]}
+        elif path=='admin/cron-url':
+            state['cron']=request.method=='POST'
+            data={'enabled':True,'url':'https://nueva.agoradigital.app/api/cron/'+'ab'*32} if request.method=='POST' else {'enabled':False}
         elif path=='devices': data={'items':[{'id':1,'platform':'web','label':'Android (instalada)','created_at':'2026-10-31 08:00:00','last_seen_at':'2026-10-31 08:00:00','last_sent_at':None}],
             'browser':True,'android':False,'queue':{'pending':2,'sent':0,'failed':1,'lastError':'unavailable: El servicio de avisos del navegador respondió 503.'},
-            'delivery':{'at':'2020-01-01T00:00:00Z','sent':0},'discovery':None}
+            'delivery':{'at':'2020-01-01T00:00:00Z','sent':0},'discovery':None,'externalCheck':'2026-10-31T10:00:00Z' if state.get('cron') else None}
         elif path.startswith('workspace/connections'): data={'items':[]}
         else: data={'items':[]}
         route.fulfill(status=status,content_type='application/json',body=json.dumps(data))
@@ -175,5 +178,18 @@ with sync_playwright() as pw:
     page.wait_for_timeout(800)
     assert 'enviado' in page.locator('#push-test-result').inner_text(), 'the result must survive the panel being redrawn'
     print('PASS the test notice result stays on screen after the panel refreshes')
+    # The server cron is not running: Connections offers the check from outside.
+    assert 'La revisión no está corriendo en el servidor' in page.locator('.external-check').inner_text()
+    page.locator('#cron-new').click()
+    page.wait_for_selector('#cron-url',state='attached')
+    page.wait_for_timeout(600)
+    assert page.locator('#cron-url').input_value().endswith('ab'*32), 'the address is shown right after creating it'
+    box=page.locator('.external-check').inner_text()
+    assert 'no se volverá a mostrar' in box and 'cada minuto' in box, box
+    print('PASS when the server cron does not run, the owner can create the outside check, with the steps')
+    page.locator('#cron-done').click()
+    page.wait_for_selector('#cron-off',state='attached')
+    assert page.locator('#cron-url').count()==0, 'once acknowledged, the address is not shown again'
+    print('PASS the address is shown once, and afterwards it can only be changed or turned off')
     assert not errors, errors
     context.close();b.close()

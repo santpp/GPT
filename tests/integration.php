@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require __DIR__.'/../src/bootstrap.php';
 $suffix=bin2hex(random_bytes(6));$tenants=[];$users=[];$checks=0;
+final class PushDeliveryCheck { public static function created():?string { $v=query("SELECT value FROM app_state WHERE name='cron_secret'")->fetchColumn(); return is_string($v)?$v:null; } }
 function check(bool $ok,string $label):void { global $checks; if(!$ok)throw new Exception($label);$checks++;echo "PASS $label\n"; }
 $cookie=tempnam(sys_get_temp_dir(),'agora-test-');
 function request(string $path,string $method='GET',?array $body=null,array $headers=[]):array {
@@ -42,7 +43,7 @@ try {
  check($code===200&&$recovered['ready']===true,'a pending database update is applied on its own, with no button to press');
  check(in_array('directory_cache',array_column(query('SHOW TABLES')->fetchAll(PDO::FETCH_NUM),0),true),'the missing table is back after that single request');
  [$code,$diagnostics]=request('admin/diagnostics');
- check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.21.1','administrator sees installation readiness and version');
+ check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.21.2','administrator sees installation readiness and version');
  check(!str_contains(json_encode($diagnostics),'APP_KEY_FILE')&&!str_contains(json_encode($diagnostics),'integration.key'),'diagnostics expose no configuration values or key paths');
  check(request('admin/installation/encryption','POST')[0]===403,'preparation requires CSRF');
  [$code,$profile]=request('me');check($code===200&&!array_key_exists('ghl_user_id',$profile['user'])&&$profile['user']['capabilities']['configureConnections'],'public profile exposes capabilities without provider-specific fields');
@@ -143,6 +144,31 @@ try {
  [$code,$chain]=request('devices','GET',null,$headers);
  check($code===200&&array_key_exists('queue',$chain)&&array_key_exists('delivery',$chain)&&array_key_exists('discovery',$chain),'the device list says when messages were last checked and notices last delivered');
  request('devices','DELETE',['token'=>$endpoint],$headers);
+ // ---- the check from outside, for when the server cron does not run --------
+ check(request('cron/'.str_repeat('a',64))[0]===404,'with no address created, the outside check does not exist');
+ [$code,$made]=request('admin/cron-url','POST',null,$headers);
+ check($code===200&&preg_match('~/api/cron/([a-f0-9]{64})$~',$made['url']??'',$cronMatch)===1,'the owner creates an address for the check from outside');
+ $cronSecret=$cronMatch[1];
+ check(!str_contains(json_encode(query("SELECT value FROM app_state WHERE name='cron_secret'")->fetchColumn()),$cronSecret),'only a fingerprint of that address is kept, never the address');
+ query("DELETE FROM app_state WHERE name='sweep_last_run'");
+ // A cron service calls it with no session and no browser.
+ $outside=curl_init('http://localhost:8080/api/cron/'.$cronSecret);curl_setopt($outside,CURLOPT_RETURNTRANSFER,true);
+ $body=json_decode((string)curl_exec($outside),true);$status=curl_getinfo($outside,CURLINFO_RESPONSE_CODE);curl_close($outside);
+ check($status===200&&($body['ok']??false)===true&&!isset($body['skipped']),'calling it, with no session at all, runs the minute check');
+ $trace=json_decode((string)query("SELECT value FROM app_state WHERE name='sweep_last_run'")->fetchColumn(),true);
+ check(($trace['via']??null)==='url','and the owner can see the check came from outside');
+ $again=curl_init('http://localhost:8080/api/cron/'.$cronSecret);curl_setopt($again,CURLOPT_RETURNTRANSFER,true);
+ $body=json_decode((string)curl_exec($again),true);curl_close($again);
+ check(($body['skipped']??null)==='too_soon','a second call seconds later does not repeat the work');
+ $wrong=curl_init('http://localhost:8080/api/cron/'.str_repeat('b',64));curl_setopt($wrong,CURLOPT_RETURNTRANSFER,true);
+ curl_exec($wrong);$status=curl_getinfo($wrong,CURLINFO_RESPONSE_CODE);curl_close($wrong);
+ check($status===404,'any other address answers as if it did not exist');
+ [$code,$remade]=request('admin/cron-url','POST',null,$headers);
+ $old=curl_init('http://localhost:8080/api/cron/'.$cronSecret);curl_setopt($old,CURLOPT_RETURNTRANSFER,true);
+ curl_exec($old);$status=curl_getinfo($old,CURLINFO_RESPONSE_CODE);curl_close($old);
+ check($code===200&&$status===404,'changing the address retires the previous one');
+ request('admin/cron-url','DELETE',null,$headers);
+ check(PushDeliveryCheck::created()===null,'and the owner can turn it off');
  [$code,$pushKey]=request('push-key','GET',null,$headers);
  check($code===200&&isset($pushKey['ready']),'the subscription key route answers whether notices are ready, never an unexplained failure');
 

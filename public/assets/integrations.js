@@ -14,6 +14,8 @@ async function api(path,method='GET',data){
 // El resultado del último aviso de prueba sobrevive al redibujado del panel:
 // si no, se borraba en el mismo instante en que aparecía.
 let lastTestResult='';
+// La dirección de revisión se enseña una sola vez; sobrevive al redibujado.
+let freshCronUrl='';
 async function devicePanel(container){
  const panel=container.querySelector('#device-panel');if(!panel)return;
  let data;
@@ -27,8 +29,9 @@ async function devicePanel(container){
  const discovered=data.discovery?.at;
  const recent=at=>at&&Date.now()-new Date(at).getTime()<5*60000;
  // Un solo cron revisa y entrega: si no corre, no hay avisos con la app cerrada.
+ const via=data.discovery?.via==='url'?' (desde la dirección de revisión)':data.discovery?.via==='cron'?' (desde el servidor)':'';
  links.push(recent(discovered)
-   ? ['ok',`Revisión de mensajes nuevos: activa, ${ago(discovered)}.`]
+   ? ['ok',`Revisión de mensajes nuevos: activa, ${ago(discovered)}${via}.`]
    : ['bad',discovered?`Revisión de mensajes nuevos: la última fue ${ago(discovered)}. El cron de revisión ha dejado de ejecutarse en el servidor.`:'Revisión de mensajes nuevos: el cron de revisión no se está ejecutando en el servidor. Sin él no hay avisos con la app cerrada.']);
  const delivered=data.delivery;
  if(delivered?.configured===false)links.push(['bad','Entrega de avisos: no encuentra las claves de avisos. Revisa la línea de configuración y que la carpeta privada sea legible por el cron.']);
@@ -42,11 +45,13 @@ async function devicePanel(container){
    ? `Preparado para avisar por ${esc(ready)}. Cada persona activa los avisos desde su propio dispositivo.`
    : 'Todavía no hay avisos preparados en el servidor. Revisa la configuración privada antes de activarlos en un dispositivo.'}</p>
   <ul class="push-chain">${links.map(([kind,text])=>`<li class="${kind}">${esc(text)}</li>`).join('')}</ul>
+  ${externalCheck(data,recent(discovered))}
   <button id="push-test" class="primary">Enviar un aviso de prueba a mis dispositivos</button>
   <p id="push-test-result" class="dialog-copy" role="status">${esc(lastTestResult)}</p>
   <div class="device-list">${
   (data.items||[]).map(d=>`<article class="card"><h3>${esc(d.label||names[d.platform]||'Dispositivo')}</h3><small>${esc(names[d.platform]||d.platform)}<br>Registrado: ${esc(when(d.created_at)||'—')}<br>Visto: ${esc(when(d.last_seen_at)||'—')}<br>Último aviso enviado: ${esc(when(d.last_sent_at)||'Ninguno todavía')}</small></article>`).join('')
   ||'<p class="empty">Ningún dispositivo ha activado los avisos todavía.</p>'}</div>`;
+ bindExternalCheck(container,panel);
  const RESULT={rejected:'el servicio de avisos rechazó el envío; el dispositivo sigue en la lista y se volverá a intentar',sent:'enviado',unregistered:'el servicio ya no reconoce este dispositivo y se ha quitado de la lista; vuelve a activar los avisos en él',unavailable:'el servicio de avisos no respondió; vuelve a probar en un momento',unconfigured:'faltan las claves de avisos en el servidor',invalid_credentials:'las claves de avisos del servidor no se pueden leer',unexpected:'error inesperado en el servidor'};
  panel.querySelector('#push-test').onclick=async event=>{
   const button=event.currentTarget,out=panel.querySelector('#push-test-result');
@@ -60,6 +65,52 @@ async function devicePanel(container){
   }catch(error){lastTestResult=error.message}
   finally{button.disabled=false;out.textContent=lastTestResult;devicePanel(container)}
  };
+}
+
+/**
+ * Cuando el cron del servidor no corre, la revisión puede hacerla un servicio
+ * de cron externo llamando cada minuto a una dirección secreta.
+ */
+function externalCheck(data,running){
+ const created=data.externalCheck;
+ if(freshCronUrl)return `<div class="external-check"><h3>Dirección de revisión creada</h3>
+   <p>Cópiala ahora: <strong>no se volverá a mostrar</strong>. Si la pierdes, crea otra y la anterior dejará de funcionar.</p>
+   <div class="external-check-url"><input id="cron-url" readonly value="${esc(freshCronUrl)}" aria-label="Dirección de revisión"><button id="cron-copy" type="button">Copiar</button></div>
+   <ol><li>Entra en <strong>cron-job.org</strong> (es gratis) y crea una tarea nueva.</li>
+   <li>Pega esta dirección y elige que se ejecute <strong>cada minuto</strong>.</li>
+   <li>Guarda. En un par de minutos la revisión saldrá aquí en verde, «desde la dirección de revisión».</li></ol>
+   <button id="cron-done" type="button">Hecho</button></div>`;
+ if(created)return `<div class="external-check"><p>La revisión desde fuera está activada desde el ${esc(new Date(created).toLocaleDateString('es-ES'))}.</p>
+   <button id="cron-new" type="button">Cambiar la dirección</button> <button id="cron-off" type="button" class="danger">Desactivar</button></div>`;
+ if(running)return '';
+ return `<div class="external-check"><h3>La revisión no está corriendo en el servidor</h3>
+   <p>Sin ella los avisos sólo salen cuando alguien tiene Ágora abierta. Si el cron del servidor no se puede poner o no funciona, un servicio de cron externo puede hacer la revisión llamando cada minuto a una dirección secreta.</p>
+   <button id="cron-new" class="primary" type="button">Crear dirección de revisión</button></div>`;
+}
+function bindExternalCheck(container,panel){
+ const create=panel.querySelector('#cron-new');
+ if(create)create.onclick=async()=>{
+  if(document.querySelector('#cron-off')&&!confirm('La dirección actual dejará de funcionar. ¿Crear una nueva?'))return;
+  create.disabled=true;
+  try{const {url}=await api('admin/cron-url','POST');freshCronUrl=url||''}
+  catch(error){alert(error.message)}
+  devicePanel(container);
+ };
+ const off=panel.querySelector('#cron-off');
+ if(off)off.onclick=async()=>{
+  if(!confirm('La revisión desde fuera dejará de funcionar. ¿Desactivarla?'))return;
+  off.disabled=true;
+  try{await api('admin/cron-url','DELETE')}catch(error){alert(error.message)}
+  devicePanel(container);
+ };
+ const copy=panel.querySelector('#cron-copy');
+ if(copy)copy.onclick=async()=>{
+  const input=panel.querySelector('#cron-url');
+  try{await navigator.clipboard.writeText(input.value);copy.textContent='Copiada'}
+  catch{input.select();copy.textContent='Selecciónala y cópiala'}
+ };
+ const done=panel.querySelector('#cron-done');
+ if(done)done.onclick=()=>{freshCronUrl='';devicePanel(container)};
 }
 
 export async function renderIntegrations(container){

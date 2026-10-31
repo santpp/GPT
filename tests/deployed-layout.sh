@@ -39,6 +39,7 @@ echo "PASS and the owner sees it ready in the device list"
 TEST=$(curl -s -b "$J" -X POST -H 'Content-Type: application/json' -H "X-CSRF-Token: $CSRF" -H "Origin: http://localhost:$PORT" http://127.0.0.1:$PORT/api/devices/test)
 echo "$TEST" | grep -q '"results":\[{' || { echo "FAIL the test notice does not run on the deployed tree: $TEST"; tail -5 "$ROOT/server.log"; exit 1; }
 echo "PASS the test notice runs on the deployed tree and reports per device"
+NOTICE="conv-deployed-$RANDOM$RANDOM"
 # One cron is enough: the message check also delivers what is waiting. A notice
 # is queued by hand for a device of this owner, and only sync-inbox.php runs.
 php -r '
@@ -51,13 +52,14 @@ $c=db()->lastInsertId();
 $k=openssl_pkey_new(["curve_name"=>"prime256v1","private_key_type"=>OPENSSL_KEYTYPE_EC]);$d=openssl_pkey_get_details($k);
 $point="\x04".str_pad($d["ec"]["x"],32,"\0",STR_PAD_LEFT).str_pad($d["ec"]["y"],32,"\0",STR_PAD_LEFT);
 $b64=fn($v)=>rtrim(strtr(base64_encode($v),"+/","-_"),"=");
+query("DELETE FROM push_devices WHERE token=?",["https://push.invalid/deployed-layout-unreachable"]);
 query("INSERT INTO push_devices(tenant_id,identity_type,actor_id,token,platform,p256dh,auth) VALUES(?,?,?,?,?,?,?)",[$u["tenant_id"],"native",$u["id"],"https://push.invalid/deployed-layout-unreachable","web",$b64($point),$b64(random_bytes(16))]);
-query("INSERT INTO push_queue(connection_id,conversation_id,fingerprint,title,body) VALUES(?,?,?,?,?)",[$c,"conv-deployed",md5(uniqid()),"Raissa","Hola"]);
-file_put_contents($argv[3],$c);' "$ROOT" "$EMAIL" "$ROOT/connection"
+query("INSERT INTO push_queue(connection_id,conversation_id,fingerprint,title,body) VALUES(?,?,?,?,?)",[$c,$argv[4],md5(uniqid()),"Raissa","Hola"]);
+file_put_contents($argv[3],$c);' "$ROOT" "$EMAIL" "$ROOT/connection" "$NOTICE"
 php "$ROOT/agora-private/bin/sync-inbox.php" >"$ROOT/cron.out" 2>&1 || true
 grep -qE "Notices [1-9]" "$ROOT/cron.out" || { echo "FAIL the single cron did not pick up the waiting notice: $(cat "$ROOT/cron.out")"; exit 1; }
 echo "PASS the message check alone picks up and tries to deliver a waiting notice"
-STATE=$(php -r 'require $argv[1]."/agora-private/src/bootstrap.php";echo json_encode(query("SELECT state,attempts,last_error FROM push_queue WHERE conversation_id=?",["conv-deployed"])->fetch());' "$ROOT")
+STATE=$(php -r 'require $argv[1]."/agora-private/src/bootstrap.php";echo json_encode(query("SELECT state,attempts,last_error FROM push_queue WHERE conversation_id=?",[$argv[2]])->fetch());' "$ROOT" "$NOTICE")
 echo "$STATE" | grep -q '"state":"pending","attempts":1,"last_error":"unavailable' || { echo "FAIL the attempt and its reason were not recorded: $STATE"; exit 1; }
 KEPT=$(php -r 'require $argv[1]."/agora-private/src/bootstrap.php";echo query("SELECT COUNT(*) FROM push_devices WHERE token=?",["https://push.invalid/deployed-layout-unreachable"])->fetchColumn();' "$ROOT")
 [ "$KEPT" = "1" ] || { echo "FAIL an unreachable service made the phone disappear"; exit 1; }
@@ -68,5 +70,16 @@ CHAIN=$(curl -s -b "$J" http://127.0.0.1:$PORT/api/devices)
 echo "$CHAIN" | grep -q '"discovery":{' || { echo "FAIL the message check left no trace: $CHAIN"; exit 1; }
 echo "$CHAIN" | grep -q '"delivery":{' || { echo "FAIL the delivery pass left no trace: $CHAIN"; exit 1; }
 echo "PASS both crons run from the deployed tree and the owner can see when"
+# When the server cron cannot run, a cron service calls a secret address instead.
+MADE=$(curl -s -b "$J" -X POST -H 'Content-Type: application/json' -H "X-CSRF-Token: $CSRF" -H "Origin: http://localhost:$PORT" http://127.0.0.1:$PORT/api/admin/cron-url)
+CRON=$(echo "$MADE" | php -r '$u=json_decode(stream_get_contents(STDIN),true)["url"]??"";echo preg_match("~/api/cron/([a-f0-9]{64})$~",$u,$m)?$m[1]:"";')
+[ -n "$CRON" ] || { echo "FAIL the owner cannot create the outside check address: $MADE"; exit 1; }
+php -r 'require $argv[1]."/agora-private/src/bootstrap.php";query("DELETE FROM app_state WHERE name=?",["sweep_last_run"]);' "$ROOT"
+RUN=$(curl -s http://127.0.0.1:$PORT/api/cron/$CRON)
+echo "$RUN" | grep -q '"ok":true' || { echo "FAIL the outside check does not run on the deployed tree: $RUN"; tail -5 "$ROOT/server.log"; exit 1; }
+VIA=$(curl -s -b "$J" http://127.0.0.1:$PORT/api/devices)
+echo "$VIA" | grep -q '"via":"url"' || { echo "FAIL the outside check left no trace: $VIA"; exit 1; }
+echo "PASS a cron service calling the secret address runs the check on the deployed tree"
+curl -s -b "$J" -X DELETE -H "X-CSRF-Token: $CSRF" -H "Origin: http://localhost:$PORT" http://127.0.0.1:$PORT/api/admin/cron-url >/dev/null
 php -r 'require $argv[1]."/agora-private/src/bootstrap.php";query("DELETE FROM push_devices WHERE token LIKE ?",["%deployed-layout%"]);query("DELETE FROM ghl_connections WHERE id=?",[(int)@file_get_contents($argv[3])]);query("DELETE FROM users WHERE email=?",[$argv[2]]);' "$ROOT" "$EMAIL" "$ROOT/connection"
 echo "PASS deployed layout checks"

@@ -27,6 +27,18 @@ try {
         query('INSERT INTO webhook_events(tenant_id,webhook_id,event_type,payload) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE webhook_id=VALUES(webhook_id)',[$tenant['id'],$event['webhookId'],$event['type'],$raw]);
         respond(['accepted'=>true],202);
     }
+    // La revisión de cada minuto, llamada desde fuera cuando el cron del servidor
+    // no corre. La dirección es el único secreto: sin ella responde como si no
+    // existiera, y no devuelve nada de la cuenta, sólo si hizo la pasada.
+    if (preg_match('~^/api/cron/([a-f0-9]{64})$~', $path, $cron) && in_array($method,['GET','POST'],true)) {
+        require_once $appRoot.'/src/Sweep.php';
+        if (!Sweep::secretMatches($cron[1])) respond(['error'=>'Not found'],404);
+        if (Sweep::tooSoon()) respond(['ok'=>true,'skipped'=>'too_soon']);
+        @set_time_limit(55);
+        ignore_user_abort(true);
+        $result=Sweep::run('url');
+        respond(['ok'=>true,'swept'=>$result['swept'],'skipped'=>$result['skipped']]);
+    }
     session_name('workspace_session');
     session_set_cookie_params(['httponly'=>true,'secure'=>getenv('APP_ENV') !== 'development','samesite'=>'Strict','path'=>'/']);
     session_start();
@@ -95,6 +107,14 @@ try {
         if (getenv('APP_ENV') !== 'development' && parse_url(getenv('APP_ORIGIN') ?: '', PHP_URL_SCHEME) !== 'https') respond(['error'=>'HTTPS required'],503);
         require $appRoot.'/src/integrations.php';
     }
+    if ($path === '/api/admin/cron-url' && in_array($method,['POST','DELETE'],true)) {
+        if(($u['identity_type'] ?? 'native')!=='native' || $u['role']!=='administrator')respond(['error'=>'Acceso restringido'],403);
+        require_once $appRoot.'/src/Sweep.php';
+        if($method==='DELETE'){Sweep::disableSecret();respond(['enabled'=>false]);}
+        // Se enseña una sola vez: después sólo queda su huella.
+        $secret=Sweep::createSecret();
+        respond(['enabled'=>true,'url'=>rtrim((string)getenv('APP_ORIGIN'),'/').'/api/cron/'.$secret]);
+    }
     if ($path === '/api/devices') require_once $appRoot.'/src/PushDelivery.php';
     // What a browser needs to subscribe. Public by design, and created the
     // first time it is asked for so nobody has to generate anything by hand.
@@ -129,7 +149,8 @@ try {
             $queue['lastError']=is_string($last)?$last:null;
         } catch(PDOException $e) {}
         respond(['items'=>$rows,'browser'=>PushDelivery::browserConfigured(),'android'=>PushDelivery::firebaseConfigured(),
-            'queue'=>$queue,'delivery'=>PushDelivery::recall('push_last_run'),'discovery'=>PushDelivery::recall('sweep_last_run')]);
+            'queue'=>$queue,'delivery'=>PushDelivery::recall('push_last_run'),'discovery'=>PushDelivery::recall('sweep_last_run'),
+            'externalCheck'=>PushDelivery::recall('cron_secret')['created']??null]);
     }
     // Un aviso de prueba a los dispositivos de quien lo pide, entregado en el acto.
     if ($path === '/api/devices/test' && $method === 'POST') {

@@ -397,3 +397,20 @@ Sin cambios en el uso de la cuenta. Tres fallos propios, encontrados con el diag
 Los dos crones aplican también las actualizaciones pendientes de la base de datos antes de empezar, y dejan constancia de su paso antes de cualquier salida anticipada. Así el rastro no puede faltar porque una tabla todavía no exista.
 
 **3. Un rechazo se tomaba por un teléfono desaparecido.** Ante un 400, 401 o 403 Ágora borraba el dispositivo. Según RFC 8030, sólo 404 y 410 dicen que una suscripción ya no existe. Los otros son rechazos de la petición o de la firma, y el teléfono sigue siendo válido. Ahora sólo esos dos lo quitan. Los demás se anotan como envío rechazado y se reintentan. Lo destapó la prueba de la estructura desplegada, cuyo proxy responde 403.
+
+## Revisión desde fuera cuando el cron del servidor no corre 0.21.2
+
+Sin cambios en el uso de la cuenta.
+
+El diagnóstico de 0.21.1 lo dejó claro: en el servidor del usuario el cron de revisión **no ha corrido nunca**, y la entrega aparecía activa sólo porque desde 0.21.1 la hace también una pantalla abierta. De ahí el síntoma: los avisos llegaban únicamente al abrir Ágora, porque era la propia app abierta la que descubría el mensaje y lo enviaba.
+
+No hay forma de corregir desde aquí un cron de CyberPanel que no se ejecuta, así que la revisión ya no depende de él. Ahora existe una **dirección secreta** que hace la misma pasada al visitarla. Un servicio de cron externo, por ejemplo cron-job.org, la llama cada minuto. Funcionamiento:
+
+- La crea el propietario desde Conexiones. Son 256 bits aleatorios. Se muestra una sola vez y en el servidor sólo queda su huella SHA-256, que se compara en tiempo constante.
+- Si nadie la ha creado, o si se llama con otra, responde 404, como si no existiera.
+- No devuelve nada de la cuenta, sólo si la pasada se hizo. No necesita sesión, y por eso el router la atiende antes de abrirla.
+- Una llamada a menos de 20 segundos de la anterior no repite el trabajo, de modo que no se puede usar para multiplicar las lecturas de la cuenta.
+- Comparte candado con el cron del servidor, así que si los dos funcionan nunca corren a la vez.
+- Cambiarla retira la anterior. Desactivarla la borra.
+
+La pasada está ahora en una sola clase, `Sweep`, que llaman tanto `bin/sync-inbox.php` como la dirección. El rastro indica cuál de los dos la hizo, y el panel lo muestra («desde el servidor» o «desde la dirección de revisión»).
