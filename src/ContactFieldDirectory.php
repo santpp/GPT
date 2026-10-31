@@ -18,17 +18,23 @@ final class ContactFieldDirectory {
         $cached=query('SELECT payload,UNIX_TIMESTAMP(fetched_at) AS fetched FROM contact_field_cache WHERE connection_id=?',[$connection['id']])->fetch();
         if($cached&&time()-(int)$cached['fetched']<3600){$items=json_decode($cached['payload'],true);if(is_array($items))return $items;}
         $data=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->contactFields($connection['location_id']),false);
-        // Las carpetas son un extra: si no se pueden leer, los campos se muestran igual, sin agrupar.
-        $folders=null;$status='ok';
-        try {$folders=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->contactFolders($connection['location_id']),false);}
-        catch(GhlCooldown $e){$status='paused';}
-        catch(GhlApiException $e){$status='http_'.$e->status;}
-        catch(Throwable $e){$status='unreadable';}
-        $items=$this->normalize($data,$connection,is_array($folders)?$folders:null);
-        foreach($items as &$item)$item['folderStatus']=$status;
-        unset($item);
-        $grouped=count(array_filter($items,fn($i)=>$i['folder']!==null));
-        try {query('INSERT INTO app_state(name,value) VALUES(?,?) ON DUPLICATE KEY UPDATE value=VALUES(value)',['fields-diag:'.$connection['id'],json_encode(['at'=>gmdate('c'),'fields'=>count($items),'inFolders'=>$grouped,'folders'=>is_array($folders)&&is_array($folders['folders']??null)?count($folders['folders']):0,'folderRead'=>$status,'parentInFields'=>count(array_filter($data['customFields']??[],fn($f)=>is_array($f)&&isset($f['parentId'])))])]);}catch(PDOException $e){}
+        // Cada campo trae el id de su carpeta (parentId). El nombre no lo entrega el listado: se pide por id
+        // (una vez al día como mucho si la cuenta no lo permite) y el administrador puede ponerlo a mano.
+        $state=self::folderState((int)$connection['id']);
+        $names=$state['admin']+$state['auto'];
+        foreach(self::parentOrder($data,$connection) as $parent) {
+            if(isset($names[$parent]))continue;
+            if($state['blockedUntil']>time())break;
+            try {
+                $r=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->customFieldById($parent),false);
+                $found=$r['field']['name']??($r['folder']['name']??($r['name']??null));
+                $found=is_string($found)?trim($found):'';
+                if($found===''||mb_strlen($found)>120){$state['blockedUntil']=time()+86400;break;}
+                $state['auto'][$parent]=$found;$names[$parent]=$found;
+            } catch(Throwable $e) {$state['blockedUntil']=time()+86400;break;}
+        }
+        self::saveFolderState((int)$connection['id'],$state);
+        $items=$this->normalize($data,$connection,null,$names);
         query('INSERT INTO contact_field_cache(connection_id,payload) VALUES(?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload),fetched_at=CURRENT_TIMESTAMP',[$connection['id'],json_encode($items,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE)]);
         return $items;
     }
@@ -39,11 +45,9 @@ final class ContactFieldDirectory {
         if(!$row||time()-(int)$row['fetched']>=3600)return null;
         $items=json_decode($row['payload'],true);
         if(!is_array($items))return null;
-        // Sin ninguna carpeta se reintenta pronto: la lectura de carpetas pudo fallar sólo esa vez.
-        if(time()-(int)$row['fetched']>=300&&!array_filter($items,fn($i)=>is_array($i)&&($i['folder']??null)!==null))return null;
         // A directory stored before field types existed is read as stale, so an
         // update refetches it instead of offering every field as plain text.
-        foreach($items as $item)if(!is_array($item)||!isset($item['dataType'])||!array_key_exists('folder',$item))return null;
+        foreach($items as $item)if(!is_array($item)||!isset($item['dataType'])||!array_key_exists('folderId',$item))return null;
         return $items;
     }
 
@@ -62,8 +66,30 @@ final class ContactFieldDirectory {
         return [$names,$order,$parent];
     }
 
-    public function normalize(array $data,array $connection,?array $folders=null):array {
+    /** Ids de carpeta distintos, en el orden en que aparecen los campos (por posición). */
+    public static function parentOrder(array $data,array $connection):array {
+        $rows=[];
+        foreach(is_array($data['customFields']??null)?$data['customFields']:[] as $field) {
+            if(!is_array($field)||($field['locationId']??null)!==$connection['location_id']||($field['model']??'contact')!=='contact')continue;
+            if(is_string($field['parentId']??null)&&preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$field['parentId']))$rows[]=[is_numeric($field['position']??null)?(int)$field['position']:999,$field['parentId']];
+        }
+        usort($rows,fn($a,$b)=>$a[0]<=>$b[0]);
+        return array_values(array_unique(array_column($rows,1)));
+    }
+    public static function folderState(int $connection):array {
+        try{$raw=query('SELECT value FROM app_state WHERE name=?',['field-folders:'.$connection])->fetchColumn();}catch(PDOException $e){$raw=false;}
+        $v=is_string($raw)?json_decode($raw,true):null;
+        $clean=fn($m)=>is_array($m)?array_filter($m,fn($n,$k)=>is_string($k)&&is_string($n)&&$n!==''&&preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$k),ARRAY_FILTER_USE_BOTH):[];
+        return ['admin'=>$clean($v['admin']??null),'auto'=>$clean($v['auto']??null),'blockedUntil'=>(int)($v['blockedUntil']??0)];
+    }
+    public static function saveFolderState(int $connection,array $state):void {
+        try{query('INSERT INTO app_state(name,value) VALUES(?,?) ON DUPLICATE KEY UPDATE value=VALUES(value)',['field-folders:'.$connection,json_encode($state,JSON_UNESCAPED_UNICODE)]);}catch(PDOException $e){}
+    }
+
+    /** @param array<string,string> $names nombres de carpeta por id, si se conocen */
+    public function normalize(array $data,array $connection,?array $folders=null,array $names=[]):array {
         [$folderNames,$folderOrder,$folderParent]=self::folderMap($folders);
+        $parents=self::parentOrder($data,$connection);
         if(!is_array($data['customFields']??null)||!array_is_list($data['customFields'])||count($data['customFields'])>1000)throw new RuntimeException('Invalid custom fields');
         $items=[];
         foreach($data['customFields'] as $field) {
@@ -80,8 +106,9 @@ final class ContactFieldDirectory {
             }
             $parentId=is_string($field['parentId']??null)?$field['parentId']:($folderParent[$id]??null);
             $items[]=[
-                'folder'=>$parentId!==null&&isset($folderNames[$parentId])?$folderNames[$parentId]:null,
-                'folderOrder'=>$parentId!==null&&isset($folderOrder[$parentId])?$folderOrder[$parentId]:9999,
+                'folder'=>$parentId===null?null:($names[$parentId]??($folderNames[$parentId]??'Carpeta '.((int)array_search($parentId,$parents,true)+1))),
+                'folderId'=>$parentId,
+                'folderOrder'=>$parentId===null?9999:(isset($folderOrder[$parentId])?$folderOrder[$parentId]:(int)array_search($parentId,$parents,true)),
                 'id'=>$id,
                 'name'=>$name,
                 'dataType'=>self::dataType($field['dataType']??null),
@@ -105,32 +132,28 @@ final class ContactFieldDirectory {
         return $value!==''&&mb_strlen($value)<=$max?$value:null;
     }
 
-    /** Qué devuelve la cuenta para los campos y sus carpetas: estados, conteos y nombres de claves, nunca valores de contactos. Para el administrador. */
-    public function diagnose(array $connection):array {
-        $run=function(Closure $call)use($connection):array{
-            try{return ['status'=>200,'data'=>$this->gateway->execute($connection,$call,false)];}
-            catch(GhlCooldown $e){return ['status'=>429,'data'=>null];}
-            catch(GhlApiException $e){return ['status'=>$e->status,'data'=>null,'detail'=>$e->detail];}
-            catch(Throwable $e){return ['status'=>0,'data'=>null];}
-        };
-        $loc=$connection['location_id'];
-        $fields=$run(fn(GhlClient $c)=>$c->contactFields($loc));
-        $folders=$run(fn(GhlClient $c)=>$c->contactFolders($loc));
-        $list=is_array($fields['data']['customFields']??null)?$fields['data']['customFields']:[];
-        $first=$list[0]??null;
-        $one=['status'=>null];
-        if(is_array($first)&&is_string($first['id']??null)){
-            $r=$run(fn(GhlClient $c)=>$c->customFieldById($first['id']));
-            $f=is_array($r['data']['field']??null)?$r['data']['field']:(is_array($r['data'])?$r['data']:[]);
-            $one=['status'=>$r['status'],'keys'=>array_keys($f),'hasParent'=>isset($f['parentId'])];
+    /** Las carpetas con su nombre actual y algunos campos de muestra, para que el administrador las reconozca y las nombre. */
+    public function folders(array $connection):array {
+        $items=$this->get($connection);
+        $state=self::folderState((int)$connection['id']);
+        $out=[];
+        foreach($items as $item) {
+            $id=$item['folderId']??null;if(!is_string($id))continue;
+            $out[$id]??=['id'=>$id,'name'=>$item['folder'],'named'=>isset($state['admin'][$id])||isset($state['auto'][$id]),'byAdmin'=>isset($state['admin'][$id]),'samples'=>[],'count'=>0];
+            $out[$id]['count']++;
+            if(count($out[$id]['samples'])<4)$out[$id]['samples'][]=$item['name'];
         }
-        $fd=is_array($folders['data'])?$folders['data']:[];
-        $fl=is_array($fd['folders']??null)?$fd['folders']:[];
-        $ff=is_array($fd['fields']??null)?$fd['fields']:[];
-        return [
-            'fields'=>['status'=>$fields['status'],'count'=>count($list),'withParent'=>count(array_filter($list,fn($f)=>is_array($f)&&isset($f['parentId']))),'keys'=>is_array($first)?array_keys($first):[]],
-            'folders'=>['status'=>$folders['status'],'detail'=>$folders['detail']??null,'topKeys'=>array_keys($fd),'count'=>count($fl),'names'=>array_values(array_filter(array_map(fn($f)=>is_array($f)&&is_string($f['name']??null)?mb_substr($f['name'],0,80):null,array_slice($fl,0,50)))),'itemKeys'=>is_array($fl[0]??null)?array_keys($fl[0]):[],'fieldCount'=>count($ff),'fieldsWithParent'=>count(array_filter($ff,fn($f)=>is_array($f)&&isset($f['parentId'])))],
-            'single'=>$one,
-        ];
+        return array_values($out);
+    }
+    /** Nombres puestos por el administrador (vacío = quitar el suyo). */
+    public static function setAdminNames(array $connection,array $names):void {
+        $state=self::folderState((int)$connection['id']);
+        foreach($names as $id=>$name) {
+            if(!is_string($id)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$id))continue;
+            $name=is_string($name)?trim(preg_replace('/\s+/u',' ',$name)):'';
+            if($name===''||mb_strlen($name)>80)unset($state['admin'][$id]);else $state['admin'][$id]=$name;
+        }
+        self::saveFolderState((int)$connection['id'],$state);
+        query('DELETE FROM contact_field_cache WHERE connection_id=?',[$connection['id']]);
     }
 }

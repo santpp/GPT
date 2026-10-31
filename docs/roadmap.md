@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.2. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.3. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -143,8 +143,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## 1.5.1 · edición de la ficha
 - Carpetas de campos plegables (la primera abierta, con «n de m» rellenados), buscador de campos cuando hay más de 8, campos modificados marcados, contador en «Guardar ficha (n)», aviso de dos toques al descartar con cambios sin guardar, y espacio para que la barra de guardar no tape el último campo.
 
-## 1.5.2
-- Las carpetas de campos no aparecían en la cuenta real (todo en un solo grupo). Se añade en Conexiones el botón «Comprobar carpetas de campos» (sólo administrador) que muestra qué devuelve la cuenta: estado y conteo de campos, cuántos traen carpeta, carpetas y sus nombres, y claves de la respuesta (sin valores de contactos). Con eso se ajusta la lectura. Si la lectura no encuentra ninguna carpeta, se reintenta a los 5 minutos en vez de a la hora.
+## 1.5.2 y 1.5.3 · carpetas de campos
+- Diagnóstico en la cuenta real: los 22 campos traen su carpeta (`parentId`), pero `GET /custom-fields/object-key/contact` responde 400 («Api does not support objectKey of type contact or opportunity»). Se deja de llamarlo (cada 400 pausaba la cuenta unos segundos).
+- 1.5.3: los campos se agrupan por `parentId`. El nombre se pide una vez por carpeta con `GET /custom-fields/{id}` (la referencia lo describe como «campo o carpeta por id», pero sólo para objetos personalizados y empresas); si la cuenta no lo da, no se reintenta hasta 24 h después. Mientras tanto las carpetas se llaman «Carpeta 1, 2…» en el orden de los campos, y el administrador las nombra en Conexiones → «Carpetas de campos», reconociéndolas por campos de muestra. Los nombres puestos a mano mandan siempre.
 
 ## Siguiente (a decidir)
 - Plantillas de WhatsApp: en espera del WABA ID o de la salida de «Comprobar plantillas».

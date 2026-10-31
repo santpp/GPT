@@ -58,11 +58,10 @@ export function contactForm(profile,directory=[],assignees=[]){
  }).join('')
   :'<fieldset class="contact-group"><legend>Campos personalizados</legend><span class="muted">Esta cuenta no define campos personalizados.</span></fieldset>';
  const finder=defined.length>8?'<label class="field-finder"><span class="sr-only">Buscar un campo</span><input type="search" id="live-field-find" placeholder="Buscar un campo…" autocomplete="off"></label>':'';
- const noFolders=defined.length>0&&defined.every(f=>!f.folder)&&defined.some(f=>f.folderStatus&&f.folderStatus!=='ok');
  const tags=asList(profile.tags).map(tag=>`<span class="tag">${esc(tag)}<button type="button" data-drop-tag="${esc(tag)}" aria-label="Quitar etiqueta ${esc(tag)}">×</button></span>`).join('')||'<span class="muted">Sin etiquetas</span>';
  return `<form id="live-contact-form" class="live-contact-form contact-editor"><header class="live-profile-header"><div><span class="section-label">Editar ficha</span><h2>${esc(profile.name)}</h2></div><button type="button" id="live-edit-cancel" aria-label="Cancelar edición">×</button></header>
   ${groups}
-  ${noFolders?'<p class="muted folder-note">No se pudieron leer las carpetas de campos de la cuenta; se muestran sin agrupar.</p>':''}${finder}${customHtml}
+  ${finder}${customHtml}
   <fieldset class="contact-group"><legend>Etiquetas</legend><div class="live-profile-tags" id="live-tag-list">${tags}</div>
    <div class="tag-add"><label class="sr-only" for="live-new-tag">Añadir etiqueta</label><input id="live-new-tag" maxlength="100" placeholder="Nueva etiqueta"><button type="button" id="live-add-tag">Añadir</button></div></fieldset>
   <div class="contact-save"><p id="live-contact-status" role="status"></p><button type="button" class="link-button" data-cancel-edit>Cancelar</button><button class="primary" id="live-save-contact">Guardar ficha</button></div></form>`;

@@ -31,7 +31,7 @@ try{
  query('UPDATE ghl_sync_state SET request_not_before=0 WHERE connection_id=?',[$connectionId]);$fieldCalls=0;
  $fieldGateway=new GhlGateway(function()use(&$fieldCalls,$location){return new GhlClient('fake',function($path,$version)use(&$fieldCalls,$location){$fieldCalls++;if(str_starts_with($path,'/custom-fields/object-key/contact'))return ['status'=>200,'body'=>'{"fields":[],"folders":[]}'];contactCheck($path==='/locations/'.$location.'/customFields'&&$version==='2021-07-28','documented custom-field endpoint and version');return ['status'=>200,'body'=>json_encode(['customFields'=>[['id'=>'field-1','name'=>'Tipo de consulta','locationId'=>$location,'model'=>'contact','dataType'=>'SINGLE_OPTIONS','picklistOptions'=>['Precio','Soporte','Precio'],'position'=>2],['id'=>'opportunity','name'=>'Valor','locationId'=>$location,'model'=>'opportunity']]])];});});
  $fields=(new ContactFieldDirectory($fieldGateway))->get($connection);
- contactCheck(count($fields)===1&&$fields[0]['id']==='field-1'&&$fields[0]['name']==='Tipo de consulta'&&$fieldCalls===2,'contact field names normalized and opportunity fields excluded');
+ contactCheck(count($fields)===1&&$fields[0]['id']==='field-1'&&$fields[0]['name']==='Tipo de consulta'&&$fieldCalls===1,'contact field names normalized and opportunity fields excluded');
  contactCheck($fields[0]['dataType']==='SINGLE_OPTIONS'&&$fields[0]['options']===['Precio','Soporte'],'the field carries its type and its options, so it can be edited');
 
  // A directory stored before field types existed must not be served as current.
