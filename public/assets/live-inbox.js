@@ -1,4 +1,4 @@
-import {contactForm,readContactForm,bindTagEditor} from './contact-editor.js';
+import {contactForm,readContactForm,bindTagEditor,groupByFolder} from './contact-editor.js';
 import {opportunityForm,readOpportunityForm,bindPipelineChoice} from './opportunity-editor.js';
 import {attachmentsOf,attachmentMarkup,bindAttachments,statusMarkup,UI_ICONS} from './message-view.js';
 import {workspace,friendly} from './workspace.js';
@@ -101,6 +101,7 @@ export async function renderLiveInbox(container){
    if(searchTerm)parts.push('query='+encodeURIComponent(searchTerm));
    return parts.join('&');
   };
+  const loadTags=()=>request(`workspace/tags?connectionId=${encodeURIComponent(select.value)}`).then(r=>asList(r.items));
   let listLoading=false;
   function list(){
    const visible=conversations;
@@ -521,7 +522,7 @@ export async function renderLiveInbox(container){
   function contactProfile(profile,labels={},opportunities=null,activity=null,editor={}){
    const details=[['Teléfono',profile.phone],['Email',profile.email],['Empresa',profile.companyName],['Sitio web',profile.website],['Fuente',profile.source],['Responsable',profile.assignedName],['Última actividad',date(profile.lastActivity)],['Alta',date(profile.dateAdded)],['Nacimiento',profile.dateOfBirth],['Zona horaria',profile.timezone],['Dirección',profile.address],['No contactar',profile.dnd?'Sí':null]].filter(([,value])=>value);
    const phone=String(profile.phone||'').replace(/[^0-9+]/g,'');
-   return `<header class="live-profile-header"><div><span class="section-label">Contexto del contacto</span><h2>${esc(profile.name)}</h2></div><div class="live-profile-controls">${profile.canEdit?'<button id="live-edit-contact">Editar</button>':''}<button id="live-profile-close" aria-label="Cerrar ficha">×</button></div></header>${profile.email?`<div class="live-profile-actions"><a href="mailto:${encodeURIComponent(profile.email)}">Escribir por correo</a></div>`:''}<div class="live-profile-details">${details.map(([label,value])=>`<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div><div class="section-label">Etiquetas</div><div class="live-profile-tags">${profile.tags?.length?profile.tags.map(tag=>`<span class="tag">${esc(tag)}</span>`).join(''):'<span class="muted">Sin etiquetas</span>'}</div><div class="section-label">Campos personalizados</div><div class="live-profile-fields">${asList(profile.customFields).filter(field=>field.value!==''&&field.value!=null).map(field=>`<div><span>${esc(labels[field.id]||field.label)}</span><strong>${esc(field.value)}</strong></div>`).join('')||'<span class="muted">Sin campos con valor</span>'}</div><div class="section-label">Oportunidad activa</div><div class="live-profile-opportunities">${opportunitySection(opportunities,editor)}</div><div class="live-profile-activity">${activitySection(activity)}</div>`;
+   return `<header class="live-profile-header"><div><span class="section-label">Contexto del contacto</span><h2>${esc(profile.name)}</h2></div><div class="live-profile-controls">${profile.canEdit?'<button id="live-edit-contact">Editar</button>':''}<button id="live-profile-close" aria-label="Cerrar ficha">×</button></div></header>${profile.email?`<div class="live-profile-actions"><a href="mailto:${encodeURIComponent(profile.email)}">Escribir por correo</a></div>`:''}<div class="live-profile-details">${details.map(([label,value])=>`<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div><div class="section-label">Etiquetas</div><div class="live-profile-tags">${profile.tags?.length?profile.tags.map(tag=>`<span class="tag">${esc(tag)}</span>`).join(''):'<span class="muted">Sin etiquetas</span>'}</div><div class="section-label">Campos personalizados</div><div class="live-profile-fields">${(()=>{const filled=asList(profile.customFields).filter(field=>field.value!==''&&field.value!=null);return filled.length?groupByFolder(filled,editor.directory?editor.directory():[]).map(g=>`<div class="folder-title">${esc(g.title)}</div>`+g.items.map(field=>`<div><span>${esc(labels[field.id]||field.label)}</span><strong>${esc(field.value)}</strong></div>`).join('')).join(''):'<span class="muted">Sin campos con valor</span>'})()}</div><div class="section-label">Oportunidad activa</div><div class="live-profile-opportunities">${opportunitySection(opportunities,editor)}</div><div class="live-profile-activity">${activitySection(activity)}</div>`;
   }
   async function loadContact(c,version){
    const panel=$('#live-contact-panel');panel.innerHTML=skeleton('lines',6);
@@ -551,7 +552,7 @@ export async function renderLiveInbox(container){
      bindOpportunities();
     };
     let labels=Object.fromEntries(asList(data.fields).map(field=>[field.id,field.name])),opportunities=null,activity=null,editing=false;
-    const editor={open:null,pipelines:null,notice:''};
+    const editor={open:null,pipelines:null,notice:'',directory:()=>asList(data.fields)};
     data.contact.canEdit=data.canEdit===true;
     const show=()=>{
      if(editing){panel.innerHTML=contactForm(data.contact,data.fields,data.assignees);bindEdit();return}
@@ -562,7 +563,7 @@ export async function renderLiveInbox(container){
      const form=panel.querySelector('#live-contact-form');if(!form)return;
      const status=panel.querySelector('#live-contact-status');
      panel.querySelector('#live-edit-cancel').onclick=()=>{editing=false;show()};panel.querySelector('[data-cancel-edit]').onclick=()=>{editing=false;show()};
-     tags=bindTagEditor(panel,data.contact);
+     tags=bindTagEditor(panel,data.contact,loadTags);
      form.onsubmit=async event=>{
       event.preventDefault();
       const save=panel.querySelector('#live-save-contact');save.disabled=true;status.textContent='Guardando ficha…';

@@ -21,6 +21,16 @@ export function customControl(field,current){
  const type=field.dataType==='NUMERICAL'||field.dataType==='MONETORY'?'number':field.dataType==='DATE'?'date':field.dataType==='EMAIL'?'email':field.dataType==='PHONE'?'tel':'text';
  return `<label>${name}<input type="${type}" data-field="${id}" data-type="${esc(field.dataType)}" value="${esc(value)}" maxlength="1000"${hint}></label>`;
 }
+/** Agrupa campos por la carpeta que tienen en la cuenta, en el orden de la cuenta; lo que no tiene carpeta va al final. */
+export function groupByFolder(items,directory=[]){
+ const dir=asList(directory),folderOf=new Map(dir.map(f=>[f.id,f.folder||null]));
+ const order=[];for(const f of dir){const k=f.folder||null;if(!order.includes(k))order.push(k)}
+ const groups=new Map();
+ for(const item of asList(items)){const k=folderOf.get(item.id)??null;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(item)}
+ const keys=[...groups.keys()].sort((a,b)=>(a===null)-(b===null)||(order.indexOf(a)<0?999:order.indexOf(a))-(order.indexOf(b)<0?999:order.indexOf(b)));
+ const named=keys.some(k=>k!==null);
+ return keys.map(k=>({title:k??(named?'Otros campos':'Campos personalizados'),items:groups.get(k)}));
+}
 // Grupos del formulario, en el orden en que se piensa en una persona.
 const GROUPS=[['Contacto',['name','firstName','lastName','email','phone']],['Empresa',['companyName','website']],
  ['Dirección',['address1','city','state','postalCode','country']],['Seguimiento',['source','timezone','dateOfBirth']]];
@@ -40,12 +50,14 @@ export function contactForm(profile,directory=[],assignees=[]){
  const values=new Map(asList(profile.customFields).map(field=>[field.id,field]));
  const defined=asList(directory);
  const extra=asList(profile.customFields).filter(field=>!defined.some(d=>d.id===field.id)).map(field=>({id:field.id,name:'Campo personalizado',dataType:'TEXT',options:[]}));
- const custom=[...defined,...extra].map(field=>customControl(field,values.get(field.id))).join('')
-  ||'<span class="muted">Esta cuenta no define campos personalizados.</span>';
+ const customGroups=groupByFolder([...defined,...extra],defined);
+ const customHtml=customGroups.length?customGroups.map(g=>`<fieldset class="contact-group"><legend>${esc(g.title)}</legend><div class="contact-grid">${g.items.map(field=>customControl(field,values.get(field.id))).join('')}</div></fieldset>`).join('')
+  :'<fieldset class="contact-group"><legend>Campos personalizados</legend><span class="muted">Esta cuenta no define campos personalizados.</span></fieldset>';
+ const noFolders=defined.length>0&&defined.every(f=>!f.folder)&&defined.some(f=>f.folderStatus&&f.folderStatus!=='ok');
  const tags=asList(profile.tags).map(tag=>`<span class="tag">${esc(tag)}<button type="button" data-drop-tag="${esc(tag)}" aria-label="Quitar etiqueta ${esc(tag)}">×</button></span>`).join('')||'<span class="muted">Sin etiquetas</span>';
  return `<form id="live-contact-form" class="live-contact-form contact-editor"><header class="live-profile-header"><div><span class="section-label">Editar ficha</span><h2>${esc(profile.name)}</h2></div><button type="button" id="live-edit-cancel" aria-label="Cancelar edición">×</button></header>
   ${groups}
-  <fieldset class="contact-group"><legend>Campos personalizados</legend><div class="contact-grid">${custom}</div></fieldset>
+  ${noFolders?'<p class="muted folder-note">No se pudieron leer las carpetas de campos de la cuenta; se muestran sin agrupar.</p>':''}${customHtml}
   <fieldset class="contact-group"><legend>Etiquetas</legend><div class="live-profile-tags" id="live-tag-list">${tags}</div>
    <div class="tag-add"><label class="sr-only" for="live-new-tag">Añadir etiqueta</label><input id="live-new-tag" maxlength="100" placeholder="Nueva etiqueta"><button type="button" id="live-add-tag">Añadir</button></div></fieldset>
   <div class="contact-save"><p id="live-contact-status" role="status"></p><button type="button" class="link-button" data-cancel-edit>Cancelar</button><button class="primary" id="live-save-contact">Guardar ficha</button></div></form>`;
@@ -82,27 +94,50 @@ export function readContactForm(form,contact){
   return fields;
 }
 
-/** Wires the tag chips and returns the pending additions and removals. */
-export function bindTagEditor(root,contact){
+/** Wires the tag chips and returns the pending additions and removals. Offers the tags that already exist in the account. */
+export function bindTagEditor(root,contact,loadTags=null){
   const state={added:[],dropped:[]};
   const list=root.querySelector('#live-tag-list');
   const input=root.querySelector('#live-new-tag');
+  const box=root.querySelector('.tag-add');
+  let known=null,failed=false;
+  const suggest=document.createElement('div');suggest.className='tag-suggest';suggest.hidden=true;box.after(suggest);
+  const current=()=>[...list.querySelectorAll('[data-drop-tag]')].map(b=>b.dataset.dropTag);
+  const paintSuggest=()=>{
+    if(known===null&&!failed){suggest.hidden=false;suggest.innerHTML='<span class="muted">Buscando etiquetas…</span>';return}
+    if(failed){suggest.hidden=false;suggest.innerHTML='<span class="muted">No se pudieron cargar las etiquetas existentes; puedes escribir una.</span>';return}
+    const typed=input.value.trim().toLowerCase(),have=current().map(t=>t.toLowerCase());
+    const options=known.filter(t=>!have.includes(t.toLowerCase())&&(!typed||t.toLowerCase().includes(typed))).slice(0,40);
+    suggest.hidden=false;
+    suggest.innerHTML=options.length?options.map(t=>`<button type="button" class="tag tag-option" data-pick-tag="${esc(t)}">${esc(t)}</button>`).join(''):`<span class="muted">${known.length?'Ninguna etiqueta coincide. «Añadir» crea una nueva.':'Esta cuenta todavía no tiene etiquetas.'}</span>`;
+    suggest.querySelectorAll('[data-pick-tag]').forEach(b=>b.onclick=()=>{addValue(b.dataset.pickTag);input.focus()});
+  };
+  const ensure=()=>{
+    if(known!==null||!loadTags){if(!loadTags){failed=true}return Promise.resolve()}
+    return loadTags().then(items=>{known=items}).catch(()=>{failed=true});
+  };
+  const open=()=>{paintSuggest();ensure().then(paintSuggest)};
   const rebind=()=>root.querySelectorAll('[data-drop-tag]').forEach(button=>button.onclick=()=>{
     const tag=button.dataset.dropTag;
     state.added=state.added.filter(t=>t!==tag);
     if(asList(contact.tags).includes(tag)&&!state.dropped.includes(tag))state.dropped.push(tag);
     button.parentElement.remove();
+    if(!suggest.hidden)paintSuggest();
   });
-  const add=()=>{
-    const value=input.value.trim();if(!value)return;
+  const addValue=value=>{
+    value=value.trim();if(!value)return;
+    if(current().some(t=>t.toLowerCase()===value.toLowerCase())){input.value='';return}
     if(!state.added.includes(value))state.added.push(value);
     state.dropped=state.dropped.filter(t=>t!==value);
     input.value='';
+    list.querySelector('.muted')?.remove();
     list.insertAdjacentHTML('beforeend',`<span class="tag">${esc(value)}<button type="button" data-drop-tag="${esc(value)}" aria-label="Quitar etiqueta ${esc(value)}">×</button></span>`);
-    rebind();
+    rebind();paintSuggest();
   };
-  root.querySelector('#live-add-tag').onclick=add;
-  input.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();add()}};
+  root.querySelector('#live-add-tag').onclick=()=>{if(input.value.trim())addValue(input.value);else{open();input.focus()}};
+  input.onfocus=open;
+  input.oninput=()=>{if(known!==null||failed)paintSuggest();else open()};
+  input.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();addValue(input.value)}};
   rebind();
   return state;
 }

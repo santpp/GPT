@@ -692,3 +692,9 @@ dialog[open]{animation:fade-up .35s var(--ease)}
 @media(min-width:601px) and (max-width:1200px){.live-inbox-layout.contact-open .live-contact-panel{animation:fade-up .35s var(--ease) both}}
 @media(prefers-reduced-motion:reduce){.live-inbox-layout.chat-open #live-messages,.live-inbox-layout.contact-open .live-contact-panel,.live-inbox-layout:not(.chat-open) .live-sidebar{animation:none!important}}
 .live-message-log{scroll-behavior:auto}
+/* 1.5 · ficha: carpetas de campos y etiquetas existentes */
+.folder-title{margin:14px 0 6px;font-size:13px;font-weight:600;color:var(--ink)}
+.folder-title:first-child{margin-top:0}
+.tag-suggest{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;max-height:140px;overflow:auto;padding:2px}
+.tag-option{cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink);min-height:32px;padding:4px 12px;border-radius:999px;font-size:13px}
+.tag-option:hover{border-color:var(--green);color:var(--green)}

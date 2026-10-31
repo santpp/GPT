@@ -28,3 +28,8 @@ Pulido de la interfaz: pantallas de carga con esqueletos animados.
 - En el teléfono, al abrir una conversación o su ficha, el panel entra deslizando; al volver, la lista entra por el otro lado.
 - Al recibir o enviar un mensaje, la pantalla baja suavemente hasta él. Al abrir una conversación va directo al último mensaje.
 - Con «reducir movimiento» activado en el dispositivo, todo sigue quieto.
+
+## Ficha del contacto
+
+- Los campos personalizados se ven y se editan agrupados por las carpetas de la cuenta, en su orden. Los que no tienen carpeta van al final, en «Otros campos». Si la cuenta no entrega las carpetas, el editor lo avisa y los campos salen sin agrupar.
+- Al pulsar «Añadir» en Etiquetas aparecen las etiquetas que ya existen; se filtran al escribir y se añaden con un toque. Para una nueva, se escribe y se pulsa «Añadir».

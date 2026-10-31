@@ -136,6 +136,8 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Menos aspecto de plantilla: títulos de sección en minúsculas y en negrita (sin mayúsculas separadas), cifras del tablero en una franja con separadores finos en vez de cajas, y fuera los textos de relleno bajo los números. El punto verde del tablero se quitó. Las tarjetas con borde se dejan como están por decisión del usuario, a ver cómo queda.
 - Animaciones más pausadas (0,5 a 0,7 s, con escalonado) para dar sensación de web; las burbujas y la lista de conversaciones sólo se animan la primera vez, no en cada refresco.
 - En el móvil, la conversación y la ficha del contacto entran deslizando desde la derecha y la lista vuelve desde la izquierda; los mensajes nuevos y el que se envía se desplazan suavemente al final (el primer abrir va directo al último mensaje).
+- Ficha del contacto: los campos personalizados se agrupan por las carpetas de la cuenta (en la ficha y en el editor), en el mismo orden; los que no tienen carpeta van al final en «Otros campos». Las carpetas se leen de `GET /custom-fields/object-key/contact`, que la referencia sólo documenta para objetos personalizados y empresas: si la cuenta no responde, los campos se muestran sin agrupar y el editor lo dice. Pendiente de probar en la cuenta real.
+- Etiquetas: al pulsar «Añadir» se ofrecen las etiquetas que ya existen en la cuenta (`GET /locations/{id}/tags`), con filtro al escribir; se sigue pudiendo crear una nueva.
 - Transiciones al aparecer listas y mensajes, y respuesta al pulsar botones. Todo se desactiva con «reducir movimiento» del dispositivo.
 
 ## Siguiente (a decidir)

@@ -18,7 +18,17 @@ final class ContactFieldDirectory {
         $cached=query('SELECT payload,UNIX_TIMESTAMP(fetched_at) AS fetched FROM contact_field_cache WHERE connection_id=?',[$connection['id']])->fetch();
         if($cached&&time()-(int)$cached['fetched']<3600){$items=json_decode($cached['payload'],true);if(is_array($items))return $items;}
         $data=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->contactFields($connection['location_id']),false);
-        $items=$this->normalize($data,$connection);
+        // Las carpetas son un extra: si no se pueden leer, los campos se muestran igual, sin agrupar.
+        $folders=null;$status='ok';
+        try {$folders=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->contactFolders($connection['location_id']),false);}
+        catch(GhlCooldown $e){$status='paused';}
+        catch(GhlApiException $e){$status='http_'.$e->status;}
+        catch(Throwable $e){$status='unreadable';}
+        $items=$this->normalize($data,$connection,is_array($folders)?$folders:null);
+        foreach($items as &$item)$item['folderStatus']=$status;
+        unset($item);
+        $grouped=count(array_filter($items,fn($i)=>$i['folder']!==null));
+        try {query('INSERT INTO app_state(name,value) VALUES(?,?) ON DUPLICATE KEY UPDATE value=VALUES(value)',['fields-diag:'.$connection['id'],json_encode(['at'=>gmdate('c'),'fields'=>count($items),'inFolders'=>$grouped,'folders'=>is_array($folders)&&is_array($folders['folders']??null)?count($folders['folders']):0,'folderRead'=>$status,'parentInFields'=>count(array_filter($data['customFields']??[],fn($f)=>is_array($f)&&isset($f['parentId'])))])]);}catch(PDOException $e){}
         query('INSERT INTO contact_field_cache(connection_id,payload) VALUES(?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload),fetched_at=CURRENT_TIMESTAMP',[$connection['id'],json_encode($items,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE)]);
         return $items;
     }
@@ -31,11 +41,27 @@ final class ContactFieldDirectory {
         if(!is_array($items))return null;
         // A directory stored before field types existed is read as stale, so an
         // update refetches it instead of offering every field as plain text.
-        foreach($items as $item)if(!is_array($item)||!isset($item['dataType']))return null;
+        foreach($items as $item)if(!is_array($item)||!isset($item['dataType'])||!array_key_exists('folder',$item))return null;
         return $items;
     }
 
-    public function normalize(array $data,array $connection):array {
+    /** Nombre de carpeta por id, orden de las carpetas y carpeta de cada campo, leídos con tolerancia. */
+    private static function folderMap(?array $folders):array {
+        $names=[];$order=[];$parent=[];
+        if(!$folders)return [$names,$order,$parent];
+        $list=is_array($folders['folders']??null)?$folders['folders']:[];
+        foreach($list as $i=>$folder) {
+            if(!is_array($folder)||!is_string($folder['id']??null)||!is_string($folder['name']??null))continue;
+            $name=trim($folder['name']);if($name===''||mb_strlen($name)>120)continue;
+            $names[$folder['id']]=$name;$order[$folder['id']]=$i;
+        }
+        foreach(is_array($folders['fields']??null)?$folders['fields']:[] as $field)
+            if(is_array($field)&&is_string($field['id']??null)&&is_string($field['parentId']??null))$parent[$field['id']]=$field['parentId'];
+        return [$names,$order,$parent];
+    }
+
+    public function normalize(array $data,array $connection,?array $folders=null):array {
+        [$folderNames,$folderOrder,$folderParent]=self::folderMap($folders);
         if(!is_array($data['customFields']??null)||!array_is_list($data['customFields'])||count($data['customFields'])>1000)throw new RuntimeException('Invalid custom fields');
         $items=[];
         foreach($data['customFields'] as $field) {
@@ -50,7 +76,10 @@ final class ContactFieldDirectory {
                 $option=trim((string)$option);
                 if($option!==''&&mb_strlen($option)<=300)$options[]=$option;
             }
+            $parentId=is_string($field['parentId']??null)?$field['parentId']:($folderParent[$id]??null);
             $items[]=[
+                'folder'=>$parentId!==null&&isset($folderNames[$parentId])?$folderNames[$parentId]:null,
+                'folderOrder'=>$parentId!==null&&isset($folderOrder[$parentId])?$folderOrder[$parentId]:9999,
                 'id'=>$id,
                 'name'=>$name,
                 'dataType'=>self::dataType($field['dataType']??null),
@@ -59,7 +88,7 @@ final class ContactFieldDirectory {
                 'position'=>is_numeric($field['position']??null)?(int)$field['position']:999,
             ];
         }
-        usort($items,fn(array $a,array $b):int=>[$a['position'],$a['name']]<=>[$b['position'],$b['name']]);
+        usort($items,fn(array $a,array $b):int=>[$a['folder']===null,$a['folderOrder'],$a['position'],$a['name']]<=>[$b['folder']===null,$b['folderOrder'],$b['position'],$b['name']]);
         return $items;
     }
 

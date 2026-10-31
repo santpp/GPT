@@ -1,6 +1,6 @@
 import {workspace,friendly} from './workspace.js';
 import {skeleton} from './skeleton.js';
-import {contactForm,readContactForm,bindTagEditor} from './contact-editor.js';
+import {contactForm,readContactForm,bindTagEditor,groupByFolder} from './contact-editor.js';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const initials=name=>String(name||'·').split(/\s+/).slice(0,2).map(part=>[...part][0]||'').join('').toUpperCase()||'··';
@@ -41,6 +41,7 @@ export async function renderContacts(container){
     </button>`).join('');
   }
 
+  const loadTags=()=>request(`workspace/tags?connectionId=${encodeURIComponent(connection)}`).then(r=>asList(r.items));
   async function load(search=''){
     const version=++generation;
     $('#contact-feedback').textContent='';if(!$('#contact-results').children.length||$('#contact-results .sk-wrap'))$('#contact-results').innerHTML=skeleton('list',7);
@@ -88,16 +89,17 @@ export async function renderContacts(container){
     const contact=record.contact;
     if(editing){
       panel.innerHTML=contactForm(contact,asList(record.fields),asList(record.assignees));
-      tags=bindTagEditor(panel,contact);
+      tags=bindTagEditor(panel,contact,loadTags);
       panel.querySelector('#live-edit-cancel').onclick=()=>{editing=false;show()};panel.querySelector('[data-cancel-edit]').onclick=()=>{editing=false;show()};
       panel.querySelector('#live-contact-form').onsubmit=save;
       return;
     }
     const details=DETAILS.map(([key,label])=>contact[key]?`<div><span>${esc(label)}</span><strong>${esc(contact[key])}</strong></div>`:'').join('')
       ||'<div><span>Sin datos</span><strong>Esta ficha está vacía.</strong></div>';
-    const custom=asList(contact.customFields).filter(field=>field.value!==''&&field.value!==null&&field.value!==undefined)
-      .map(field=>`<div><span>${esc(field.name||'Campo personalizado')}</span><strong>${esc(Array.isArray(field.values)&&field.values.length?field.values.join(', '):field.value)}</strong></div>`).join('')
-      ||'<div><span>Campos personalizados</span><strong>Sin valores todavía.</strong></div>';
+    const filled=asList(contact.customFields).filter(field=>field.value!==''&&field.value!==null&&field.value!==undefined);
+    const custom=filled.length?groupByFolder(filled,asList(record.fields)).map(g=>`<div class="folder-title">${esc(g.title)}</div>`+g.items
+      .map(field=>`<div><span>${esc(field.name||asList(record.fields).find(d=>d.id===field.id)?.name||'Campo personalizado')}</span><strong>${esc(Array.isArray(field.values)&&field.values.length?field.values.join(', '):field.value)}</strong></div>`).join('')).join('')
+      :'<div><span>Campos personalizados</span><strong>Sin valores todavía.</strong></div>';
     panel.innerHTML=`<header class="record-header">
       <button class="mobile-back" id="record-back" aria-label="Volver a la lista">←</button>
       <span class="avatar olive">${esc(initials(contact.name))}</span>

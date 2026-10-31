@@ -262,6 +262,29 @@ if($path==='/api/workspace/opportunities'&&$method==='GET'){
     catch(GhlApiException $e){respond(['error'=>'No se pudieron consultar las oportunidades. Revisa el permiso de oportunidades.','code'=>'opportunities_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'Las oportunidades recibidas no tienen el formato esperado.','code'=>'opportunities_invalid_response'],424);}
 }
+// Las etiquetas que ya existen en la cuenta, para elegirlas al editar un contacto.
+if($path==='/api/workspace/tags'&&$method==='GET'){
+    if(!($membership['capabilities']['viewContacts']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar contactos.'],403);
+    require_once __DIR__.'/GhlGateway.php';
+    $key='tags:'.$id;
+    try{$stored=query('SELECT value FROM app_state WHERE name=?',[$key])->fetchColumn();}catch(PDOException $e){$stored=false;}
+    $stored=is_string($stored)?json_decode($stored,true):null;
+    if(is_array($stored)&&is_array($stored['names']??null)&&time()-(int)($stored['at']??0)<600)respond(['items'=>$stored['names']]);
+    try{
+        $data=(new GhlGateway())->execute($connection,fn(GhlClient $client)=>$client->locationTags($connection['location_id']),false);
+        $names=[];
+        foreach(is_array($data['tags']??null)?array_slice($data['tags'],0,2000):[] as $tag){
+            $name=is_array($tag)?($tag['name']??null):$tag;
+            if(is_string($name)&&trim($name)!==''&&mb_strlen(trim($name))<=100)$names[mb_strtolower(trim($name))]=trim($name);
+        }
+        $names=array_values($names);usort($names,fn($a,$b)=>strcasecmp($a,$b));
+        try{query('INSERT INTO app_state(name,value) VALUES(?,?) ON DUPLICATE KEY UPDATE value=VALUES(value)',[$key,json_encode(['at'=>time(),'names'=>$names],JSON_UNESCAPED_UNICODE)]);}catch(PDOException $e){}
+        respond(['items'=>$names]);
+    }
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'Las etiquetas están en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>'No se pudieron consultar las etiquetas. Código del canal: '.$e->status.'.','code'=>'tags_upstream_'.$e->status],424);}
+    catch(Throwable $e){respond(['error'=>'Las etiquetas recibidas no tienen el formato esperado.','code'=>'tags_invalid_response'],424);}
+}
 if($path==='/api/workspace/contact-fields'&&$method==='GET'){
     if(!($membership['capabilities']['viewContacts']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar contactos.'],403);
     require_once __DIR__.'/ContactFieldDirectory.php';
