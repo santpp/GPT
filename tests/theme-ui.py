@@ -41,6 +41,9 @@ with sync_playwright() as p:
     manifest=light.request.get(BASE+'/manifest.webmanifest').json()
     icons={(i['sizes'],i['purpose']):i['src'] for i in manifest['icons']}
     assert ('512x512','maskable') in icons and ('192x192','any') in icons
+    assert manifest['launch_handler']['client_mode'][0]=='navigate-existing' and manifest['scope']=='/' and manifest['id']=='/','a tap on a notice reuses the installed app window'
+    sw=light.request.get(BASE+'/sw.js').text()
+    assert 'new URL(path,self.location.origin).href' in sw and 'openWindow(target)' in sw,'the notice opens the full address of the app, not a bare path'
     for src in list(icons.values())+['/assets/icons/apple-touch-icon.png','/assets/icons/favicon-32.png','/assets/icons/badge-96.png','/favicon.ico']:
         r=light.request.get(BASE+src);assert r.ok and r.body()[:4] in (b'\x89PNG',b'\x00\x00\x01\x00'),src
     assert light.locator('link[rel=apple-touch-icon]').count()==1 and light.locator('link[rel=icon][sizes="32x32"]').count()==1

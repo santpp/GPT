@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.0.1.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.0.2.
 
 ## Completado y desplegable
 
@@ -76,6 +76,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 - 1.0.0: «¿Venta ganada?» en el chat (cuenta en el mes en que se marca, asigna a quien la cierra si no tenía responsable), leads de hoy, leads asignados a mí y mis ventas del mes en el tablero, bienvenida para instalar la app y activar avisos, ficha agrupada al editar, icono monocromo correcto en la barra de estado y versión en el menú.
 - 1.0.1: cabecera del chat discreta, recuadros personales siempre visibles con su motivo, ventas ganadas del mes de la cuenta, propietario reconocido por correo y leads de hoy con alternativas.
+- 1.0.2: los avisos abren la app instalada y no una pestaña de Chrome (dirección completa, ventana reutilizada y `launch_handler` en el manifiesto). Pendiente de confirmar en el Pixel tras reinstalar.
 
 ## Antes era «Para la v1.0»
 

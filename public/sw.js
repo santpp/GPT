@@ -29,10 +29,17 @@ self.addEventListener('push',event=>{
 self.addEventListener('notificationclick',event=>{
  event.notification.close();
  const path=event.notification.data?.path||'/bandeja';
+ // La dirección completa de Ágora, no sólo la ruta: así el sistema sabe a qué
+ // app instalada pertenece y no la abre en una pestaña de Chrome.
+ const target=new URL(path,self.location.origin).href;
  event.waitUntil((async()=>{
   const open=await self.clients.matchAll({type:'window',includeUncontrolled:true});
-  for(const client of open){if(new URL(client.url).origin===self.location.origin){await client.focus();await client.navigate(path).catch(()=>{});return}}
-  await self.clients.openWindow(path);
+  const mine=open.filter(client=>new URL(client.url).origin===self.location.origin);
+  // Si la app ya está abierta, se reutiliza esa ventana, en primer plano.
+  for(const client of mine){
+   try{const focused=await client.focus();await (focused||client).navigate(target);return}catch(error){}
+  }
+  await self.clients.openWindow(target);
  })());
 });
 self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.method!=='GET'||u.origin!==self.location.origin||u.pathname.startsWith('/api/'))return;
