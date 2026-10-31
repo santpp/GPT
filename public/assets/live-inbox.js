@@ -678,12 +678,19 @@ export async function renderLiveInbox(container){
     list();
     // Una conversación pedida desde otra pantalla (la ficha de un contacto) se abre
     // aunque no esté entre las últimas de la lista.
-    const wanted=workspace.pendingConversation;
+    const wanted=workspace.pendingConversation;let unavailable=null;
     if(wanted&&!selected){
      workspace.pendingConversation=null;
-     const known=conversations.find(c=>c.id===wanted.id);
-     if(!known){conversations=[wanted,...conversations];list()}
-     open(known||wanted);
+     let target=conversations.find(c=>c.id===wanted.id)||(wanted.contactId?wanted:null);
+     // Pedida por su identificador (desde un aviso): se pide completa al servidor.
+     if(!target){
+      try{target=(await request(`workspace/conversation?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(wanted.id)}`)).conversation}
+      catch(error){unavailable=error.status===404?'Esa conversación ya no está disponible en esta cuenta.':friendly(error)}
+     }
+     if(target&&version===generation&&active()){
+      if(!conversations.some(c=>c.id===target.id)){conversations=[target,...conversations];list()}
+      open(conversations.find(c=>c.id===target.id)||target);
+     }
     }
     window.dispatchEvent(new CustomEvent('agora:unread',{detail:Number(data.unread)||0}));
     const scope=[filter==='unread'?'no leídas':filter==='mine'?'mías':null,channelNames[channelFilter],searchTerm?`«${searchTerm}»`:null].filter(Boolean).join(' · ');
@@ -691,6 +698,7 @@ export async function renderLiveInbox(container){
      ? `${data.items.length} de ${data.total} conversaciones${scope?' · '+scope:''}${data.partial?' · ventana parcial':''}`
      : (scope?`Ninguna conversación con este filtro (${scope}).`:'Esta cuenta todavía no tiene conversaciones.');
     if(data.stale)feedback.textContent+=data.reason==='paused'?` · Mostrando la última lista, de ${date(data.syncedAt)}; la consulta está en espera.`:` · Mostrando la última lista, de ${date(data.syncedAt)}; no se pudo leer la cuenta ahora.`;
+    if(unavailable)feedback.textContent=unavailable;
     return changed;
    }catch(e){if(e.status===401)container.agoraLiveDispose();if(version===generation&&active())feedback.textContent=friendly(e);return false}
   }

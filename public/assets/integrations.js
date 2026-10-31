@@ -1,4 +1,5 @@
 import {friendly} from './workspace.js';
+import {windowMarkup} from './announce.js';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const accessPanel=(items,channel)=>`<section class="settings-notice access-panel"><h3>Canal de acceso del equipo</h3><p>Ágora entrega los códigos temporales de acceso usando el correo de una de tus cuentas conectadas. Elige cuál se encarga. Tu acceso de administrador con contraseña funciona siempre, incluso sin canal.</p><label>Cuenta encargada<select id="access-channel-select"><option value="">Sin asignar</option>${items.map(i=>`<option value="${i.id}"${Number(channel.connectionId)===Number(i.id)?' selected':''}${i.status==='connected'?'':' disabled'}>${esc(i.name)}${i.status==='connected'?'':' · comprueba la conexión primero'}</option>`).join('')}</select></label><p class="access-state">${channel.connectionId?(channel.ready?'Listo para entregar códigos de acceso.':'La cuenta elegida necesita una comprobación correcta antes de entregar códigos.'):'Sin canal asignado: los integrantes del equipo no podrán recibir códigos.'}</p></section>`;
 const statusNames={untested:'Pendiente de comprobar',connected:'Conexión comprobada',error:'Revisar conexión'};
@@ -148,14 +149,15 @@ export async function renderIntegrations(container){
  const installation=await api('admin/diagnostics');if(!active())return;
  if(!installation.ready){renderSetup(container,installation);return}
  const {items,accessChannel={connectionId:null,ready:false},backup=null}=await api('admin/integrations');if(!active())return;
- container.innerHTML=`<div class="integration-heading"><div><span class="eyebrow">ADMINISTRACIÓN</span><h2 style="margin-top:8px">Cuentas conectadas</h2></div><div><button id="test-access-channel"${accessChannel.ready?'':' disabled'}>Probar canal de acceso</button> <button id="add-integration" class="primary">+ Añadir subcuenta</button></div></div><p class="settings-notice">Tu cuenta es la única administración propia de Ágora. El equipo se importa desde cada cuenta conectada con sus permisos y asignaciones; no se crean contraseñas locales para empleados.</p>${accessPanel(items,accessChannel)}<div id="integration-cards">${items.map(i=>`<article class="card integration-card"><span class="integration-status">${statusNames[i.status]||'Pendiente'}</span><h3>${esc(i.name)}</h3><p>Identificador: ${esc(i.location_id)}<br>Clave protegida · intervalo: ${i.sync_interval_seconds} s<br>Última comprobación: ${esc(i.last_checked_at||'Sin comprobar')}<br>Consultas programadas: ${Number(i.sync_enabled)?'activadas':'desactivadas'}<br>Última lectura: ${esc(i.last_success_at||'Sin sincronizar')}<br>Equipo importado: ${Number(i.externalUsers)||0} · ${esc(i.users_last_success_at||'Sin sincronizar')}${i.accessChannel?'<br>Canal de acceso del equipo':''}<br>Plantillas de WhatsApp: ${i.whatsapp_number_id?'número '+esc(i.whatsapp_number_id):'sin configurar'}</p><footer><button data-edit="${i.id}">Configurar conexión</button><button data-whatsapp="${i.id}">Plantillas de WhatsApp</button><button data-test="${i.id}">Comprobar conexión</button><button data-users="${i.id}">Equipo y permisos</button><button data-schedule="${i.id}" data-enabled="${Number(i.sync_enabled)||0}">${Number(i.sync_enabled)?'Pausar consultas':'Activar consultas'}</button><button data-remove="${i.id}" class="danger">Eliminar</button></footer></article>`).join('')||'<p class="empty">Todavía no tienes cuentas conectadas.<br>Añade una cuenta para empezar.</p>'}</div><p id="integration-feedback" class="dialog-copy" role="status"></p>${backupNotice(backup)}<section id="device-panel"></section>`;
- devicePanel(container);
+ container.innerHTML=`<div class="integration-heading"><div><span class="eyebrow">ADMINISTRACIÓN</span><h2 style="margin-top:8px">Cuentas conectadas</h2></div><div><button id="test-access-channel"${accessChannel.ready?'':' disabled'}>Probar canal de acceso</button> <button id="add-integration" class="primary">+ Añadir subcuenta</button></div></div><p class="settings-notice">Tu cuenta es la única administración propia de Ágora. El equipo se importa desde cada cuenta conectada con sus permisos y asignaciones; no se crean contraseñas locales para empleados.</p>${accessPanel(items,accessChannel)}<div id="integration-cards">${items.map(i=>`<article class="card integration-card"><span class="integration-status">${statusNames[i.status]||'Pendiente'}</span><h3>${esc(i.name)}</h3><p>Identificador: ${esc(i.location_id)}<br>Clave protegida · intervalo: ${i.sync_interval_seconds} s<br>Última comprobación: ${esc(i.last_checked_at||'Sin comprobar')}<br>Consultas programadas: ${Number(i.sync_enabled)?'activadas':'desactivadas'}<br>Última lectura: ${esc(i.last_success_at||'Sin sincronizar')}<br>Equipo importado: ${Number(i.externalUsers)||0} · ${esc(i.users_last_success_at||'Sin sincronizar')}${i.accessChannel?'<br>Canal de acceso del equipo':''}<br>Plantillas de WhatsApp: ${i.whatsapp_number_id?'número '+esc(i.whatsapp_number_id):'sin configurar'}</p><footer><button data-edit="${i.id}">Configurar conexión</button><button data-whatsapp="${i.id}">Plantillas de WhatsApp</button><button data-commission="${i.id}">Comisión</button><button data-test="${i.id}">Comprobar conexión</button><button data-users="${i.id}">Equipo y permisos</button><button data-schedule="${i.id}" data-enabled="${Number(i.sync_enabled)||0}">${Number(i.sync_enabled)?'Pausar consultas':'Activar consultas'}</button><button data-remove="${i.id}" class="danger">Eliminar</button></footer></article>`).join('')||'<p class="empty">Todavía no tienes cuentas conectadas.<br>Añade una cuenta para empezar.</p>'}</div><p id="integration-feedback" class="dialog-copy" role="status"></p>${backupNotice(backup)}<section id="announce-panel"></section><section id="device-panel"></section>`;
+ devicePanel(container);announcePanel(container);
  container.querySelector('#add-integration').onclick=()=>edit(null,container);
  container.querySelector('#test-access-channel').onclick=async e=>{e.currentTarget.disabled=true;const feedback=container.querySelector('#integration-feedback');feedback.textContent='Enviando prueba…';try{await api('admin/access-channel/test','POST');feedback.textContent='Prueba entregada al correo del administrador. Revisa la bandeja y la carpeta de spam.'}catch(error){feedback.textContent=friendly(error)}finally{e.currentTarget.disabled=false}};
  const channelSelect=container.querySelector('#access-channel-select');
  if(channelSelect)channelSelect.onchange=async()=>{channelSelect.disabled=true;const feedback=container.querySelector('#integration-feedback');try{await api('admin/access-channel','PUT',{connectionId:channelSelect.value?Number(channelSelect.value):null});await renderIntegrations(container);container.querySelector('#integration-feedback').textContent=channelSelect.value?'Canal de acceso guardado.':'Canal de acceso sin asignar. El equipo no podrá recibir códigos.'}catch(error){feedback.textContent=friendly(error);channelSelect.disabled=false}};
  container.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>edit(items.find(i=>String(i.id)===b.dataset.edit),container));
  container.querySelectorAll('[data-test]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const r=await api(`admin/integrations/${b.dataset.test}/test`,'POST');await renderIntegrations(container);container.querySelector('#integration-feedback').textContent=r.message}catch(e){container.querySelector('#integration-feedback').textContent=friendly(e)}finally{b.disabled=false}});
+ container.querySelectorAll('[data-commission]').forEach(b=>b.onclick=()=>commissionDialog(items.find(i=>String(i.id)===b.dataset.commission)));
  container.querySelectorAll('[data-whatsapp]').forEach(b=>b.onclick=()=>whatsappNumber(items.find(i=>String(i.id)===b.dataset.whatsapp),container));
  container.querySelectorAll('[data-users]').forEach(b=>b.onclick=()=>team(b.dataset.users,items.find(i=>String(i.id)===b.dataset.users),container));
  container.querySelectorAll('[data-schedule]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await api(`admin/integrations/${b.dataset.schedule}/schedule`,'POST',{enabled:!Number(b.dataset.enabled)});await renderIntegrations(container);container.querySelector('#integration-feedback').textContent='Preferencia guardada. La actualización automática requiere que el servicio de sincronización esté activo.'}catch(e){container.querySelector('#integration-feedback').textContent=friendly(e)}finally{b.disabled=false}});
@@ -164,6 +166,77 @@ export async function renderIntegrations(container){
 }
 // El número de WhatsApp de la cuenta, como lo nombra Meta: con él se leen sus
 // plantillas aprobadas y se envían desde ese número.
+// Novedades para el equipo: las escribe el administrador y cada persona las ve una vez al entrar.
+async function announcePanel(container){
+ const panel=container.querySelector('#announce-panel');if(!panel)return;
+ let items=[];
+ try{items=(await api('admin/announcements')).items}catch(error){panel.innerHTML='';return}
+ const when=value=>{try{return new Intl.DateTimeFormat('es',{dateStyle:'medium'}).format(new Date(value))}catch{return ''}};
+ panel.innerHTML=`<article class="card announce-card"><h3>Novedades para el equipo</h3>
+  <p class="dialog-copy">Escribe aquí lo que quieres contar (una versión nueva, un cambio en cómo se trabaja…). Cada persona lo ve <b>una sola vez</b>, en una ventana, la próxima vez que entra en Ágora.</p>
+  <form id="announce-form" class="dialog-form">
+   <label>Título<input name="title" maxlength="120" required placeholder="Ej.: Nueva versión de Ágora"></label>
+   <label>Texto<textarea name="body" rows="5" maxlength="2000" required placeholder="Incluye:&#10;- Primera novedad&#10;- Segunda novedad"></textarea></label>
+   <p class="muted announce-hint">Las líneas que empiezan por «- » salen como lista. Una línea en blanco separa párrafos.</p>
+   <div class="announce-grid">
+    <label>Texto del botón (opcional)<input name="linkLabel" maxlength="40" placeholder="Ver el tablero"></label>
+    <label>Dirección del botón<input name="linkUrl" maxlength="280" placeholder="/tablero o https://…"></label>
+   </div>
+   <label>Cuánto tiempo se muestra<select name="days"><option value="">Hasta que se retire</option><option value="7">7 días</option><option value="30">30 días</option></select></label>
+   <div class="dialog-actions"><button class="primary">Publicar</button><button type="button" id="announce-preview" class="secondary">Vista previa</button></div>
+   <p id="announce-result" class="dialog-copy" role="status"></p>
+  </form>
+  ${items.length?`<h4>Publicadas</h4><ul class="security-list">${items.map(i=>`<li><span><b>${esc(i.title)}</b><small>${esc(when(i.at))} · la han visto ${i.seen} persona${i.seen===1?'':'s'}${i.expiresAt?' · caduca el '+esc(when(i.expiresAt)):''}</small></span><button class="link-button" data-announce-remove="${i.id}">Retirar</button></li>`).join('')}</ul>`:''}
+ </article>`;
+ const form=panel.querySelector('#announce-form'),result=panel.querySelector('#announce-result');
+ const read=()=>Object.fromEntries(['title','body','linkLabel','linkUrl','days'].map(k=>[k,form.elements[k].value]));
+ panel.querySelector('#announce-preview').onclick=()=>{
+  const item=read();if(!item.title.trim()||!item.body.trim()){result.textContent='Escribe el título y el texto para ver cómo queda.';return}
+  const dialog=document.querySelector('#action-dialog');document.querySelector('#dialog-content').innerHTML=windowMarkup(item,{preview:true});dialog.showModal();
+  document.querySelector('#announce-ok').onclick=()=>dialog.close();
+ };
+ form.onsubmit=async e=>{
+  e.preventDefault();const button=form.querySelector('button.primary');button.disabled=true;result.textContent='Publicando…';
+  try{await api('admin/announcements','POST',read());await announcePanel(container);panel.querySelector('#announce-result').textContent='Publicada. Cada persona la verá al entrar.'}
+  catch(error){result.textContent=friendly(error);button.disabled=false}
+ };
+ panel.querySelectorAll('[data-announce-remove]').forEach(b=>b.onclick=async()=>{
+  if(!confirm('¿Retirar esta novedad? La dejarán de ver quienes aún no la han visto.'))return;
+  b.disabled=true;try{await api(`admin/announcements/${b.dataset.announceRemove}`,'DELETE');await announcePanel(container)}catch(error){result.textContent=friendly(error);b.disabled=false}
+ });
+}
+
+// La comisión de la subcuenta. Sólo el administrador, y sólo desde aquí.
+const monthLabel=value=>{try{return new Intl.DateTimeFormat('es',{month:'long',year:'numeric'}).format(new Date(value+'-15'))}catch{return value}};
+const ruleText=r=>r.kind==='per_closing'?`${new Intl.NumberFormat('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}).format(r.amount)} por cada cierre`:`${new Intl.NumberFormat('es-ES').format(r.amount)} % de la venta`;
+async function commissionDialog(item){
+ const dialog=document.querySelector('#action-dialog'),content=document.querySelector('#dialog-content');
+ content.innerHTML=`<h2>Comisión de ${esc(item.name)}</h2><p class="dialog-copy">Cargando…</p>`;
+ if(!dialog.open)dialog.showModal();
+ let data;
+ try{data=await api(`admin/integrations/${item.id}/commission`)}catch(error){content.innerHTML=`<h2>Comisión</h2><p class="dialog-copy">${esc(friendly(error))}</p>`;return}
+ const paint=data=>{
+  const c=data.current;
+  content.innerHTML=`<h2>Comisión de ${esc(item.name)}</h2>
+   <p class="dialog-copy">Así se calculan las comisiones del tablero de esta subcuenta. <b>Sólo tú puedes cambiarla</b>. Vale desde este mes (${esc(monthLabel(new Date().toISOString().slice(0,7)))}); los meses anteriores conservan la regla con la que se calcularon.</p>
+   <form id="commission-form" class="dialog-form">
+    <label>Cómo se paga<select name="kind"><option value="percent"${c.kind==='percent'?' selected':''}>Porcentaje de la venta</option><option value="per_closing"${c.kind==='per_closing'?' selected':''}>Monto fijo por cada cierre</option></select></label>
+    <label><span id="commission-unit">${c.kind==='percent'?'Porcentaje (%)':'Monto por cierre'}</span><input name="amount" type="number" inputmode="decimal" min="0" step="0.01" required value="${esc(String(c.amount))}"></label>
+    <div class="dialog-actions"><button class="primary">Guardar</button></div>
+    <p id="commission-result" class="dialog-copy" role="status"></p>
+   </form>
+   <p class="dialog-copy"><b>Ahora:</b> ${esc(ruleText(c))}${c.since?` · desde ${esc(monthLabel(c.since))}`:' · la de siempre'}.</p>
+   ${data.history.length?`<details><summary>Cambios anteriores</summary><ul class="security-list">${data.history.map(h=>`<li><span><b>${esc(ruleText(h))}</b><small>Desde ${esc(monthLabel(h.since))}</small></span></li>`).join('')}</ul></details>`:''}`;
+  const form=content.querySelector('#commission-form'),result=content.querySelector('#commission-result');
+  form.elements.kind.onchange=()=>{content.querySelector('#commission-unit').textContent=form.elements.kind.value==='percent'?'Porcentaje (%)':'Monto por cierre';form.elements.amount.max=form.elements.kind.value==='percent'?'100':''};
+  form.onsubmit=async e=>{
+   e.preventDefault();const button=form.querySelector('button.primary');button.disabled=true;result.textContent='Guardando…';
+   try{paint(await api(`admin/integrations/${item.id}/commission`,'PUT',{kind:form.elements.kind.value,amount:form.elements.amount.value}));content.querySelector('#commission-result').textContent='Guardado. Vale desde este mes.'}
+   catch(error){result.textContent=friendly(error);button.disabled=false}
+  };
+ };
+ paint(data);
+}
 const DROP_REASONS={name:'sin nombre válido',language:'sin idioma reconocible',status_pending:'en revisión de Meta',status_in_appeal:'en apelación',status_rejected:'rechazadas',status_paused:'pausadas',status_disabled:'desactivadas',status_deleted:'eliminadas',unknown:'sin motivo claro'};
 function diagnosisMarkup(d){
  if(!d)return '';

@@ -148,6 +148,23 @@ try {
         unset($_SESSION['locked']);$_SESSION['seen']=time();
         respond(['unlocked'=>true]);
     }
+    // Novedades: cada persona ve cada una una vez; las escribe el administrador desde Conexiones.
+    if (str_starts_with($path,'/api/announcements')||$path==='/api/admin/announcements'||str_starts_with($path,'/api/admin/announcements/')) {
+        require_once $appRoot.'/src/Announcements.php';
+        try {
+            if ($path==='/api/announcements'&&$method==='GET') respond(['items'=>Announcements::pending($u)]);
+            if (preg_match('~^/api/announcements/(\d+)/read$~',$path,$m)&&$method==='POST') {Announcements::markRead($u,(int)$m[1]);respond(['read'=>true]);}
+            if (str_starts_with($path,'/api/admin/')) {
+                if (($u['identity_type']??'native')!=='native'||$u['role']!=='administrator') respond(['error'=>'Acceso restringido'],403);
+                if ($path==='/api/admin/announcements'&&$method==='GET') respond(['items'=>Announcements::list((int)$u['tenant_id'])]);
+                if ($path==='/api/admin/announcements'&&$method==='POST') respond(['id'=>Announcements::create((int)$u['tenant_id'],body())],201);
+                if (preg_match('~^/api/admin/announcements/(\d+)$~',$path,$m)&&$method==='DELETE') {
+                    if(!Announcements::remove((int)$u['tenant_id'],(int)$m[1])) respond(['error'=>'Esa novedad ya no existe.'],404);
+                    respond(['removed'=>true]);
+                }
+            }
+        } catch (AnnouncementProblem $e) {respond(['error'=>$e->getMessage(),'code'=>'announcement_'.$e->reason],$e->reason==='unknown'?404:422);}
+    }
     if ($path === '/api/security' && $method === 'GET') {
         respond(['passkeys'=>Passkeys::list($u,false),'sessions'=>DeviceSession::list($u,false,$_SESSION['device_id']??null),
             'team'=>$admin?['passkeys'=>Passkeys::list($u,true),'sessions'=>DeviceSession::list($u,true,$_SESSION['device_id']??null)]:null,

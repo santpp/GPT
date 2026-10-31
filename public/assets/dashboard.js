@@ -15,6 +15,30 @@ async function request(path,method='GET',csrf='',body=null){
   return data;
 }
 
+/** La regla de comisión en palabras: «10 %» o «5,00 por cierre». */
+function commissionText(rule,word='cierres'){
+  if(!rule)return '10 %';
+  const one=String(word).replace(/s$/,'');
+  return rule.kind==='per_closing'?`${money(rule.amount)} por ${one}`:`${number(rule.amount)} %`;
+}
+/** De dónde sale cada cifra, a un toque, para quien se pregunte «¿y esto de dónde?». */
+function origin(month,word){
+  const one=String(word).replace(/s$/,'');
+  const rule=month.commission||{kind:'percent',amount:10};
+  const commission=rule.kind==='per_closing'?`el monto fijo por ${one} (${money(rule.amount)}) por el número de ${word}`:`el ${number(rule.amount)} % de las ventas`;
+  const row=(name,text)=>`<li><b>${esc(name)}</b>${esc(text)}</li>`;
+  return `<details class="board-origin"><summary>¿De dónde salen estas cifras?</summary><ul>
+    ${row('Ventas y '+word+': ','lo ganado en el mes en tu cuenta, más lo que se marca como «¿Venta ganada?» desde Ágora. Cada venta cuenta en el mes en que se cierra.')}
+    ${row('Publicidad: ','lo gastado en la cuenta publicitaria de Meta conectada durante el mes, más lo que escribas en «Cifras del mes» como otros gastos.')}
+    ${row('Comisiones: ','calculadas con '+commission+'. La regla la fija el administrador en Conexiones y vale desde el mes en que se cambia.')}
+    ${row('Ganancia: ','ventas menos publicidad y comisiones.')}
+    ${row('Ganancia real del mes: ','la ganancia menos los costos fijos que escribes en «Cifras del mes».')}
+    ${row('Costo por '+one+': ','publicidad entre el número de '+word+'.')}
+    ${row('Ventas por cada 100 invertido: ','ventas entre publicidad, por cien.')}
+    ${row('Vendedores: ','el equipo de tu cuenta. Quienes administran no aparecen aquí, pero lo que cierran sí cuenta en el total.')}
+    ${row('Metas y costos fijos: ','los escribes tú en «Cifras del mes»; se guardan por subcuenta y por mes.')}
+  </ul></details>`;
+}
 function tile(label,value,note){
   return `<div class="board-tile"><span>${esc(label)}</span><strong>${value===null||value===undefined?'—':esc(value)}</strong>${note?`<small>${esc(note)}</small>`:''}</div>`;
 }
@@ -156,13 +180,14 @@ export async function renderDashboard(container){
       tile(`Costo por ${word.replace(/s$/,'')}`,money(p.costPerClosing),p.costPerClosing===null?'Falta lo invertido en publicidad':`${money(p.ads)} entre ${number(month.sales.closings)} ${word}`),
       tile('Ventas por cada 100 invertido',money(p.returnPerHundred),'Retorno del gasto publicitario'),
       tile('Costos de mercadeo y ventas',money(p.marketingCost),p.marketingCost===null?'Faltan datos':`Fijos ${money(p.fixedCosts??0)} · variables ${money(p.ads??0)}`),
-      tile(`Comisiones del equipo (${number(month.settings.commissionRate)} %)`,money(p.commissions),`Sobre ${money(p.sales)} vendidos`),
+      tile(`Comisiones del equipo (${commissionText(month.commission,word)})`,money(p.commissions),month.commission?.kind==='per_closing'?`${number(month.sales.closings)} ${word}`:`Sobre ${money(p.sales)} vendidos`),
     ].join('');
     const goal=month.goal;
     const progress=Math.max(0,Math.min(100,Number(goal.progress)||0));
     const counts=asList(month.team).reduce((acc,row)=>{acc[row.state]=(acc[row.state]||0)+1;return acc},{});
     return `${picker}${adsLine}${warn}
       <div class="board-split">${waterfall(p)}<div class="dashboard-tiles">${tiles}</div></div>
+      ${origin(month,word)}
       <div class="section-label">DESEMPEÑO DEL EQUIPO DE VENTAS</div>
       <div class="board-goal">
         <div class="board-goal-main"><span>Avance del equipo frente a su meta</span><strong>${goal.progress===null?'—':number(Math.round(goal.progress))+' %'}</strong>
@@ -206,7 +231,6 @@ export async function renderDashboard(container){
         <p class="dialog-copy">Lo invertido en Meta lo informa la cuenta publicitaria conectada. Aquí sólo lo que no pasa por ella.</p>
         <label>Otros gastos de publicidad (fuera de Meta)<input type="number" min="0" step="0.01" name="otherAds" value="${s.otherAds??''}"></label>
         <label>Costos fijos del mes<input type="number" min="0" step="0.01" name="fixedCosts" value="${s.fixedCosts??''}"></label>
-        <label>Comisión del equipo (%)<input type="number" min="0" max="100" step="0.1" name="commissionRate" value="${s.commissionRate??10}"></label>
         <label>Meta de ventas del equipo<input type="number" min="0" step="0.01" name="teamGoal" value="${s.teamGoal??''}"></label>
         <label>¿Cómo llamas a cada cierre?<input name="closingWord" maxlength="24" value="${esc(s.closingWord||'cierres')}" placeholder="estudiantes, clientes, pólizas…"></label>
         <div class="section-label">UMBRALES DEL SEMÁFORO</div>
@@ -221,7 +245,7 @@ export async function renderDashboard(container){
       event.preventDefault();
       const status=form.querySelector('#board-form-status'),button=form.querySelector('button.primary');
       button.disabled=true;status.textContent='Guardando…';
-      const payload=Object.fromEntries(['otherAds','fixedCosts','commissionRate','teamGoal','closingWord','green','amber'].map(k=>[k,form.elements[k].value]));
+      const payload=Object.fromEntries(['otherAds','fixedCosts','teamGoal','closingWord','green','amber'].map(k=>[k,form.elements[k].value]));
       payload.goals=Object.fromEntries([...form.querySelectorAll('[data-goal]')].map(input=>[input.dataset.goal,input.value]));
       try{
         await request(`workspace/board-month?connectionId=${encodeURIComponent(connection)}&period=${period}`,'POST',csrf,payload);

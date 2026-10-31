@@ -1,5 +1,5 @@
 const CACHE='agora-shell-v22';
-const SHELL=['/','/bandeja','/contactos','/oportunidades','/tablero','/assets/app.css','/assets/layout.css','/assets/dark.css','/assets/theme.js','/assets/app.js','/assets/workspace.js','/assets/contacts.js','/assets/board.js','/assets/icons/favicon-32.png','/assets/icons/icon-192.png','/assets/icons/badge-96.png','/assets/agora-logo.png','/assets/agora-mark.png','/assets/integrations.js','/assets/live-inbox.js','/assets/contact-editor.js','/assets/dashboard.js','/assets/opportunity-editor.js','/assets/native.js','/assets/push.js','/assets/message-view.js','/assets/passkeys.js','/manifest.webmanifest'];
+const SHELL=['/','/bandeja','/contactos','/oportunidades','/tablero','/assets/app.css','/assets/layout.css','/assets/dark.css','/assets/theme.js','/assets/app.js','/assets/workspace.js','/assets/contacts.js','/assets/board.js','/assets/icons/favicon-32.png','/assets/icons/icon-192.png','/assets/icons/badge-96.png','/assets/agora-logo.png','/assets/agora-mark.png','/assets/integrations.js','/assets/live-inbox.js','/assets/contact-editor.js','/assets/dashboard.js','/assets/opportunity-editor.js','/assets/native.js','/assets/push.js','/assets/message-view.js','/assets/passkeys.js','/assets/announce.js','/manifest.webmanifest'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL.map(url=>new Request(url,{cache:'reload'}))))));
 self.addEventListener('message',e=>{
  if(e.data?.type==='ACTIVATE')self.skipWaiting();
@@ -20,8 +20,9 @@ self.addEventListener('push',event=>{
  const path=typeof data.data?.path==='string'?data.data.path:'/bandeja';
  const safe=/^\/[A-Za-z0-9/_-]{0,120}$/.test(path)?path:'/bandeja';
  const unread=Number.isFinite(Number(data.unread))?Math.max(0,Number(data.unread)):null;
+ const connection=/^\d{1,12}$/.test(String(data.data?.connectionId??''))?String(data.data.connectionId):'';
  event.waitUntil(Promise.all([
-  self.registration.showNotification(title,{body,data:{path:safe},tag:safe,renotify:true,icon:'/assets/icons/icon-192.png',badge:'/assets/icons/badge-96.png'}),
+  self.registration.showNotification(title,{body,data:{path:safe,connection},tag:safe,renotify:true,icon:'/assets/icons/icon-192.png',badge:'/assets/icons/badge-96.png'}),
   // El número del icono donde el sistema lo permite (iPhone instalada, escritorio).
   unread!==null&&self.navigator?.setAppBadge?(unread>0?self.navigator.setAppBadge(unread):self.navigator.clearAppBadge()).catch(()=>{}):Promise.resolve(),
  ]));
@@ -29,9 +30,11 @@ self.addEventListener('push',event=>{
 self.addEventListener('notificationclick',event=>{
  event.notification.close();
  const path=event.notification.data?.path||'/bandeja';
+ const connection=/^\d{1,12}$/.test(String(event.notification.data?.connection??''))?event.notification.data.connection:'';
  // La dirección completa de Ágora, no sólo la ruta: así el sistema sabe a qué
  // app instalada pertenece y no la abre en una pestaña de Chrome.
- const target=new URL(path,self.location.origin).href;
+ // Con la subcuenta del aviso, para abrir esa conversación y no otra.
+ const target=new URL(path,self.location.origin).href+(connection&&path.startsWith('/conversations/')?'?c='+connection:'');
  event.waitUntil((async()=>{
   const open=await self.clients.matchAll({type:'window',includeUncontrolled:true});
   const mine=open.filter(client=>new URL(client.url).origin===self.location.origin);

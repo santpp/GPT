@@ -6,6 +6,7 @@ import {renderDashboard} from './dashboard.js';
 import {connectDevice,releaseDevice,isNative} from './native.js';
 import {enable as enablePush,disable as disablePush,state as pushState,isApple,installed} from './push.js';
 import {renderBoard} from './board.js';
+import {windowMarkup} from './announce.js';
 import {supported as passkeysSupported,platformReady,remembered as passkeyRemembered,remember as rememberPasskey,create as createPasskey,sign as signPasskey,trouble as passkeyTrouble} from './passkeys.js';
 
 const $=s=>document.querySelector(s);
@@ -92,6 +93,34 @@ $('#push-toggle').onclick=async()=>{
   finally{await paintPush();button.disabled=['unsupported','unconfigured'].includes(pushNow)}
 };
 
+// ---- Novedades: lo que escribe el administrador, una vez al entrar ----------------------
+let announcing=false;
+async function announce(tries=0){
+  if(announcing||$("#app").hidden)return;
+  const dialog=$('#action-dialog');
+  // Si hay otra cosa en pantalla (bienvenida, huella, un formulario), se espera.
+  if(dialog.open||!$('#welcome').hidden){if(tries<8)setTimeout(()=>announce(tries+1),3000);return}
+  let items;
+  try{items=(await api('announcements')).items}catch{return}
+  if(!Array.isArray(items)||!items.length)return;
+  announcing=true;
+  const csrf=workspace.me?.csrf||'';
+  const showOne=index=>{
+    const item=items[index];
+    if(!item){announcing=false;return}
+    $('#dialog-content').innerHTML=windowMarkup(item);
+    dialog.showModal();
+    // Cerrada de la forma que sea (botón, ×, Esc), cuenta como vista.
+    const closed=()=>{dialog.removeEventListener('close',closed);api(`announcements/${item.id}/read`,'POST',{},csrf).catch(()=>{});setTimeout(()=>showOne(index+1),250)};
+    dialog.addEventListener('close',closed);
+    $('#announce-ok').onclick=()=>dialog.close();
+    document.querySelectorAll('[data-announce-link]').forEach(a=>a.onclick=event=>{
+      const url=a.getAttribute('href');
+      if(url&&url.startsWith('/')){event.preventDefault();const name=byPath(url);dialog.close();if(name)show(name)}
+    });
+  };
+  showOne(0);
+}
 // ---- Bienvenida: instalar la app y activar los avisos, a un toque ---------------------
 // El sistema exige que la persona toque «Permitir»: ninguna web puede activar los
 // avisos sola. Lo que sí se hace es pedirlo en cuanto entra, sin ir a buscarlo.
@@ -164,10 +193,18 @@ async function startSession(){
   try{const {items}=await api('workspace/connections');workspace.setConnections(items)}
   catch{workspace.setConnections([])}
   renderAccounts();
+  // Un aviso trae a su conversación: /conversations/{id}?c={subcuenta}.
+  const deep=location.pathname.match(/^\/conversations\/([A-Za-z0-9_-]{1,80})$/);
+  if(deep){
+    const wanted=new URLSearchParams(location.search).get('c');
+    if(wanted&&workspace.connections.some(c=>String(c.id)===wanted)&&workspace.select(wanted))renderAccounts();
+    workspace.pendingConversation={id:deep[1]};
+    history.replaceState(null,'','/bandeja');
+  }
   show(requested()||'inbox',{push:false});
   paintPush();
   // Inside the Android shell the phone registers itself so it can be notified.
-  if(isNative())connectDevice(me.csrf,path=>{const name=byPath(path);if(name)show(name);else if(path.startsWith('/conversations/'))history.pushState(null,'',path),show('inbox',{push:false})})
+  if(isNative())connectDevice(me.csrf,path=>{const name=byPath(path);if(name)show(name);else{const m=path.match(/^\/conversations\/([A-Za-z0-9_-]{1,80})$/);if(m){workspace.pendingConversation={id:m[1]};history.pushState(null,'','/bandeja');show('inbox',{push:false})}}})
     .then(result=>{globalThis.agoraDeviceToken=result.token;if(result.state==='denied')toast('Activa las notificaciones del sistema para recibir avisos de mensajes nuevos.')})
     .catch(()=>{});
 }
@@ -333,7 +370,7 @@ verifyForm.onsubmit=async e=>{
   try{
     const r=await fetch('/api/team-login/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
     const data=await r.json();
-    if(r.ok){await startSession();welcomeThen(offerPasskey)}else $('#team-verify-result').textContent=data.error||'No se ha podido acceder.';
+    if(r.ok){await startSession();welcomeThen(offerPasskey);setTimeout(()=>announce(),2500)}else $('#team-verify-result').textContent=data.error||'No se ha podido acceder.';
   }catch{$('#team-verify-result').textContent='No se ha podido conectar con el servidor.'}
   finally{button.disabled=false}
 };
@@ -342,7 +379,7 @@ $('#login-form').onsubmit=async e=>{
   try{
     const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
     const data=await r.json();
-    if(r.ok){await startSession();welcomeThen(offerPasskey)}else $('#login-result').textContent=data.error||'No se ha podido acceder.';
+    if(r.ok){await startSession();welcomeThen(offerPasskey);setTimeout(()=>announce(),2500)}else $('#login-result').textContent=data.error||'No se ha podido acceder.';
   }catch{$('#login-result').textContent='No se ha podido conectar con el servidor.'}
   finally{button.disabled=false}
 };
@@ -428,5 +465,5 @@ if('serviceWorker' in navigator){
 }
 
 // A visit always starts from the real session: there is no sample workspace.
-startSession().then(()=>{if(!$('#app').hidden)welcome()}).catch(showSignin);
+startSession().then(()=>{if(!$('#app').hidden){welcome();setTimeout(()=>announce(),1500)}}).catch(showSignin);
 export {toast};

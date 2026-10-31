@@ -59,7 +59,7 @@ if(preg_match('~^/api/admin/integrations/(\d+)/users(?:/(sync))?$~',$path,$userM
     }
     respond(['error'=>'Not found'],404);
 }
-if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|/whatsapp/check)?$~',$path,$match)) {
+if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|/whatsapp/check|/commission)?$~',$path,$match)) {
     $row=query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$match[1],$u['tenant_id']])->fetch();
     if(!$row) respond(['error'=>'Integración no encontrada'],404);
     if((!isset($match[2]) && in_array($method,['PUT','DELETE'],true)) || (($match[2]??'')==='/schedule' && $method==='POST')) {
@@ -124,6 +124,18 @@ if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|
         catch(GhlApiException $e){respond(['error'=>in_array($e->status,[401,403],true)?'La clave de esta cuenta no tiene el permiso de lectura de plantillas.':'La cuenta respondió con un error al pedir las plantillas (código '.$e->status.').','status'=>$e->status],424);}
         catch(Throwable $e){respond(['error'=>'La respuesta de la cuenta no se pudo leer.'],424);}
         respond(['diagnosis'=>WhatsappTemplates::diagnosis((int)$row['id'])]);
+    }
+    // La comisión de la subcuenta: sólo el administrador, sólo aquí. Vale desde el mes en curso.
+    if(($match[2]??'')==='/commission' && in_array($method,['GET','PUT'],true)) {
+        require_once __DIR__.'/Board.php';
+        if($method==='PUT') {
+            $b=body();
+            try {$rule=Board::setCommission((int)$row['id'],(string)($b['kind']??''),$b['amount']??null);}
+            catch(InvalidArgumentException $e){respond(['error'=>$e->getMessage()==='kind'?'Elige porcentaje o monto fijo por cierre.':'Escribe una cantidad válida (el porcentaje, de 0 a 100).'],422);}
+            query("DELETE FROM directory_cache WHERE connection_id=? AND cache_key LIKE 'board:%'",[$row['id']]);
+        }
+        $current=Board::commissionRule((int)$row['id'],gmdate('Y-m'),Board::settings((int)$row['id'],gmdate('Y-m')));
+        respond(['current'=>$current,'history'=>Board::commissionHistory((int)$row['id'])]);
     }
     if(!isset($match[2]) && $method==='DELETE') {query('DELETE FROM ghl_connections WHERE id=? AND tenant_id=?',[$row['id'],$u['tenant_id']]);respond(['ok'=>true]);}
 }

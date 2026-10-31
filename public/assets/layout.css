@@ -602,3 +602,12 @@ html[data-theme="dark"] .won-button{background:#173325;color:#7fd6a3;border-colo
  .won-button span[aria-hidden]{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#eaf7ef;border:1px solid #2f8a57;color:#2f8a57}
  html[data-theme="dark"] .won-button span[aria-hidden]{background:#173325;border-color:#2f7a52;color:#7fd6a3}
 }
+.board-origin{margin:14px 0 4px;font-size:12px;color:var(--muted)}.board-origin summary{cursor:pointer;font-weight:600}.board-origin ul{margin:8px 0 0;padding-left:18px;line-height:1.7}.board-origin b{color:var(--ink);font-weight:600}
+/* 1.1 · novedades */
+.announce-card{margin-top:16px}.announce-card h4{margin:16px 0 4px;font-size:12px;color:var(--muted)}
+.announce-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.announce-hint{font-size:11px;margin:-6px 0 4px}
+@media(max-width:600px){.announce-grid{grid-template-columns:1fr}}
+.announce-title{font-size:20px;line-height:1.3;margin:10px 0 12px}
+.announce-body{font-size:14px;line-height:1.65;max-height:55vh;overflow:auto}.announce-body p{margin:0 0 10px}.announce-body ul{margin:0 0 10px;padding-left:20px}.announce-body li{margin:4px 0}
+.announce-actions{display:flex;align-items:center;gap:14px;margin-top:14px}
+.announce-link{display:inline-block;text-decoration:none;color:#fff;padding:11px 18px;border-radius:6px;font-size:13px}

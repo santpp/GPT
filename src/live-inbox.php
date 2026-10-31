@@ -323,6 +323,14 @@ if($path==='/api/workspace/templates'&&$method==='GET') {
     catch(GhlApiException $e){respond(['error'=>in_array($e->status,[401,403],true)?'La clave de la cuenta no permite leer plantillas. Hay que añadirle el permiso de plantillas.':'No se pudieron leer las plantillas de la cuenta.','code'=>'templates_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'No se pudieron leer las plantillas de la cuenta.','code'=>'templates_failed'],424);}
 }
+// Una conversación concreta, para abrirla desde un aviso aunque no esté entre las últimas.
+if($path==='/api/workspace/conversation'&&$method==='GET'){
+    $conversation=$_GET['conversationId']??'';
+    if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);
+    $record=InboxFeed::known($id,$conversation);
+    if(!$record||!Actor::filterConversations([$record],$membership))respond(['error'=>'Esa conversación ya no está disponible.','code'=>'conversation_unavailable'],404);
+    respond(['conversation'=>$record]);
+}
 if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $method==='GET')||($path==='/api/workspace/send'&&$method==='POST')) {
     $conversation=$_GET['conversationId']??'';
     if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);

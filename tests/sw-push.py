@@ -30,7 +30,9 @@ with sync_playwright() as p:
     assert note, f'no notification was shown: {shown}'
     assert note[0]['title']=='Raissa Moreno' and note[0]['body']=='Hola, ¿sigue disponible?', note[0]
     assert note[0]['data']['path']=='/conversations/conv-1', note[0]
+    assert note[0]['data'].get('connection')=='7', note[0]
     print('PASS the service worker shows who wrote and what, from the payload the server sends')
+    print('PASS and keeps the sub-account of the notice, so the tap opens that conversation')
     # A hostile path is never followed.
     shown=push({'title':'X','body':'Y','data':{'path':'https://evil.example/'}})
     assert all(n['data']['path'].startswith('/') for n in shown), shown

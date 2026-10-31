@@ -159,6 +159,39 @@ try {
  if($first){query('INSERT INTO won_sales(connection_id,opportunity_id,assigned_to,value,won_at) VALUES(?,?,?,?,?)',[$connectionId,$first,'seller-1',100,'2026-10-20 10:00:00']);$api->reset();boardFree($connectionId);
   boardCheck($board()->month($connection,'2026-10',$owner)['sales']['closings']===2,'a sale the account already reports is not counted twice');}
 
+ // ---- comisión por subcuenta y administradores fuera de la lista ------------------------
+ query('DELETE FROM won_sales WHERE connection_id=?',[$connectionId]);
+ query("UPDATE external_users SET role_name='admin',role_type='account' WHERE connection_id=? AND external_user_id=?",[$connectionId,'seller-2']);
+ $api->reset();boardFree($connectionId);
+ $api->pages=[[$won('seller-1',100.00),$won('seller-2',300.00)]];$api->total=2;
+ $withAdmin=$board()->month($connection,'2026-10',$owner);
+ boardCheck(!in_array('María Carvallo',array_column($withAdmin['team'],'name'),true),'quien administra la cuenta no sale entre los vendedores');
+ boardCheck($withAdmin['sales']['total']===400.00&&$withAdmin['sales']['closings']===2,'pero lo que cerró sigue contando en el total del mes');
+ query("UPDATE external_users SET role_name=NULL,role_type='agency' WHERE connection_id=? AND external_user_id=?",[$connectionId,'seller-2']);
+ $api->reset();boardFree($connectionId);
+ boardCheck(!in_array('María Carvallo',array_column($board()->month($connection,'2026-10',$owner)['team'],'name'),true),'un administrador de agencia tampoco');
+ query("UPDATE external_users SET role_name=NULL,role_type=NULL WHERE connection_id=?",[$connectionId]);
+ $api->reset();boardFree($connectionId);
+ $base=$board()->month($connection,'2026-10',$owner);
+ boardCheck($base['profitability']['commissions']===40.0&&$base['commission']['kind']==='percent'&&$base['commission']['amount']===10.0&&$base['commission']['since']===null,'sin regla propia, la comisión es el 10 % de siempre');
+ query('DELETE FROM commission_rules WHERE connection_id=?',[$connectionId]);
+ query("INSERT INTO commission_rules(connection_id,effective_from,kind,amount) VALUES(?,?,?,?)",[$connectionId,'2026-10','per_closing',5]);
+ $api->reset();boardFree($connectionId);
+ $fixed=$board()->month($connection,'2026-10',$owner);
+ boardCheck($fixed['profitability']['commissions']===10.0&&$fixed['commission']['kind']==='per_closing','con monto fijo por cierre, la comisión es cierres × monto: 2 × 5');
+ $perSeller=array_column($fixed['team'],'commission','name');
+ boardCheck($perSeller['Rosangélica Pérez']===5.0,'y cada vendedor cobra su número de cierres por ese monto');
+ $api->reset();boardFree($connectionId);
+ $before=$board()->month($connection,'2026-09',$owner);
+ boardCheck($before['commission']['kind']==='percent','los meses anteriores a la regla conservan la suya');
+ $set=Board::setCommission($connectionId,'percent','12,5');
+ boardCheck($set['kind']==='percent'&&$set['amount']===12.5&&$set['since']===gmdate('Y-m'),'cambiarla vale desde el mes en que se hace');
+ $failed=0;foreach([['otro',5],['percent',101],['per_closing','-1'],['percent','abc']] as [$k,$v]){try{Board::setCommission($connectionId,$k,$v);}catch(InvalidArgumentException $e){$failed++;}}
+ boardCheck($failed===4,'un tipo inventado o una cantidad imposible se rechaza');
+ $saved=Board::save($connectionId,'2026-10',['commissionRate'=>99,'fixedCosts'=>1]);
+ boardCheck($saved['commissionRate']===10.0,'guardar las cifras del mes ya no puede cambiar la comisión');
+ query('DELETE FROM commission_rules WHERE connection_id=?',[$connectionId]);
+
  echo 'PASS '.$checks.' board checks (simulated API client, real MariaDB)'.PHP_EOL;
 } finally {
  foreach($tenants as $id){query('DELETE FROM ghl_connections WHERE tenant_id=?',[$id]);query('DELETE FROM tenants WHERE id=?',[$id]);}

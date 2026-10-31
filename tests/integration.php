@@ -43,7 +43,7 @@ try {
  check($code===200&&$recovered['ready']===true,'a pending database update is applied on its own, with no button to press');
  check(in_array('directory_cache',array_column(query('SHOW TABLES')->fetchAll(PDO::FETCH_NUM),0),true),'the missing table is back after that single request');
  [$code,$diagnostics]=request('admin/diagnostics');
- check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='1.0.2','administrator sees installation readiness and version');
+ check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='1.1.0','administrator sees installation readiness and version');
  check(!str_contains(json_encode($diagnostics),'APP_KEY_FILE')&&!str_contains(json_encode($diagnostics),'integration.key'),'diagnostics expose no configuration values or key paths');
  check(request('admin/installation/encryption','POST')[0]===403,'preparation requires CSRF');
  [$code,$profile]=request('me');check($code===200&&!array_key_exists('ghl_user_id',$profile['user'])&&$profile['user']['capabilities']['configureConnections'],'public profile exposes capabilities without provider-specific fields');
@@ -181,6 +181,22 @@ try {
  [$code,$pushKey]=request('push-key','GET',null,$headers);
  check($code===200&&isset($pushKey['ready']),'the subscription key route answers whether notices are ready, never an unexplained failure');
 
+ // ---- novedades que escribe el administrador ----------------------------------------
+ check(request('admin/announcements','POST',['title'=>'','body'=>'x'],$headers)[0]===422,'a novelty needs a title and a text');
+ check(request('admin/announcements','POST',['title'=>'Nueva versión','body'=>'Texto','linkLabel'=>'Ver','linkUrl'=>'javascript:alert(1)'],$headers)[0]===422,'a button can only point to https or to a screen of the app');
+ check(request('admin/announcements','POST',['title'=>'Nueva versión','body'=>'Texto','linkLabel'=>'Ver'],$headers)[0]===422,'a button needs both its text and its address');
+ [$code,$made]=request('admin/announcements','POST',['title'=>'Ágora 1.1','body'=>"Incluye:\n- Comisión por subcuenta\n- Avisos que abren su conversación",'linkLabel'=>'Ver el tablero','linkUrl'=>'/tablero'],$headers);
+ check($code===201&&isset($made['id']),'the administrator publishes a novelty');
+ [$code,$mine]=request('announcements');
+ check($code===200&&count($mine['items'])>=1&&$mine['items'][0]['title']==='Ágora 1.1'&&$mine['items'][0]['linkUrl']==='/tablero','the next time they come in, they see it');
+ check(request('announcements/'.$made['id'].'/read','POST',null,$headers)[0]===200,'and mark it as read');
+ [,$after]=request('announcements');
+ check(!in_array($made['id'],array_column($after['items'],'id'),true),'a novelty is not shown twice to the same person');
+ [,$listed]=request('admin/announcements');
+ check($listed['items'][0]['id']===$made['id']&&$listed['items'][0]['seen']===1,'the administrator sees how many people have seen it');
+ check(request('admin/announcements/'.$made['id'],'DELETE',null,$headers)[0]===200&&request('admin/announcements/'.$made['id'],'DELETE',null,$headers)[0]===404,'and can withdraw it');
+ check(request('announcements/999999999/read','POST',null,$headers)[0]===404,'a novelty that does not exist cannot be marked');
+ request('login','POST',['email'=>$email,'password'=>$password]);
  echo "PASS $checks integration checks\n";
 } finally {
  foreach($tenants as $t){foreach(['notifications','resources','webhook_events','ghl_connections','users','tenants'] as $table)query('DELETE FROM '.$table.' WHERE '.($table==='tenants'?'id':'tenant_id').'=?',[$t]);}

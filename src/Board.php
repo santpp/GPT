@@ -31,8 +31,40 @@ final class Board {
         return self::clean(is_array($stored)?$stored:[]);
     }
 
+    public const KINDS=['percent','per_closing'];
+
+    /**
+     * La regla de comisión que vale para un mes: la última fijada desde ese mes
+     * o antes. Sin ninguna, la de siempre (un porcentaje, el guardado para el
+     * mes o el 10 % por defecto).
+     */
+    public static function commissionRule(int $connectionId,string $period,array $settings):array {
+        try {$row=query('SELECT kind,amount,effective_from FROM commission_rules WHERE connection_id=? AND effective_from<=? ORDER BY effective_from DESC LIMIT 1',[$connectionId,$period])->fetch();}
+        catch(PDOException $e) {$row=false;}
+        if($row&&in_array($row['kind'],self::KINDS,true))return ['kind'=>$row['kind'],'amount'=>(float)$row['amount'],'since'=>$row['effective_from']];
+        return ['kind'=>'percent','amount'=>(float)$settings['commissionRate'],'since'=>null];
+    }
+
+    /** Fija la comisión desde el mes en curso. Un cambio el mismo mes sustituye al anterior. */
+    public static function setCommission(int $connectionId,string $kind,mixed $amount):array {
+        if(!in_array($kind,self::KINDS,true))throw new InvalidArgumentException('kind');
+        $amount=is_string($amount)?str_replace(',','.',trim($amount)):$amount;
+        if(!is_numeric($amount)||(float)$amount<0||(float)$amount>($kind==='percent'?100:99999999))throw new InvalidArgumentException('amount');
+        $month=gmdate('Y-m');
+        query('INSERT INTO commission_rules(connection_id,effective_from,kind,amount) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE kind=VALUES(kind),amount=VALUES(amount),changed_at=CURRENT_TIMESTAMP',[$connectionId,$month,$kind,round((float)$amount,2)]);
+        return ['kind'=>$kind,'amount'=>round((float)$amount,2),'since'=>$month];
+    }
+
+    public static function commissionHistory(int $connectionId):array {
+        try {return array_map(fn($r)=>['since'=>$r['effective_from'],'kind'=>$r['kind'],'amount'=>(float)$r['amount']],query('SELECT effective_from,kind,amount FROM commission_rules WHERE connection_id=? ORDER BY effective_from DESC LIMIT 24',[$connectionId])->fetchAll());}
+        catch(PDOException $e) {return [];}
+    }
+
     /** Guarda sólo lo que es una cifra razonable; lo demás se descarta. */
     public static function save(int $connectionId,string $period,array $input):array {
+        // La comisión ya no se fija aquí sino en Conexiones: se conserva la que
+        // tuviera guardada el mes para que el pasado no cambie.
+        $input['commissionRate']=self::settings($connectionId,$period)['commissionRate'];
         $clean=self::clean($input);
         query('INSERT INTO board_settings(connection_id,period,payload) VALUES(?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload)',
             [$connectionId,$period,json_encode($clean,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE)]);
@@ -146,8 +178,8 @@ final class Board {
             $byMember[$key]['closings']++;
         }
         $closings=count($records);
-        $rate=(float)$settings['commissionRate'];
-        $commissions=round($sales*$rate/100,2);
+        $rule=self::commissionRule((int)$connection['id'],$period,$settings);
+        $commissions=$rule['kind']==='per_closing'?round($closings*$rule['amount'],2):round($sales*$rule['amount']/100,2);
         // Lo que dice la cuenta publicitaria, más lo que se indicó a mano aparte.
         $account=$ads['amount'];
         $other=$settings['otherAds'];
@@ -157,12 +189,13 @@ final class Board {
         $profit=$ads===null?null:round($sales-$ads-$commissions,2);
         $net=$profit===null||$fixed===null?null:round($profit-$fixed,2);
 
-        $team=$this->team($connection,$settings,$byMember,$restricted,$mine);
+        $team=$this->team($connection,$settings,$byMember,$restricted,$mine,$rule);
         $goal=$settings['teamGoal'];
         return [
             'period'=>$period,
             'restricted'=>$restricted,
             'settings'=>$settings,
+            'commission'=>$rule,
             'sales'=>['total'=>round($sales,2),'closings'=>$closings,'counted'=>$total,'partial'=>$partial],
             'profitability'=>[
                 'sales'=>round($sales,2),
@@ -248,32 +281,34 @@ final class Board {
     }
 
     /** Una fila por integrante activo del equipo importado, más su estado. */
-    private function team(array $connection,array $settings,array $byMember,bool $restricted,?string $mine):array {
-        $members=query('SELECT external_user_id AS id,display_name AS name FROM external_users WHERE connection_id=? AND active=TRUE ORDER BY display_name',[$connection['id']])->fetchAll();
+    private function team(array $connection,array $settings,array $byMember,bool $restricted,?string $mine,array $rule):array {
+        // Quienes administran la cuenta (de subcuenta o de agencia) no son vendedores:
+        // no salen en la lista. Lo que cierren sigue contando en el total del mes.
+        $members=query("SELECT external_user_id AS id,display_name AS name FROM external_users WHERE connection_id=? AND active=TRUE AND COALESCE(role_name,'')<>'admin' AND COALESCE(role_type,'')<>'agency' ORDER BY display_name",[$connection['id']])->fetchAll();
         $rows=[];
         foreach($members as $member) {
             if($restricted&&$member['id']!==$mine)continue;
             $sold=$byMember[$member['id']]['sold']??0.0;
             $closings=$byMember[$member['id']]['closings']??0;
             $goal=$settings['goals'][$member['id']]??null;
-            $rows[]=$this->row($member['id'],$member['name'],$sold,$closings,$goal,$settings);
+            $rows[]=$this->row($member['id'],$member['name'],$sold,$closings,$goal,$settings,$rule);
             unset($byMember[$member['id']]);
         }
         // Lo cerrado sin responsable no desaparece: se muestra aparte.
         if(!$restricted&&isset($byMember['']))
-            $rows[]=$this->row(null,'Sin asignar',$byMember['']['sold'],$byMember['']['closings'],null,$settings);
+            $rows[]=$this->row(null,'Sin asignar',$byMember['']['sold'],$byMember['']['closings'],null,$settings,$rule);
         usort($rows,fn(array $a,array $b):int=>$b['sold']<=>$a['sold']);
         return $rows;
     }
 
-    private function row(?string $id,string $name,float $sold,int $closings,?float $goal,array $settings):array {
+    private function row(?string $id,string $name,float $sold,int $closings,?float $goal,array $settings,array $rule):array {
         $progress=$goal!==null&&$goal>0?round($sold/$goal*100,1):null;
         return [
             'id'=>$id,'name'=>$name,'sold'=>round($sold,2),'closings'=>$closings,'goal'=>$goal,
             'difference'=>$goal!==null?round($sold-$goal,2):null,
             'progress'=>$progress,
             'state'=>$progress===null?'sin-meta':($progress>=$settings['green']?'lograda':($progress>=$settings['amber']?'cerca':'apoyo')),
-            'commission'=>round($sold*(float)$settings['commissionRate']/100,2),
+            'commission'=>$rule['kind']==='per_closing'?round($closings*$rule['amount'],2):round($sold*$rule['amount']/100,2),
         ];
     }
 
