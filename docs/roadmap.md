@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.21.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.21.1.
 
 ## Completado y desplegable
 
@@ -52,6 +52,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - El pase que descubre mensajes corre también desde el reloj, de modo que hay aviso con todas las aplicaciones cerradas (0.19.0).
 - Contador en el icono: número en iPhone instalada y escritorio; punto del sistema en Android (0.21.0). Pendiente: agrupación de avisos por conversación.
 - Diagnóstico de avisos en Conexiones, eslabón a eslabón, con aviso de prueba (0.21.0).
+- Un solo cron revisa y entrega; el service worker nuevo ya no queda bloqueado tras iniciar sesión; un rechazo del servicio ya no borra el teléfono (0.21.1).
 - Deep links a contacto y oportunidad (la conversación ya funciona).
 - Cola offline para operaciones compatibles y reconciliación al recuperar conexión.
 

@@ -57,8 +57,11 @@ final class WebPush {
         $response=$this->call($endpoint,$headers,$body);
         $status=(int)($response['status']??0);
         if($status>=200&&$status<300)return;
-        // A subscription the service has dropped is gone for good.
-        if(in_array($status,[400,401,403,404,410],true))throw new PushProblem('unregistered','Ese navegador ya no acepta avisos.');
+        // Sólo 404 y 410 dicen que la suscripción ya no existe (RFC 8030). Un
+        // 400, 401 o 403 es un rechazo de la petición o de la firma: el teléfono
+        // sigue siendo válido, y borrarlo dejaría a la persona sin avisos en silencio.
+        if(in_array($status,[404,410],true))throw new PushProblem('unregistered','Ese navegador ya no acepta avisos.');
+        if(in_array($status,[400,401,403,413],true))throw new PushProblem('rejected','El servicio de avisos rechazó el envío (código '.$status.').');
         throw new PushProblem('unavailable','El servicio de avisos del navegador respondió '.$status.'.');
     }
 

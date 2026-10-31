@@ -25,14 +25,17 @@ async function devicePanel(container){
  // Cada eslabón de la cadena, en el orden en que viaja un aviso.
  const links=[];
  const discovered=data.discovery?.at;
- links.push(discovered&&Date.now()-new Date(discovered).getTime()<5*60000
+ const recent=at=>at&&Date.now()-new Date(at).getTime()<5*60000;
+ // Un solo cron revisa y entrega: si no corre, no hay avisos con la app cerrada.
+ links.push(recent(discovered)
    ? ['ok',`Revisión de mensajes nuevos: activa, ${ago(discovered)}.`]
-   : ['bad',discovered?`Revisión de mensajes nuevos: la última fue ${ago(discovered)}. Revisa el cron de revisión.`:'Revisión de mensajes nuevos: no consta que haya corrido. Revisa el cron de revisión.']);
+   : ['bad',discovered?`Revisión de mensajes nuevos: la última fue ${ago(discovered)}. El cron de revisión ha dejado de ejecutarse en el servidor.`:'Revisión de mensajes nuevos: el cron de revisión no se está ejecutando en el servidor. Sin él no hay avisos con la app cerrada.']);
  const delivered=data.delivery;
- if(delivered?.configured===false)links.push(['bad','Entrega de avisos: el cron corre, pero no encuentra las claves de avisos. Revisa la línea de configuración y que la carpeta privada sea legible por el cron.']);
- else links.push(delivered?.at&&Date.now()-new Date(delivered.at).getTime()<5*60000
+ if(delivered?.configured===false)links.push(['bad','Entrega de avisos: no encuentra las claves de avisos. Revisa la línea de configuración y que la carpeta privada sea legible por el cron.']);
+ else if(delivered?.error)links.push(['bad',`Entrega de avisos: la última pasada falló (${delivered.error}).`]);
+ else links.push(recent(delivered?.at)
    ? ['ok',`Entrega de avisos: activa, ${ago(delivered.at)}${delivered.sent?` · ${delivered.sent} enviados en la última pasada`:''}.`]
-   : ['bad',delivered?.at?`Entrega de avisos: la última fue ${ago(delivered.at)}. Revisa el cron de entrega.`:'Entrega de avisos: no consta que haya corrido. Revisa el cron de entrega.']);
+   : ['bad',delivered?.at?`Entrega de avisos: la última fue ${ago(delivered.at)}. La hace el cron de revisión: revisa que siga ejecutándose.`:'Entrega de avisos: todavía no ha corrido. La hace el cron de revisión, cada minuto.']);
  const q=data.queue||{};
  links.push([q.failed?'bad':'ok',`Últimos 7 días: ${Number(q.sent)||0} avisos entregados, ${Number(q.pending)||0} pendientes, ${Number(q.failed)||0} fallidos.${q.lastError?` Último error: ${q.lastError}.`:''}`]);
  panel.innerHTML=`<div class="section-label">AVISOS EN DISPOSITIVOS</div><p class="settings-notice">${ready
@@ -44,7 +47,7 @@ async function devicePanel(container){
   <div class="device-list">${
   (data.items||[]).map(d=>`<article class="card"><h3>${esc(d.label||names[d.platform]||'Dispositivo')}</h3><small>${esc(names[d.platform]||d.platform)}<br>Registrado: ${esc(when(d.created_at)||'—')}<br>Visto: ${esc(when(d.last_seen_at)||'—')}<br>Último aviso enviado: ${esc(when(d.last_sent_at)||'Ninguno todavía')}</small></article>`).join('')
   ||'<p class="empty">Ningún dispositivo ha activado los avisos todavía.</p>'}</div>`;
- const RESULT={sent:'enviado',unregistered:'el servicio ya no reconoce este dispositivo y se ha quitado de la lista; vuelve a activar los avisos en él',unavailable:'el servicio de avisos no respondió; vuelve a probar en un momento',unconfigured:'faltan las claves de avisos en el servidor',invalid_credentials:'las claves de avisos del servidor no se pueden leer',unexpected:'error inesperado en el servidor'};
+ const RESULT={rejected:'el servicio de avisos rechazó el envío; el dispositivo sigue en la lista y se volverá a intentar',sent:'enviado',unregistered:'el servicio ya no reconoce este dispositivo y se ha quitado de la lista; vuelve a activar los avisos en él',unavailable:'el servicio de avisos no respondió; vuelve a probar en un momento',unconfigured:'faltan las claves de avisos en el servidor',invalid_credentials:'las claves de avisos del servidor no se pueden leer',unexpected:'error inesperado en el servidor'};
  panel.querySelector('#push-test').onclick=async event=>{
   const button=event.currentTarget,out=panel.querySelector('#push-test-result');
   button.disabled=true;out.textContent='Enviando…';

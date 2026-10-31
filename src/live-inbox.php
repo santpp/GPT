@@ -273,7 +273,14 @@ if(in_array($path,['/api/workspace/inbox','/api/ghl/inbox'],true) && $method==='
 if($path==='/api/workspace/pulse'&&$method==='GET'){
     session_write_close();
     require_once __DIR__.'/Pulse.php';
-    try{respond((new Pulse())->read($connection,$membership,($_GET['refresh']??'1')!=='0'));}
+    try{
+        $beat=(new Pulse())->read($connection,$membership,($_GET['refresh']??'1')!=='0');
+        // Si hay avisos esperando, quien tenga una pantalla abierta los hace salir
+        // en el acto, una vez respondido: no depende de que el cron corra.
+        $waiting=(int)query("SELECT COUNT(*) FROM push_queue WHERE connection_id=? AND state='pending' AND not_before<=UNIX_TIMESTAMP()",[$id])->fetchColumn();
+        if($waiting>0){require_once __DIR__.'/PushDelivery.php';respondThen($beat,fn()=>PushDelivery::deliverPending(5));}
+        respond($beat);
+    }
     catch(Throwable $e){respond(['error'=>'No se pudo comprobar si hay novedades.','code'=>'pulse_failed'],424);}
 }
 if($path==='/api/workspace/read'&&$method==='POST'){

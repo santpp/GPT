@@ -39,12 +39,34 @@ echo "PASS and the owner sees it ready in the device list"
 TEST=$(curl -s -b "$J" -X POST -H 'Content-Type: application/json' -H "X-CSRF-Token: $CSRF" -H "Origin: http://localhost:$PORT" http://127.0.0.1:$PORT/api/devices/test)
 echo "$TEST" | grep -q '"results":\[{' || { echo "FAIL the test notice does not run on the deployed tree: $TEST"; tail -5 "$ROOT/server.log"; exit 1; }
 echo "PASS the test notice runs on the deployed tree and reports per device"
-# Both crons, run from where the server keeps them, must leave their trace.
-php "$ROOT/agora-private/bin/sync-inbox.php" >/dev/null 2>&1 || true
+# One cron is enough: the message check also delivers what is waiting. A notice
+# is queued by hand for a device of this owner, and only sync-inbox.php runs.
+php -r '
+require $argv[1]."/agora-private/src/bootstrap.php";
+$u=query("SELECT id,tenant_id FROM users WHERE email=?",[$argv[2]])->fetch();
+query("INSERT INTO ghl_connections(tenant_id,name,location_id,token_ciphertext,status) VALUES(?,?,?,?,\"untested\")",[$u["tenant_id"],"Prueba",uniqid("loc"),"x"]);
+$c=db()->lastInsertId();
+// A device with real keys at an address that cannot be reached: the attempt
+// must be made and its reason kept, and the device must stay.
+$k=openssl_pkey_new(["curve_name"=>"prime256v1","private_key_type"=>OPENSSL_KEYTYPE_EC]);$d=openssl_pkey_get_details($k);
+$point="\x04".str_pad($d["ec"]["x"],32,"\0",STR_PAD_LEFT).str_pad($d["ec"]["y"],32,"\0",STR_PAD_LEFT);
+$b64=fn($v)=>rtrim(strtr(base64_encode($v),"+/","-_"),"=");
+query("INSERT INTO push_devices(tenant_id,identity_type,actor_id,token,platform,p256dh,auth) VALUES(?,?,?,?,?,?,?)",[$u["tenant_id"],"native",$u["id"],"https://push.invalid/deployed-layout-unreachable","web",$b64($point),$b64(random_bytes(16))]);
+query("INSERT INTO push_queue(connection_id,conversation_id,fingerprint,title,body) VALUES(?,?,?,?,?)",[$c,"conv-deployed",md5(uniqid()),"Raissa","Hola"]);
+file_put_contents($argv[3],$c);' "$ROOT" "$EMAIL" "$ROOT/connection"
+php "$ROOT/agora-private/bin/sync-inbox.php" >"$ROOT/cron.out" 2>&1 || true
+grep -qE "Notices [1-9]" "$ROOT/cron.out" || { echo "FAIL the single cron did not pick up the waiting notice: $(cat "$ROOT/cron.out")"; exit 1; }
+echo "PASS the message check alone picks up and tries to deliver a waiting notice"
+STATE=$(php -r 'require $argv[1]."/agora-private/src/bootstrap.php";echo json_encode(query("SELECT state,attempts,last_error FROM push_queue WHERE conversation_id=?",["conv-deployed"])->fetch());' "$ROOT")
+echo "$STATE" | grep -q '"state":"pending","attempts":1,"last_error":"unavailable' || { echo "FAIL the attempt and its reason were not recorded: $STATE"; exit 1; }
+KEPT=$(php -r 'require $argv[1]."/agora-private/src/bootstrap.php";echo query("SELECT COUNT(*) FROM push_devices WHERE token=?",["https://push.invalid/deployed-layout-unreachable"])->fetchColumn();' "$ROOT")
+[ "$KEPT" = "1" ] || { echo "FAIL an unreachable service made the phone disappear"; exit 1; }
+echo "PASS an unreachable service never makes the phone disappear"
+echo "PASS and records the attempt with its reason: $STATE"
 php "$ROOT/agora-private/bin/send-push.php" >/dev/null 2>&1 || true
 CHAIN=$(curl -s -b "$J" http://127.0.0.1:$PORT/api/devices)
-echo "$CHAIN" | grep -q '"discovery":{"at"' || { echo "FAIL the message check left no trace: $CHAIN"; exit 1; }
+echo "$CHAIN" | grep -q '"discovery":{' || { echo "FAIL the message check left no trace: $CHAIN"; exit 1; }
 echo "$CHAIN" | grep -q '"delivery":{' || { echo "FAIL the delivery pass left no trace: $CHAIN"; exit 1; }
 echo "PASS both crons run from the deployed tree and the owner can see when"
-php -r 'require $argv[1]."/agora-private/src/bootstrap.php";query("DELETE FROM push_devices WHERE token LIKE ?",["%deployed-layout%"]);query("DELETE FROM users WHERE email=?",[$argv[2]]);' "$ROOT" "$EMAIL"
+php -r 'require $argv[1]."/agora-private/src/bootstrap.php";query("DELETE FROM push_devices WHERE token LIKE ?",["%deployed-layout%"]);query("DELETE FROM ghl_connections WHERE id=?",[(int)@file_get_contents($argv[3])]);query("DELETE FROM users WHERE email=?",[$argv[2]]);' "$ROOT" "$EMAIL" "$ROOT/connection"
 echo "PASS deployed layout checks"

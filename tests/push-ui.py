@@ -166,8 +166,8 @@ with sync_playwright() as pw:
     page.locator('[data-view="settings"]').evaluate('(n)=>n.click()')
     page.wait_for_selector('.push-chain',state='attached')
     chain=page.locator('.push-chain').inner_text()
-    assert 'no consta que haya corrido' in chain and 'Revisa el cron de revisión' in chain, chain
-    assert 'Revisa el cron de entrega' in chain, chain
+    assert 'no se está ejecutando en el servidor' in chain, chain
+    assert 'La hace el cron de revisión' in chain, chain
     assert '1 fallidos' in chain and 'respondió 503' in chain, chain
     print('PASS the device list says which link of the chain is broken, in words')
     page.locator('#push-test').click()

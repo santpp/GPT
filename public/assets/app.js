@@ -182,14 +182,30 @@ window.addEventListener('agora:unread',event=>{
 function network(){const mark=$('#network');mark.textContent='○ Sin conexión';mark.hidden=navigator.onLine}
 window.addEventListener('online',network);window.addEventListener('offline',network);network();
 
+/**
+ * Si hay algo escrito y sin enviar, que es lo único que justifica retrasar una
+ * versión nueva. Sólo cuenta lo que se ve y lo que la persona cambió: el
+ * formulario de entrada sigue guardando el correo y la contraseña aunque esté
+ * oculto, y el selector de mes del tablero siempre tiene valor. Contarlos hacía
+ * creer que siempre se estaba escribiendo, y la versión nueva no llegaba nunca.
+ */
+function hasUnsentText(){
+  const TEXT=['text','email','tel','url','number','password',''];
+  return [...document.querySelectorAll('textarea, input')].some(field=>{
+    if(field.tagName==='INPUT'&&!TEXT.includes(field.type))return false;
+    if(field.offsetParent===null||field.closest('[hidden]'))return false;
+    return field.value.trim()!==''&&field.value!==field.defaultValue;
+  });
+}
+globalThis.agoraHasUnsentText=hasUnsentText;
+
 // Offline shell. A new build installs itself: nobody should have to press
 // anything. The only thing worth waiting for is unsent text, so the swap is
 // held back while something is being written and applied as soon as it is not.
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(registration=>{
     let pending=null,timer=null;
-    const busy=()=>document.querySelector('#action-dialog')?.open
-      ||[...document.querySelectorAll('textarea, input:not([type=search]):not([type=hidden])')].some(field=>field.value.trim()!=='');
+    const busy=()=>document.querySelector('#action-dialog')?.open||hasUnsentText();
     const apply=()=>{
       if(!pending)return;
       if(busy()){clearTimeout(timer);timer=setTimeout(apply,5000);return}

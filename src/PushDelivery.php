@@ -39,6 +39,27 @@ final class PushDelivery {
         return (new WebPush())->configured();
     }
 
+    /**
+     * Una pasada de entrega, segura desde cualquier sitio: el cron, el otro
+     * cron o una visita. El candado es único, así que dos a la vez no envían
+     * el mismo aviso, y quien llega tarde se aparta sin esperar.
+     */
+    public static function deliverPending(int $batch=20):string {
+        if(!self::configured()) {
+            self::remember('push_last_run',['at'=>gmdate('c'),'configured'=>false]);
+            return 'Notifications are not configured; nothing to deliver';
+        }
+        if((int)query("SELECT GET_LOCK('agora-push-cron',0)")->fetchColumn()!==1)return 'Delivery pass already running';
+        try {
+            $result=(new self())->run($batch);
+            // Nada del contenido, de los tokens ni de las claves sale por aquí.
+            return sprintf('Notices %d, sent %d, retried %d, devices dropped %d',$result['notices'],$result['sent'],$result['retried'],$result['dropped']);
+        } catch(Throwable $e) {
+            self::remember('push_last_run',['at'=>gmdate('c'),'error'=>'unexpected: '.get_class($e)]);
+            return 'Delivery pass failed; inspect the queue state in the app';
+        } finally {query("SELECT RELEASE_LOCK('agora-push-cron')");}
+    }
+
     /** Sends up to $batch pending notices. Returns what happened, for the cron. */
     public function run(int $batch=20):array {
         $sent=0;$failed=0;$dropped=0;$notices=0;

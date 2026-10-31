@@ -85,10 +85,16 @@ try {
 
  // ---- subscriptions that no longer exist -------------------------------------
  $gone=fn(int $status)=>function(string $url,array $headers,string $body)use($status):array{return ['status'=>$status,'body'=>''];};
- foreach([404,410,403] as $status) {
+ foreach([404,410] as $status) {
   $reason=null;
   try{(new WebPush($gone($status),$keyFile))->send($subscriber->subscription($endpoint),$notice);}catch(PushProblem $e){$reason=$e->reason;}
   webCheck($reason==='unregistered','a subscription the service answers '.$status.' for is forgotten');
+ }
+ // A rejected request or signature says nothing about the phone: it must stay.
+ foreach([400,401,403] as $status) {
+  $reason=null;
+  try{(new WebPush($gone($status),$keyFile))->send($subscriber->subscription($endpoint),$notice);}catch(PushProblem $e){$reason=$e->reason;}
+  webCheck($reason==='rejected','a '.$status.' is a rejected send, never a reason to forget the phone');
  }
  $reason=null;
  try{(new WebPush($gone(503),$keyFile))->send($subscriber->subscription($endpoint),$notice);}catch(PushProblem $e){$reason=$e->reason;}

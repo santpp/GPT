@@ -2,20 +2,9 @@
 declare(strict_types=1);
 if(PHP_SAPI!=='cli'){http_response_code(404);exit;}
 require __DIR__.'/../src/bootstrap.php';
+require_once __DIR__.'/../src/Installation.php';
 require __DIR__.'/../src/PushDelivery.php';
-// One bounded pass, suitable for a once-per-minute CyberPanel cron as site user.
-if(!PushDelivery::configured()){
-    // También queda constancia de esto: es la causa más fácil de pasar por alto.
-    PushDelivery::remember('push_last_run',['at'=>gmdate('c'),'configured'=>false]);
-    echo "Notifications are not configured; nothing to deliver\n";exit(0);
-}
-if((int)query("SELECT GET_LOCK('agora-push-cron',0)")->fetchColumn()!==1){echo "Previous delivery pass still running\n";exit(0);}
-try {
-    $result=(new PushDelivery())->run(20);
-    printf("Notices %d, sent %d, retried %d, devices dropped %d\n",$result['notices'],$result['sent'],$result['retried'],$result['dropped']);
-    // Nothing of the service account, the tokens or the message bodies is printed.
-    exit($result['retried']>0?1:0);
-} catch(Throwable $e) {
-    fwrite(STDERR,'Delivery pass failed; inspect the queue state in the database'.PHP_EOL);
-    exit(1);
-} finally {query("SELECT RELEASE_LOCK('agora-push-cron')");}
+// Optional since 0.21.1: sync-inbox.php already delivers what it discovers.
+// Kept so an existing cron line keeps working and never sends twice.
+Installation::ensureSchema(Installation::checks(false));
+echo PushDelivery::deliverPending().PHP_EOL;
