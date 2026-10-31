@@ -233,6 +233,42 @@ export async function renderLiveInbox(container){
     const notice=$('#live-send-status');if(notice)notice.textContent='';
    });
   }
+  // ---- Asignar la conversación: responsable del contacto y de sus oportunidades abiertas ----
+  function assignDialog(c,assignees,current){
+   const dialog=document.querySelector('#action-dialog'),content=document.querySelector('#dialog-content');
+   const connection=select.value,version=chatGeneration;
+   content.innerHTML=`<h2>Asignar la conversación</h2>
+    <p class="dialog-copy">La persona que elijas pasa a ser <b>responsable del contacto</b> y de sus <b>oportunidades abiertas</b>, y lo que cierre contará en sus ventas.</p>
+    <form id="assign-form" class="dialog-form">
+     <label>Responsable<select name="assignedTo"><option value="">Sin asignar</option>${asList(assignees).map(user=>`<option value="${esc(user.id)}"${user.id===current?' selected':''}>${esc(user.name)}</option>`).join('')}</select></label>
+     <div class="dialog-actions"><button class="primary">Asignar</button></div>
+     <p id="assign-result" class="dialog-copy" role="status"></p>
+    </form>`;
+   if(!dialog.open)dialog.showModal();
+   const form=content.querySelector('#assign-form'),result=content.querySelector('#assign-result');
+   form.onsubmit=async e=>{
+    e.preventDefault();
+    const target=form.elements.assignedTo.value;
+    if(target===(current||'')){result.textContent='Esa persona ya es la responsable.';return}
+    const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(connection+c.id+target));
+    const storageKey='agora-assign:'+Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+    const requestId=sessionStorage.getItem(storageKey)||crypto.randomUUID().replace(/-/g,'');sessionStorage.setItem(storageKey,requestId);
+    const button=form.querySelector('button.primary');button.disabled=true;result.textContent='Asignando…';
+    try{
+     const done=await request(`workspace/assign?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(c.id)}`,'POST',me.csrf,{assignedTo:target,requestId});
+     sessionStorage.removeItem(storageKey);
+     c.assignedTo=done.assignedTo||undefined;
+     dialog.close();
+     const moved=done.opportunities?.updated||0;
+     window.dispatchEvent(new CustomEvent('agora:toast',{detail:done.assignedName?`Asignada a ${done.assignedName}${moved?` · ${moved} oportunidad${moved===1?'':'es'} abierta${moved===1?'':'s'} también`:''}.`:'La conversación quedó sin asignar.'}));
+     if(active()&&version===chatGeneration){list();loadContact(c,chatGeneration)}
+    }catch(error){
+     if(['assign_forbidden','unknown_assignee','invalid_contact'].includes(error.code))sessionStorage.removeItem(storageKey);
+     result.textContent=friendly(error);button.disabled=false;
+    }
+   };
+  }
+
   // ---- «¿Venta ganada?»: cerrar una venta sin salir del chat --------------------------
   const canWin=()=>{const caps=me?.user?.capabilities||{};return caps.viewOpportunities!==false&&caps.editOpportunities!==false};
   const money=value=>new Intl.NumberFormat('es-ES',{maximumFractionDigits:2}).format(value);
@@ -473,6 +509,12 @@ export async function renderLiveInbox(container){
    const panel=$('#live-contact-panel');panel.innerHTML='<p class="empty">Cargando ficha…</p>';
    try{
     const data=await request(`workspace/contact?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`);if(!active()||version!==chatGeneration)return;
+    // Sólo los administradores de esta subcuenta ven «Asignar».
+    const assign=$('#live-assign');
+    if(assign&&data.canAssign===true&&asList(data.assignees).length){
+     assign.hidden=false;
+     assign.onclick=()=>assignDialog(c,data.assignees,data.contact?.assignedTo||c.assignedTo||'');
+    }
     if(Array.isArray(data.channels)&&data.channels.length){
      chatChannels=data.channels;
      const draft=drafts.get(select.value+':'+c.id);
@@ -641,7 +683,7 @@ export async function renderLiveInbox(container){
   }
   function open(c){
    selected=c;chatNeedsRefresh=false;chatGeneration++;messages=new Map();cursor=null;chatChannel=sendChannels[c.lastMessageType]||null;chatChannels=null;list();layout.classList.add('chat-open');layout.classList.remove('contact-open');
-   $('#live-messages').innerHTML=`<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">${UI_ICONS.back}</button><span class="avatar">${esc(initials(c))}</span><div><h2>${esc(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div>${canWin()?'<button id="live-won" class="won-button" title="¿Venta ganada?" aria-label="¿Venta ganada?"><span aria-hidden="true">✓</span><span class="won-long">¿Venta ganada?</span><span class="won-short">¿Ganada?</span><span class="sr-only">¿Venta ganada?</span></button>':''}<button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">${UI_ICONS.expand}</button><button id="live-contact-toggle" aria-label="Ver ficha del contacto" title="Ver ficha del contacto">${UI_ICONS.contact}</button></header><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
+   $('#live-messages').innerHTML=`<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">${UI_ICONS.back}</button><span class="avatar">${esc(initials(c))}</span><div><h2>${esc(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div>${canWin()?'<button id="live-won" class="won-button" title="¿Venta ganada?" aria-label="¿Venta ganada?"><span aria-hidden="true">✓</span><span class="won-long">¿Venta ganada?</span><span class="won-short">¿Ganada?</span><span class="sr-only">¿Venta ganada?</span></button>':''}<button id="live-assign" class="assign-button" hidden title="Asignar la conversación" aria-label="Asignar la conversación"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20c.7-3.6 3.2-5.5 6.5-5.5s5.8 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg></span><span class="assign-text">Asignar</span></button><button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">${UI_ICONS.expand}</button><button id="live-contact-toggle" aria-label="Ver ficha del contacto" title="Ver ficha del contacto">${UI_ICONS.contact}</button></header><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
    $('#live-back').onclick=()=>{clearTimeout(pollTimer);document.body.classList.remove('agora-focus');layout.classList.remove('chat-open','contact-open');say();$('#live-search').focus()};
    $('#live-contact-toggle').onclick=()=>layout.classList.toggle('contact-open');
    const won=$('#live-won');if(won)won.onclick=()=>winDialog(c);

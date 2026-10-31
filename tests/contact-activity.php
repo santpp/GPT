@@ -67,7 +67,7 @@ try {
   ['id'=>'appt-old','title'=>'Primera cita','startTime'=>'2026-09-02T10:00:00Z','appointmentStatus'=>'showed','contactId'=>'contact-1'],
   ['id'=>'appt-foreign','title'=>'De otro contacto','contactId'=>'contact-2'],
  ];
- $full=['external_user_id'=>null,'capabilities'=>['viewContacts'=>true,'editContacts'=>true,'viewCalendars'=>true,'assignedDataOnly'=>false]];
+ $full=['external_user_id'=>null,'can_assign'=>true,'capabilities'=>['viewContacts'=>true,'editContacts'=>true,'viewCalendars'=>true,'assignedDataOnly'=>false]];
  $readOnly=['external_user_id'=>'seller-1','capabilities'=>['viewContacts'=>true,'editContacts'=>false,'viewCalendars'=>false,'assignedDataOnly'=>true]];
 
  // ---- documented contract --------------------------------------------------

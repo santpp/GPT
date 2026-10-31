@@ -55,7 +55,8 @@ try {
   'opp-1'=>['id'=>'opp-1','name'=>'Proyecto Andreina','locationId'=>$location,'contactId'=>'c1','pipelineId'=>'pipe-1','pipelineStageId'=>'stage-1','monetaryValue'=>1000,'assignedTo'=>'seller-1','status'=>'open'],
   'opp-foreign'=>['id'=>'opp-foreign','name'=>'De otra cuenta','locationId'=>'foreign','contactId'=>'c9','pipelineId'=>'pipe-1','pipelineStageId'=>'stage-1','status'=>'open'],
  ];
- $editor=['external_user_id'=>null,'capabilities'=>['viewOpportunities'=>true,'editOpportunities'=>true,'assignedDataOnly'=>false]];
+ $editor=['external_user_id'=>null,'can_assign'=>true,'capabilities'=>['viewOpportunities'=>true,'editOpportunities'=>true,'assignedDataOnly'=>false]];
+ $plainEditor=['external_user_id'=>'seller-1','can_assign'=>false,'capabilities'=>['viewOpportunities'=>true,'editOpportunities'=>true,'assignedDataOnly'=>false]];
  $reader=['external_user_id'=>null,'capabilities'=>['viewOpportunities'=>true,'editOpportunities'=>false,'assignedDataOnly'=>false]];
  $mine=['external_user_id'=>'seller-1','capabilities'=>['viewOpportunities'=>true,'editOpportunities'=>true,'assignedDataOnly'=>true]];
  $other=['external_user_id'=>'seller-2','capabilities'=>['viewOpportunities'=>true,'editOpportunities'=>true,'assignedDataOnly'=>true]];
@@ -142,6 +143,12 @@ try {
  actionCheck(query('SELECT state FROM opportunity_action_attempts WHERE connection_id=? AND request_id=?',[$connectionId,$uncertain])->fetchColumn()==='unknown','and it stays recorded as unconfirmed');
  $api->fail=[];openBudget($connectionId);
  actionCheck(problem(fn()=>$actions()->create($connection,'c1',$editor,['name'=>'Incierta','pipelineId'=>'pipe-1','requestId'=>key16()]))?->reason==='action_unconfirmed','identical content under a new key is blocked while the first result is unknown');
+
+ // ---- cambiar el responsable es cosa de administradores ------------------------------------
+ $api->reset();openBudget($connectionId);
+ actionCheck(problem(fn()=>$actions()->update($connection,'opp-1',$plainEditor,['assignedTo'=>'seller-2','requestId'=>key16()]))?->reason==='assign_forbidden','quien no es administrador no puede cambiar el responsable de una oportunidad');
+ actionCheck($api->writes()===[],'y no se envía nada a la cuenta');
+ actionCheck(problem(fn()=>$actions()->create($connection,'c1',$plainEditor,['name'=>'Otra','pipelineId'=>'pipe-1','assignedTo'=>'seller-2','requestId'=>key16()]))?->reason==='assign_forbidden','tampoco elegir a otro como responsable al crearla');
 
  // ---- «¿Venta ganada?» ----------------------------------------------------------
  $api->reset();openBudget($connectionId);

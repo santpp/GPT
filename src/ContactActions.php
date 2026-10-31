@@ -84,6 +84,7 @@ final class ContactActions {
         }
         // Only a member imported from this very account may be made responsible.
         if(array_key_exists('assignedTo',$fields)) {
+            if(($membership['can_assign']??false)!==true)throw new ActionProblem('assign_forbidden',403,'Sólo los administradores de esta subcuenta pueden cambiar el responsable.');
             $assignee=$fields['assignedTo'];
             if($assignee===null||$assignee==='')$payload['assignedTo']='';
             elseif(is_string($assignee)&&preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$assignee)

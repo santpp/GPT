@@ -39,6 +39,7 @@ final class OpportunityActions {
             $payload['monetaryValue']=$value;
         }
         $assignee=$this->assignee($connection,$input,$membership,true);
+        if(($membership['can_assign']??false)!==true&&$assignee!==''&&$assignee!==null&&$assignee!==($membership['self_id']??$membership['external_user_id']??null))throw new ActionProblem('assign_forbidden',403,'Sólo los administradores de esta subcuenta pueden elegir otro responsable.');
         if($assignee!==null&&$assignee!=='')$payload['assignedTo']=$assignee;
         if(!isset($payload['assignedTo'])&&$payload['status']==='won'&&is_string($membership['self_id']??null))$payload['assignedTo']=$membership['self_id'];
         $result=$this->run($connection,$contactId,$membership,$input,'create',$payload,
@@ -74,7 +75,10 @@ final class OpportunityActions {
         }
         if(array_key_exists('assignedTo',$input)) {
             $assignee=$this->assignee($connection,$input,$membership,false);
-            if($assignee!==($current['assignedTo']??''))$payload['assignedTo']=$assignee;
+            if($assignee!==($current['assignedTo']??'')){
+                if(($membership['can_assign']??false)!==true)throw new ActionProblem('assign_forbidden',403,'Sólo los administradores de esta subcuenta pueden cambiar el responsable.');
+                $payload['assignedTo']=$assignee;
+            }
         }
         // «¿Venta ganada?»: si nadie la tenía asignada, pasa a quien la cierra,
         // para que cuente en sus ventas del mes.

@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.1.0. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.2.0. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -113,8 +113,6 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## Pendiente
 - Que pruebes en el teléfono: la comisión por cierre en la otra subcuenta, que el aviso abra la conversación y una novedad de prueba.
 - Plantillas de WhatsApp, en pausa hasta tener el WABA ID.
-- **Acordado, sin hacer todavía:**
-  - **Asignar la conversación a un compañero**, sólo para los administradores de esa subcuenta y para el propietario de Ágora. La cuenta no permite asignar una conversación directamente (su actualización sólo admite leído, destacada y valoración): se asigna al **responsable del contacto**, que es de quien depende la conversación.
-  - **Gestionar usuarios desde Ágora** (crear, editar rol y permisos, quitar), sólo para los administradores de esa subcuenta y para el propietario. Requiere el permiso `users.write` en la clave de la subcuenta y el `companyId` de la agencia; se prueba antes con una comprobación que diga qué devolvió la cuenta.
-- **Descartado:** etiquetar desde el chat.
+- **Hecho en 1.2.0:** asignar la conversación (responsable del contacto y de sus oportunidades abiertas), sólo para administradores de la subcuenta y el propietario; el responsable del contacto y de la oportunidad sólo lo cambian ellos.
+- **Descartado por el usuario:** gestionar usuarios desde Ágora (y con ello el permiso `users.write`), y etiquetar desde el chat.
 - Ideas sin decidir: respuestas rápidas, «+ Nuevo contacto».

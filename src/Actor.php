@@ -18,10 +18,14 @@ final class Actor {
     }
 
     public static function connectionMembership(array $actor,int $connectionId):?array {
-        if(($actor['identity_type']??'native')==='native')return $actor['role']==='administrator'?['external_user_id'=>null,'capabilities'=>PermissionPolicy::capabilities($actor),'assigned_data_only'=>false]:null;
+        // Cambiar quién es responsable de un contacto, una conversación o una
+        // oportunidad: sólo administradores de esa subcuenta (y el propietario de Ágora).
+        if(($actor['identity_type']??'native')==='native')return $actor['role']==='administrator'?['external_user_id'=>null,'capabilities'=>PermissionPolicy::capabilities($actor),'assigned_data_only'=>false,'can_assign'=>true]:null;
         $row=query('SELECT eu.* FROM external_identity_memberships m JOIN external_users eu ON eu.id=m.external_user_row_id JOIN ghl_connections c ON c.id=eu.connection_id WHERE m.identity_id=? AND eu.connection_id=? AND eu.active=TRUE AND c.tenant_id=? LIMIT 1',[$actor['id'],$connectionId,$actor['tenant_id']])->fetch();
         if(!$row)return null;
-        $row['capabilities']=PermissionPolicy::capabilities($row+['identity_type'=>'external']);return $row;
+        $row['capabilities']=PermissionPolicy::capabilities($row+['identity_type'=>'external']);
+        $row['can_assign']=($row['role_name']??null)==='admin'||($row['role_type']??null)==='agency';
+        return $row;
     }
 
     public static function filterConversations(array $items,array $membership):array {

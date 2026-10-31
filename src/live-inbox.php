@@ -64,7 +64,8 @@ if($path==='/api/workspace/contact'&&$method==='GET'){
             // Definitions must always reach the sheet: an empty directory would
             // hide every custom field the contact has not filled in yet.
             'fields'=>$fieldDirectory,
-            'assignees'=>$canEdit?query('SELECT external_user_id AS id,display_name AS name FROM external_users WHERE connection_id=? AND active=TRUE ORDER BY display_name',[$connection['id']])->fetchAll():[],
+            'canAssign'=>($membership['can_assign']??false)===true,
+            'assignees'=>($membership['can_assign']??false)===true?query('SELECT external_user_id AS id,display_name AS name FROM external_users WHERE connection_id=? AND active=TRUE ORDER BY display_name',[$connection['id']])->fetchAll():[],
         ]);
     }
     catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La ficha está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
@@ -140,7 +141,7 @@ if($path==='/api/workspace/pipelines'&&$method==='GET'){
                 'name'=>$names[$id]['name'],
                 'stages'=>array_values(array_map(fn(string $stage):array=>['id'=>$stage,'name'=>$names[$id]['stages'][$stage]],array_keys($names[$id]['stages']))),
             ],array_keys($names))),
-            'assignees'=>($membership['capabilities']['editOpportunities']??false)?query('SELECT external_user_id AS id,display_name AS name FROM external_users WHERE connection_id=? AND active=TRUE ORDER BY display_name',[$connection['id']])->fetchAll():[],
+            'assignees'=>($membership['capabilities']['editOpportunities']??false)&&($membership['can_assign']??false)===true?query('SELECT external_user_id AS id,display_name AS name FROM external_users WHERE connection_id=? AND active=TRUE ORDER BY display_name',[$connection['id']])->fetchAll():[],
             'canEdit'=>($membership['capabilities']['editOpportunities']??false)===true,
         ]);
     }
@@ -207,7 +208,8 @@ if($path==='/api/workspace/record'&&in_array($method,['GET','POST'],true)){
             'contact'=>$profile,
             'canEdit'=>$canEdit,
             'fields'=>$fields,
-            'assignees'=>$canEdit?query('SELECT external_user_id AS id,display_name AS name FROM external_users WHERE connection_id=? AND active=TRUE ORDER BY display_name',[$connection['id']])->fetchAll():[],
+            'canAssign'=>($membership['can_assign']??false)===true,
+            'assignees'=>($membership['can_assign']??false)===true?query('SELECT external_user_id AS id,display_name AS name FROM external_users WHERE connection_id=? AND active=TRUE ORDER BY display_name',[$connection['id']])->fetchAll():[],
         ]);
     }
     catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La ficha está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
@@ -322,6 +324,17 @@ if($path==='/api/workspace/templates'&&$method==='GET') {
     catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La lista de plantillas está en espera. Vuelve a intentarlo en unos segundos.','retryAfter'=>$e->retryAfter],429);}
     catch(GhlApiException $e){respond(['error'=>in_array($e->status,[401,403],true)?'La clave de la cuenta no permite leer plantillas. Hay que añadirle el permiso de plantillas.':'No se pudieron leer las plantillas de la cuenta.','code'=>'templates_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'No se pudieron leer las plantillas de la cuenta.','code'=>'templates_failed'],424);}
+}
+// Asignar una conversación: pasa a ser responsable el compañero elegido, tanto del
+// contacto como de sus oportunidades abiertas. Sólo administradores de la subcuenta.
+if($path==='/api/workspace/assign'&&$method==='POST'){
+    $conversation=$_GET['conversationId']??'';
+    if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);
+    $record=InboxFeed::known($id,$conversation);
+    if(!$record||!Actor::filterConversations([$record],$membership))respond(['error'=>'Conversación no disponible en esta subcuenta'],404);
+    require_once __DIR__.'/ConversationAssignment.php';
+    try{respond((new ConversationAssignment())->assign($connection,$record,$membership,body()));}
+    catch(ActionProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
 }
 // Una conversación concreta, para abrirla desde un aviso aunque no esté entre las últimas.
 if($path==='/api/workspace/conversation'&&$method==='GET'){
