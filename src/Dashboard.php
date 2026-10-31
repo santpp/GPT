@@ -46,8 +46,10 @@ final class Dashboard {
                     try {$names=$directory->fromClient($client,$connection);}
                     catch(Throwable $e){$names=[];}
                 }
-                $today=$canSeeLeads?self::people($client,$connection['location_id'],$todayFilter,true):null;
-                $mine=$canSeeLeads&&$self!==null?self::people($client,$connection['location_id'],[['field'=>'assignedTo','operator'=>'eq','value'=>$self]],true):null;
+                $today=$canSeeLeads?self::leadsToday($client,$connection['location_id'],$todayFilter,$assignee):null;
+                $mine=null;
+                if($canSeeLeads&&$self!==null)foreach([['field'=>'assignedTo','operator'=>'eq','value'=>$self],['field'=>'assignedTo','operator'=>'eq','value'=>[$self]]] as $variant)
+                    if(($mine=self::people($client,$connection['location_id'],[$variant],true))!==null)break;
                 return [$all,$pending,$people,$deals,$names??[],$today,$mine];
             },false);
 
@@ -99,6 +101,31 @@ final class Dashboard {
      * ahí, y sólo se acepta un número que no pueda ser el tamaño de la página.
      * Si no llega ninguno utilizable, no se muestra cifra en vez de una falsa.
      */
+    /**
+     * Leads de hoy. La forma del filtro de fecha no está publicada, así que se
+     * prueba la habitual y su variante; si la cuenta no acepta ninguna, se
+     * cuentan en la lista de contactos los creados hoy (hasta 100).
+     */
+    private static function leadsToday(GhlClient $client,string $location,array $filter,?string $assignee):?int {
+        $count=self::people($client,$location,$filter,true);
+        if($count!==null)return $count;
+        $range=$filter[0]['value'];
+        $alt=$filter;$alt[0]['value']=['gte'=>$range['gt'],'lte'=>$range['lt']];
+        $count=self::people($client,$location,$alt,true);
+        if($count!==null)return $count;
+        try {$list=$client->locationContacts($location,null,100);}catch(Throwable $e){return null;}
+        $items=$list['contacts']??null;
+        if(!is_array($items))return null;
+        $from=strtotime($range['gt']);$to=strtotime($range['lt']);$n=0;
+        foreach($items as $c){
+            if(!is_array($c))continue;
+            if($assignee!==null&&($c['assignedTo']??null)!==$assignee)continue;
+            $at=is_string($c['dateAdded']??null)?strtotime($c['dateAdded']):false;
+            if($at!==false&&$at>=$from&&$at<$to)$n++;
+        }
+        return $n;
+    }
+
     private static function people(GhlClient $client,string $location,array $filters=[],bool $small=false):?int {
         try {$response=$client->countContacts($location,$filters);}
         catch(Throwable $e){return null;}

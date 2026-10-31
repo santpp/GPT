@@ -105,13 +105,14 @@ export async function renderDashboard(container){
       ...(data.contacts!==null&&data.contacts!==undefined?[tile('Contactos',number(data.contacts),'Personas en la cuenta')]:[]),
       ...(data.opportunities?[tile('Oportunidades abiertas',number(data.opportunities.count),`${money(data.opportunities.value)} en juego`)]:[]),
     ].join('');
-    // Lo del día y lo de cada quien: leads de hoy, leads a mi nombre y mis ventas del mes.
-    const leads=data.leads||{};const mine=month&&!month.error?month.mine:null;
+    // Lo del día y lo de cada quien. Si falta un dato, el recuadro dice por qué.
+    const leads=data.leads||null;const sales=month&&!month.error?month.sales:null;const mine=month&&!month.error?month.mine:null;
+    const unlinked='Usa en Ágora el mismo correo que en la cuenta';
     const personal=[
-      ...(leads.today!==null&&leads.today!==undefined?[tile('Leads de hoy',number(leads.today),data.restricted?'Nuevos a tu nombre':'Contactos nuevos desde las 00:00')]:[]),
-      ...(leads.mine!==null&&leads.mine!==undefined?[tile('Leads asignados a mí',number(leads.mine),'Contactos a tu nombre')]:[]),
-      ...(mine?[tile('Mis ventas del mes',number(mine.closings),`${money(mine.sold)} ganados`)]:[]),
-    ].join('');
+      ...(leads?[tile('Leads de hoy',leads.today===null||leads.today===undefined?null:number(leads.today),leads.today===null||leads.today===undefined?'La cuenta no devolvió este dato':(data.restricted?'Nuevos a tu nombre':'Contactos nuevos desde las 00:00'))]:[]),
+      ...(leads?[tile('Leads asignados a mí',leads.mine===null||leads.mine===undefined?null:number(leads.mine),leads.linked?(leads.mine===null||leads.mine===undefined?'La cuenta no devolvió este dato':'Contactos a tu nombre'):unlinked)]:[]),
+      ...(sales&&!data.restricted?[tile('Ventas ganadas del mes',number(sales.closings??0),`${money(sales.total??0)} en total`)]:[]),
+      ...(month&&!month.error?[tile('Mis ventas del mes',mine?number(mine.closings):null,mine?`${money(mine.sold)} ganados`:unlinked)]:[]),    ].join('');
     const stages=data.opportunities?asList(data.opportunities.stages):[];
     const stageList=stages.length
       ? `<div class="dashboard-stages">${stages.map(stage=>`<article class="board-stage"><h3>${esc(stage.name)}</h3><p>${number(stage.count)} oportunidad${stage.count===1?'':'es'}</p><strong>${esc(money(stage.value))}</strong></article>`).join('')}</div>`

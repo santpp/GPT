@@ -15,13 +15,16 @@ final class FakeBoardApi {
     public array $opportunities=[];
     public array $pipelines=[];
     public array $payloads=[];
+    public bool $filtersRejected=false;
+    public array $listed=[];
     public function __construct(public readonly string $location) {}
     public function gateway():GhlGateway {
         return new GhlGateway(fn():GhlClient=>new GhlClient('fake',function(string $path,string $version,string $method,?array $payload):array {
             $this->calls[]=$path;$this->payloads[]=$payload;
             if(str_starts_with($path,'/conversations/search'))
                 return ['status'=>200,'body'=>json_encode(['conversations'=>[],'total'=>str_contains($path,'status=unread')?$this->unread:$this->conversations])];
-            if(str_starts_with($path,'/contacts/search'))return ['status'=>200,'body'=>json_encode($this->contactAnswer)];
+            if(str_starts_with($path,'/contacts/search'))return ($payload['filters']??null)&&$this->filtersRejected?throw new GhlApiException(422):['status'=>200,'body'=>json_encode($this->contactAnswer)];
+            if(str_starts_with($path,'/contacts/?'))return ['status'=>200,'body'=>json_encode(['contacts'=>$this->listed])];
             if(str_starts_with($path,'/opportunities/pipelines'))return ['status'=>200,'body'=>json_encode(['pipelines'=>$this->pipelines])];
             if(str_starts_with($path,'/opportunities/search'))return ['status'=>200,'body'=>json_encode(['opportunities'=>$this->opportunities])];
             throw new GhlApiException(404);
@@ -86,6 +89,13 @@ try {
  $dated=array_values(array_filter($api->payloads,fn($p)=>is_array($p)&&(($p['filters'][0]['field']??null)==='dateAdded')));
  boardCheck(($dated[0]['filters'][0]['value']['gt']??null)===$madrid,'«today» starts at midnight where the person is, not at midnight UTC');
  $api->contactAnswer=['total'=>812];
+
+ $api->reset();boardFree($connectionId);
+ $api->filtersRejected=true;
+ $api->listed=[['id'=>'a','dateAdded'=>gmdate('c')],['id'=>'b','dateAdded'=>gmdate('c',time()-3*86400)],['id'=>'c','dateAdded'=>gmdate('c',time()-60)]];
+ $fallback=$board->get($connection,$admin+['self_id'=>'owner-ghl']);
+ boardCheck($fallback['leads']['today']===2&&$fallback['leads']['mine']===null&&$fallback['contacts']===812,'if the account refuses the date filter, today\'s leads are counted in the contact list; a figure it cannot give stays empty');
+ $api->filtersRejected=false;
 
  $api->reset();boardFree($connectionId);
  $mine=$board->get($connection,$restricted);

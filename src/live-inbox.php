@@ -19,6 +19,11 @@ $membership=Actor::connectionMembership($u,(int)$id);
 if(!$membership||!($membership['capabilities']['viewConversations']??false))respond(['error'=>'No tienes permiso para consultar esta cuenta.'],403);
 // Quién es «yo» en la cuenta: el usuario sincronizado, o el del propietario si lo tiene enlazado.
 $membership['self_id']=$membership['external_user_id']??((($u['identity_type']??'native')==='native'&&is_string($u['ghl_user_id']??null)&&$u['ghl_user_id']!=='')?$u['ghl_user_id']:null);
+// El propietario sin enlace manual se reconoce por su correo entre los usuarios de la cuenta.
+if($membership['self_id']===null&&($u['identity_type']??'native')==='native'&&is_string($u['email']??null)){
+    $byMail=query('SELECT external_user_id FROM external_users WHERE connection_id=? AND active=TRUE AND LOWER(email)=LOWER(?) LIMIT 1',[$id,$u['email']])->fetchColumn();
+    if(is_string($byMail)&&$byMail!=='')$membership['self_id']=$byMail;
+}
 if($path==='/api/workspace/sync'&&$method==='POST'){
     $requested=filter_var($_GET['limit']??null,FILTER_VALIDATE_INT);
     if(!in_array($requested,[20,50,100],true))respond(['error'=>'Selecciona 20, 50 o 100 conversaciones'],422);

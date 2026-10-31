@@ -587,3 +587,18 @@ html[data-theme="dark"] .won-button{background:#173325;color:#7fd6a3;border-colo
 .contact-save p{margin-right:auto;font-size:12px;color:var(--muted)}
 .contact-save .primary{min-height:42px;padding:10px 20px;font-size:13px}
 @media(max-width:600px){.contact-grid{grid-template-columns:1fr}.contact-save{bottom:calc(64px + env(safe-area-inset-bottom))}}
+/* 1.0.1 · cabecera del chat discreta */
+.live-chat-header>div{flex:1;min-width:0}
+.live-chat-header h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;word-break:normal;overflow-wrap:normal}
+.live-chat-header p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.won-button{font-size:12px!important;line-height:1!important;padding:6px 12px!important;min-height:32px!important;height:32px;flex:0 0 auto}
+.won-button span[aria-hidden]{font-size:13px}
+@media(max-width:600px){
+ .won-button{width:34px;height:34px!important;min-height:34px!important;padding:0!important;justify-content:center;border-radius:50%}
+ .won-button .won-long,.won-button .won-short{display:none!important}
+}
+@media(max-width:600px){
+ .won-button{width:44px;height:44px!important;min-height:44px!important;background:transparent!important;border:0!important;border-radius:0}
+ .won-button span[aria-hidden]{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#eaf7ef;border:1px solid #2f8a57;color:#2f8a57}
+ html[data-theme="dark"] .won-button span[aria-hidden]{background:#173325;border-color:#2f7a52;color:#7fd6a3}
+}
