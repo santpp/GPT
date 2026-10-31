@@ -140,15 +140,44 @@ export async function renderIntegrations(container){
 }
 // El número de WhatsApp de la cuenta, como lo nombra Meta: con él se leen sus
 // plantillas aprobadas y se envían desde ese número.
+const DROP_REASONS={name:'sin nombre válido',language:'sin idioma reconocible',status_pending:'en revisión de Meta',status_in_appeal:'en apelación',status_rejected:'rechazadas',status_paused:'pausadas',status_disabled:'desactivadas',status_deleted:'eliminadas',unknown:'sin motivo claro'};
+function diagnosisMarkup(d){
+ if(!d)return '';
+ const dropped=Object.entries(d.dropped||{}).map(([why,n])=>`${n} ${DROP_REASONS[why]||why.replace(/^status_/,'con estado ')}`).join(', ');
+ const via=d.origin==='account'?'la cuenta de WhatsApp Business':'el número';
+ const lines=d.received===0
+  ?`<p><b>La cuenta no devolvió ninguna plantilla</b> al pedirlas con ${via}. Si en la cuenta sí hay plantillas aprobadas, prueba a indicar el identificador de la cuenta de WhatsApp Business (WABA) en el segundo campo y vuelve a comprobar.</p>`
+  :`<p>La cuenta devolvió <b>${d.received}</b> plantilla${d.received===1?'':'s'}; se muestran <b>${d.shown}</b> en el chat.${dropped?` Fuera: ${esc(dropped)}.`:''}</p>${(d.names||[]).length?`<p class="muted">${(d.names||[]).map(esc).join(' · ')}</p>`:''}`;
+ const fields=d.fields||{};
+ return `<div class="wa-diagnosis">${lines}<details><summary>Detalle para soporte</summary><p class="muted">Campos de la respuesta: ${esc((fields.top||[]).join(', ')||'ninguno')}<br>Campos de cada plantilla: ${esc((fields.item||[]).join(', ')||'—')}${(fields.template||[]).length?`<br>Dentro de «template»: ${esc(fields.template.join(', '))}`:''}<br>Comprobado: ${esc(d.at||'')}</p></details></div>`;
+}
+// El número de WhatsApp de la cuenta, como lo nombra Meta: con él se envían las
+// plantillas aprobadas. Si se leen con la cuenta de WhatsApp Business, se indica aparte.
 function whatsappNumber(item,container){
  const dialog=document.querySelector('#action-dialog');
- document.querySelector('#dialog-content').innerHTML=`<h2>Plantillas de WhatsApp</h2><p class="dialog-copy">Para escribir a un contacto pasadas 24 horas desde su último mensaje, WhatsApp exige una plantilla aprobada. Indica el identificador del número de WhatsApp de <b>${esc(item.name)}</b>: Meta lo asigna a cada número y aparece en la configuración de WhatsApp de la cuenta como «Phone number ID».</p><form id="whatsapp-form" class="dialog-form"><label>Identificador del número<input name="numberId" inputmode="numeric" pattern="[0-9]{6,30}" value="${esc(item.whatsapp_number_id||'')}" placeholder="Ej.: 920050454518509"></label><button class="primary">Guardar</button><p id="whatsapp-result" class="dialog-copy" role="status"></p></form><p class="dialog-copy">Déjalo vacío para no usar plantillas en esta cuenta.</p>`;
+ document.querySelector('#dialog-content').innerHTML=`<h2>Plantillas de WhatsApp</h2><p class="dialog-copy">Para escribir a un contacto pasadas 24 horas desde su último mensaje, WhatsApp exige una plantilla aprobada. Indica los identificadores que Meta asigna a <b>${esc(item.name)}</b>; aparecen en la configuración de WhatsApp de la cuenta.</p><form id="whatsapp-form" class="dialog-form"><label>Identificador del número («Phone number ID»)<input name="numberId" inputmode="numeric" pattern="[0-9]{6,30}" value="${esc(item.whatsapp_number_id||'')}" placeholder="Ej.: 920050454518509"></label><label>Identificador de la cuenta de WhatsApp Business («WABA ID»), opcional<input name="accountId" inputmode="numeric" pattern="[0-9]{6,30}" value="${esc(item.whatsapp_account_id||'')}" placeholder="Sólo si las plantillas no aparecen con el número"></label><div class="dialog-actions"><button class="primary">Guardar</button><button type="button" id="whatsapp-check" class="secondary"${item.whatsapp_number_id?'':' disabled'}>Comprobar plantillas</button></div><p id="whatsapp-result" class="dialog-copy" role="status"></p></form><div id="whatsapp-diagnosis"></div><p class="dialog-copy">Deja el número vacío para no usar plantillas en esta cuenta.</p>`;
  if(!dialog.open)dialog.showModal();
- document.querySelector('#whatsapp-form').onsubmit=async e=>{
-  e.preventDefault();const button=e.target.querySelector('button');button.disabled=true;
-  try{const value=e.target.elements.numberId.value.trim();await api(`admin/integrations/${item.id}/whatsapp`,'PUT',{numberId:value||null});dialog.close();await renderIntegrations(container);container.querySelector('#integration-feedback').textContent=value?'Número de WhatsApp guardado. Las plantillas aparecen en el chat de WhatsApp.':'Plantillas desactivadas en esta cuenta.'}
-  catch(error){document.querySelector('#whatsapp-result').textContent=friendly(error);button.disabled=false}
+ const result=document.querySelector('#whatsapp-result');
+ const check=async()=>{
+  const button=document.querySelector('#whatsapp-check');button.disabled=true;result.textContent='Pidiendo las plantillas a la cuenta…';
+  try{const {diagnosis}=await api(`admin/integrations/${item.id}/whatsapp/check`,'POST');result.textContent='';document.querySelector('#whatsapp-diagnosis').innerHTML=diagnosisMarkup(diagnosis)}
+  catch(error){result.textContent=friendly(error)}
+  finally{button.disabled=false}
  };
+ document.querySelector('#whatsapp-check').onclick=check;
+ document.querySelector('#whatsapp-form').onsubmit=async e=>{
+  e.preventDefault();const button=e.target.querySelector('button.primary');button.disabled=true;
+  try{
+   const value=e.target.elements.numberId.value.trim(),account=e.target.elements.accountId.value.trim();
+   await api(`admin/integrations/${item.id}/whatsapp`,'PUT',{numberId:value||null,accountId:account||null});
+   item.whatsapp_number_id=value||null;item.whatsapp_account_id=value?(account||null):null;
+   result.textContent=value?'Guardado.':'Plantillas desactivadas en esta cuenta.';
+   document.querySelector('#whatsapp-check').disabled=!value;
+   if(value)await check();
+  }catch(error){result.textContent=friendly(error)}
+  finally{button.disabled=false}
+ };
+ dialog.addEventListener('close',()=>renderIntegrations(container),{once:true});
 }
 async function team(id,item,container){
  const dialog=document.querySelector('#action-dialog');document.querySelector('#dialog-content').innerHTML='<h2>Equipo y permisos</h2><p class="dialog-copy">Cargando usuarios importados…</p>';dialog.showModal();

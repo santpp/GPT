@@ -30,7 +30,12 @@ ok($b['name']==='cita_recordatorio'&&$b['language']==='es_ES'&&$b['category']===
 ok(array_column($b['variables']['body'],'fixed')===[null,null]&&array_column($b['variables']['body'],'label')===['Variable 1','Variable 2'],'numbered variables without a mapping are asked of whoever sends');
 ok(WhatsappTemplates::normalize($pending)===null,'a template Meta has not approved is not offered');
 ok(WhatsappTemplates::normalize($image)['unsupported']==='media_header','a template with an image header is shown but marked as not sendable from here');
-ok(WhatsappTemplates::normalize($broken)===null,'something that cannot be a template name is left out rather than guessed');
+ok(WhatsappTemplates::normalize(['name'=>'Nombre Con Espacios','language'=>'es'])===null,'something that cannot be a template name is left out rather than guessed');
+$why=null;WhatsappTemplates::normalize($pending,$why);
+ok($why==='status_pending','and every template left out says why, for the administrator');
+$bare=WhatsappTemplates::normalize(['id'=>'tpl-9','templateName'=>'aviso_pago','languageCode'=>'es-ES','status'=>'approved']);
+ok($bare!==null&&$bare['preview']===false&&$bare['language']==='es_ES'&&$bare['variables']['body']===[],'a template the account sends without its text is still offered, without a preview');
+ok(WhatsappTemplates::payload($bare,[],'c','1','+1')['message']==='Plantilla: aviso_pago','and the history keeps its name instead of an empty message');
 
 $p=WhatsappTemplates::payload($a,[],'contact','920050454518509','+34642795214');
 ok($p['type']==='WhatsApp'&&$p['contactId']==='contact'&&$p['whatsapp']['type']==='template','the send carries the template marker');
@@ -69,6 +74,14 @@ try {
  $before=count($calls);$templates->list($connection);
  ok(count($calls)===$before,'a second look within ten minutes does not ask the account again');
 
+ $diag=WhatsappTemplates::diagnosis($id);
+ ok($diag['received']===4&&$diag['shown']===3&&$diag['dropped']===['status_pending'=>1]&&$diag['origin']==='number','the administrator can see how many came back, how many are shown and why the rest are not');
+ ok(in_array('templates',$diag['fields']['top'],true)&&in_array('components',$diag['fields']['item'],true)&&!str_contains(json_encode($diag),'Bienvenido'),'with the names of the fields, never the content');
+ query('UPDATE ghl_connections SET whatsapp_account_id=? WHERE id=?',['111222333444',$id]);$connection=query('SELECT * FROM ghl_connections WHERE id=?',[$id])->fetch();
+ $free();$templates->list($connection,true);
+ ok(str_contains(end($calls),'originId=111222333444')&&WhatsappTemplates::diagnosis($id)['origin']==='account','with a WhatsApp Business account id, the templates are asked with it');
+ query('UPDATE ghl_connections SET whatsapp_account_id=NULL WHERE id=?',[$id]);$connection=query('SELECT * FROM ghl_connections WHERE id=?',[$id])->fetch();
+
  $sender=new MessageSender($gateway);
  $input=['requestId'=>str_repeat('t',32),'channel'=>'WhatsApp','template'=>['id'=>'tpl-1']];
  $free();ok(reason(fn()=>$sender->send($connection,$conversation,$input))==='needs_phone','without a phone in the contact sheet nothing is sent');
@@ -86,6 +99,6 @@ try {
  $free();$done=$sender->send($connection,$conversation,['requestId'=>str_repeat('w',32),'channel'=>'WhatsApp','template'=>['id'=>'tpl-2','values'=>['body'=>['1'=>'jueves','2'=>'17:00']]]]);
  ok($done['state']==='accepted'&&$sent[1]['body']['whatsapp']['placeholders']['body']===['jueves','17:00']&&$sent[1]['body']['whatsapp']['template']['lang']==='es_ES','the written variables travel in order, in the template\'s language');
 } finally {
- if($tenant){query('DELETE FROM ghl_connections WHERE tenant_id=?',[$tenant]);query('DELETE FROM tenants WHERE id=?',[$tenant]);}
+ if($tenant){if(isset($id))query('DELETE FROM app_state WHERE name=?',['wa-diag:'.$id]);query('DELETE FROM ghl_connections WHERE tenant_id=?',[$tenant]);query('DELETE FROM tenants WHERE id=?',[$tenant]);}
 }
 echo "PASS $checks template checks (simulated account, real MariaDB)\n";

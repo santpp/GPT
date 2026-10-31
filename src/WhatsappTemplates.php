@@ -43,47 +43,77 @@ final class WhatsappTemplates {
     public function list(array $connection,bool $fresh=false):array {
         $number=$connection['whatsapp_number_id']??null;
         if(!is_string($number)||$number==='')throw new TemplateProblem('number_missing',409,'Falta el identificador del número de WhatsApp de esta cuenta. El administrador lo añade en Conexiones.');
-        $key='wa-templates:'.$number;
+        // Las plantillas pertenecen a la cuenta de WhatsApp Business; si el
+        // administrador la indicó, se piden con ella; si no, con el número.
+        $account=$connection['whatsapp_account_id']??null;
+        $origin=is_string($account)&&$account!==''?$account:$number;
+        $key='wa-templates:'.$origin;
         $row=query('SELECT payload,UNIX_TIMESTAMP(fetched_at) AS fetched FROM directory_cache WHERE connection_id=? AND cache_key=?',[$connection['id'],$key])->fetch();
         if($row&&!$fresh&&(int)$row['fetched']>time()-self::TTL)return json_decode($row['payload'],true);
-        $raw=[];
+        $raw=[];$top=[];
         for($page=0;$page<self::PAGES;$page++) {
-            $data=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->whatsappTemplates($connection['location_id'],$number,$page*100),false);
+            $data=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->whatsappTemplates($connection['location_id'],$origin,$page*100),false);
+            if($page===0)$top=array_slice(array_map('strval',array_keys($data)),0,20);
             $items=self::items($data);
             $raw=array_merge($raw,$items);
-            $total=$data['totalCount']??$data['total']??null;
+            $total=$data['totalCount']??$data['total']??$data['count']??null;
             if(count($items)<100||(is_numeric($total)&&count($raw)>=(int)$total))break;
         }
-        $templates=[];
-        foreach($raw as $item){$t=self::normalize($item);if($t)$templates[]=$t;}
+        $templates=[];$dropped=[];
+        foreach($raw as $item){
+            $why=null;$t=self::normalize($item,$why);
+            if($t)$templates[]=$t;else $dropped[$why??'unknown']=($dropped[$why??'unknown']??0)+1;
+        }
         usort($templates,fn($a,$b)=>strcmp($a['name'],$b['name']));
         query('INSERT INTO directory_cache(connection_id,cache_key,payload) VALUES(?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload),fetched_at=CURRENT_TIMESTAMP',[$connection['id'],$key,json_encode($templates,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE)]);
+        // Lo que devolvió la cuenta, sin contenido: cuántas, cuáles se quedaron
+        // fuera y por qué, y los nombres de los campos, para el administrador.
+        $sample=$raw[0]??[];
+        self::remember((int)$connection['id'],['at'=>gmdate('c'),'origin'=>$origin===$number?'number':'account','received'=>count($raw),'shown'=>count($templates),
+            'dropped'=>$dropped,'names'=>array_slice(array_map(fn($x)=>$x['name'].' ('.$x['language'].')',$templates),0,30),
+            'fields'=>['top'=>$top,'item'=>array_slice(array_map('strval',array_keys($sample)),0,30),'template'=>is_array($sample['template']??null)?array_slice(array_map('strval',array_keys($sample['template'])),0,30):[]]]);
         return $templates;
     }
 
+    public static function diagnosis(int $connectionId):?array {
+        try {$v=query('SELECT value FROM app_state WHERE name=?',['wa-diag:'.$connectionId])->fetchColumn();}catch(PDOException $e){return null;}
+        return is_string($v)?json_decode($v,true):null;
+    }
+    private static function remember(int $connectionId,array $value):void {
+        try {query('INSERT INTO app_state(name,value) VALUES(?,?) ON DUPLICATE KEY UPDATE value=VALUES(value)',['wa-diag:'.$connectionId,json_encode($value,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE)]);}catch(PDOException $e){}
+    }
+
+    /** La lista de plantillas, esté donde esté en la respuesta. */
     private static function items(array $data):array {
-        foreach([$data['templates']??null,$data['data']??null,$data['items']??null,array_is_list($data)?$data:null] as $candidate)
-            if(is_array($candidate)&&array_is_list($candidate))return array_values(array_filter($candidate,'is_array'));
+        $candidates=[$data['templates']??null,$data['data']??null,$data['items']??null,$data['whatsappTemplates']??null,array_is_list($data)?$data:null];
+        foreach(['templates','data','items'] as $outer)foreach(['templates','data','items'] as $inner)$candidates[]=is_array($data[$outer]??null)?($data[$outer][$inner]??null):null;
+        foreach($candidates as $candidate)
+            if(is_array($candidate)&&array_is_list($candidate)&&$candidate!==[])return array_values(array_filter($candidate,'is_array'));
         return [];
     }
 
-    /** Una plantilla de la cuenta, en una forma que Ágora entiende, o null. */
-    public static function normalize(array $t):?array {
-        $inner=is_array($t['template']??null)?$t['template']:[];
-        $name=self::str($t['name']??$inner['name']??$t['templateName']??null,512);
-        if($name===null||!preg_match('/^[a-z0-9_]{1,512}$/D',$name))return null;
-        $status=self::str($t['status']??$inner['status']??null,40);
-        if($status!==null&&!in_array(strtolower($status),self::APPROVED,true))return null;
-        $language=$t['language']??$inner['language']??$t['lang']??$inner['lang']??null;
-        if(is_array($language))$language=$language['code']??null;
+    /** Una plantilla de la cuenta, en una forma que Ágora entiende, o null y el porqué. */
+    public static function normalize(array $t,?string &$why=null):?array {
+        $inner=is_array($t['template']??null)?$t['template']:(is_array($t['whatsapp']??null)?$t['whatsapp']:(is_array($t['templateData']??null)?$t['templateData']:[]));
+        $deep=is_array($inner['template']??null)?$inner['template']:[];
+        $pick=function(array $keys)use($t,$inner,$deep){foreach([$t,$inner,$deep] as $src)foreach($keys as $k)if(array_key_exists($k,$src)&&$src[$k]!==null&&$src[$k]!=='')return $src[$k];return null;};
+        $name=self::str($pick(['name','templateName','template_name']),512);
+        if($name===null||!preg_match('/^[A-Za-z0-9_-]{1,512}$/D',$name)){$why='name';return null;}
+        $status=self::str($pick(['status','templateStatus','approvalStatus']),40);
+        if($status!==null&&!in_array(strtolower($status),self::APPROVED,true)){$why='status_'.strtolower(preg_replace('/[^A-Za-z_]/','',$status));return null;}
+        $language=$pick(['language','lang','languageCode','locale']);
+        if(is_array($language))$language=$language['code']??$language['language']??null;
         $language=self::str($language,15);
-        if($language===null||!preg_match('/^[a-z]{2,3}(_[A-Za-z]{2,4})?$/D',$language))return null;
-        $category=self::str($t['category']??$inner['category']??null,40);
-        $components=$t['components']??$inner['components']??null;
+        if($language===null||!preg_match('/^[A-Za-z]{2,3}([_-][A-Za-z]{2,4})?$/D',$language)){$why='language';return null;}
+        $language=str_replace('-','_',$language);
+        $category=self::str($pick(['category','templateCategory']),40);
+        $components=$pick(['components']);
         $components=is_array($components)&&array_is_list($components)?$components:[];
         $part=function(string $type)use($components):?array{foreach($components as $c)if(is_array($c)&&strtoupper((string)($c['type']??''))===$type)return $c;return null;};
-        $body=self::str($part('BODY')['text']??$t['body']??$inner['body']??$t['message']??$t['content']??$inner['text']??null,1024);
-        if($body===null)return null;
+        $body=self::str($part('BODY')['text']??$pick(['body','message','content','text','bodyText']),1024);
+        // Sin texto no hay vista previa, pero la plantilla existe y se ofrece.
+        $preview=$body!==null;
+        $body??='';
         $header=$part('HEADER');
         $headerFormat=strtoupper((string)($header['format']??($header?'TEXT':'')));
         $headerText=$headerFormat==='TEXT'?self::str($header['text']??null,60):null;
@@ -94,15 +124,16 @@ final class WhatsappTemplates {
             if(is_string($button['url']??null)&&str_contains($button['url'],'{{'))$dynamicButton=true;
         }
         // Las variables ya asociadas a un campo de la ficha en la cuenta.
-        $mapped=$t['placeholders']??$inner['placeholders']??$t['variables']??null;
+        $mapped=$pick(['placeholders','variables','params']);
         $mapped=is_array($mapped)?$mapped:[];
         $bodyVars=self::variables($body,is_array($mapped['body']??null)?$mapped['body']:(array_is_list($mapped)?$mapped:[]));
         $headerVars=$headerText!==null?self::variables($headerText,is_array($mapped['header']??null)?$mapped['header']:[]):[];
         // Lo que todavía no se sabe mandar bien se enseña, pero no se ofrece enviar.
         $unsupported=in_array($headerFormat,['IMAGE','VIDEO','DOCUMENT','LOCATION'],true)?'media_header':($dynamicButton?'dynamic_button':null);
         $id=self::str($t['id']??$t['_id']??$inner['id']??null,80)??$name.':'.$language;
+        $why=null;
         return ['id'=>$id,'name'=>$name,'language'=>$language,'category'=>$category,'header'=>$headerText,'body'=>$body,'footer'=>$footer,'buttons'=>$buttons,
-            'variables'=>['header'=>$headerVars,'body'=>$bodyVars],'unsupported'=>$unsupported];
+            'variables'=>['header'=>$headerVars,'body'=>$bodyVars],'unsupported'=>$unsupported,'preview'=>$preview];
     }
 
     /**
@@ -146,6 +177,7 @@ final class WhatsappTemplates {
         $body=$fill('body');$header=$fill('header');
         $render=fn(string $text,array $list)=>preg_replace_callback('/\{\{\s*([A-Za-z0-9_.]{1,60})\s*\}\}/',fn($m)=>ctype_digit($m[1])&&isset($list[$m[1]])?$list[$m[1]]:$m[0],$text);
         $message=($template['header']!==null?$render($template['header'],$header)."\n\n":'').$render($template['body'],$body).($template['footer']?"\n\n".$template['footer']:'');
+        if(trim($message)==='')$message='Plantilla: '.$template['name'];
         return [
             'type'=>'WhatsApp','contactId'=>$contact,'message'=>$message,
             'whatsapp'=>[

@@ -466,3 +466,11 @@ El tope local de `GhlGateway` era de 5.000 peticiones al día por conexión, con
 ## Escribir desde la ficha 0.24.1
 
 `GET /conversations/search` con `locationId` y `contactId` (parámetro publicado) busca la conversación del contacto; sólo se acepta una del mismo contacto y de la misma subcuenta. Si no hay ninguna, `POST /conversations/` (versión `2021-04-15`, alcance `conversations.write`, cuerpo `CreateConversationDto` con `locationId` y `contactId`) la crea; se exige `conversation.id` en la respuesta (`CreateConversationSuccessResponse`). La conversación se registra en `conversation_index` sin huella de contenido, para que abrirla no genere un aviso.
+
+## Plantillas que no aparecen 0.24.2
+
+En la cuenta real el chat no mostró ninguna plantilla aunque las hay. Como la forma de la respuesta de WhatsApp no está publicada, no se sabe si la cuenta devolvió una lista vacía para ese `originId` o si devolvió plantillas que el lector descartó. Desde 0.24.2:
+- cada lectura deja en `app_state` (`wa-diag:{conexión}`) cuántas llegaron, cuántas se muestran, el motivo de cada descarte y los nombres de los campos de la respuesta, sin contenido;
+- el administrador lo pide en el momento con `POST /api/admin/integrations/{id}/whatsapp/check`;
+- un WABA ID opcional (`whatsapp_account_id`, migración 023) sustituye al número como `originId` al pedir la lista; el envío sigue usando `fromNumberId`;
+- el lector acepta más formas (listas anidadas, `templateName`, `languageCode`, `locale`, idioma con guion) y plantillas sin texto, que se ofrecen sin vista previa.

@@ -253,6 +253,7 @@ export async function renderLiveInbox(container){
     const field=v&&v.fixed?v.fixed.replace(/^\{\{\s*|\s*\}\}$/g,''):token;
     return `<mark class="field">${esc(FIELD_NAMES[field]||field)}</mark>`;
    });
+   if(t.preview===false)return `<p class="muted">La cuenta no envía el texto de esta plantilla, así que no hay vista previa. Se enviará «${esc(t.name.replace(/_/g,' '))}» tal como está aprobada.</p>`;
    return `${t.header?`<strong>${fill(t.header,'header')}</strong>`:''}<p>${fill(t.body,'body').replace(/\n/g,'<br>')}</p>${t.footer?`<small>${esc(t.footer)}</small>`:''}${t.buttons.length?`<div class="tpl-buttons">${t.buttons.map(b=>`<span>${esc(b)}</span>`).join('')}</div>`:''}`;
   }
   function templateMarkup(){
@@ -261,7 +262,7 @@ export async function renderLiveInbox(container){
    if(templates.items===null)return `<div class="tpl-panel"><p class="muted">Cargando plantillas…</p>${close}</div>`;
    if(templates.error)return `<div class="tpl-panel"><p class="muted">${esc(templates.error)}</p>${close}</div>`;
    if(!templates.configured)return `<div class="tpl-panel"><p class="muted">Esta cuenta todavía no tiene el número de WhatsApp para plantillas. El administrador lo añade en Conexiones.</p>${close}</div>`;
-   if(!templates.items.length)return `<div class="tpl-panel"><p class="muted">Esta cuenta no tiene plantillas aprobadas de WhatsApp.</p>${close}</div>`;
+   if(!templates.items.length)return `<div class="tpl-panel"><p class="muted">La cuenta no devolvió plantillas aprobadas para este número. El administrador puede revisarlo en Conexiones → Plantillas de WhatsApp → Comprobar plantillas.</p>${close}</div>`;
    const t=chosenTemplate();
    const free=t?['header','body'].flatMap(part=>(t.variables[part]||[]).filter(v=>v.fixed===null).map(v=>({part,...v}))):[];
    return `<div class="tpl-panel"><label class="tpl-pick">Plantilla aprobada<select id="tpl-select"><option value="">Elige una plantilla</option>${templates.items.map(x=>`<option value="${esc(x.id)}"${x.id===templates.chosen?' selected':''}>${esc(x.name.replace(/_/g,' '))}${x.category?' · '+esc(CATEGORY[x.category]||x.category):''}</option>`).join('')}</select></label>

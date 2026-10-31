@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.24.1.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.24.2.
 
 ## Completado y desplegable
 
@@ -20,7 +20,7 @@ Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.24.1.
 
 - Validar 0.5.0 con conversaciones reales y confirmar que desaparece el fallo 502.
 - Validar un envío real por cada canal habilitado y documentar sus restricciones.
-- Plantillas de WhatsApp (0.24.0): número de WhatsApp por conexión, aviso de 24 horas, selector de plantillas aprobadas con vista previa, variables y envío con la forma que usa la cuenta. Pendiente: confirmar con un envío real, plantillas con imagen y botones con enlace variable.
+- Plantillas de WhatsApp (0.24.0): número de WhatsApp por conexión, aviso de 24 horas, selector de plantillas aprobadas con vista previa, variables y envío con la forma que usa la cuenta. En 0.24.2: comprobación desde Conexiones (cuántas devuelve la cuenta y por qué se descarta cada una), WABA ID opcional para pedirlas y lectura más tolerante. Pendiente: que aparezcan en la cuenta real (la primera prueba no mostró ninguna), confirmar un envío real, plantillas con imagen y botones con enlace variable.
 - Añadir confirmación de lectura y estados de entrega donde la API lo permita.
 - Adjuntos con miniatura, visor, audio y vídeo en el chat; motivo de los envíos fallidos e iconos propios en la cabecera (0.22.0). Pendiente: notas internas.
 - Avisos con el texto real del último mensaje entrante, o «Envió una foto / nota de voz / vídeo / documento» (0.22.1).

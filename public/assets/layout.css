@@ -542,3 +542,4 @@ body.agora-focus .live-composer{padding-bottom:calc(10px + env(safe-area-inset-b
 .secondary{background:var(--paper);border:1px solid var(--line);border-radius:5px;color:var(--ink);padding:10px 15px;font-size:10px}
 @media(max-width:600px){.record-header{flex-wrap:wrap}.record-actions{width:100%;justify-content:stretch}.record-actions button{flex:1;min-height:44px;font-size:13px}}
 @media(min-width:601px){.live-channel-filters select{max-width:none;font-size:11px;padding-right:22px}}
+.wa-diagnosis{border-top:1px solid var(--line);margin-top:10px;padding-top:10px;font-size:12px;line-height:1.6}.wa-diagnosis .muted{color:var(--muted);font-size:11px;overflow-wrap:anywhere}.wa-diagnosis summary{font-size:11px;color:var(--muted);cursor:pointer;margin-top:6px}
