@@ -11,6 +11,7 @@ final class FakeBoardApi {
     public int $conversations=0;
     public int $unread=0;
     public int $contacts=0;
+    public array $contactAnswer=[];
     public array $opportunities=[];
     public array $pipelines=[];
     public function __construct(public readonly string $location) {}
@@ -19,7 +20,7 @@ final class FakeBoardApi {
             $this->calls[]=$path;
             if(str_starts_with($path,'/conversations/search'))
                 return ['status'=>200,'body'=>json_encode(['conversations'=>[],'total'=>str_contains($path,'status=unread')?$this->unread:$this->conversations])];
-            if(str_starts_with($path,'/contacts/?'))return ['status'=>200,'body'=>json_encode(['contacts'=>[],'count'=>$this->contacts])];
+            if(str_starts_with($path,'/contacts/search'))return ['status'=>200,'body'=>json_encode($this->contactAnswer)];
             if(str_starts_with($path,'/opportunities/pipelines'))return ['status'=>200,'body'=>json_encode(['pipelines'=>$this->pipelines])];
             if(str_starts_with($path,'/opportunities/search'))return ['status'=>200,'body'=>json_encode(['opportunities'=>$this->opportunities])];
             throw new GhlApiException(404);
@@ -38,7 +39,7 @@ try {
  $connection=query('SELECT * FROM ghl_connections WHERE id=?',[$connectionId])->fetch();
 
  $api=new FakeBoardApi($location);
- $api->conversations=47;$api->unread=5;$api->contacts=812;
+ $api->conversations=47;$api->unread=5;$api->contacts=812;$api->contactAnswer=['total'=>812];
  $api->pipelines=[['id'=>'pipe-1','name'=>'Pipeline comercial','locationId'=>$location,'stages'=>[['id'=>'s1','name'=>'Nuevo lead'],['id'=>'s2','name'=>'Propuesta enviada']]]];
  $api->opportunities=[
   ['id'=>'o1','monetaryValue'=>2400,'pipelineId'=>'pipe-1','pipelineStageId'=>'s2','assignedTo'=>'seller-1','locationId'=>$location],
@@ -53,11 +54,20 @@ try {
  query('DELETE FROM pipeline_cache WHERE connection_id=?',[$connectionId]);
  $board=new Dashboard($api->gateway(),new PipelineDirectory($api->gateway()));
  $view=$board->get($connection,$admin);
- boardCheck($api->paths()===['/conversations/search','/conversations/search','/contacts/','/opportunities/search','/opportunities/pipelines'],'the board reads conversations, contacts, opportunities and the pipeline names');
+ boardCheck($api->paths()===['/conversations/search','/conversations/search','/contacts/search','/opportunities/search','/opportunities/pipelines'],'the board reads conversations, contacts, opportunities and the pipeline names');
  boardCheck((int)query('SELECT requests_today FROM ghl_sync_state WHERE connection_id=?',[$connectionId])->fetchColumn()===1,'the whole board costs a single budget slot');
  boardCheck(str_contains($api->calls[1],'status=unread')&&!str_contains($api->calls[0],'status='),'the pending figure is the account\'s unread total, not a window');
  boardCheck($view['conversations']===['total'=>47,'unread'=>5],'the account totals are reported as the account gave them');
- boardCheck($view['contacts']===812,'the contact figure comes from the account');
+ boardCheck($view['contacts']===812,'the contact figure comes from the total the account reports');
+
+ // A count that merely echoes the page size is not a total, and must not pass for one.
+ $api->reset();boardFree($connectionId);
+ $api->contactAnswer=['contacts'=>[['id'=>'c1']],'count'=>1];
+ boardCheck($board->get($connection,$admin)['contacts']===null,'a page-sized count is refused instead of being shown as the number of contacts');
+ $api->reset();boardFree($connectionId);
+ $api->contactAnswer=['meta'=>['total'=>1464]];
+ boardCheck($board->get($connection,$admin)['contacts']===1464,'a total reported under meta is accepted too');
+ $api->contactAnswer=['total'=>812];
  boardCheck($view['opportunities']['count']===3&&$view['opportunities']['value']===3500.5,'opportunities of another account stay out of the totals');
  boardCheck(array_column($view['opportunities']['stages'],'name')===['Pipeline comercial · Propuesta enviada','Pipeline comercial · Nuevo lead','Sin etapa'],'stages carry their real names, ordered by what is at stake');
  boardCheck($view['opportunities']['stages'][0]['value']===2400.0&&$view['opportunities']['stages'][2]['count']===1,'each stage adds its own value, and an unknown stage is shown apart');

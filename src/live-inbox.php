@@ -141,6 +141,22 @@ if($path==='/api/workspace/pipelines'&&$method==='GET'){
     catch(GhlApiException $e){respond(['error'=>'No se pudieron consultar los embudos. Revisa el permiso de oportunidades.','code'=>'pipelines_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'Los embudos recibidos no tienen el formato esperado.','code'=>'pipelines_invalid_response'],424);}
 }
+// La rentabilidad del mes y el desempeño del equipo. Lo cerrado sale de la
+// cuenta; lo invertido, los costos y las metas los escribe el propietario.
+if($path==='/api/workspace/board-month'&&in_array($method,['GET','POST'],true)){
+    if(!($membership['capabilities']['viewOpportunities']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar oportunidades.'],403);
+    require_once __DIR__.'/Board.php';
+    $period=Board::period($_GET['period']??null);
+    if($method==='POST'){
+        // Sólo quien administra las conexiones fija las cifras del negocio.
+        if(($u['identity_type']??'native')!=='native'||($u['role']??null)!=='administrator')respond(['error'=>'Sólo el administrador puede fijar las cifras del mes.'],403);
+        respond(['settings'=>Board::save($id,$period,body()),'period'=>$period]);
+    }
+    try{respond((new Board())->month($connection,$period,$membership)+['canEdit'=>($u['identity_type']??'native')==='native'&&($u['role']??null)==='administrator']);}
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'El resumen del mes está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>'No se pudo leer lo cerrado del mes. Revisa el permiso de oportunidades.','code'=>'board_upstream_'.$e->status],424);}
+    catch(Throwable $e){respond(['error'=>'El resumen del mes recibido no tiene el formato esperado.','code'=>'board_invalid_response'],424);}
+}
 if($path==='/api/workspace/dashboard'&&$method==='GET'){
     require_once __DIR__.'/Dashboard.php';
     try{respond((new Dashboard())->get($connection,$membership));}

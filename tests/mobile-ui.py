@@ -35,6 +35,16 @@ with sync_playwright() as p:
             .filter(b=>b.h<%d||b.w<%d)"""%(minimum,minimum),selector)
         assert not small, f'{where}: targets below {minimum}px -> {small}'
 
+    # El modo foco recordado no puede dejar la pantalla sin lista ni menú: sin
+    # conversación abierta no hay forma de salir de él.
+    page.evaluate("try{localStorage.setItem('agora-focus','1')}catch{}")
+    page.reload()
+    page.wait_for_selector('[data-live-id]')
+    assert page.locator('.sidebar').is_visible(), 'el menú tiene que seguir ahí al volver a entrar'
+    assert not page.evaluate("document.body.classList.contains('agora-focus')"), 'el modo foco no puede estar puesto sin conversación abierta'
+    print('PASS focus mode remembered cannot leave the phone without list or menu')
+    page.evaluate("try{localStorage.setItem('agora-focus','0')}catch{}")
+    page.reload()
     page.wait_for_selector('[data-live-id]')
     no_overflow('inbox list');targets('inbox list','.sidebar .nav');targets('inbox list','.tabs button')
     print('PASS inbox list fits 412px with finger-sized navigation and tabs')

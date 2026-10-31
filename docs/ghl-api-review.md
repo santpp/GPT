@@ -333,3 +333,20 @@ Una suscripción que el servicio declara desconocida (400, 401, 403, 404 o 410) 
 **Android.** Funciona instalada o como pestaña. Las capas de ahorro de batería de algunos fabricantes pueden retrasar la entrega, igual que a cualquier aplicación.
 
 **Lo que no se ha podido comprobar aquí.** La criptografía y la firma están verificadas de extremo a extremo contra un receptor real implementado en la propia prueba, pero el envío no ha salido a un servicio real ni ha llegado a un teléfono: este entorno no tiene salida a esos servicios. Queda la comprobación con dos teléfonos, que es corta.
+
+## Rentabilidad del mes y total de contactos 0.20.0
+
+Misma fuente oficial y mismo commit `0af86a4cbd48c66a4071c7e509d1079f9f10ed17`.
+
+| Uso | Método y endpoint | Scope publicado | Version |
+| --- | --- | --- | --- |
+| Lo cerrado del mes | `GET /opportunities/search` con `status=won`, `date` y `endDate` | `opportunities.readonly` | 2021-07-28 |
+| Total de contactos | `POST /contacts/search` | `contacts.readonly` | 2021-07-28 |
+
+**Lo cerrado del mes.** La búsqueda de oportunidades publica `status` (`open`, `won`, `lost`, `abandoned`), `date` y `endDate` en formato `mm-dd-yyyy`, `page`, `limit` (máximo 100) y, en `meta.total`, **un total real**. Ágora pide el mes completo página a página hasta un tope de diez, suma el valor de cada oportunidad y agrupa por responsable. Si se alcanza el tope, el tablero lo dice en lugar de presentar la suma como completa.
+
+**El total de contactos estaba mal, y ya está corregido.** `GET /contacts/` publica un campo `count` cuyo significado no documenta; en la cuenta real devuelve **el tamaño de la página**, no el total, de modo que pidiendo una sola fila la cifra salía 1. Ahora se pregunta a `POST /contacts/search`, cuya respuesta tampoco está documentada pero sí trae un total; se acepta el primer valor numérico utilizable de `total`, `meta.total` o `count`, y se descarta cualquier valor que coincida con el tamaño de página pedido. Si no llega ninguno aprovechable **no se muestra cifra**, en lugar de enseñar un número falso.
+
+**Lo que la cuenta no sabe.** Publicidad, costos fijos, porcentaje de comisión y metas no existen en ninguna API: los escribe el propietario por subcuenta y por mes, y se guardan en `board_settings`. Sin ellos el tablero no calcula ganancia ni avance: dice qué falta. Las comisiones se derivan del porcentaje guardado, nunca de un campo remoto.
+
+**Modo foco.** Corregido un fallo propio, sin relación con la cuenta: la preferencia de modo foco se recuperaba al entrar aunque no hubiera conversación abierta, y en un teléfono eso dejaba la pantalla sin lista y sin menú, sin forma de salir. Ahora sólo se aplica al abrir una conversación.

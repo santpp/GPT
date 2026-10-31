@@ -318,3 +318,80 @@ body.agora-focus .live-composer{padding-bottom:calc(10px + env(safe-area-inset-b
 .push-toggle[data-state="on"] .push-mark{background:#4b9b6e}
 .push-toggle[data-state="blocked"] .push-mark,.push-toggle[data-state="needs-install"] .push-mark{background:var(--muted)}
 .push-toggle:hover{border-color:#d9d8de}
+
+/* Tablero: bloques con aire, cifras grandes y un semáforo legible de un vistazo. */
+.other-view[data-view="dashboard"]{padding:0;background:var(--bg);border:0}
+.board-block{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:22px;margin-bottom:16px}
+.board-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.board-head .section-label{margin:0 0 10px}
+.board-lead{font-size:11px;color:var(--muted);line-height:1.6;max-width:320px}
+.board-lead strong{display:block;font:34px var(--serif);color:var(--ink);letter-spacing:-1px;margin:6px 0 4px}
+.board-lead small{display:block;font-size:10px;color:var(--muted)}
+.board-actions{display:flex;align-items:center;gap:10px}
+.board-month-pick{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--muted)}
+.board-month-pick input{border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-size:11px;background:var(--paper);color:var(--ink)}
+#board-settings{border:1px solid var(--line);border-radius:6px;padding:8px 13px;font-size:11px;color:var(--green);background:var(--paper)}
+.board-warning{font-size:10px;line-height:1.7;color:#8a6a1f;background:#fff6e2;border:1px solid #f2e3bd;border-radius:7px;padding:10px 12px;margin:14px 0}
+.board-split{display:grid;grid-template-columns:minmax(260px,1fr) minmax(260px,1.2fr);gap:22px;align-items:end;margin:18px 0 6px}
+/* De las ventas a la ganancia, en barras a escala. */
+.waterfall{display:flex;align-items:flex-end;gap:14px;height:210px;padding-top:10px}
+.waterfall-step{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:7px;min-width:0}
+.waterfall-step i{display:block;width:100%;max-width:74px;border-radius:4px;background:#f0dce4}
+.waterfall-step.up i{background:#f3d9e3}
+.waterfall-step.down i{background:#cfd3dd}
+.waterfall-step.total i{background:var(--green)}
+.waterfall-step.missing i{background:repeating-linear-gradient(90deg,#e5e4e9 0 5px,transparent 5px 10px)}
+.waterfall-value{font-size:10px;font-weight:600;color:var(--ink);white-space:nowrap}
+.waterfall-step.down .waterfall-value,.waterfall-step.missing .waterfall-value{color:var(--muted);font-weight:500}
+.waterfall-label{font-size:9px;color:var(--muted);text-align:center;line-height:1.4}
+.board-tile{border:1px solid var(--line);border-radius:9px;padding:15px;background:#fbfbfd}
+.board-tile strong{font:24px var(--serif)}
+.board-stage{border:1px solid var(--line);border-radius:9px;padding:15px;background:#fbfbfd}
+.board-stage h3{font-size:12px;margin:0 0 6px;overflow-wrap:anywhere}
+.board-stage p{font-size:10px;color:var(--muted)}
+.board-stage strong{display:block;font:18px var(--serif);margin-top:8px}
+/* Meta del equipo. */
+.board-goal{display:grid;gap:14px;border:1px solid var(--line);border-radius:9px;padding:18px;background:#fbfbfd;margin:12px 0 18px}
+.board-goal-main span{font-size:10px;color:var(--muted)}
+.board-goal-main strong{display:block;font:32px var(--serif);letter-spacing:-1px;margin:4px 0}
+.board-goal-main small{font-size:10px;color:var(--muted)}
+.board-goal-counts{display:flex;gap:8px;flex-wrap:wrap}
+.board-state{font-size:9px;padding:5px 9px;border-radius:20px;background:#f1f1f5;color:var(--muted);white-space:nowrap}
+.board-state.ok{background:#e8f3ec;color:#2f6b49}
+.board-state.near{background:#fff3da;color:#8a6a1f}
+.board-state.behind{background:#fbe9ee;color:var(--green)}
+.board-state.none{background:#f1f1f5;color:var(--muted)}
+.board-bar{display:block;height:6px;border-radius:4px;background:#eceaf0;overflow:hidden;min-width:70px}
+.board-bar i{display:block;height:100%;background:var(--muted)}
+.board-bar.ok i{background:#4b9b6e}
+.board-bar.near i{background:var(--accent)}
+.board-bar.behind i{background:var(--green)}
+/* Tabla del equipo. */
+.board-table-wrap{overflow-x:auto}
+.board-table{width:100%;border-collapse:collapse;font-size:11px}
+.board-table th,.board-table td{text-align:right;padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.board-table thead th{font-size:9px;letter-spacing:.6px;color:var(--muted);font-weight:500;text-transform:uppercase}
+.board-table th[scope="row"],.board-table thead th:first-child{text-align:left;font-weight:600;overflow-wrap:anywhere;white-space:normal}
+.board-table td.up{color:#2f6b49}
+.board-table td.down{color:var(--green)}
+.board-table td b{font-size:10px;margin-left:8px;font-weight:600}
+.board-table td:has(.board-bar){display:flex;align-items:center;gap:0;min-width:130px}
+.board-note{font-size:9px;color:var(--muted);line-height:1.7;margin-top:12px}
+#dashboard-body .section-label{padding:0;margin:22px 0 12px}
+#dashboard-body .dashboard-tiles,#dashboard-body .dashboard-stages{padding:0}
+#dashboard-body .board-empty,#dashboard-body .dashboard-links{padding:0}
+.dashboard-links{margin-top:4px}
+@media(max-width:900px){
+ .board-split{grid-template-columns:1fr;gap:18px;align-items:stretch}
+ .waterfall{height:170px}
+ .board-head{flex-direction:column;align-items:stretch}
+ .board-actions{justify-content:space-between}
+}
+@media(max-width:600px){
+ .board-block{padding:16px 14px}
+ .board-lead strong{font-size:28px}
+ .board-goal-main strong{font-size:26px}
+ .board-month-pick input,#board-settings{min-height:44px}
+ .waterfall{gap:8px}
+ .waterfall-value{font-size:9px}
+}

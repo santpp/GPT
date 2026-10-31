@@ -45,6 +45,17 @@ final class GhlClient {
     public function createOpportunity(array $payload):array {return $this->get('/opportunities/','2021-07-28',$payload);}
     public function updateOpportunity(string $id,array $payload):array {return $this->put('/opportunities/'.rawurlencode($id),'2021-07-28',$payload);}
     public function updateOpportunityStatus(string $id,array $payload):array {return $this->put('/opportunities/'.rawurlencode($id).'/status','2021-07-28',$payload);}
+    /** Closed business in a period: the published search carries a real total. */
+    public function wonOpportunities(string $location,string $from,string $to,int $page=1,int $limit=100):array {
+        return $this->get('/opportunities/search?'.http_build_query([
+            'location_id'=>$location,'status'=>'won','date'=>$from,'endDate'=>$to,
+            'page'=>$page,'limit'=>$limit,'order'=>'added_desc',
+        ]),'2021-07-28');
+    }
+    /** One page of contacts, used only to read the total the search reports. */
+    public function countContacts(string $location):array {
+        return $this->get('/contacts/search','2021-07-28',['locationId'=>$location,'pageLimit'=>1,'page'=>1]);
+    }
     public function contactTasks(string $contact):array {return $this->get('/contacts/'.rawurlencode($contact).'/tasks','2021-07-28');}
     public function contactNotes(string $contact):array {return $this->get('/contacts/'.rawurlencode($contact).'/notes','2021-07-28');}
     public function contactAppointments(string $contact):array {return $this->get('/contacts/'.rawurlencode($contact).'/appointments','2021-07-28');}

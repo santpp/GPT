@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 30 de octubre de 2026. Versión publicada: 0.19.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.20.0.
 
 ## Completado y desplegable
 
@@ -60,6 +60,6 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Fuera de alcance por decisión de producto: calendario, agendar cita y workflows. Los workflows se gestionan directamente en la cuenta; las citas ya creadas se siguen viendo en la ficha del contacto.
 - Pendiente como pantalla propia: tareas, que hoy sólo aparecen dentro de la conversación.
 - Resúmenes y sugerencias con IA, intención, clasificación y scoring.
-- Tablero: primera versión en 0.16.0. Pendientes: evolución temporal, objetivos y reportes exportables.
+- Tablero: cifras de la cuenta en 0.16.0; rentabilidad del mes y desempeño del equipo con metas y semáforo en 0.20.0. Pendientes: comparación entre meses y reportes exportables.
 - Reportes, Ágora Digital ERP, cobranza, facturación y pagos.
 - Varias subcuentas por empresa y posterior arquitectura SaaS multiempresa.

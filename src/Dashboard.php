@@ -33,7 +33,7 @@ final class Dashboard {
                 $scope=$assignee!==null?['assignedTo'=>$assignee]:[];
                 $all=self::total($client->conversations($connection['location_id'],1,$scope));
                 $pending=self::total($client->conversations($connection['location_id'],1,$scope+['status'=>'unread']));
-                $people=$canSeeContacts?self::count($client->locationContacts($connection['location_id'],null,1)):null;
+                $people=$canSeeContacts?self::people($client,$connection['location_id']):null;
                 $deals=$canSeeOpportunities?$client->locationOpportunities($connection['location_id'],null,self::SAMPLE):null;
                 if($names===null&&$canSeeOpportunities) {
                     try {$names=$directory->fromClient($client,$connection);}
@@ -80,11 +80,21 @@ final class Dashboard {
         $total=$response['total']??null;
         return is_numeric($total)&&$total>=0?(int)$total:0;
     }
-    private static function count(array $response):int {
-        $count=$response['count']??null;
-        if(is_numeric($count)&&$count>=0)return (int)$count;
-        $items=$response['contacts']??null;
-        return is_array($items)?count($items):0;
+    /**
+     * Cuántos contactos tiene la cuenta.
+     *
+     * La lista publica un campo `count` cuyo significado no documenta, y en una
+     * cuenta real devuelve el tamaño de la página, no el total: por eso la
+     * cifra salía mal. La búsqueda sí publica un total, así que se pregunta
+     * ahí, y sólo se acepta un número que no pueda ser el tamaño de la página.
+     * Si no llega ninguno utilizable, no se muestra cifra en vez de una falsa.
+     */
+    private static function people(GhlClient $client,string $location):?int {
+        try {$response=$client->countContacts($location);}
+        catch(Throwable $e){return null;}
+        foreach([$response['total']??null,$response['meta']['total']??null,$response['count']??null] as $candidate)
+            if(is_numeric($candidate)&&$candidate>=0&&(int)$candidate!==1)return (int)$candidate;
+        return null;
     }
     private static function empty(bool $restricted):array {
         return ['restricted'=>$restricted,'conversations'=>['total'=>0,'unread'=>0],'contacts'=>null,'opportunities'=>null,'readAt'=>gmdate('c')];

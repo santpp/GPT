@@ -33,7 +33,12 @@ export async function renderLiveInbox(container){
   if(!items.length){feedback.textContent='Añade una cuenta desde Conexiones para empezar.';return}
   const PULSE=5,CHAT_FALLBACK=60;
   let disposed=false,timer=null,chatTimer=null,pollTimer=null,interval=120,pause=0,syncBusy=false,messageBusy=0,chatNeedsRefresh=false;
-  try{if(localStorage.getItem('agora-focus')==='1')document.body.classList.add('agora-focus')}catch{}
+  // El modo foco esconde el menú y la lista, así que sólo puede estar puesto
+  // mientras hay una conversación abierta: recordado a secas dejaba la pantalla
+  // en blanco al volver a entrar, sin menú y sin forma de salir.
+  let focusWanted=false;
+  try{focusWanted=localStorage.getItem('agora-focus')==='1'}catch{}
+  document.body.classList.remove('agora-focus');
   const canRefresh=()=>active()&&!disposed&&!document.hidden&&navigator.onLine;
   const autoStatus=$('#live-auto-status');
   // Nothing is said while everything works: a line that is always there stops
@@ -485,7 +490,9 @@ export async function renderLiveInbox(container){
    const focus=$('#live-focus');
    // Focus hides the menu and the list so the conversation owns the screen.
    const paintFocus=()=>{const on=document.body.classList.contains('agora-focus');focus.textContent=on?'⤡':'⤢';focus.setAttribute('aria-label',on?'Reducir la conversación':'Ampliar la conversación');focus.title=focus.getAttribute('aria-label')};
-   focus.onclick=()=>{document.body.classList.toggle('agora-focus');try{localStorage.setItem('agora-focus',document.body.classList.contains('agora-focus')?'1':'0')}catch{}paintFocus()};
+   // Se recupera la preferencia al abrir una conversación, nunca antes.
+   document.body.classList.toggle('agora-focus',focusWanted);
+   focus.onclick=()=>{focusWanted=!document.body.classList.contains('agora-focus');document.body.classList.toggle('agora-focus',focusWanted);try{localStorage.setItem('agora-focus',focusWanted?'1':'0')}catch{}paintFocus()};
    paintFocus();
    bindComposer(c);const profileVersion=chatGeneration;page().finally(()=>{if(active()&&profileVersion===chatGeneration)loadContact(c,profileVersion)});
    say();scheduleChat();schedulePulse(2);
