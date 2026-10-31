@@ -643,8 +643,7 @@ html[data-theme="dark"] .won-button{background:#173325;color:#7fd6a3;border-colo
 @keyframes fade-up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .fade-up{animation:fade-up .3s ease both}
 .conversation-item,.record-row,.bubble{animation:fade-up .25s ease both}
-.updated-at{display:flex;align-items:center;gap:8px;padding:0 22px 14px;color:var(--muted);font-size:12px}
-.updated-at i{width:7px;height:7px;border-radius:50%;background:#3aa76d;box-shadow:0 0 0 3px #3aa76d26;flex:none}
+.updated-at{display:flex;align-items:center;padding:0 22px 14px;color:var(--muted);font-size:12px}
 @media(max-width:600px){.updated-at{padding:0 14px 12px}}
 button,.primary,.link-button{transition:transform .12s ease,background-color .15s ease,box-shadow .15s ease,opacity .15s ease}
 button:active:not(:disabled){transform:scale(.97)}
