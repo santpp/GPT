@@ -21,3 +21,13 @@ policyCheck($opportunityWriter['viewOpportunities']&&$opportunityWriter['editOpp
 $opportunityOff=PermissionPolicy::capabilities(['identity_type'=>'external','permissions'=>['opportunitiesEnabled'=>false],'scopes'=>['opportunities.write']]);
 policyCheck(!$opportunityOff['viewOpportunities']&&!$opportunityOff['editOpportunities'],'a disabled module overrides the opportunity write scope');
 policyCheck($native['editOpportunities'],'the owner can change opportunities');
+
+// Administrador de la subcuenta: todo, salvo lo que se le desactive expresamente.
+$subAdmin=PermissionPolicy::capabilities(['identity_type'=>'external','role_name'=>'admin','permissions'=>[],'scopes'=>['campaigns.readonly']]);
+policyCheck($subAdmin['viewConversations']&&$subAdmin['sendMessages']&&$subAdmin['viewContacts']&&$subAdmin['editContacts']&&$subAdmin['viewOpportunities']&&$subAdmin['editOpportunities']&&!$subAdmin['configureConnections']&&!$subAdmin['assignedDataOnly'],'a sub-account administrator sees everything even when the account lists no permissions, and never configures connections');
+$agency=PermissionPolicy::capabilities(['identity_type'=>'external','role_type'=>'agency','permissions'=>'{}','scopes'=>'[]']);
+policyCheck($agency['viewConversations']&&$agency['sendMessages'],'an agency user is treated as an administrator too');
+$adminOff=PermissionPolicy::capabilities(['identity_type'=>'external','role_name'=>'admin','permissions'=>['conversationsEnabled'=>false]]);
+policyCheck(!$adminOff['viewConversations']&&!$adminOff['sendMessages'],'a module switched off for an administrator stays off');
+$plain=PermissionPolicy::capabilities(['identity_type'=>'external','role_name'=>'user','permissions'=>[],'scopes'=>[]]);
+policyCheck(!$plain['viewConversations'],'an ordinary user with no listed permissions still sees nothing');

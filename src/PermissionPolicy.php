@@ -9,8 +9,11 @@ final class PermissionPolicy {
         }
         $permissions=self::object($actor['permissions']??[]);
         $scopes=self::list($actor['scopes']??[]);
-        $enabled=fn(string $name):bool=>($permissions[$name]??false)===true;
-        $scope=fn(array $required):bool=>$scopes===[]||array_intersect($required,$scopes)!==[];
+        // Quien administra la subcuenta tiene todo salvo lo que se le desactive expresamente: la cuenta
+        // no siempre lista los permisos de un administrador, y su lista de alcances no lo limita.
+        $admin=($actor['role_name']??null)==='admin'||($actor['role_type']??null)==='agency';
+        $enabled=fn(string $name):bool=>$admin?($permissions[$name]??true)!==false:($permissions[$name]??false)===true;
+        $scope=fn(array $required):bool=>$admin||$scopes===[]||array_intersect($required,$scopes)!==[];
         $conversations=$enabled('conversationsEnabled')&&$scope(['conversations.readonly','conversations.write','conversations/message.readonly','conversations/message.write']);
         return [
             'configureConnections'=>false,
@@ -21,7 +24,7 @@ final class PermissionPolicy {
             'viewOpportunities'=>$enabled('opportunitiesEnabled')&&$scope(['opportunities.readonly','opportunities.write']),
             'editOpportunities'=>$enabled('opportunitiesEnabled')&&$scope(['opportunities.write']),
             'viewCalendars'=>$enabled('appointmentsEnabled')&&$scope(['calendars.readonly','calendars.write','calendars/events.readonly','calendars/events.write']),
-            'assignedDataOnly'=>($actor['assigned_data_only']??false)===true||(int)($actor['assigned_data_only']??0)===1,
+            'assignedDataOnly'=>!$admin&&(($actor['assigned_data_only']??false)===true||(int)($actor['assigned_data_only']??0)===1),
         ];
     }
     private static function object(mixed $value):array {

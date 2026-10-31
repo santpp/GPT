@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.4. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.5. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -152,6 +152,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Si a un usuario de subcuenta no le queda ninguna, se le explica por qué (sin subcuenta asociada, o sin permiso de conversaciones en ella) en lugar de mandarle a «Conexiones», que sólo ve quien administra Ágora.
 - El código de acceso por correo sale desde la subcuenta a la que pertenece la persona (integrante activo de una subcuenta comprobada); la cuenta elegida como canal de acceso queda de respaldo.
 - Pendiente de verificar con el usuario afectado: su caso mostraba la lista de subcuentas vacía; el mensaje nuevo dirá la causa.
+
+## 1.5.5 · administradores de subcuenta
+- Un administrador de la subcuenta entraba sin acceso a nada («no tiene activadas las conversaciones») porque la cuenta no lista los permisos de un administrador y Ágora exigía verlos activados. Ahora quien tiene rol `admin` (o `agency`) en la subcuenta tiene todo, salvo lo que se le desactive expresamente, sin depender de la lista de alcances, y sin restricción a lo asignado a él. Nunca configura conexiones (eso es del propietario de Ágora).
 
 ## Siguiente (a decidir)
 - Plantillas de WhatsApp: en espera del WABA ID o de la salida de «Comprobar plantillas».
