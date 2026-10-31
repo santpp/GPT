@@ -92,6 +92,52 @@ $('#push-toggle').onclick=async()=>{
   finally{await paintPush();button.disabled=['unsupported','unconfigured'].includes(pushNow)}
 };
 
+// ---- Bienvenida: instalar la app y activar los avisos, a un toque ---------------------
+// El sistema exige que la persona toque «Permitir»: ninguna web puede activar los
+// avisos sola. Lo que sí se hace es pedirlo en cuanto entra, sin ir a buscarlo.
+let installPrompt=null;
+window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;if(!$('#app').hidden)welcome()});
+window.addEventListener('appinstalled',()=>{installPrompt=null;welcome()});
+const LATER='agora-welcome-later';
+const resting=()=>{try{return Date.now()-Number(localStorage.getItem(LATER)||0)<3*86400000}catch{return false}};
+let welcomeDone=null;
+async function welcome(){
+  const sheet=$('#welcome');if(!sheet||$('#app').hidden||isNative())return finishWelcome();
+  if(resting())return finishWelcome();
+  // Si el service worker tarda (primera visita), no se bloquea lo que viene detrás.
+  const notices=await Promise.race([pushState().catch(()=>'unsupported'),new Promise(done=>setTimeout(()=>done('unknown'),3000))]);
+  let step=null;
+  if(!installed()&&(installPrompt||isApple()))step='install';
+  else if(notices==='off')step='notices';
+  if(!step){sheet.hidden=true;return finishWelcome()}
+  const apple=isApple();
+  $('#welcome-title').textContent=step==='install'?'Instala Ágora en tu teléfono':'Activa los avisos';
+  $('#welcome-copy').textContent=step==='install'
+    ?(apple?'Toca Compartir (el cuadrado con la flecha) y elige «Añadir a pantalla de inicio». Después abre Ágora desde su icono: así llegan los avisos.':'Se abre como una app, con su icono, y los avisos llegan aunque esté cerrada.')
+    :'Para enterarte de cada mensaje nuevo, aunque Ágora esté cerrada. El teléfono te pedirá permiso: toca «Permitir».';
+  const go=$('#welcome-go');
+  go.textContent=step==='install'?(apple?'Entendido':'Instalar'):'Activar avisos';
+  go.disabled=false;sheet.hidden=false;sheet.dataset.step=step;
+  go.onclick=async()=>{
+    go.disabled=true;
+    if(step==='install'){
+      if(apple){sheet.hidden=true;try{localStorage.setItem(LATER,String(Date.now()))}catch{};return finishWelcome()}
+      try{await installPrompt.prompt();const choice=await installPrompt.userChoice;installPrompt=null;if(choice?.outcome!=='accepted'){sheet.hidden=true;try{localStorage.setItem(LATER,String(Date.now()))}catch{};return finishWelcome()}}catch{}
+      return welcome();
+    }
+    try{
+      const answer=await enablePush(workspace.me?.csrf||'');
+      const result=typeof answer==='string'?answer:answer.state;
+      toast(result==='on'?'Listo: este dispositivo avisará de los mensajes nuevos.':result==='blocked'?'El teléfono no dio permiso. Puedes activarlo en sus ajustes cuando quieras.':'No se pudieron activar los avisos ahora.');
+    }catch{toast('No se pudieron activar los avisos ahora.')}
+    sheet.hidden=true;await paintPush();finishWelcome();
+  };
+  $('#welcome-later').onclick=()=>{try{localStorage.setItem(LATER,String(Date.now()))}catch{};sheet.hidden=true;finishWelcome()};
+}
+function finishWelcome(){const done=welcomeDone;welcomeDone=null;if(done)done()}
+/** La bienvenida y, cuando termina, lo que venga detrás (la oferta de la huella). */
+function welcomeThen(next){welcomeDone=next;welcome()}
+
 function renderAccounts(){
   const select=$('#account');
   select.innerHTML=workspace.connections.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
@@ -101,6 +147,8 @@ function renderAccounts(){
   $('.account-switch').hidden=!VIEWS[currentView].account||!workspace.connections.length;
 }
 
+/** «Ágora v1.0»: la versión del pie, sin el último número. */
+const versionLabel=()=>{const v=($('#app-version')?.textContent.match(/v(\d+)\.(\d+)\.\d+/)||[]);return v[1]?`Ágora v${v[1]}.${v[2]}`:'Ágora'};
 async function startSession(){
   const me=await api('me');
   workspace.setProfile(me);
@@ -111,6 +159,7 @@ async function startSession(){
   $('#user-email').firstChild.textContent=me.user.email||'Mi cuenta';
   $('#user-initials').textContent=(me.user.email||'··').slice(0,2).toUpperCase();
   $('#user-initials-top').textContent=(me.user.email||'··').slice(0,2).toUpperCase();
+  $('#menu-version').textContent=versionLabel();
   document.querySelectorAll('[data-admin-only]').forEach(n=>n.hidden=me.user.role!=='administrator');
   try{const {items}=await api('workspace/connections');workspace.setConnections(items)}
   catch{workspace.setConnections([])}
@@ -240,7 +289,7 @@ async function openSecurity(){
    ${hasKey?`<section class="security-block"><h3>Tus llaves de acceso</h3><ul class="security-list">${keys(data.passkeys)}</ul></section>`:''}
    <section class="security-block"><h3>Sesiones abiertas</h3><p class="dialog-copy">Cada dispositivo sigue dentro 60 días desde su último uso. Cierra la de un teléfono que ya no tengas.</p><ul class="security-list">${sessions(data.sessions)}</ul></section>
    ${others&&(others.sessions.length||others.keys.length)?`<section class="security-block"><h3>Equipo</h3>${others.sessions.length?`<ul class="security-list">${sessions(others.sessions)}</ul>`:''}${others.keys.length?`<h4>Llaves de acceso del equipo</h4><ul class="security-list">${keys(others.keys)}</ul>`:''}</section>`:''}
-   <button id="signout" class="primary signout-button">Cerrar sesión en este dispositivo</button>`;
+   <button id="signout" class="primary signout-button">Cerrar sesión en este dispositivo</button><small class="account-version">${esc(versionLabel())}</small>`;
   const csrf=workspace.me?.csrf||'';
   const result=$('#security-result');
   $('#signout').onclick=signOut;
@@ -259,6 +308,7 @@ async function openSecurity(){
 $('#profile').onclick=openSecurity;
 $('#profile-top').onclick=openSecurity;
 window.addEventListener('agora:logout',()=>{if(!$('#app').hidden)showSignin()});
+window.addEventListener('agora:toast',event=>toast(String(event.detail||'')));
 // Desde la ficha de un contacto: abrir su conversación en la bandeja.
 window.addEventListener('agora:open-conversation',event=>{
   const conversation=event.detail;if(!conversation?.id)return;
@@ -283,7 +333,7 @@ verifyForm.onsubmit=async e=>{
   try{
     const r=await fetch('/api/team-login/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
     const data=await r.json();
-    if(r.ok){await startSession();offerPasskey()}else $('#team-verify-result').textContent=data.error||'No se ha podido acceder.';
+    if(r.ok){await startSession();welcomeThen(offerPasskey)}else $('#team-verify-result').textContent=data.error||'No se ha podido acceder.';
   }catch{$('#team-verify-result').textContent='No se ha podido conectar con el servidor.'}
   finally{button.disabled=false}
 };
@@ -292,7 +342,7 @@ $('#login-form').onsubmit=async e=>{
   try{
     const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
     const data=await r.json();
-    if(r.ok){await startSession();offerPasskey()}else $('#login-result').textContent=data.error||'No se ha podido acceder.';
+    if(r.ok){await startSession();welcomeThen(offerPasskey)}else $('#login-result').textContent=data.error||'No se ha podido acceder.';
   }catch{$('#login-result').textContent='No se ha podido conectar con el servidor.'}
   finally{button.disabled=false}
 };
@@ -378,5 +428,5 @@ if('serviceWorker' in navigator){
 }
 
 // A visit always starts from the real session: there is no sample workspace.
-startSession().catch(showSignin);
+startSession().then(()=>{if(!$('#app').hidden)welcome()}).catch(showSignin);
 export {toast};

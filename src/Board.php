@@ -109,6 +109,7 @@ final class Board {
                     if(isset($opportunity['locationId'])&&$opportunity['locationId']!==$connection['location_id'])continue;
                     $value=$opportunity['monetaryValue']??null;
                     $records[]=[
+                        'id'=>is_string($opportunity['id']??null)?$opportunity['id']:null,
                         'assignedTo'=>is_string($opportunity['assignedTo']??null)?$opportunity['assignedTo']:null,
                         'value'=>is_int($value)||is_float($value)?(float)$value:(is_string($value)&&is_numeric($value)?(float)$value:0.0),
                     ];
@@ -119,8 +120,20 @@ final class Board {
             return [$records,$total,$partial,$ads];
         },false);
 
+        // Lo ganado desde Ágora este mes que la cuenta no devolvió para el mes
+        // (por ejemplo, una oportunidad creada otro mes), sin repetir ninguna.
+        $seen=array_flip(array_filter(array_column($records,'id')));$added=0;
+        try {
+            $local=query('SELECT opportunity_id,assigned_to,value FROM won_sales WHERE connection_id=? AND won_at>=? AND won_at<?',[$id,$period.'-01 00:00:00',(new DateTimeImmutable($period.'-01'))->modify('+1 month')->format('Y-m-d 00:00:00')])->fetchAll();
+            foreach($local as $row) if(!isset($seen[$row['opportunity_id']])) {
+                $records[]=['id'=>$row['opportunity_id'],'assignedTo'=>$row['assigned_to'],'value'=>(float)$row['value']];$added++;
+            }
+        } catch(PDOException $e) {}
+        $self=$membership['self_id']??$mine;
+        $own=array_values(array_filter($records,fn(array $row):bool=>$self!==null&&$row['assignedTo']===$self));
         if($restricted)$records=array_values(array_filter($records,fn(array $row):bool=>$row['assignedTo']===$mine));
-        return $this->present($connection,$period,$settings,$records,$restricted?count($records):($total??count($records)),$partial,$restricted,$mine,$ads);
+        return $this->present($connection,$period,$settings,$records,$restricted?count($records):(($total??count($records)-$added)+$added),$partial,$restricted,$mine,$ads)
+            +['mine'=>$self===null?null:['closings'=>count($own),'sold'=>round(array_sum(array_column($own,'value')),2)]];
     }
 
     private function present(array $connection,string $period,array $settings,array $records,int $total,bool $partial,bool $restricted,?string $mine,array $ads):array {

@@ -148,6 +148,17 @@ try {
  boardCheck($pages===2&&$many['sales']['closings']===140,'un mes que no cabe en una página se pide por páginas hasta terminar');
  boardCheck($many['sales']['total']===1200.00&&$many['sales']['partial']===false,'y se suma entero sin decir que está recortado');
 
+ // ---- ventas ganadas desde Ágora ----------------------------------------------------
+ $api->reset();boardFree($connectionId);
+ $api->pages=[[$won('seller-1',100.00)]];$api->total=1;
+ query("INSERT INTO won_sales(connection_id,opportunity_id,assigned_to,value,won_at) VALUES(?,?,?,?,'2026-10-15 12:00:00'),(?,?,?,?,'2026-09-30 23:00:00')",[$connectionId,'opp-from-agora','seller-2',500,$connectionId,'opp-last-month','seller-2',900]);
+ $merged=$board()->month($connection,'2026-10',$owner+['self_id'=>'seller-2']);
+ boardCheck($merged['sales']['total']===600.00&&$merged['sales']['closings']===2,'a sale marked as won from Ágora this month counts, even if the account files it under another month; one from last month does not');
+ boardCheck($merged['mine']===['closings'=>1,'sold'=>500.0],'and each person sees their own number of sales won and their value');
+ $first=$api->pages[0][0]['id']??null;
+ if($first){query('INSERT INTO won_sales(connection_id,opportunity_id,assigned_to,value,won_at) VALUES(?,?,?,?,?)',[$connectionId,$first,'seller-1',100,'2026-10-20 10:00:00']);$api->reset();boardFree($connectionId);
+  boardCheck($board()->month($connection,'2026-10',$owner)['sales']['closings']===2,'a sale the account already reports is not counted twice');}
+
  echo 'PASS '.$checks.' board checks (simulated API client, real MariaDB)'.PHP_EOL;
 } finally {
  foreach($tenants as $id){query('DELETE FROM ghl_connections WHERE tenant_id=?',[$id]);query('DELETE FROM tenants WHERE id=?',[$id]);}

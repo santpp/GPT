@@ -88,7 +88,7 @@ export async function renderContacts(container){
     if(editing){
       panel.innerHTML=contactForm(contact,asList(record.fields),asList(record.assignees));
       tags=bindTagEditor(panel,contact);
-      panel.querySelector('#live-edit-cancel').onclick=()=>{editing=false;show()};
+      panel.querySelector('#live-edit-cancel').onclick=()=>{editing=false;show()};panel.querySelector('[data-cancel-edit]').onclick=()=>{editing=false;show()};
       panel.querySelector('#live-contact-form').onsubmit=save;
       return;
     }

@@ -21,10 +21,21 @@ export function customControl(field,current){
  const type=field.dataType==='NUMERICAL'||field.dataType==='MONETORY'?'number':field.dataType==='DATE'?'date':field.dataType==='EMAIL'?'email':field.dataType==='PHONE'?'tel':'text';
  return `<label>${name}<input type="${type}" data-field="${id}" data-type="${esc(field.dataType)}" value="${esc(value)}" maxlength="1000"${hint}></label>`;
 }
+// Grupos del formulario, en el orden en que se piensa en una persona.
+const GROUPS=[['Contacto',['name','firstName','lastName','email','phone']],['Empresa',['companyName','website']],
+ ['Dirección',['address1','city','state','postalCode','country']],['Seguimiento',['source','timezone','dateOfBirth']]];
+const WIDE=['name','email','address1','website'];
 export function contactForm(profile,directory=[],assignees=[]){
- const fields=EDITABLE.map(([key,label,type])=>`<label>${esc(label)}<input type="${type}" name="${key}" value="${esc(profile[key]??'')}" maxlength="250"></label>`).join('')
-  +`<label class="live-check"><input type="checkbox" name="dnd"${profile.dnd?' checked':''}>No contactar</label>`
-  +(asList(assignees).length?`<label>Responsable<select name="assignedTo"><option value="">Sin asignar</option>${assignees.map(user=>`<option value="${esc(user.id)}"${user.id===profile.assignedTo?' selected':''}>${esc(user.name)}</option>`).join('')}</select></label>`:'');
+ const byKey=Object.fromEntries(EDITABLE.map(row=>[row[0],row]));
+ const control=key=>{const [k,label,type]=byKey[key];return `<label class="${WIDE.includes(k)?'wide':''}">${esc(label)}<input type="${type}" name="${k}" value="${esc(profile[k]??'')}" maxlength="250"></label>`};
+ const used=new Set(GROUPS.flatMap(([,keys])=>keys));
+ const rest=EDITABLE.map(row=>row[0]).filter(key=>!used.has(key));
+ const groups=GROUPS.map(([title,keys],i)=>{
+  const inner=keys.filter(key=>byKey[key]).map(control).join('')+(i===GROUPS.length-1?rest.map(control).join('')
+   +(asList(assignees).length?`<label class="wide">Responsable<select name="assignedTo"><option value="">Sin asignar</option>${assignees.map(user=>`<option value="${esc(user.id)}"${user.id===profile.assignedTo?' selected':''}>${esc(user.name)}</option>`).join('')}</select></label>`:'')
+   +`<label class="contact-switch wide"><input type="checkbox" name="dnd"${profile.dnd?' checked':''}><span class="switch-track" aria-hidden="true"></span><span>No contactar<small>No se le enviarán mensajes desde ningún canal.</small></span></label>`:'');
+  return `<fieldset class="contact-group"><legend>${esc(title)}</legend><div class="contact-grid">${inner}</div></fieldset>`;
+ }).join('');
  // Every field the account defines is offered, even the ones with no value yet.
  const values=new Map(asList(profile.customFields).map(field=>[field.id,field]));
  const defined=asList(directory);
@@ -32,7 +43,12 @@ export function contactForm(profile,directory=[],assignees=[]){
  const custom=[...defined,...extra].map(field=>customControl(field,values.get(field.id))).join('')
   ||'<span class="muted">Esta cuenta no define campos personalizados.</span>';
  const tags=asList(profile.tags).map(tag=>`<span class="tag">${esc(tag)}<button type="button" data-drop-tag="${esc(tag)}" aria-label="Quitar etiqueta ${esc(tag)}">×</button></span>`).join('')||'<span class="muted">Sin etiquetas</span>';
- return `<form id="live-contact-form" class="live-contact-form"><header class="live-profile-header"><div><span class="section-label">EDITAR FICHA</span><h2>${esc(profile.name)}</h2></div><button type="button" id="live-edit-cancel" aria-label="Cancelar edición">×</button></header>${fields}<div class="section-label">CAMPOS PERSONALIZADOS</div>${custom}<div class="section-label">ETIQUETAS</div><div class="live-profile-tags" id="live-tag-list">${tags}</div><label>Añadir etiqueta<input id="live-new-tag" maxlength="100" placeholder="Escribe y pulsa Añadir"></label><button type="button" id="live-add-tag">Añadir etiqueta</button><button class="primary" id="live-save-contact">Guardar ficha</button><p id="live-contact-status" role="status"></p></form>`;
+ return `<form id="live-contact-form" class="live-contact-form contact-editor"><header class="live-profile-header"><div><span class="section-label">EDITAR FICHA</span><h2>${esc(profile.name)}</h2></div><button type="button" id="live-edit-cancel" aria-label="Cancelar edición">×</button></header>
+  ${groups}
+  <fieldset class="contact-group"><legend>Campos personalizados</legend><div class="contact-grid">${custom}</div></fieldset>
+  <fieldset class="contact-group"><legend>Etiquetas</legend><div class="live-profile-tags" id="live-tag-list">${tags}</div>
+   <div class="tag-add"><label class="sr-only" for="live-new-tag">Añadir etiqueta</label><input id="live-new-tag" maxlength="100" placeholder="Nueva etiqueta"><button type="button" id="live-add-tag">Añadir</button></div></fieldset>
+  <div class="contact-save"><p id="live-contact-status" role="status"></p><button type="button" class="link-button" data-cancel-edit>Cancelar</button><button class="primary" id="live-save-contact">Guardar ficha</button></div></form>`;
 }
 
 /** Reads a filled form back into the shape the server expects. */

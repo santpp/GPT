@@ -33,6 +33,12 @@ try:
         page.locator('summary').click()
         page.fill('#login-form [name=email]',email);page.fill('#login-form [name=password]',password);page.locator('#login-form button').click()
         page.wait_for_selector('#app:not([hidden])')
+        # Primero la bienvenida (instalar o avisos); al cerrarla llega la oferta de la huella.
+        page.wait_for_timeout(600)
+        if page.locator('#welcome').is_visible():
+            assert page.locator('#welcome-go').inner_text() in ('Activar avisos','Instalar','Entendido')
+            page.locator('#welcome-later').click()
+            print('PASS right after entering, Ágora offers to install the app or turn on notices, one tap away')
         page.wait_for_selector('#offer-yes',timeout=5000)
         print('PASS after the password, Ágora offers fingerprint or face once')
         page.locator('#offer-yes').click()

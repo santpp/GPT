@@ -474,3 +474,9 @@ En la cuenta real el chat no mostró ninguna plantilla aunque las hay. Como la f
 - el administrador lo pide en el momento con `POST /api/admin/integrations/{id}/whatsapp/check`;
 - un WABA ID opcional (`whatsapp_account_id`, migración 023) sustituye al número como `originId` al pedir la lista; el envío sigue usando `fromNumberId`;
 - el lector acepta más formas (listas anidadas, `templateName`, `languageCode`, `locale`, idioma con guion) y plantillas sin texto, que se ofrecen sin vista previa.
+
+## Ventas ganadas y leads 1.0.0
+
+**Ventas.** `PUT /opportunities/{id}` (ya en uso) con `status: won` y `monetaryValue`. Con `claimIfUnassigned`, sólo si la oportunidad no tiene responsable, se añade `assignedTo` con el usuario de quien la marca. La búsqueda publicada `GET /opportunities/search` filtra por `date`/`endDate` sin decir a qué fecha se refieren; si es la de creación, una oportunidad abierta otro mes y ganada hoy no aparecería este mes. Por eso Ágora anota en `won_sales` cada venta ganada desde la app, con la fecha en que se marcó, y el tablero la suma a lo que devuelve la cuenta para el mes, descartando las que ya devolvió (por `id`). Cambiarla a otro estado la retira.
+
+**Leads.** `POST /contacts/search` (ya en uso para el total) con `filters`: `dateAdded` con `operator: range` y `value: {gt, lt}` para el día, en la zona horaria que manda el dispositivo, y `assignedTo` con `operator: eq`. El cuerpo `SearchBodyV2DTO` figura sin propiedades en la referencia, así que estos filtros siguen la búsqueda avanzada documentada fuera de ella; si la cuenta no devuelve un total utilizable, la cifra se omite.

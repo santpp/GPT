@@ -143,6 +143,24 @@ try {
  $api->fail=[];openBudget($connectionId);
  actionCheck(problem(fn()=>$actions()->create($connection,'c1',$editor,['name'=>'Incierta','pipelineId'=>'pipe-1','requestId'=>key16()]))?->reason==='action_unconfirmed','identical content under a new key is blocked while the first result is unknown');
 
+ // ---- «¿Venta ganada?» ----------------------------------------------------------
+ $api->reset();openBudget($connectionId);
+ $api->records['opp-free']=['id'=>'opp-free','name'=>'Sin dueño','status'=>'open','monetaryValue'=>0,'contactId'=>'c1','locationId'=>$location,'pipelineId'=>'pipe-1'];
+ $closer=$editor+['self_id'=>'seller-1'];
+ $actions()->update($connection,'opp-free',$closer,['status'=>'won','monetaryValue'=>1250,'claimIfUnassigned'=>true,'requestId'=>key16()]);
+ $won=$api->writes()[0]['payload']??[];
+ actionCheck($won===['monetaryValue'=>1250.0,'status'=>'won','assignedTo'=>'seller-1']||$won==['monetaryValue'=>1250,'status'=>'won','assignedTo'=>'seller-1'],'marking a sale as won sends status and value, and an unowned opportunity goes to whoever closed it: '.json_encode($won));
+ $row=query('SELECT assigned_to,value FROM won_sales WHERE connection_id=? AND opportunity_id=?',[$connectionId,'opp-free'])->fetch();
+ actionCheck($row&&$row['assigned_to']==='seller-1'&&(float)$row['value']===1250.0,'and the win is noted with its date, so it counts this month whatever month it was opened');
+ $api->reset();openBudget($connectionId);
+ $api->records['opp-owned']=['id'=>'opp-owned','name'=>'Con dueño','status'=>'open','monetaryValue'=>300,'assignedTo'=>'seller-2','contactId'=>'c1','locationId'=>$location,'pipelineId'=>'pipe-1'];
+ $actions()->update($connection,'opp-owned',$closer,['status'=>'won','monetaryValue'=>300,'claimIfUnassigned'=>true,'requestId'=>key16()]);
+ actionCheck(!isset($api->writes()[0]['payload']['assignedTo']),'an opportunity that already has someone responsible keeps them');
+ $api->records['opp-free']['status']='won';
+ $api->reset();openBudget($connectionId);
+ $actions()->update($connection,'opp-free',$editor,['status'=>'lost','requestId'=>key16()]);
+ actionCheck(query('SELECT COUNT(*) FROM won_sales WHERE connection_id=? AND opportunity_id=?',[$connectionId,'opp-free'])->fetchColumn()==0,'if it stops being won, it stops counting');
+
  echo 'PASS '.$checks.' opportunity action checks (simulated API client, real MariaDB)'.PHP_EOL;
 } finally {
  foreach($tenants as $id){query('DELETE FROM ghl_connections WHERE tenant_id=?',[$id]);query('DELETE FROM tenants WHERE id=?',[$id]);}

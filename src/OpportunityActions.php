@@ -40,8 +40,11 @@ final class OpportunityActions {
         }
         $assignee=$this->assignee($connection,$input,$membership,true);
         if($assignee!==null&&$assignee!=='')$payload['assignedTo']=$assignee;
-        return $this->run($connection,$contactId,$membership,$input,'create',$payload,
+        if(!isset($payload['assignedTo'])&&$payload['status']==='won'&&is_string($membership['self_id']??null))$payload['assignedTo']=$membership['self_id'];
+        $result=$this->run($connection,$contactId,$membership,$input,'create',$payload,
             fn(GhlClient $client):array=>$client->createOpportunity($payload),$contactId);
+        if(is_string($result['id']??null))self::remember($connection,$result['id'],$payload['status'],(float)($payload['monetaryValue']??0),$payload['assignedTo']??null,true);
+        return $result;
     }
 
     /**
@@ -73,13 +76,34 @@ final class OpportunityActions {
             $assignee=$this->assignee($connection,$input,$membership,false);
             if($assignee!==($current['assignedTo']??''))$payload['assignedTo']=$assignee;
         }
+        // «¿Venta ganada?»: si nadie la tenía asignada, pasa a quien la cierra,
+        // para que cuente en sus ventas del mes.
+        if(($input['claimIfUnassigned']??false)===true&&!array_key_exists('assignedTo',$payload)&&empty($current['assignedTo'])&&is_string($membership['self_id']??null))
+            $payload['assignedTo']=$membership['self_id'];
         if(array_key_exists('status',$input)) {
             $status=self::state($input['status']);
             if($status!==($current['status']??null))$payload['status']=$status;
         }
         if($payload===[])throw new ActionProblem('nothing_to_change',422,'No has cambiado nada en la oportunidad.');
-        return $this->run($connection,$opportunityId,$membership,$input,'update',$payload,
+        $result=$this->run($connection,$opportunityId,$membership,$input,'update',$payload,
             fn(GhlClient $client):array=>$client->updateOpportunity($opportunityId,$payload),$current['contactId']??null);
+        self::remember($connection,$opportunityId,$payload['status']??($current['status']??null),
+            (float)($payload['monetaryValue']??($current['monetaryValue']??0)),$payload['assignedTo']??($current['assignedTo']??null),isset($payload['status']));
+        return $result;
+    }
+
+    /**
+     * Anota una venta ganada desde Ágora con su fecha, o la retira si deja de
+     * estar ganada. Un cambio de valor o de responsable sin cambio de estado
+     * actualiza la anotación sin mover su fecha.
+     */
+    private static function remember(array $connection,string $opportunityId,?string $status,float $value,?string $assignee,bool $statusChanged):void {
+        try {
+            if($status==='won') {
+                if($statusChanged)query('INSERT INTO won_sales(connection_id,opportunity_id,assigned_to,value,won_at) VALUES(?,?,?,?,CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE assigned_to=VALUES(assigned_to),value=VALUES(value),won_at=CURRENT_TIMESTAMP',[$connection['id'],$opportunityId,$assignee,$value]);
+                else query('UPDATE won_sales SET assigned_to=?,value=? WHERE connection_id=? AND opportunity_id=?',[$assignee,$value,$connection['id'],$opportunityId]);
+            } elseif($statusChanged) query('DELETE FROM won_sales WHERE connection_id=? AND opportunity_id=?',[$connection['id'],$opportunityId]);
+        } catch(PDOException $e) {}
     }
 
     /** Changes only the status, through the endpoint published for it. */
@@ -88,8 +112,10 @@ final class OpportunityActions {
         $status=self::state($input['status']??null);
         if($status===($current['status']??null))throw new ActionProblem('nothing_to_change',422,'La oportunidad ya está en ese estado.');
         $payload=['status'=>$status];
-        return $this->run($connection,$opportunityId,$membership,$input,'status',$payload,
+        $result=$this->run($connection,$opportunityId,$membership,$input,'status',$payload,
             fn(GhlClient $client):array=>$client->updateOpportunityStatus($opportunityId,$payload),$current['contactId']??null);
+        self::remember($connection,$opportunityId,$status,(float)($current['monetaryValue']??0),$current['assignedTo']??null,true);
+        return $result;
     }
 
     /** The opportunity as the account has it, checked against this connection. */

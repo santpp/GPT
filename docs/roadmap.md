@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.27.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.0.0.
 
 ## Completado y desplegable
 
@@ -72,7 +72,11 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - 0.27.0: icono propio para instalar, pestaña y avisos (con versión adaptable para Android) y más limpieza: pie mínimo, menú sin etiquetas sobrantes, tablero sin botones repetidos, bandeja sin contador duplicado ni columna vacía.
 - Pendiente: revisión final del usuario en teléfono con datos reales, en claro y en oscuro.
 
-## Para la v1.0
+## v1.0 (publicada)
+
+- 1.0.0: «¿Venta ganada?» en el chat (cuenta en el mes en que se marca, asigna a quien la cierra si no tenía responsable), leads de hoy, leads asignados a mí y mis ventas del mes en el tablero, bienvenida para instalar la app y activar avisos, ficha agrupada al editar, icono monocromo correcto en la barra de estado y versión en el menú.
+
+## Antes era «Para la v1.0»
 
 - Confirmar el envío real de una plantilla de WhatsApp.
 - Dirección de revisión protegida (0.25.0): contraseña antes de crear la clave, clave en cabecera `X-Agora-Key` y último uso visible.

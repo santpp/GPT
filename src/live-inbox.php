@@ -17,6 +17,8 @@ $connection=query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$i
 if(!$connection)respond(['error'=>'Subcuenta no encontrada'],404);
 $membership=Actor::connectionMembership($u,(int)$id);
 if(!$membership||!($membership['capabilities']['viewConversations']??false))respond(['error'=>'No tienes permiso para consultar esta cuenta.'],403);
+// Quién es «yo» en la cuenta: el usuario sincronizado, o el del propietario si lo tiene enlazado.
+$membership['self_id']=$membership['external_user_id']??((($u['identity_type']??'native')==='native'&&is_string($u['ghl_user_id']??null)&&$u['ghl_user_id']!=='')?$u['ghl_user_id']:null);
 if($path==='/api/workspace/sync'&&$method==='POST'){
     $requested=filter_var($_GET['limit']??null,FILTER_VALIDATE_INT);
     if(!in_array($requested,[20,50,100],true))respond(['error'=>'Selecciona 20, 50 o 100 conversaciones'],422);
@@ -159,7 +161,8 @@ if($path==='/api/workspace/board-month'&&in_array($method,['GET','POST'],true)){
 }
 if($path==='/api/workspace/dashboard'&&$method==='GET'){
     require_once __DIR__.'/Dashboard.php';
-    try{respond((new Dashboard())->get($connection,$membership));}
+    $zone=is_string($_GET['tz']??null)&&in_array($_GET['tz'],DateTimeZone::listIdentifiers(),true)?$_GET['tz']:'UTC';
+    try{respond((new Dashboard())->get($connection,$membership,$zone));}
     catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'El tablero está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
     catch(GhlApiException $e){respond(['error'=>'No se pudo leer el tablero. Revisa los permisos de la cuenta.','code'=>'dashboard_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'El tablero recibido no tiene el formato esperado.','code'=>'dashboard_invalid_response'],424);}

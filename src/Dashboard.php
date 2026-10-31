@@ -16,7 +16,7 @@ final class Dashboard {
 
     public function __construct(private readonly GhlGateway $gateway=new GhlGateway(),private readonly ?PipelineDirectory $pipelines=null) {}
 
-    public function get(array $connection,array $membership):array {
+    public function get(array $connection,array $membership,string $zone='UTC'):array {
         $restricted=($membership['capabilities']['assignedDataOnly']??false)===true;
         $assignee=$restricted?($membership['external_user_id']??null):null;
         if($restricted&&$assignee===null)return self::empty(true);
@@ -28,8 +28,15 @@ final class Dashboard {
         $names=$directory->cached($connection);
 
         // One slot for the whole board: each figure is a small read.
-        [$conversations,$unread,$contacts,$opportunities,$names]=$this->gateway->execute($connection,
-            function(GhlClient $client)use($connection,$assignee,$canSeeOpportunities,$canSeeContacts,$directory,$names):array {
+        // Leads: los que entraron hoy (en la zona del dispositivo) y los asignados
+        // a quien mira. Quien sólo ve lo suyo, ve sus leads de hoy.
+        $self=$membership['self_id']??null;
+        $canSeeLeads=($membership['capabilities']['viewContacts']??false)===true;
+        $today=(new DateTimeImmutable('today',new DateTimeZone($zone)))->setTimezone(new DateTimeZone('UTC'));
+        $todayFilter=[['field'=>'dateAdded','operator'=>'range','value'=>['gt'=>$today->format('Y-m-d\TH:i:s\Z'),'lt'=>$today->modify('+1 day')->format('Y-m-d\TH:i:s\Z')]]];
+        if($assignee!==null)$todayFilter[]=['field'=>'assignedTo','operator'=>'eq','value'=>$assignee];
+        [$conversations,$unread,$contacts,$opportunities,$names,$leadsToday,$leadsMine]=$this->gateway->execute($connection,
+            function(GhlClient $client)use($connection,$assignee,$canSeeOpportunities,$canSeeContacts,$canSeeLeads,$todayFilter,$self,$directory,$names):array {
                 $scope=$assignee!==null?['assignedTo'=>$assignee]:[];
                 $all=self::total($client->conversations($connection['location_id'],1,$scope));
                 $pending=self::total($client->conversations($connection['location_id'],1,$scope+['status'=>'unread']));
@@ -39,7 +46,9 @@ final class Dashboard {
                     try {$names=$directory->fromClient($client,$connection);}
                     catch(Throwable $e){$names=[];}
                 }
-                return [$all,$pending,$people,$deals,$names??[]];
+                $today=$canSeeLeads?self::people($client,$connection['location_id'],$todayFilter,true):null;
+                $mine=$canSeeLeads&&$self!==null?self::people($client,$connection['location_id'],[['field'=>'assignedTo','operator'=>'eq','value'=>$self]],true):null;
+                return [$all,$pending,$people,$deals,$names??[],$today,$mine];
             },false);
 
         $open=$this->opportunities($opportunities,$connection,$assignee,$names);
@@ -47,6 +56,7 @@ final class Dashboard {
             'restricted'=>$restricted,
             'conversations'=>['total'=>$conversations,'unread'=>$unread],
             'contacts'=>$contacts,
+            'leads'=>['today'=>$leadsToday,'mine'=>$leadsMine,'linked'=>$self!==null],
             'opportunities'=>$open,
             'readAt'=>gmdate('c'),
         ];
@@ -89,14 +99,16 @@ final class Dashboard {
      * ahí, y sólo se acepta un número que no pueda ser el tamaño de la página.
      * Si no llega ninguno utilizable, no se muestra cifra en vez de una falsa.
      */
-    private static function people(GhlClient $client,string $location):?int {
-        try {$response=$client->countContacts($location);}
+    private static function people(GhlClient $client,string $location,array $filters=[],bool $small=false):?int {
+        try {$response=$client->countContacts($location,$filters);}
         catch(Throwable $e){return null;}
-        foreach([$response['total']??null,$response['meta']['total']??null,$response['count']??null] as $candidate)
-            if(is_numeric($candidate)&&$candidate>=0&&(int)$candidate!==1)return (int)$candidate;
+        // Con filtros el total puede ser 0 o 1 de verdad; sin ellos, un 1 suele
+        // ser el tamaño de la página y no se acepta.
+        foreach([$response['total']??null,$response['meta']['total']??null,$small?null:($response['count']??null)] as $candidate)
+            if(is_numeric($candidate)&&$candidate>=0&&($small||(int)$candidate!==1))return (int)$candidate;
         return null;
     }
     private static function empty(bool $restricted):array {
-        return ['restricted'=>$restricted,'conversations'=>['total'=>0,'unread'=>0],'contacts'=>null,'opportunities'=>null,'readAt'=>gmdate('c')];
+        return ['restricted'=>$restricted,'conversations'=>['total'=>0,'unread'=>0],'contacts'=>null,'leads'=>['today'=>null,'mine'=>null,'linked'=>false],'opportunities'=>null,'readAt'=>gmdate('c')];
     }
 }

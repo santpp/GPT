@@ -69,8 +69,8 @@ final class GhlClient {
         ]),'2021-07-28');
     }
     /** One page of contacts, used only to read the total the search reports. */
-    public function countContacts(string $location):array {
-        return $this->get('/contacts/search','2021-07-28',['locationId'=>$location,'pageLimit'=>1,'page'=>1]);
+    public function countContacts(string $location,array $filters=[]):array {
+        return $this->get('/contacts/search','2021-07-28',['locationId'=>$location,'pageLimit'=>1,'page'=>1]+($filters?['filters'=>$filters]:[]));
     }
     public function contactTasks(string $contact):array {return $this->get('/contacts/'.rawurlencode($contact).'/tasks','2021-07-28');}
     public function contactNotes(string $contact):array {return $this->get('/contacts/'.rawurlencode($contact).'/notes','2021-07-28');}

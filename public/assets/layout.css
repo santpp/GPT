@@ -551,3 +551,39 @@ body.agora-focus .live-composer{padding-bottom:calc(10px + env(safe-area-inset-b
 .tabs #live-count{display:none}
 @media(min-width:1201px){.live-inbox-layout:not(.chat-open){grid-template-columns:320px minmax(0,1fr)}.live-inbox-layout:not(.chat-open) .live-contact-panel{display:none}}
 .sidebar nav{margin-top:28px}
+/* 1.0 · ¿Venta ganada? */
+.won-button{display:inline-flex;align-items:center;gap:6px;border:1px solid #2f8a57;color:#2f8a57;background:#eaf7ef;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;white-space:nowrap;min-height:34px!important}
+.won-button .won-short{display:none}
+@media(max-width:600px){.won-button{padding:6px 10px}.won-button .won-long{display:none}.won-button .won-short{display:inline}}
+html[data-theme="dark"] .won-button{background:#173325;color:#7fd6a3;border-color:#2f7a52}
+.personal-tiles{margin-bottom:12px}.personal-tiles .board-tile,.personal-tiles>*{border-color:#efc7d3}
+/* 1.0 · bienvenida y versión */
+.welcome-sheet{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:30;width:min(520px,calc(100vw - 24px));display:grid;grid-template-columns:44px 1fr;gap:10px 14px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 12px 40px #1b1f2c33}
+.welcome-icon{width:44px;height:44px;border-radius:11px}
+.welcome-text strong{display:block;font-size:14px;margin-bottom:3px}.welcome-text p{font-size:12px;line-height:1.5;color:var(--muted)}
+.welcome-actions{grid-column:1/-1;display:flex;justify-content:flex-end;align-items:center;gap:12px}
+.welcome-actions .primary{min-height:40px;font-size:13px;padding:10px 18px}
+@media(max-width:600px){.welcome-sheet{bottom:calc(76px + env(safe-area-inset-bottom))}}
+.sidebar-version{display:block;margin-top:14px;font-size:10px;color:var(--muted);letter-spacing:.4px}
+.account-version{display:block;text-align:center;margin-top:12px;font-size:11px;color:var(--muted)}
+/* 1.0 · editar la ficha */
+.contact-editor{display:block}
+.contact-group{border:1px solid var(--line);border-radius:10px;padding:12px 14px 14px;margin:14px 0 0;min-width:0}
+.contact-group legend{font-size:11px;font-weight:650;letter-spacing:.4px;color:var(--muted);padding:0 6px;text-transform:uppercase}
+.contact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+.contact-grid>label,.contact-grid>.live-field-group{margin:0!important;min-width:0}
+.contact-grid>.wide,.contact-grid>.live-field-group,.contact-grid>.muted{grid-column:1/-1}
+.contact-editor input,.contact-editor select,.contact-editor textarea{width:100%}
+.contact-switch{display:flex!important;align-items:center;gap:12px;cursor:pointer}
+.contact-switch input{position:absolute;opacity:0;width:1px;height:1px}
+.contact-switch .switch-track{flex:0 0 40px;height:24px;border-radius:12px;background:var(--line);position:relative;transition:background .15s}
+.contact-switch .switch-track::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0003;transition:left .15s}
+.contact-switch input:checked+.switch-track{background:var(--green)}
+.contact-switch input:checked+.switch-track::after{left:19px}
+.contact-switch input:focus-visible+.switch-track{outline:2px solid var(--green);outline-offset:2px}
+.contact-switch small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.tag-add{display:flex;gap:8px;margin-top:10px}.tag-add input{flex:1;min-width:0}.tag-add button{border:1px solid var(--line);border-radius:6px;padding:0 14px;min-height:40px;background:var(--paper)}
+.contact-save{position:sticky;bottom:0;display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:16px;padding:12px 0;background:var(--paper);border-top:1px solid var(--line);z-index:2}
+.contact-save p{margin-right:auto;font-size:12px;color:var(--muted)}
+.contact-save .primary{min-height:42px;padding:10px 20px;font-size:13px}
+@media(max-width:600px){.contact-grid{grid-template-columns:1fr}.contact-save{bottom:calc(64px + env(safe-area-inset-bottom))}}

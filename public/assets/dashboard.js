@@ -79,7 +79,8 @@ export async function renderDashboard(container){
   async function load(){
     $('#dashboard-feedback').textContent='Leyendo la cuenta…';
     try{
-      const now=await request(`workspace/dashboard?connectionId=${encodeURIComponent(connection)}`);
+      const zone=(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch{return ''}})();
+      const now=await request(`workspace/dashboard?connectionId=${encodeURIComponent(connection)}${zone?'&tz='+encodeURIComponent(zone):''}`);
       if(!active())return;
       paint(now,null);
       try{month=await request(`workspace/board-month?connectionId=${encodeURIComponent(connection)}&period=${period}`)}
@@ -104,11 +105,19 @@ export async function renderDashboard(container){
       ...(data.contacts!==null&&data.contacts!==undefined?[tile('Contactos',number(data.contacts),'Personas en la cuenta')]:[]),
       ...(data.opportunities?[tile('Oportunidades abiertas',number(data.opportunities.count),`${money(data.opportunities.value)} en juego`)]:[]),
     ].join('');
+    // Lo del día y lo de cada quien: leads de hoy, leads a mi nombre y mis ventas del mes.
+    const leads=data.leads||{};const mine=month&&!month.error?month.mine:null;
+    const personal=[
+      ...(leads.today!==null&&leads.today!==undefined?[tile('Leads de hoy',number(leads.today),data.restricted?'Nuevos a tu nombre':'Contactos nuevos desde las 00:00')]:[]),
+      ...(leads.mine!==null&&leads.mine!==undefined?[tile('Leads asignados a mí',number(leads.mine),'Contactos a tu nombre')]:[]),
+      ...(mine?[tile('Mis ventas del mes',number(mine.closings),`${money(mine.sold)} ganados`)]:[]),
+    ].join('');
     const stages=data.opportunities?asList(data.opportunities.stages):[];
     const stageList=stages.length
       ? `<div class="dashboard-stages">${stages.map(stage=>`<article class="board-stage"><h3>${esc(stage.name)}</h3><p>${number(stage.count)} oportunidad${stage.count===1?'':'es'}</p><strong>${esc(money(stage.value))}</strong></article>`).join('')}</div>`
       : '<p class="board-empty">Todavía no hay oportunidades abiertas en esta cuenta.</p>';
     $('#dashboard-body').innerHTML=`<section class="board-block">
+        ${personal?`<div class="dashboard-tiles personal-tiles">${personal}</div>`:''}
         <div class="dashboard-tiles">${tiles}</div>
         <div class="section-label">EMBUDO POR ETAPA</div>${stageList}
         ${data.opportunities?.sampled?'<p class="board-empty">Se resumen las oportunidades abiertas más recientes.</p>':''}

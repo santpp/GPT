@@ -147,6 +147,11 @@ html[data-theme="dark"] .tpl-preview mark.field{background:#262938;color:#cdcfd6
 html[data-theme="dark"] .tpl-preview mark.empty{background:#4b1d27;color:#e9678c}
 html[data-theme="dark"] .tpl-buttons span{border:1px solid #3d4d40;color:#cbdacf;background:#1d1f2b}
 html[data-theme="dark"] .backup-notice.warn{background:#50431e;border-color:#544c36}
+html[data-theme="dark"] .won-button{border:1px solid #2f8a57;color:#7ed3a3;background:#222634}
+html[data-theme="dark"][data-theme="dark"] .won-button{background:#173325;color:#8cb39c;border-color:#2f7a52}
+html[data-theme="dark"] .personal-tiles .board-tile,html[data-theme="dark"] .personal-tiles>*{border-color:#52373f}
+html[data-theme="dark"] .welcome-sheet{box-shadow:0 12px 40px #00000066}
+html[data-theme="dark"] .contact-switch .switch-track::after{background:#1d1f2b;box-shadow:0 1px 3px #00000066}
 /* ---- a mano: paleta base y piezas que el generador no puede adivinar ---- */
 html[data-theme="dark"]{color-scheme:dark;--ink:#e6e8f0;--muted:#9aa0b4;--line:#2f3445;--paper:#1b1f2c;--bg:#12151f;--green:#d13c63;--accent:#f5b84a}
 html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}

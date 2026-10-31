@@ -233,6 +233,68 @@ export async function renderLiveInbox(container){
     const notice=$('#live-send-status');if(notice)notice.textContent='';
    });
   }
+  // ---- «¿Venta ganada?»: cerrar una venta sin salir del chat --------------------------
+  const canWin=()=>{const caps=me?.user?.capabilities||{};return caps.viewOpportunities!==false&&caps.editOpportunities!==false};
+  const money=value=>new Intl.NumberFormat('es-ES',{maximumFractionDigits:2}).format(value);
+  async function winDialog(c){
+   const dialog=document.querySelector('#action-dialog'),content=document.querySelector('#dialog-content');
+   const connection=select.value,version=chatGeneration;
+   content.innerHTML='<h2>¿Venta ganada?</h2><p class="dialog-copy">Cargando las oportunidades de este contacto…</p>';
+   if(!dialog.open)dialog.showModal();
+   let found,pipes;
+   try{[found,pipes]=await Promise.all([
+     request(`workspace/opportunities?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(c.id)}`),
+     request(`workspace/pipelines?connectionId=${encodeURIComponent(connection)}`)])}
+   catch(error){content.innerHTML=`<h2>¿Venta ganada?</h2><p class="dialog-copy">${esc(friendly(error))}</p>`;return}
+   if(!dialog.open||version!==chatGeneration)return;
+   const open=asList(found.items).filter(o=>o.status!=='won'&&o.status!=='lost'&&o.status!=='abandoned');
+   const pipelines=asList(pipes.pipelines);
+   const chosen=found.active&&open.some(o=>o.id===found.active.id)?found.active.id:(open[0]?.id||'new');
+   const valueOf=id=>{const o=open.find(x=>x.id===id);return o&&typeof o.monetaryValue==='number'&&o.monetaryValue>0?o.monetaryValue:''};
+   content.innerHTML=`<h2>¿Venta ganada?</h2>
+    <p class="dialog-copy">Se marca como <b>ganada</b> y cuenta en las ventas de este mes, en el tablero y en las de quien la tiene asignada. Si no tiene a nadie, pasa a ti.</p>
+    <form id="win-form" class="dialog-form">
+     <label>Venta<select name="opportunity">${open.map(o=>`<option value="${esc(o.id)}"${o.id===chosen?' selected':''}>${esc(o.name||'Oportunidad sin nombre')}${o.stageName?' · '+esc(o.stageName):''}</option>`).join('')}<option value="new"${chosen==='new'?' selected':''}>+ Nueva venta</option></select></label>
+     <div id="win-new" ${chosen==='new'?'':'hidden'}>
+      <label>Nombre<input name="name" maxlength="190" value="${esc('Venta · '+name(c))}"></label>
+      ${pipelines.length>1?`<label>Embudo<select name="pipeline">${pipelines.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select></label>`:''}
+     </div>
+     <label>Valor de la venta<input name="value" type="number" inputmode="decimal" min="0" step="0.01" required value="${esc(String(valueOf(chosen)))}" placeholder="Ej.: 1200"></label>
+     <div class="dialog-actions"><button class="primary">Marcar como ganada</button></div>
+     <p id="win-result" class="dialog-copy" role="status"></p>
+    </form>`;
+   const form=content.querySelector('#win-form'),result=content.querySelector('#win-result');
+   form.elements.opportunity.onchange=()=>{const v=form.elements.opportunity.value;content.querySelector('#win-new').hidden=v!=='new';form.elements.value.value=String(valueOf(v))};
+   form.elements.value.focus();
+   form.onsubmit=async e=>{
+    e.preventDefault();
+    const target=form.elements.opportunity.value,value=Number(form.elements.value.value);
+    if(!Number.isFinite(value)||value<0){result.textContent='Escribe el valor de la venta.';return}
+    if(target==='new'&&!pipelines.length){result.textContent='Esta cuenta no tiene embudos donde guardar la venta.';return}
+    const payload=target==='new'
+     ?{name:form.elements.name.value.trim()||('Venta · '+name(c)),pipelineId:form.elements.pipeline?.value||pipelines[0].id,status:'won',monetaryValue:value}
+     :{status:'won',monetaryValue:value,claimIfUnassigned:true};
+    const where=target==='new'
+     ?`workspace/opportunity/new?connectionId=${encodeURIComponent(connection)}&contactId=${encodeURIComponent(c.contactId)}`
+     :`workspace/opportunity/edit?connectionId=${encodeURIComponent(connection)}&opportunityId=${encodeURIComponent(target)}`;
+    const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(where+JSON.stringify(payload)));
+    const storageKey='agora-win:'+Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+    const requestId=sessionStorage.getItem(storageKey)||crypto.randomUUID().replace(/-/g,'');sessionStorage.setItem(storageKey,requestId);
+    const button=form.querySelector('button.primary');button.disabled=true;result.textContent='Guardando…';
+    try{
+     await request(where,'POST',me.csrf,{...payload,requestId});
+     sessionStorage.removeItem(storageKey);
+     dialog.close();
+     window.dispatchEvent(new CustomEvent('agora:toast',{detail:`Venta ganada: ${money(value)}. Ya cuenta en el tablero del mes.`}));
+     if(active()&&version===chatGeneration)loadContact(c,chatGeneration);
+    }catch(error){
+     if(error.code==='nothing_to_change'){sessionStorage.removeItem(storageKey);result.textContent='Esa venta ya estaba ganada con ese valor.'}
+     else{if(['action_rejected','invalid_opportunity_value','invalid_opportunity_name','unknown_pipeline','action_forbidden'].includes(error.code))sessionStorage.removeItem(storageKey);result.textContent=friendly(error)}
+     button.disabled=false;
+    }
+   };
+  }
+
   // ---- Plantillas de WhatsApp: para escribir pasadas las 24 horas ------------------
   const FIELD_NAMES={'contact.name':'nombre del contacto','contact.first_name':'nombre','contact.last_name':'apellidos','contact.full_name':'nombre completo','contact.phone':'teléfono','contact.email':'correo','contact.company_name':'empresa','user.name':'tu nombre','user.first_name':'tu nombre','location.name':'nombre de la empresa'};
   const CATEGORY={MARKETING:'Promoción',UTILITY:'Servicio',AUTHENTICATION:'Verificación'};
@@ -439,7 +501,7 @@ export async function renderLiveInbox(container){
     function bindEdit(){
      const form=panel.querySelector('#live-contact-form');if(!form)return;
      const status=panel.querySelector('#live-contact-status');
-     panel.querySelector('#live-edit-cancel').onclick=()=>{editing=false;show()};
+     panel.querySelector('#live-edit-cancel').onclick=()=>{editing=false;show()};panel.querySelector('[data-cancel-edit]').onclick=()=>{editing=false;show()};
      tags=bindTagEditor(panel,data.contact);
      form.onsubmit=async event=>{
       event.preventDefault();
@@ -579,9 +641,10 @@ export async function renderLiveInbox(container){
   }
   function open(c){
    selected=c;chatNeedsRefresh=false;chatGeneration++;messages=new Map();cursor=null;chatChannel=sendChannels[c.lastMessageType]||null;chatChannels=null;list();layout.classList.add('chat-open');layout.classList.remove('contact-open');
-   $('#live-messages').innerHTML=`<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">${UI_ICONS.back}</button><span class="avatar">${esc(initials(c))}</span><div><h2>${esc(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div><button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">${UI_ICONS.expand}</button><button id="live-contact-toggle" aria-label="Ver ficha del contacto" title="Ver ficha del contacto">${UI_ICONS.contact}</button></header><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
+   $('#live-messages').innerHTML=`<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">${UI_ICONS.back}</button><span class="avatar">${esc(initials(c))}</span><div><h2>${esc(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div>${canWin()?'<button id="live-won" class="won-button" title="Marcar una venta como ganada"><span aria-hidden="true">✓</span><span class="won-long">¿Venta ganada?</span><span class="won-short">¿Ganada?</span></button>':''}<button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">${UI_ICONS.expand}</button><button id="live-contact-toggle" aria-label="Ver ficha del contacto" title="Ver ficha del contacto">${UI_ICONS.contact}</button></header><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
    $('#live-back').onclick=()=>{clearTimeout(pollTimer);document.body.classList.remove('agora-focus');layout.classList.remove('chat-open','contact-open');say();$('#live-search').focus()};
    $('#live-contact-toggle').onclick=()=>layout.classList.toggle('contact-open');
+   const won=$('#live-won');if(won)won.onclick=()=>winDialog(c);
    if(Number(c.unreadCount)>0&&me?.csrf){
     request(`workspace/read?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`,'POST',me.csrf)
      .then(()=>{c.unreadCount=0;if(active())list();window.dispatchEvent(new CustomEvent('agora:unread',{detail:conversations.reduce((sum,item)=>sum+(Number(item.unreadCount)||0),0)}))})

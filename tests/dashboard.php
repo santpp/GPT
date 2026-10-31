@@ -14,10 +14,11 @@ final class FakeBoardApi {
     public array $contactAnswer=[];
     public array $opportunities=[];
     public array $pipelines=[];
+    public array $payloads=[];
     public function __construct(public readonly string $location) {}
     public function gateway():GhlGateway {
         return new GhlGateway(fn():GhlClient=>new GhlClient('fake',function(string $path,string $version,string $method,?array $payload):array {
-            $this->calls[]=$path;
+            $this->calls[]=$path;$this->payloads[]=$payload;
             if(str_starts_with($path,'/conversations/search'))
                 return ['status'=>200,'body'=>json_encode(['conversations'=>[],'total'=>str_contains($path,'status=unread')?$this->unread:$this->conversations])];
             if(str_starts_with($path,'/contacts/search'))return ['status'=>200,'body'=>json_encode($this->contactAnswer)];
@@ -26,7 +27,7 @@ final class FakeBoardApi {
             throw new GhlApiException(404);
         }));
     }
-    public function reset():void {$this->calls=[];}
+    public function reset():void {$this->calls=[];$this->payloads=[];}
     public function paths():array {return array_map(fn($c)=>explode('?',$c)[0],$this->calls);}
 }
 function boardFree(int $connection):void{query('UPDATE ghl_sync_state SET request_not_before=0,requests_today=0,rate_window_start=0,rate_window_count=0 WHERE connection_id=?',[$connection]);}
@@ -54,7 +55,10 @@ try {
  query('DELETE FROM pipeline_cache WHERE connection_id=?',[$connectionId]);
  $board=new Dashboard($api->gateway(),new PipelineDirectory($api->gateway()));
  $view=$board->get($connection,$admin);
- boardCheck($api->paths()===['/conversations/search','/conversations/search','/contacts/search','/opportunities/search','/opportunities/pipelines'],'the board reads conversations, contacts, opportunities and the pipeline names');
+ boardCheck($api->paths()===['/conversations/search','/conversations/search','/contacts/search','/opportunities/search','/opportunities/pipelines','/contacts/search'],'the board reads conversations, contacts, opportunities, the pipeline names and today\'s leads');
+ $todayAsk=$api->payloads[5]['filters'][0]??[];
+ boardCheck(($todayAsk['field']??null)==='dateAdded'&&($todayAsk['operator']??null)==='range'&&preg_match('/T\d\d:00:00Z$/',$todayAsk['value']['gt']??'')===1,'today\'s leads are asked for by the date they came in');
+ boardCheck($view['leads']['today']===812&&$view['leads']['mine']===null&&$view['leads']['linked']===false,'without a linked user there is no «assigned to me» figure rather than a wrong one');
  boardCheck((int)query('SELECT requests_today FROM ghl_sync_state WHERE connection_id=?',[$connectionId])->fetchColumn()===1,'the whole board costs a single budget slot');
  boardCheck(str_contains($api->calls[1],'status=unread')&&!str_contains($api->calls[0],'status='),'the pending figure is the account\'s unread total, not a window');
  boardCheck($view['conversations']===['total'=>47,'unread'=>5],'the account totals are reported as the account gave them');
@@ -74,10 +78,22 @@ try {
  boardCheck($view['restricted']===false&&$view['opportunities']['sampled']===false,'a complete reading is not reported as a sample');
 
  $api->reset();boardFree($connectionId);
+ $api->contactAnswer=['total'=>3];
+ $linked=$board->get($connection,$admin+['self_id'=>'owner-ghl'],'Europe/Madrid');
+ $mineAsk=end($api->payloads)['filters'][0]??[];
+ boardCheck($linked['leads']===['today'=>3,'mine'=>3,'linked'=>true]&&$mineAsk===['field'=>'assignedTo','operator'=>'eq','value'=>'owner-ghl'],'with a linked user, the leads assigned to that person are counted too');
+ $madrid=(new DateTimeImmutable('today',new DateTimeZone('Europe/Madrid')))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z');
+ $dated=array_values(array_filter($api->payloads,fn($p)=>is_array($p)&&(($p['filters'][0]['field']??null)==='dateAdded')));
+ boardCheck(($dated[0]['filters'][0]['value']['gt']??null)===$madrid,'«today» starts at midnight where the person is, not at midnight UTC');
+ $api->contactAnswer=['total'=>812];
+
+ $api->reset();boardFree($connectionId);
  $mine=$board->get($connection,$restricted);
  boardCheck(str_contains($api->calls[0],'assignedTo=seller-1'),'a member restricted to their own data asks the account only for theirs');
  boardCheck($mine['opportunities']['count']===2&&$mine['restricted']===true,'their board counts only their own opportunities, and says so');
  boardCheck($mine['contacts']===null,'no contact figure is shown where the account cannot scope it to that member');
+ $own=array_values(array_filter($api->payloads,fn($p)=>is_array($p)&&isset($p['filters'])));
+ boardCheck(count($own)===1&&in_array(['field'=>'assignedTo','operator'=>'eq','value'=>'seller-1'],$own[0]['filters'],true),'a member who sees only their own gets their own leads of today');
 
  $api->reset();boardFree($connectionId);
  $reader=$board->get($connection,['external_user_id'=>null,'capabilities'=>['viewContacts'=>false,'viewOpportunities'=>false,'assignedDataOnly'=>false]]);
