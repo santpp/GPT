@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.23.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.24.0.
 
 ## Completado y desplegable
 
@@ -20,7 +20,7 @@ Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.23.0.
 
 - Validar 0.5.0 con conversaciones reales y confirmar que desaparece el fallo 502.
 - Validar un envío real por cada canal habilitado y documentar sus restricciones.
-- Siguiente versión (0.24): plantillas de WhatsApp para escribir pasadas las 24 horas, con el número de WhatsApp de la subcuenta (`fromNumberId`) en la configuración de cada conexión, selector de plantilla y sus variables.
+- Plantillas de WhatsApp (0.24.0): número de WhatsApp por conexión, aviso de 24 horas, selector de plantillas aprobadas con vista previa, variables y envío con la forma que usa la cuenta. Pendiente: confirmar con un envío real, plantillas con imagen y botones con enlace variable.
 - Añadir confirmación de lectura y estados de entrega donde la API lo permita.
 - Adjuntos con miniatura, visor, audio y vídeo en el chat; motivo de los envíos fallidos e iconos propios en la cabecera (0.22.0). Pendiente: notas internas.
 - Avisos con el texto real del último mensaje entrante, o «Envió una foto / nota de voz / vídeo / documento» (0.22.1).
@@ -72,7 +72,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## Para la v1.0
 
-- Plantillas de WhatsApp (0.24).
+- Confirmar el envío real de una plantilla de WhatsApp.
 - Proteger mejor la dirección secreta de revisión: secreto en cabecera y contraseña antes de mostrarla.
 - Validación real por canal y de la huella en iPhone y Android.
 - Copias de seguridad de la base de datos y de `var/`.

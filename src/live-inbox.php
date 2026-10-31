@@ -293,6 +293,16 @@ if($path==='/api/workspace/read'&&$method==='POST'){
     catch(GhlApiException $e){respond(['error'=>'No se pudo marcar como leída. Revisa el permiso de escritura de conversaciones.','code'=>'read_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'No se pudo marcar como leída.','code'=>'read_failed'],424);}
 }
+// Plantillas aprobadas de WhatsApp de esta cuenta, para escribir pasadas las 24 horas.
+if($path==='/api/workspace/templates'&&$method==='GET') {
+    if(!($membership['capabilities']['sendMessages']??false))respond(['error'=>'Tu usuario no tiene permiso para responder.'],403);
+    require_once __DIR__.'/WhatsappTemplates.php';
+    try {respond(['items'=>(new WhatsappTemplates())->list($connection,($_GET['refresh']??'')==='1'),'configured'=>true]);}
+    catch(TemplateProblem $e){if($e->reason==='number_missing')respond(['items'=>[],'configured'=>false,'error'=>$e->getMessage()]);respond(['error'=>$e->getMessage(),'code'=>$e->reason],$e->httpStatus);}
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La lista de plantillas está en espera. Vuelve a intentarlo en unos segundos.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>in_array($e->status,[401,403],true)?'La clave de la cuenta no permite leer plantillas. Hay que añadirle el permiso de plantillas.':'No se pudieron leer las plantillas de la cuenta.','code'=>'templates_upstream_'.$e->status],424);}
+    catch(Throwable $e){respond(['error'=>'No se pudieron leer las plantillas de la cuenta.','code'=>'templates_failed'],424);}
+}
 if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $method==='GET')||($path==='/api/workspace/send'&&$method==='POST')) {
     $conversation=$_GET['conversationId']??'';
     if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);

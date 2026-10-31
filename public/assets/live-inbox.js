@@ -89,7 +89,7 @@ export async function renderLiveInbox(container){
   container.agoraLiveDispose=()=>{disposed=true;document.body.classList.remove('agora-focus');clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);clearTimeout(pulseTimer);document.removeEventListener('visibilitychange',wake);window.removeEventListener('online',wake);window.removeEventListener('offline',wake)};
   document.addEventListener('visibilitychange',wake);window.addEventListener('online',wake);window.addEventListener('offline',wake);
   async function tick(){if(!canRefresh())return;if(syncBusy||messageBusy||[...drafts.values()].some(d=>d.sending)){schedule(5);return}if(pause>Date.now()/1000){schedule(pause-Date.now()/1000);return}await sync(true)}
-  let generation=0, chatGeneration=0, conversations=[], selected=null, filter='all', nextCursor=null, hasMore=false, loadingMore=false, pulseToken=null, pulseTimer=null, messages=new Map(), cursor=null, chatChannel=null, chatChannels=null, channelFilter='', searchTerm='', searchTimer=null, channelNames={};
+  let generation=0, chatGeneration=0, conversations=[], selected=null, filter='all', nextCursor=null, hasMore=false, loadingMore=false, pulseToken=null, pulseTimer=null, messages=new Map(), cursor=null, chatChannel=null, chatChannels=null, channelFilter='', searchTerm='', searchTimer=null, channelNames={}, templates={open:false,items:null,configured:true,error:'',chosen:'',values:{},sending:false,notice:'',generation:-1};
   const inboxQuery=()=>{
    const parts=[`connectionId=${encodeURIComponent(select.value)}`,`limit=${encodeURIComponent(limit.value||'20')}`];
    if(filter==='unread')parts.push('status=unread');
@@ -132,6 +132,8 @@ export async function renderLiveInbox(container){
   }
   function renderMessages(){
    const log=$('#live-log');
+   // El aviso de las 24 horas depende de lo último que escribió el contacto.
+   queueMicrotask(()=>{const hint=$('#live-window-hint');if(hint)hint.hidden=!(chatChannel==='WhatsApp'&&windowClosed())});
    log.innerHTML=[...messages.values()].sort((a,b)=>(Date.parse(a.dateAdded)||0)-(Date.parse(b.dateAdded)||0)).map(m=>{
     const files=attachmentsOf(m);
     const body=m.body?esc(m.body):(files.length?'':'Mensaje sin texto');
@@ -199,7 +201,7 @@ export async function renderLiveInbox(container){
    if(!usable.length||!c.contactId)return '<p class="live-readonly">Este canal todavía no admite respuestas desde aquí.</p>';
    const chosen=usable.find(o=>o.type===chatChannel)||usable[0];
    chatChannel=chosen.type;
-   return `<form id="live-composer" class="live-composer"><div class="live-channels" id="live-channel-row" role="group" aria-label="Canal de envío">${pickerMarkup(offered)}</div><div id="live-subject-slot">${chosen.needsSubject?'<label class="live-subject-field">Asunto<input id="live-subject" maxlength="200" required></label>':''}</div><label class="sr-only" for="live-reply">Respuesta</label><textarea id="live-reply" maxlength="4000" rows="3" required placeholder="Escribe una respuesta…"></textarea><div><span id="live-channel-name">${esc(chosen.label)}</span><button id="live-send" class="primary">Enviar</button></div><p id="live-send-status" role="status"></p></form>`;
+   return `<form id="live-composer" class="live-composer"><div class="live-channels" id="live-channel-row" role="group" aria-label="Canal de envío">${pickerMarkup(offered)}</div><div id="live-subject-slot">${chosen.needsSubject?'<label class="live-subject-field">Asunto<input id="live-subject" maxlength="200" required></label>':''}</div><p id="live-window-hint" class="live-window-hint" hidden>Han pasado más de 24 horas desde su último mensaje. WhatsApp sólo permite escribir con una plantilla aprobada.</p><div id="live-template-slot"></div><label class="sr-only" for="live-reply">Respuesta</label><textarea id="live-reply" maxlength="4000" rows="3" required placeholder="Escribe una respuesta…"></textarea><div class="live-composer-actions"><span id="live-channel-name">${esc(chosen.label)}</span><button type="button" id="live-template-toggle" class="link-button" hidden>Usar plantilla</button><button id="live-send" class="primary">Enviar</button></div><p id="live-send-status" role="status"></p></form>`;
   }
 
   /**
@@ -215,6 +217,7 @@ export async function renderLiveInbox(container){
    row.innerHTML=pickerMarkup(offered);
    row.classList.toggle('live-channels-single',asList(offered).length<2);
    const name=$('#live-channel-name');if(name)name.textContent=chosen.label;
+   syncTemplates(c);
    const slot=$('#live-subject-slot');
    if(slot){
     const present=!!$('#live-subject');
@@ -230,6 +233,98 @@ export async function renderLiveInbox(container){
     const notice=$('#live-send-status');if(notice)notice.textContent='';
    });
   }
+  // ---- Plantillas de WhatsApp: para escribir pasadas las 24 horas ------------------
+  const FIELD_NAMES={'contact.name':'nombre del contacto','contact.first_name':'nombre','contact.last_name':'apellidos','contact.full_name':'nombre completo','contact.phone':'teléfono','contact.email':'correo','contact.company_name':'empresa','user.name':'tu nombre','user.first_name':'tu nombre','location.name':'nombre de la empresa'};
+  const CATEGORY={MARKETING:'Promoción',UTILITY:'Servicio',AUTHENTICATION:'Verificación'};
+  /** ¿Pasaron más de 24 horas desde lo último que escribió el contacto? */
+  function windowClosed(){
+   let last=0;
+   for(const m of messages.values())if(m.direction==='inbound'){const t=Date.parse(m.dateAdded);if(t>last)last=t}
+   return last>0&&Date.now()-last>24*3600*1000;
+  }
+  function chosenTemplate(){return (templates.items||[]).find(t=>t.id===templates.chosen)||null}
+  /** ¿Falta alguna variable por escribir? Sin ellas, Meta rechaza la plantilla. */
+  function templateIncomplete(t){return ['header','body'].some(part=>(t.variables[part]||[]).some(v=>v.fixed===null&&!String((templates.values[part]||{})[v.token]||'').trim()))}
+  /** El texto de la plantilla, con lo escrito y con los campos de la ficha nombrados. */
+  function templatePreview(t){
+   const fill=(text,part)=>esc(text).replace(/\{\{\s*([A-Za-z0-9_.]{1,60})\s*\}\}/g,(all,token)=>{
+    const v=(t.variables[part]||[]).find(x=>x.token===token);
+    if(/^\d+$/.test(token)&&v&&v.fixed===null){const typed=(templates.values[part]||{})[token];return typed?`<mark>${esc(typed)}</mark>`:`<mark class="empty">${esc(v.label)}</mark>`}
+    const field=v&&v.fixed?v.fixed.replace(/^\{\{\s*|\s*\}\}$/g,''):token;
+    return `<mark class="field">${esc(FIELD_NAMES[field]||field)}</mark>`;
+   });
+   return `${t.header?`<strong>${fill(t.header,'header')}</strong>`:''}<p>${fill(t.body,'body').replace(/\n/g,'<br>')}</p>${t.footer?`<small>${esc(t.footer)}</small>`:''}${t.buttons.length?`<div class="tpl-buttons">${t.buttons.map(b=>`<span>${esc(b)}</span>`).join('')}</div>`:''}`;
+  }
+  function templateMarkup(){
+   if(!templates.open)return '';
+   const close='<button type="button" class="link-button" id="tpl-close">Volver a escribir</button>';
+   if(templates.items===null)return `<div class="tpl-panel"><p class="muted">Cargando plantillas…</p>${close}</div>`;
+   if(templates.error)return `<div class="tpl-panel"><p class="muted">${esc(templates.error)}</p>${close}</div>`;
+   if(!templates.configured)return `<div class="tpl-panel"><p class="muted">Esta cuenta todavía no tiene el número de WhatsApp para plantillas. El administrador lo añade en Conexiones.</p>${close}</div>`;
+   if(!templates.items.length)return `<div class="tpl-panel"><p class="muted">Esta cuenta no tiene plantillas aprobadas de WhatsApp.</p>${close}</div>`;
+   const t=chosenTemplate();
+   const free=t?['header','body'].flatMap(part=>(t.variables[part]||[]).filter(v=>v.fixed===null).map(v=>({part,...v}))):[];
+   return `<div class="tpl-panel"><label class="tpl-pick">Plantilla aprobada<select id="tpl-select"><option value="">Elige una plantilla</option>${templates.items.map(x=>`<option value="${esc(x.id)}"${x.id===templates.chosen?' selected':''}>${esc(x.name.replace(/_/g,' '))}${x.category?' · '+esc(CATEGORY[x.category]||x.category):''}</option>`).join('')}</select></label>
+    ${t?`<div class="tpl-preview">${templatePreview(t)}</div>${t.unsupported?'<p class="muted">Esta plantilla lleva una imagen o un enlace que cambia. Por ahora envíala desde la cuenta.</p>':''}
+    ${free.map(v=>`<label class="tpl-var">${esc(v.label)}<input data-tpl-part="${v.part}" data-tpl-token="${esc(v.token)}" maxlength="200" value="${esc((templates.values[v.part]||{})[v.token]||'')}"></label>`).join('')}
+    <p class="muted tpl-note">Los datos marcados en gris, como el nombre, los completa la cuenta con la ficha del contacto.</p>`:''}
+    <div class="tpl-actions">${close}<button type="button" class="primary" id="tpl-send"${!t||t.unsupported||templates.sending||templateIncomplete(t)?' disabled':''}>${templates.sending?'Enviando…':'Enviar plantilla'}</button></div>
+    ${templates.notice?`<p class="muted" role="status">${esc(templates.notice)}</p>`:''}</div>`;
+  }
+  async function loadTemplates(c,refresh=false){
+   const version=chatGeneration;templates.items=null;templates.error='';syncTemplates(c);
+   try{
+    const data=await request(`workspace/templates?connectionId=${encodeURIComponent(select.value)}${refresh?'&refresh=1':''}`);
+    if(version!==chatGeneration||!active())return;
+    templates.items=Array.isArray(data.items)?data.items:[];templates.configured=data.configured!==false;
+   }catch(error){if(version!==chatGeneration||!active())return;templates.items=[];templates.error=friendly(error)}
+   syncTemplates(c);
+  }
+  /** Pinta el botón, el aviso de 24 horas y el panel, sin tocar lo que se está escribiendo. */
+  function syncTemplates(c){
+   if(templates.generation!==chatGeneration){templates={open:false,items:null,configured:true,error:'',chosen:'',values:{},sending:false,notice:'',generation:chatGeneration}}
+   const form=$('#live-composer');if(!form)return;
+   const whatsapp=chatChannel==='WhatsApp';
+   if(!whatsapp)templates.open=false;
+   const toggle=$('#live-template-toggle');if(toggle)toggle.hidden=!whatsapp||templates.open;
+   const hint=$('#live-window-hint');if(hint)hint.hidden=!(whatsapp&&windowClosed());
+   form.classList.toggle('template-mode',templates.open);
+   const slot=$('#live-template-slot');if(!slot)return;
+   slot.innerHTML=templateMarkup();
+   const back=$('#tpl-close');if(back)back.onclick=()=>{templates.open=false;templates.notice='';syncTemplates(c)};
+   const pick=$('#tpl-select');if(pick)pick.onchange=()=>{templates.chosen=pick.value;templates.values={};templates.notice='';syncTemplates(c)};
+   slot.querySelectorAll('[data-tpl-token]').forEach(input=>input.oninput=()=>{
+    (templates.values[input.dataset.tplPart]??={})[input.dataset.tplToken]=input.value;
+    const t=chosenTemplate(),box=slot.querySelector('.tpl-preview');if(t&&box)box.innerHTML=templatePreview(t);
+    const go=$('#tpl-send');if(go&&t)go.disabled=!!t.unsupported||templates.sending||templateIncomplete(t);
+   });
+   const send=$('#tpl-send');if(send)send.onclick=()=>sendTemplate(c);
+  }
+  async function sendTemplate(c){
+   const t=chosenTemplate();if(!t||templates.sending)return;
+   const connection=select.value,version=chatGeneration,key=connection+':'+c.id;
+   const body={channel:'WhatsApp',template:{id:t.id,values:templates.values}};
+   templates.sending=true;templates.notice='';syncTemplates(c);
+   let storageKey;
+   try{
+    const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(body)));
+    storageKey='agora-send:'+key+':'+Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+    const requestId=sessionStorage.getItem(storageKey)||crypto.randomUUID();sessionStorage.setItem(storageKey,requestId);
+    const result=await request(`workspace/send?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(c.id)}`,'POST',me.csrf,{...body,requestId});
+    sessionStorage.removeItem(storageKey);
+    if(version!==chatGeneration||!active())return;
+    const shown=$('.tpl-preview')?.innerText||t.body;
+    messages.set(result.messageId,{id:result.messageId,body:shown,direction:'outbound',dateAdded:new Date().toISOString(),status:result.deliveryStatus});
+    renderMessages();$('#live-log').scrollTop=$('#live-log').scrollHeight;
+    templates.open=false;templates.chosen='';templates.values={};
+    const drafted=drafts.get(key);if(drafted){drafted.notice='Plantilla aceptada por el canal.';}
+    const notice=$('#live-send-status');if(notice)notice.textContent='Plantilla aceptada por el canal.';
+   }catch(error){
+    templates.notice=friendly(error);
+    if(storageKey&&['send_rejected','template_values','template_unknown','template_unsupported','needs_phone','number_missing'].includes(error.code))sessionStorage.removeItem(storageKey);
+   }finally{templates.sending=false;if(version===chatGeneration&&active())syncTemplates(c)}
+  }
+
   function bindComposer(c){
    const form=$('#live-composer');if(!form)return;
    const connection=select.value,version=chatGeneration,key=connection+':'+c.id;
@@ -264,6 +359,9 @@ export async function renderLiveInbox(container){
     }catch(error){draft.notice=friendly(error);if(storageKey&&['send_rejected','invalid_message','invalid_subject','unsupported_channel','invalid_contact','connection_unverified'].includes(error.code))sessionStorage.removeItem(storageKey)}
     finally{draft.sending=false;if(active()&&version===chatGeneration)show()}
    };
+   const toggle=$('#live-template-toggle');
+   if(toggle)toggle.onclick=()=>{templates.open=true;templates.notice='';if(templates.items===null||templates.error)loadTemplates(c);else syncTemplates(c)};
+   syncTemplates(c);
   }
   const amount=value=>typeof value==='number'&&isFinite(value)?new Intl.NumberFormat('es-ES',{maximumFractionDigits:2,useGrouping:'always'}).format(value):null;
   function opportunityCard(item,canEdit=false){

@@ -25,6 +25,10 @@ final class GhlClient {
     public function contact(string $id): array {return $this->get('/contacts/'.rawurlencode($id),'2021-07-28');}
     public function contactFields(string $location):array{return $this->get('/locations/'.rawurlencode($location).'/customFields','2021-07-28');}
     public function locationUsers(string $location):array {return $this->get('/users/?'.http_build_query(['locationId'=>$location]),'2021-07-28');}
+    /** Plantillas de WhatsApp aprobadas para un número (GET /locations/{id}/templates, type=whatsapp). */
+    public function whatsappTemplates(string $location,string $numberId,int $skip=0):array {
+        return $this->get('/locations/'.rawurlencode($location).'/templates?'.http_build_query(['type'=>'whatsapp','originId'=>$numberId,'deleted'=>'false','skip'=>(string)$skip,'limit'=>'100']),'2021-07-28');
+    }
     public function sendMessage(array $payload):array {return $this->get('/conversations/messages','2021-04-15',$payload);}
     public function duplicateContact(string $location,string $email):array {
         return $this->get('/contacts/search/duplicate?'.http_build_query(['locationId'=>$location,'email'=>$email]),'2021-07-28');

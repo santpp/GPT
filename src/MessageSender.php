@@ -47,15 +47,18 @@ final class MessageSender {
     public function send(array $connection,array $conversation,array $input):array {
         $id=(int)$connection['id'];$conversationId=$conversation['id']??'';
         $request=$input['requestId']??null;$text=$input['message']??null;
-        if(!is_string($request)||!preg_match('/^[A-Za-z0-9_-]{16,64}$/D',$request)||!is_string($text)||trim($text)===''||mb_strlen($text)>4000)throw new SendProblem('invalid_message',422,'Escribe un mensaje de hasta 4.000 caracteres.');
+        $template=is_array($input['template']??null)?$input['template']:null;
+        if(!is_string($request)||!preg_match('/^[A-Za-z0-9_-]{16,64}$/D',$request))throw new SendProblem('invalid_message',422,'Escribe un mensaje de hasta 4.000 caracteres.');
+        if(!$template&&(!is_string($text)||trim($text)===''||mb_strlen($text)>4000))throw new SendProblem('invalid_message',422,'Escribe un mensaje de hasta 4.000 caracteres.');
         // The choice is checked against the set the server computes, never trusted.
         $available=array_column(array_values(array_filter(self::availableChannels($connection,$conversation),fn(array $c):bool=>$c['available'])),'type');
         $channel=$input['channel']??null;
         if(!is_string($channel)||!in_array($channel,$available,true))throw new SendProblem('unsupported_channel',422,'Ese canal no está disponible para este contacto.');
         $contact=$conversation['contactId']??null;
         if(!is_string($contact)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contact)||($conversation['locationId']??null)!==$connection['location_id'])throw new SendProblem('invalid_contact',422,'Actualiza la conversación antes de responder.');
-        $payload=['type'=>$channel,'contactId'=>$contact,'message'=>trim($text)];
-        if($channel==='Email'){
+        if($template)$payload=$this->templatePayload($connection,$contact,$channel,$template);
+        else $payload=['type'=>$channel,'contactId'=>$contact,'message'=>trim($text)];
+        if(!$template&&$channel==='Email'){
             $subject=$input['subject']??null;
             if(!is_string($subject)||trim($subject)===''||mb_strlen($subject)>200)throw new SendProblem('invalid_subject',422,'Añade un asunto de hasta 200 caracteres.');
             $payload['subject']=trim($subject);
@@ -94,6 +97,30 @@ final class MessageSender {
                 $this->markUnknown($id,$request);throw $this->unknown();
             }catch(Throwable $e){$this->markUnknown($id,$request);throw $this->unknown();}
         }finally{query('SELECT RELEASE_LOCK(?)',[$lock]);}
+    }
+    /**
+     * Una plantilla aprobada de WhatsApp: se busca en la lista del servidor, el
+     * número que envía es el de la cuenta y el destino, el teléfono de la ficha.
+     * Del navegador sólo llegan qué plantilla y lo escrito en sus variables.
+     */
+    private function templatePayload(array $connection,string $contact,string $channel,array $input):array {
+        require_once __DIR__.'/WhatsappTemplates.php';
+        if($channel!=='WhatsApp')throw new SendProblem('template_channel',422,'Las plantillas son sólo para WhatsApp.');
+        $from=$connection['whatsapp_number_id']??null;
+        if(!is_string($from)||$from==='')throw new SendProblem('number_missing',409,'Falta el identificador del número de WhatsApp de esta cuenta. El administrador lo añade en Conexiones.');
+        $profile=query('SELECT payload FROM contact_profile_cache WHERE connection_id=? AND contact_id=?',[$connection['id'],$contact])->fetchColumn();
+        $profile=is_string($profile)?json_decode($profile,true):null;
+        $to=WhatsappTemplates::phone(is_array($profile)?($profile['phone']??null):null);
+        if($to===null)throw new SendProblem('needs_phone',422,'La ficha de este contacto no tiene un teléfono válido para WhatsApp.');
+        $id=$input['id']??null;
+        try {
+            $list=(new WhatsappTemplates($this->gateway))->list($connection);
+            $chosen=null;foreach($list as $item)if(is_string($id)&&$item['id']===$id)$chosen=$item;
+            if(!$chosen)throw new SendProblem('template_unknown',422,'Esa plantilla ya no está aprobada en esta cuenta. Actualiza la lista.');
+            return WhatsappTemplates::payload($chosen,is_array($input['values']??null)?$input['values']:[],$contact,$from,$to);
+        } catch(TemplateProblem $e) {throw new SendProblem($e->reason,$e->httpStatus,$e->getMessage());}
+        catch(GhlCooldown $e) {throw new SendProblem('send_paused',429,'Envío pausado. El mensaje todavía no se ha enviado.',$e->retryAfter);}
+        catch(GhlApiException $e) {throw new SendProblem('templates_unavailable',424,in_array($e->status,[401,403],true)?'La clave de la cuenta no permite leer plantillas. Hay que añadirle el permiso de plantillas.':'No se pudieron leer las plantillas de la cuenta. Vuelve a intentarlo.');}
     }
     private function accepted(array $attempt):array{return ['state'=>'accepted','messageId'=>$attempt['message_id'],'deliveryStatus'=>$attempt['delivery_status'],'requestId'=>$attempt['request_id']];}
     private function markUnknown(int $id,string $request):void{query("UPDATE message_send_attempts SET state='unknown',error_code='unconfirmed' WHERE connection_id=? AND request_id=?",[$id,$request]);}

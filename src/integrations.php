@@ -11,7 +11,7 @@ require_once __DIR__.'/ExternalAuth.php';
 require_once __DIR__.'/AccessChannel.php';
 Installation::assertReady();
 if ($path === '/api/admin/integrations' && $method === 'GET') {
-    $rows=query('SELECT c.id,c.name,c.location_id,c.sync_interval_seconds,c.status,c.last_checked_at,COALESCE(s.enabled,0) AS sync_enabled,s.last_success_at,s.last_error,s.requests_today,s.quota,s.users_last_success_at,s.users_last_error FROM ghl_connections c LEFT JOIN ghl_sync_state s ON s.connection_id=c.id WHERE c.tenant_id=? ORDER BY c.id',[$u['tenant_id']])->fetchAll();
+    $rows=query('SELECT c.id,c.name,c.location_id,c.whatsapp_number_id,c.sync_interval_seconds,c.status,c.last_checked_at,COALESCE(s.enabled,0) AS sync_enabled,s.last_success_at,s.last_error,s.requests_today,s.quota,s.users_last_success_at,s.users_last_error FROM ghl_connections c LEFT JOIN ghl_sync_state s ON s.connection_id=c.id WHERE c.tenant_id=? ORDER BY c.id',[$u['tenant_id']])->fetchAll();
     foreach($rows as &$row){$row['tokenConfigured']=true;$row['externalUsers']=(int)query('SELECT COUNT(*) FROM external_users WHERE connection_id=? AND active=TRUE',[$row['id']])->fetchColumn();}
     $channel=AccessChannel::connection((int)$u['tenant_id']);
     foreach($rows as &$row)$row['accessChannel']=$channel&&(int)$channel['id']===(int)$row['id'];
@@ -58,7 +58,7 @@ if(preg_match('~^/api/admin/integrations/(\d+)/users(?:/(sync))?$~',$path,$userM
     }
     respond(['error'=>'Not found'],404);
 }
-if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule)?$~',$path,$match)) {
+if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp)?$~',$path,$match)) {
     $row=query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$match[1],$u['tenant_id']])->fetch();
     if(!$row) respond(['error'=>'Integración no encontrada'],404);
     if((!isset($match[2]) && in_array($method,['PUT','DELETE'],true)) || (($match[2]??'')==='/schedule' && $method==='POST')) {
@@ -104,6 +104,14 @@ if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule)?$~',$path
         if($enabled && ($row['status']!=='connected' || $lastError==='authentication_or_scope'))respond(['error'=>'Comprueba la conexión primero'],422);
         query('INSERT INTO ghl_sync_state(connection_id,enabled) VALUES(?,?) ON DUPLICATE KEY UPDATE enabled=VALUES(enabled)',[$row['id'],(int)$enabled]);
         respond(['enabled'=>$enabled,'requiresServerCron'=>true]);
+    }
+    if(($match[2]??'')==='/whatsapp' && $method==='PUT') {
+        require_once __DIR__.'/WhatsappTemplates.php';
+        try {$number=WhatsappTemplates::numberId(body()['numberId']??null);}
+        catch(TemplateProblem $e){respond(['error'=>$e->getMessage()],422);}
+        query('UPDATE ghl_connections SET whatsapp_number_id=? WHERE id=? AND tenant_id=?',[$number,$row['id'],$u['tenant_id']]);
+        query("DELETE FROM directory_cache WHERE connection_id=? AND cache_key LIKE 'wa-templates:%'",[$row['id']]);
+        respond(['numberId'=>$number]);
     }
     if(!isset($match[2]) && $method==='DELETE') {query('DELETE FROM ghl_connections WHERE id=? AND tenant_id=?',[$row['id'],$u['tenant_id']]);respond(['ok'=>true]);}
 }
