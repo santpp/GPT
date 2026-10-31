@@ -1,5 +1,5 @@
 const CACHE='agora-shell-v22';
-const SHELL=['/','/bandeja','/contactos','/oportunidades','/tablero','/assets/app.css','/assets/layout.css','/assets/dark.css','/assets/theme.js','/assets/app.js','/assets/workspace.js','/assets/contacts.js','/assets/board.js','/assets/icon.svg','/assets/agora-logo.png','/assets/agora-mark.png','/assets/integrations.js','/assets/live-inbox.js','/assets/contact-editor.js','/assets/dashboard.js','/assets/opportunity-editor.js','/assets/native.js','/assets/push.js','/assets/message-view.js','/assets/passkeys.js','/manifest.webmanifest'];
+const SHELL=['/','/bandeja','/contactos','/oportunidades','/tablero','/assets/app.css','/assets/layout.css','/assets/dark.css','/assets/theme.js','/assets/app.js','/assets/workspace.js','/assets/contacts.js','/assets/board.js','/assets/icons/favicon-32.png','/assets/icons/icon-192.png','/assets/icons/badge-96.png','/assets/agora-logo.png','/assets/agora-mark.png','/assets/integrations.js','/assets/live-inbox.js','/assets/contact-editor.js','/assets/dashboard.js','/assets/opportunity-editor.js','/assets/native.js','/assets/push.js','/assets/message-view.js','/assets/passkeys.js','/manifest.webmanifest'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL.map(url=>new Request(url,{cache:'reload'}))))));
 self.addEventListener('message',e=>{
  if(e.data?.type==='ACTIVATE')self.skipWaiting();
@@ -21,7 +21,7 @@ self.addEventListener('push',event=>{
  const safe=/^\/[A-Za-z0-9/_-]{0,120}$/.test(path)?path:'/bandeja';
  const unread=Number.isFinite(Number(data.unread))?Math.max(0,Number(data.unread)):null;
  event.waitUntil(Promise.all([
-  self.registration.showNotification(title,{body,data:{path:safe},tag:safe,renotify:true,icon:'/assets/icon.svg',badge:'/assets/icon.svg'}),
+  self.registration.showNotification(title,{body,data:{path:safe},tag:safe,renotify:true,icon:'/assets/icons/icon-192.png',badge:'/assets/icons/badge-96.png'}),
   // El número del icono donde el sistema lo permite (iPhone instalada, escritorio).
   unread!==null&&self.navigator?.setAppBadge?(unread>0?self.navigator.setAppBadge(unread):self.navigator.clearAppBadge()).catch(()=>{}):Promise.resolve(),
  ]));

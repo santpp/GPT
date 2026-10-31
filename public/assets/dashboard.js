@@ -114,8 +114,7 @@ export async function renderDashboard(container){
         ${data.opportunities?.sampled?'<p class="board-empty">Se resumen las oportunidades abiertas más recientes.</p>':''}
       </section>
       <section class="board-block" id="board-month">${monthBlock(month)}</section>
-      <div class="dashboard-links"><button class="primary" data-go="inbox">Ir a conversaciones</button><button class="primary" data-go="board">Ver el embudo</button></div>`;
-    container.querySelectorAll('[data-go]').forEach(button=>button.onclick=()=>document.querySelector(`button.nav[data-view="${button.dataset.go}"]`)?.click());
+`;
     bindMonth();
   }
 

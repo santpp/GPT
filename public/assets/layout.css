@@ -545,3 +545,9 @@ body.agora-focus .live-composer{padding-bottom:calc(10px + env(safe-area-inset-b
 .wa-diagnosis{border-top:1px solid var(--line);margin-top:10px;padding-top:10px;font-size:12px;line-height:1.6}.wa-diagnosis .muted{color:var(--muted);font-size:11px;overflow-wrap:anywhere}.wa-diagnosis summary{font-size:11px;color:var(--muted);cursor:pointer;margin-top:6px}
 .external-check-label{display:block;font-size:11px;color:var(--muted);margin:10px 0 4px}.cron-confirm{margin-top:10px}.cron-confirm input{max-width:320px}
 .backup-notice.warn{background:#fff4d5;border-color:#f2e7c7}
+/* 0.27 · más limpia para la v1.0 */
+.page-footer{justify-content:center;padding:18px 0;opacity:.8}
+.sidebar-bottom .connection{display:none}
+.tabs #live-count{display:none}
+@media(min-width:1201px){.live-inbox-layout:not(.chat-open){grid-template-columns:320px minmax(0,1fr)}.live-inbox-layout:not(.chat-open) .live-contact-panel{display:none}}
+.sidebar nav{margin-top:28px}

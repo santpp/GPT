@@ -188,7 +188,7 @@ export async function renderLiveInbox(container){
   const usableChannels=offered=>asList(offered).filter(o=>o.available!==false);
   const pickerMarkup=offered=>{
    const list=asList(offered);
-   if(list.length<2&&!list.some(o=>o.available===false))return `<p class="live-channel-single">${esc(list[0]?.label??'')} · Texto</p>`;
+   if(list.length<2&&!list.some(o=>o.available===false))return `<p class="live-channel-single">Respondes por ${esc(list[0]?.label??'')}</p>`;
    return list.map(o=>{
     const off=o.available===false;
     const title=off?` title="${esc(CHANNEL_REASONS[o.reason]||'No disponible para este contacto.')}"`:'';

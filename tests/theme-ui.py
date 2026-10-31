@@ -38,6 +38,13 @@ with sync_playwright() as p:
     assert light.evaluate("document.documentElement.dataset.theme")=='light'
     assert light.evaluate("getComputedStyle(document.body).backgroundColor")=='rgb(247, 247, 250)','light mode is exactly as before'
     print('PASS on automatic it follows the device again, and light mode is unchanged')
+    manifest=light.request.get(BASE+'/manifest.webmanifest').json()
+    icons={(i['sizes'],i['purpose']):i['src'] for i in manifest['icons']}
+    assert ('512x512','maskable') in icons and ('192x192','any') in icons
+    for src in list(icons.values())+['/assets/icons/apple-touch-icon.png','/assets/icons/favicon-32.png','/assets/icons/badge-96.png','/favicon.ico']:
+        r=light.request.get(BASE+src);assert r.ok and r.body()[:4] in (b'\x89PNG',b'\x00\x00\x01\x00'),src
+    assert light.locator('link[rel=apple-touch-icon]').count()==1 and light.locator('link[rel=icon][sizes="32x32"]').count()==1
+    print('PASS the installed app, the browser tab and the notifications use the Ágora icon, with a safe area for rounded icons')
     assert not errors,errors
     print('PASS no JS errors')
     b.close()
