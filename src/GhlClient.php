@@ -25,6 +25,7 @@ final class GhlClient {
     public function contact(string $id): array {return $this->get('/contacts/'.rawurlencode($id),'2021-07-28');}
     /** Carpetas de campos de contacto (y a veces los campos con su carpeta). La referencia sólo la documenta para objetos personalizados y empresas: se prueba y, si no responde, se sigue sin carpetas. */
     public function contactFolders(string $location):array{return $this->get('/custom-fields/object-key/contact?'.http_build_query(['locationId'=>$location]),'2021-07-28');}
+    public function customFieldById(string $id):array{return $this->get('/custom-fields/'.rawurlencode($id),'2021-07-28');}
     public function locationTags(string $location):array{return $this->get('/locations/'.rawurlencode($location).'/tags','2021-07-28');}
     public function contactFields(string $location):array{return $this->get('/locations/'.rawurlencode($location).'/customFields','2021-07-28');}
     public function locationUsers(string $location):array {return $this->get('/users/?'.http_build_query(['locationId'=>$location]),'2021-07-28');}

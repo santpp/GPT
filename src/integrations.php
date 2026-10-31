@@ -59,7 +59,7 @@ if(preg_match('~^/api/admin/integrations/(\d+)/users(?:/(sync))?$~',$path,$userM
     }
     respond(['error'=>'Not found'],404);
 }
-if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|/whatsapp/check|/commission)?$~',$path,$match)) {
+if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|/whatsapp/check|/fields/check|/commission)?$~',$path,$match)) {
     $row=query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$match[1],$u['tenant_id']])->fetch();
     if(!$row) respond(['error'=>'Integración no encontrada'],404);
     if((!isset($match[2]) && in_array($method,['PUT','DELETE'],true)) || (($match[2]??'')==='/schedule' && $method==='POST')) {
@@ -124,6 +124,12 @@ if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|
         catch(GhlApiException $e){respond(['error'=>in_array($e->status,[401,403],true)?'La clave de esta cuenta no tiene el permiso de lectura de plantillas.':'La cuenta respondió con un error al pedir las plantillas (código '.$e->status.').','status'=>$e->status],424);}
         catch(Throwable $e){respond(['error'=>'La respuesta de la cuenta no se pudo leer.'],424);}
         respond(['diagnosis'=>WhatsappTemplates::diagnosis((int)$row['id'])]);
+    }
+    // Qué entrega la cuenta de los campos personalizados y sus carpetas, para poder agruparlos como en la cuenta.
+    if(($match[2]??'')==='/fields/check' && $method==='POST') {
+        require_once __DIR__.'/ContactFieldDirectory.php';
+        try {respond(['diagnosis'=>(new ContactFieldDirectory())->diagnose($row)]);}
+        catch(Throwable $e){respond(['error'=>'No se pudo consultar la cuenta.'],424);}
     }
     // La comisión de la subcuenta: sólo el administrador, sólo aquí. Vale desde el mes en curso.
     if(($match[2]??'')==='/commission' && in_array($method,['GET','PUT'],true)) {

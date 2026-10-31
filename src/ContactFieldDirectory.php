@@ -39,6 +39,8 @@ final class ContactFieldDirectory {
         if(!$row||time()-(int)$row['fetched']>=3600)return null;
         $items=json_decode($row['payload'],true);
         if(!is_array($items))return null;
+        // Sin ninguna carpeta se reintenta pronto: la lectura de carpetas pudo fallar sólo esa vez.
+        if(time()-(int)$row['fetched']>=300&&!array_filter($items,fn($i)=>is_array($i)&&($i['folder']??null)!==null))return null;
         // A directory stored before field types existed is read as stale, so an
         // update refetches it instead of offering every field as plain text.
         foreach($items as $item)if(!is_array($item)||!isset($item['dataType'])||!array_key_exists('folder',$item))return null;
@@ -101,5 +103,34 @@ final class ContactFieldDirectory {
         if(!is_scalar($value))return null;
         $value=trim((string)$value);
         return $value!==''&&mb_strlen($value)<=$max?$value:null;
+    }
+
+    /** Qué devuelve la cuenta para los campos y sus carpetas: estados, conteos y nombres de claves, nunca valores de contactos. Para el administrador. */
+    public function diagnose(array $connection):array {
+        $run=function(Closure $call)use($connection):array{
+            try{return ['status'=>200,'data'=>$this->gateway->execute($connection,$call,false)];}
+            catch(GhlCooldown $e){return ['status'=>429,'data'=>null];}
+            catch(GhlApiException $e){return ['status'=>$e->status,'data'=>null,'detail'=>$e->detail];}
+            catch(Throwable $e){return ['status'=>0,'data'=>null];}
+        };
+        $loc=$connection['location_id'];
+        $fields=$run(fn(GhlClient $c)=>$c->contactFields($loc));
+        $folders=$run(fn(GhlClient $c)=>$c->contactFolders($loc));
+        $list=is_array($fields['data']['customFields']??null)?$fields['data']['customFields']:[];
+        $first=$list[0]??null;
+        $one=['status'=>null];
+        if(is_array($first)&&is_string($first['id']??null)){
+            $r=$run(fn(GhlClient $c)=>$c->customFieldById($first['id']));
+            $f=is_array($r['data']['field']??null)?$r['data']['field']:(is_array($r['data'])?$r['data']:[]);
+            $one=['status'=>$r['status'],'keys'=>array_keys($f),'hasParent'=>isset($f['parentId'])];
+        }
+        $fd=is_array($folders['data'])?$folders['data']:[];
+        $fl=is_array($fd['folders']??null)?$fd['folders']:[];
+        $ff=is_array($fd['fields']??null)?$fd['fields']:[];
+        return [
+            'fields'=>['status'=>$fields['status'],'count'=>count($list),'withParent'=>count(array_filter($list,fn($f)=>is_array($f)&&isset($f['parentId']))),'keys'=>is_array($first)?array_keys($first):[]],
+            'folders'=>['status'=>$folders['status'],'detail'=>$folders['detail']??null,'topKeys'=>array_keys($fd),'count'=>count($fl),'names'=>array_values(array_filter(array_map(fn($f)=>is_array($f)&&is_string($f['name']??null)?mb_substr($f['name'],0,80):null,array_slice($fl,0,50)))),'itemKeys'=>is_array($fl[0]??null)?array_keys($fl[0]):[],'fieldCount'=>count($ff),'fieldsWithParent'=>count(array_filter($ff,fn($f)=>is_array($f)&&isset($f['parentId'])))],
+            'single'=>$one,
+        ];
     }
 }
