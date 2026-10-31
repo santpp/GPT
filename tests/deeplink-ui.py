@@ -14,6 +14,9 @@ with sync_playwright() as p:
         elif path=='/api/workspace/inbox':inbox_for.append(q['connectionId'][0]);data={'limit':20,'items':[{'id':'c-last','contactId':'k1','contactName':'Ana Última','lastMessageType':'TYPE_SMS'}],'total':1}
         elif path=='/api/workspace/conversation':
             asked.append((q['connectionId'][0],q['conversationId'][0]))
+            if q['conversationId'][0]=='only-in-2':
+                if q['connectionId'][0]!='2':route.fulfill(status=404,content_type='application/json',body=json.dumps({'error':'x'}));return
+                data={'conversation':{'id':'only-in-2','contactId':'k5','contactName':'Luis Otra Cuenta','lastMessageType':'TYPE_SMS'}};route.fulfill(status=200,content_type='application/json',body=json.dumps(data));return
             if q['conversationId'][0]=='gone':route.fulfill(status=404,content_type='application/json',body=json.dumps({'error':'Esa conversación ya no está disponible.'}));return
             data={'conversation':{'id':'maria-1','contactId':'k9','contactName':'María Cliente','lastMessageType':'TYPE_WHATSAPP','lastMessageBody':'Hola'}}
         elif path=='/api/workspace/messages':data={'items':[],'hasMore':False}
@@ -27,6 +30,9 @@ with sync_playwright() as p:
     assert '2' in inbox_for and page.locator('#account').input_value()=='2'
     assert page.url.endswith('/bandeja')
     print('PASS a notice of another sub-account switches to it and opens that very conversation, though it is not among the latest')
+    page.goto(BASE+'/conversations/only-in-2');page.wait_for_selector('.live-chat-header h2:has-text("Luis Otra Cuenta")',timeout=15000)
+    assert page.locator('#account').input_value()=='2'
+    print('PASS a notice without its sub-account is searched in the others, and opens in the right one')
     page.goto(BASE+'/conversations/gone?c=1');page.wait_for_selector('#live-feedback')
     page.wait_for_function("document.querySelector('#live-feedback').textContent.includes('ya no está disponible')")
     assert page.locator('.live-chat-header').count()==0

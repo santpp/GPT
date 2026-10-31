@@ -15,6 +15,9 @@ final class PushQueue {
 
     /** Queues one notice per conversation whose unread count really grew. */
     public static function queue(array $connection,array $items,array $before):void {
+        // Con más de una subcuenta, el aviso dice de cuál es.
+        $row=query('SELECT c.name,(SELECT COUNT(*) FROM ghl_connections x WHERE x.tenant_id=c.tenant_id) AS n FROM ghl_connections c WHERE c.id=?',[(int)$connection['id']])->fetch();
+        $account=$row&&(int)$row['n']>1?trim((string)$row['name']):'';
         foreach($items as $conversation) {
             if(!is_array($conversation)||!is_string($conversation['id']??null))continue;
             $unread=max(0,(int)($conversation['unreadCount']??0));
@@ -23,6 +26,7 @@ final class PushQueue {
             if($unread<1||($was!==null&&$unread<=$was))continue;
             $fingerprint=md5(json_encode([$conversation['id'],$conversation['lastMessageDate']??null,$unread],JSON_THROW_ON_ERROR));
             [$name,$body]=self::describe($conversation,$unread);
+            if($account!=='')$name=mb_substr(mb_substr($account,0,40).' · '.$name,0,190);
             $assigned=is_string($conversation['assignedTo']??null)?substr($conversation['assignedTo'],0,80):null;
             query('INSERT IGNORE INTO push_queue(connection_id,conversation_id,fingerprint,title,body,assigned_to) VALUES(?,?,?,?,?,?)',
                 [(int)$connection['id'],$conversation['id'],$fingerprint,$name,$body,$assigned]);

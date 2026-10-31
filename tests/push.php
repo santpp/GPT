@@ -175,6 +175,18 @@ try {
  $before=count($reads);$said('prueba','Notificación de prueba');
  pushCheck(count($reads)===$before,'the test notice reads nothing from the account');
 
+ // ---- el aviso dice de qué subcuenta es, si hay más de una --------------------------
+ require_once __DIR__.'/../src/PushQueue.php';
+ $conv=['id'=>'conv-sub-'.$suffix,'contactName'=>'María Cliente','lastMessageType'=>'TYPE_WHATSAPP','lastMessageBody'=>'Hola','unreadCount'=>1,'lastMessageDate'=>1000];
+ query("UPDATE ghl_connections SET name='ASOCIM' WHERE id=?",[$connectionId]);
+ PushQueue::queue(['id'=>$connectionId],[$conv],[]);
+ pushCheck(query('SELECT title FROM push_queue WHERE conversation_id=?',[$conv['id']])->fetchColumn()==='María Cliente · WhatsApp','con una sola subcuenta, el título no lleva nombre de subcuenta');
+ query('DELETE FROM push_queue WHERE conversation_id=?',[$conv['id']]);
+ query("INSERT INTO ghl_connections(tenant_id,name,location_id,token_ciphertext,status) VALUES(?,?,?,?,'connected')",[$tenant,'Otra Cuenta','loc2-'.$suffix,'x']);
+ PushQueue::queue(['id'=>$connectionId],[$conv],[]);
+ pushCheck(query('SELECT title FROM push_queue WHERE conversation_id=?',[$conv['id']])->fetchColumn()==='ASOCIM · María Cliente · WhatsApp','con varias subcuentas, el aviso dice de cuál es: «ASOCIM · María Cliente · WhatsApp»');
+ query('DELETE FROM push_queue WHERE conversation_id=?',[$conv['id']]);
+
  // ---- not configured ----------------------------------------------------------
  $missing=new PushDelivery($fcm->transport(),'/does/not/exist.json');
  $problem=null;

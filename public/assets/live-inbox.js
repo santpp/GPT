@@ -727,8 +727,22 @@ export async function renderLiveInbox(container){
      // Pedida por su identificador (desde un aviso): se pide completa al servidor.
      if(!target){
       try{target=(await request(`workspace/conversation?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(wanted.id)}`)).conversation}
-      catch(error){unavailable=error.status===404?'Esa conversación ya no está disponible en esta cuenta.':friendly(error)}
+      catch(error){
+       // Sin subcuenta indicada (o de otra): se busca en las demás antes de rendirse.
+       if(error.status===404&&!wanted.tried){
+        for(const other of workspace.connections.map(c=>String(c.id)).filter(id=>id!==String(connection))){
+         try{
+          await request(`workspace/conversation?connectionId=${encodeURIComponent(other)}&conversationId=${encodeURIComponent(wanted.id)}`);
+          workspace.pendingConversation={id:wanted.id,explicit:true,tried:true};
+          workspace.select(other);
+          return false;
+         }catch{}
+        }
+       }
+       unavailable=error.status===404?'Esa conversación ya no está disponible en esta cuenta.':friendly(error);
+      }
      }
+     try{sessionStorage.removeItem('agora-open')}catch{}
      if(target&&version===generation&&active()){
       if(!conversations.some(c=>c.id===target.id)){conversations=[target,...conversations];list()}
       open(conversations.find(c=>c.id===target.id)||target);

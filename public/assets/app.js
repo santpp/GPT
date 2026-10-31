@@ -194,17 +194,22 @@ async function startSession(){
   catch{workspace.setConnections([])}
   renderAccounts();
   // Un aviso trae a su conversación: /conversations/{id}?c={subcuenta}.
-  const deep=location.pathname.match(/^\/conversations\/([A-Za-z0-9_-]{1,80})$/);
+  let deep=location.pathname.match(/^\/conversations\/([A-Za-z0-9_-]{1,80})$/);
+  let wanted=deep?new URLSearchParams(location.search).get('c'):null;
+  // Si la página se recarga antes de abrir la conversación (por ejemplo, al actualizarse la app), no se pierde.
+  try{
+    if(deep)sessionStorage.setItem('agora-open',JSON.stringify({id:deep[1],c:wanted,at:Date.now()}));
+    else{const kept=JSON.parse(sessionStorage.getItem('agora-open')||'null');if(kept&&Date.now()-kept.at<60000){deep=[null,kept.id];wanted=kept.c}else sessionStorage.removeItem('agora-open')}
+  }catch{}
   if(deep){
-    const wanted=new URLSearchParams(location.search).get('c');
     if(wanted&&workspace.connections.some(c=>String(c.id)===wanted)&&workspace.select(wanted))renderAccounts();
-    workspace.pendingConversation={id:deep[1]};
+    workspace.pendingConversation={id:deep[1],explicit:!!wanted};
     history.replaceState(null,'','/bandeja');
   }
   show(requested()||'inbox',{push:false});
   paintPush();
   // Inside the Android shell the phone registers itself so it can be notified.
-  if(isNative())connectDevice(me.csrf,path=>{const name=byPath(path);if(name)show(name);else{const m=path.match(/^\/conversations\/([A-Za-z0-9_-]{1,80})$/);if(m){workspace.pendingConversation={id:m[1]};history.pushState(null,'','/bandeja');show('inbox',{push:false})}}})
+  if(isNative())connectDevice(me.csrf,path=>{const name=byPath(path);if(name)show(name);else{const m=path.match(/^\/conversations\/([A-Za-z0-9_-]{1,80})$/);if(m){workspace.pendingConversation={id:m[1],explicit:false};history.pushState(null,'','/bandeja');show('inbox',{push:false})}}})
     .then(result=>{globalThis.agoraDeviceToken=result.token;if(result.state==='denied')toast('Activa las notificaciones del sistema para recibir avisos de mensajes nuevos.')})
     .catch(()=>{});
 }

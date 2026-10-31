@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.2.0. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.2.1. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -116,3 +116,6 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - **Hecho en 1.2.0:** asignar la conversación (responsable del contacto y de sus oportunidades abiertas), sólo para administradores de la subcuenta y el propietario; el responsable del contacto y de la oportunidad sólo lo cambian ellos.
 - **Descartado por el usuario:** gestionar usuarios desde Ágora (y con ello el permiso `users.write`), y etiquetar desde el chat.
 - **Descartado por el usuario:** respuestas rápidas y «+ Nuevo contacto».
+
+## 1.2.1
+- El aviso dice de qué subcuenta es cuando hay más de una; abre la conversación aunque sea de otra subcuenta o no traiga la suya, y no pierde la apertura si la app se recarga. Pendiente de confirmar en el teléfono.
