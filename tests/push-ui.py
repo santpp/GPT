@@ -151,7 +151,11 @@ with sync_playwright() as pw:
         elif path=='devices/test': data={'results':[{'device':1,'label':'Android (instalada)','platform':'web','result':'sent'}]}
         elif path=='admin/cron-url':
             state['cron']=request.method=='POST'
-            data={'enabled':True,'url':'https://nueva.agoradigital.app/api/cron/'+'ab'*32} if request.method=='POST' else {'enabled':False}
+            if request.method=='POST':
+                if (json.loads(request.post_data or '{}').get('password'))!='clave-correcta':
+                    route.fulfill(status=403,content_type='application/json',body=json.dumps({'error':'La contraseña no es correcta.','code':'password_mismatch'}));return
+                data={'enabled':True,'endpoint':'https://nueva.agoradigital.app/api/cron','header':'X-Agora-Key','key':'ab'*32,'url':'https://nueva.agoradigital.app/api/cron/'+'ab'*32}
+            else: data={'enabled':False}
         elif path=='devices': data={'items':[{'id':1,'platform':'web','label':'Android (instalada)','created_at':'2026-10-31 08:00:00','last_seen_at':'2026-10-31 08:00:00','last_sent_at':None}],
             'browser':True,'android':False,'queue':{'pending':2,'sent':0,'failed':1,'lastError':'unavailable: El servicio de avisos del navegador respondió 503.'},
             'delivery':{'at':'2020-01-01T00:00:00Z','sent':0},'discovery':None,'externalCheck':'2026-10-31T10:00:00Z' if state.get('cron') else None}
@@ -181,15 +185,21 @@ with sync_playwright() as pw:
     # The server cron is not running: Connections offers the check from outside.
     assert 'La revisión no está corriendo en el servidor' in page.locator('.external-check').inner_text()
     page.locator('#cron-new').click()
-    page.wait_for_selector('#cron-url',state='attached')
+    page.wait_for_selector('#cron-confirm')
+    page.locator('#cron-confirm [name=password]').fill('equivocada');page.locator('#cron-confirm button.primary').click()
+    page.wait_for_function("document.querySelector('#cron-confirm-result').textContent.includes('contraseña')")
+    assert page.locator('#cron-key').count()==0
+    print('PASS the key is only created after typing the password again')
+    page.locator('#cron-confirm [name=password]').fill('clave-correcta');page.locator('#cron-confirm button.primary').click()
+    page.wait_for_selector('#cron-key',state='attached')
     page.wait_for_timeout(600)
-    assert page.locator('#cron-url').input_value().endswith('ab'*32), 'the address is shown right after creating it'
+    assert page.locator('#cron-key').input_value()=='ab'*32 and page.locator('#cron-header').input_value()=='X-Agora-Key' and page.locator('#cron-endpoint').input_value().endswith('/api/cron'), 'the key travels in a header, apart from the address'
     box=page.locator('.external-check').inner_text()
-    assert 'no se volverá a mostrar' in box and 'cada minuto' in box, box
+    assert 'no se volverá a mostrar' in box and 'cada minuto' in box and 'Cabeceras' in box, box
     print('PASS when the server cron does not run, the owner can create the outside check, with the steps')
     page.locator('#cron-done').click()
     page.wait_for_selector('#cron-off',state='attached')
-    assert page.locator('#cron-url').count()==0, 'once acknowledged, the address is not shown again'
+    assert page.locator('#cron-key').count()==0 and page.locator('#cron-url').count()==0, 'once acknowledged, the key is not shown again'
     print('PASS the address is shown once, and afterwards it can only be changed or turned off')
     assert not errors, errors
     context.close();b.close()

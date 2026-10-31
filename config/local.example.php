@@ -16,6 +16,12 @@ return [
     // Avisos en el navegador y en el móvil sin tienda de aplicaciones. Ágora
     // crea este archivo solo la primera vez; mantenlo fuera de public_html.
     'WEBPUSH_KEY_FILE'=>dirname(__DIR__).'/var/webpush.json',
+    // Copia de seguridad diaria (bin/backup.php). Con una frase de al menos 12
+    // caracteres la copia va cifrada e incluye las claves de var/; sin ella,
+    // sólo la base de datos. Apunta la frase en un sitio seguro fuera del servidor.
+    // 'BACKUP_PASSPHRASE'=>'REPLACE_WITH_A_LONG_PASSPHRASE',
+    // 'BACKUP_DIR'=>dirname(__DIR__).'/backups',
+    // 'BACKUP_KEEP'=>'14',
     // Access codes are delivered by the connected account chosen in
     // Conexiones → Canal de acceso. No mail server credentials belong here.
 ];

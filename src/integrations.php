@@ -15,7 +15,8 @@ if ($path === '/api/admin/integrations' && $method === 'GET') {
     foreach($rows as &$row){$row['tokenConfigured']=true;$row['externalUsers']=(int)query('SELECT COUNT(*) FROM external_users WHERE connection_id=? AND active=TRUE',[$row['id']])->fetchColumn();}
     $channel=AccessChannel::connection((int)$u['tenant_id']);
     foreach($rows as &$row)$row['accessChannel']=$channel&&(int)$channel['id']===(int)$row['id'];
-    respond(['items'=>$rows,'syncImplemented'=>true,'syncWindows'=>[20,50,100],'accessChannel'=>['connectionId'=>$channel?(int)$channel['id']:null,'ready'=>AccessChannel::configured((int)$u['tenant_id'])]]);
+    $backup=query("SELECT value FROM app_state WHERE name='backup_last_run'")->fetchColumn();
+    respond(['backup'=>is_string($backup)?json_decode($backup,true):null,'items'=>$rows,'syncImplemented'=>true,'syncWindows'=>[20,50,100],'accessChannel'=>['connectionId'=>$channel?(int)$channel['id']:null,'ready'=>AccessChannel::configured((int)$u['tenant_id'])]]);
 }
 if ($path === '/api/admin/access-channel' && in_array($method,['GET','PUT'],true)) {
     if($method==='PUT') {

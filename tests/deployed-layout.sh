@@ -71,11 +71,11 @@ echo "$CHAIN" | grep -q '"discovery":{' || { echo "FAIL the message check left n
 echo "$CHAIN" | grep -q '"delivery":{' || { echo "FAIL the delivery pass left no trace: $CHAIN"; exit 1; }
 echo "PASS both crons run from the deployed tree and the owner can see when"
 # When the server cron cannot run, a cron service calls a secret address instead.
-MADE=$(curl -s -b "$J" -X POST -H 'Content-Type: application/json' -H "X-CSRF-Token: $CSRF" -H "Origin: http://localhost:$PORT" http://127.0.0.1:$PORT/api/admin/cron-url)
+MADE=$(curl -s -b "$J" -X POST -H 'Content-Type: application/json' -H "X-CSRF-Token: $CSRF" -H "Origin: http://localhost:$PORT" -d "{\"password\":\"$PASS\"}" http://127.0.0.1:$PORT/api/admin/cron-url)
 CRON=$(echo "$MADE" | php -r '$u=json_decode(stream_get_contents(STDIN),true)["url"]??"";echo preg_match("~/api/cron/([a-f0-9]{64})$~",$u,$m)?$m[1]:"";')
 [ -n "$CRON" ] || { echo "FAIL the owner cannot create the outside check address: $MADE"; exit 1; }
 php -r 'require $argv[1]."/agora-private/src/bootstrap.php";query("DELETE FROM app_state WHERE name=?",["sweep_last_run"]);' "$ROOT"
-RUN=$(curl -s http://127.0.0.1:$PORT/api/cron/$CRON)
+RUN=$(curl -s -H "X-Agora-Key: $CRON" http://127.0.0.1:$PORT/api/cron)
 echo "$RUN" | grep -q '"ok":true' || { echo "FAIL the outside check does not run on the deployed tree: $RUN"; tail -5 "$ROOT/server.log"; exit 1; }
 VIA=$(curl -s -b "$J" http://127.0.0.1:$PORT/api/devices)
 echo "$VIA" | grep -q '"via":"url"' || { echo "FAIL the outside check left no trace: $VIA"; exit 1; }

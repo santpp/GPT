@@ -30,9 +30,19 @@ try {
     // La revisión de cada minuto, llamada desde fuera cuando el cron del servidor
     // no corre. La dirección es el único secreto: sin ella responde como si no
     // existiera, y no devuelve nada de la cuenta, sólo si hizo la pasada.
-    if (preg_match('~^/api/cron/([a-f0-9]{64})$~', $path, $cron) && in_array($method,['GET','POST'],true)) {
+    // Dos formas: la clave en la cabecera X-Agora-Key (o Authorization: Bearer),
+    // que no queda en registros ni historiales, y la antigua, con la clave en la
+    // dirección, para los servicios que no permiten cabeceras.
+    $cronKey=null;
+    if ($path === '/api/cron') {
+        $header=(string)($_SERVER['HTTP_X_AGORA_KEY'] ?? '');
+        if ($header==='' && preg_match('/^Bearer\s+([a-f0-9]{64})$/D',(string)($_SERVER['HTTP_AUTHORIZATION'] ?? ''),$bearer)) $header=$bearer[1];
+        $cronKey=$header;
+    } elseif (preg_match('~^/api/cron/([a-f0-9]{64})$~', $path, $cron)) $cronKey=$cron[1];
+    if ($cronKey!==null && in_array($method,['GET','POST'],true)) {
         require_once $appRoot.'/src/Sweep.php';
-        if (!Sweep::secretMatches($cron[1])) respond(['error'=>'Not found'],404);
+        if (!Sweep::secretMatches($cronKey)) respond(['error'=>'Not found'],404);
+        Sweep::noteUse($path==='/api/cron'?'header':'address');
         if (Sweep::looping()) respond(['ok'=>true,'skipped'=>'already_checking']);
         @set_time_limit(70);
         ignore_user_abort(true);
@@ -197,9 +207,19 @@ try {
         if(($u['identity_type'] ?? 'native')!=='native' || $u['role']!=='administrator')respond(['error'=>'Acceso restringido'],403);
         require_once $appRoot.'/src/Sweep.php';
         if($method==='DELETE'){Sweep::disableSecret();respond(['enabled'=>false]);}
+        // Crear la clave pide otra vez la contraseña: una sesión abierta y olvidada
+        // en otro aparato no basta para sacarla. Con límite de intentos, como entrar.
+        $key='cron-confirm|'.hash('sha256',($_SERVER['REMOTE_ADDR'] ?? '').'|'.$u['id']);
+        query('INSERT INTO login_attempts(key_hash,attempts,window_start) VALUES(?,1,?) ON DUPLICATE KEY UPDATE attempts=IF(window_start < UNIX_TIMESTAMP()-900,1,attempts+1), window_start=IF(window_start < UNIX_TIMESTAMP()-900,UNIX_TIMESTAMP(),window_start)',[hash('sha256',$key),time()]);
+        if((int)query('SELECT attempts FROM login_attempts WHERE key_hash=?',[hash('sha256',$key)])->fetchColumn()>5)respond(['error'=>'Demasiados intentos. Espera unos minutos.'],429);
+        $hash=query('SELECT password_hash FROM users WHERE id=?',[$u['id']])->fetchColumn();
+        $given='';try{$given=(string)(body()['password']??'');}catch(Throwable $e){}
+        if(!is_string($hash)||$given===''||!password_verify($given,$hash))respond(['error'=>'La contraseña no es correcta.','code'=>'password_mismatch'],403);
+        query('DELETE FROM login_attempts WHERE key_hash=?',[hash('sha256',$key)]);
         // Se enseña una sola vez: después sólo queda su huella.
         $secret=Sweep::createSecret();
-        respond(['enabled'=>true,'url'=>rtrim((string)getenv('APP_ORIGIN'),'/').'/api/cron/'.$secret]);
+        $origin=rtrim((string)getenv('APP_ORIGIN'),'/');
+        respond(['enabled'=>true,'endpoint'=>$origin.'/api/cron','header'=>'X-Agora-Key','key'=>$secret,'url'=>$origin.'/api/cron/'.$secret]);
     }
     if ($path === '/api/devices') require_once $appRoot.'/src/PushDelivery.php';
     // What a browser needs to subscribe. Public by design, and created the
@@ -236,7 +256,7 @@ try {
         } catch(PDOException $e) {}
         respond(['items'=>$rows,'browser'=>PushDelivery::browserConfigured(),'android'=>PushDelivery::firebaseConfigured(),
             'queue'=>$queue,'delivery'=>PushDelivery::recall('push_last_run'),'discovery'=>PushDelivery::recall('sweep_last_run'),
-            'externalCheck'=>PushDelivery::recall('cron_secret')['created']??null]);
+            'externalCheck'=>PushDelivery::recall('cron_secret')['created']??null,'externalCheckUse'=>PushDelivery::recall('cron_last_use')]);
     }
     // Un aviso de prueba a los dispositivos de quien lo pide, entregado en el acto.
     if ($path === '/api/devices/test' && $method === 'POST') {

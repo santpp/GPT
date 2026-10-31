@@ -90,15 +90,25 @@ final class Sweep {
     public static function createSecret():string {
         $secret=bin2hex(random_bytes(32));
         PushDelivery::remember('cron_secret',['hash'=>hash('sha256',$secret),'created'=>gmdate('c')]);
+        query("DELETE FROM app_state WHERE name='cron_last_use'");
         return $secret;
     }
     public static function disableSecret():void {
-        query('DELETE FROM app_state WHERE name=?',['cron_secret']);
+        query("DELETE FROM app_state WHERE name IN ('cron_secret','cron_last_use')");
     }
     public static function secretMatches(string $candidate):bool {
         $stored=PushDelivery::recall('cron_secret');
         if(!is_string($stored['hash']??null)||!preg_match('/^[a-f0-9]{64}$/D',$candidate))return false;
         return hash_equals($stored['hash'],hash('sha256',$candidate));
+    }
+    /**
+     * Cuándo se usó la clave por última vez y de qué forma, para que el
+     * administrador note un uso que no espera. Se anota como mucho una vez por minuto.
+     */
+    public static function noteUse(string $how):void {
+        $last=PushDelivery::recall('cron_last_use');
+        if(is_string($last['at']??null)&&time()-strtotime($last['at'])<60&&($last['how']??'')===$how)return;
+        PushDelivery::remember('cron_last_use',['at'=>gmdate('c'),'how'=>$how]);
     }
     public static function secretCreated():?string {
         $stored=PushDelivery::recall('cron_secret');

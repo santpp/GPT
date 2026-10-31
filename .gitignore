@@ -8,3 +8,5 @@ deploy/.env.production
 deploy/secrets/
 
 config/local.php
+backups/
+*.agora-backup

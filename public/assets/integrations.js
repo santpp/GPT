@@ -16,7 +16,7 @@ async function api(path,method='GET',data){
 // si no, se borraba en el mismo instante en que aparecía.
 let lastTestResult='';
 // La dirección de revisión se enseña una sola vez; sobrevive al redibujado.
-let freshCronUrl='';
+let freshCronUrl='',freshCron=null,askCronPassword=false;
 async function devicePanel(container){
  const panel=container.querySelector('#device-panel');if(!panel)return;
  let data;
@@ -74,29 +74,46 @@ async function devicePanel(container){
  */
 function externalCheck(data,running){
  const created=data.externalCheck;
- if(freshCronUrl)return `<div class="external-check"><h3>Dirección de revisión creada</h3>
+ const copyRow=(id,label,value)=>`<label class="external-check-label">${label}</label><div class="external-check-url"><input id="${id}" readonly value="${esc(value)}" aria-label="${label}"><button type="button" data-copy="${id}">Copiar</button></div>`;
+ if(freshCron)return `<div class="external-check"><h3>Clave de revisión creada</h3>
    <p>Cópiala ahora: <strong>no se volverá a mostrar</strong>. Si la pierdes, crea otra y la anterior dejará de funcionar.</p>
-   <div class="external-check-url"><input id="cron-url" readonly value="${esc(freshCronUrl)}" aria-label="Dirección de revisión"><button id="cron-copy" type="button">Copiar</button></div>
-   <ol><li>Entra en <strong>cron-job.org</strong> (es gratis) y crea una tarea nueva.</li>
-   <li>Pega esta dirección y elige que se ejecute <strong>cada minuto</strong>.</li>
-   <li>Guarda. En un par de minutos la revisión saldrá aquí en verde, «desde la dirección de revisión».</li></ol>
+   ${copyRow('cron-endpoint','Dirección',freshCron.endpoint)}
+   ${copyRow('cron-header','Nombre de la cabecera',freshCron.header)}
+   ${copyRow('cron-key','Valor de la cabecera (la clave)',freshCron.key)}
+   <ol><li>Entra en <strong>cron-job.org</strong> (es gratis) y crea una tarea nueva con la <strong>dirección</strong> de arriba, <strong>cada minuto</strong>.</li>
+   <li>En la pestaña <strong>Avanzado</strong>, en <strong>Cabeceras</strong>, añade una con el nombre <code>${esc(freshCron.header)}</code> y la clave como valor.</li>
+   <li>Guarda. En un par de minutos la revisión saldrá aquí en verde.</li></ol>
+   <p class="muted">Así la clave viaja dentro de la petición y no queda escrita en la dirección, ni en registros ni en historiales.</p>
+   <details><summary>Mi servicio de cron no permite cabeceras</summary><p class="muted">Usa esta dirección, que lleva la clave dentro. Funciona igual, pero la clave puede quedar en registros de servidores intermedios.</p>${copyRow('cron-url','Dirección con la clave',freshCron.url)}</details>
    <button id="cron-done" type="button">Hecho</button></div>`;
- if(created)return `<div class="external-check"><p>La revisión desde fuera está activada desde el ${esc(new Date(created).toLocaleDateString('es-ES'))}.</p>
-   <button id="cron-new" type="button">Cambiar la dirección</button> <button id="cron-off" type="button" class="danger">Desactivar</button></div>`;
- if(running)return '';
+ const ask=askCronPassword?`<form id="cron-confirm" class="dialog-form cron-confirm"><label>Para crear la clave, confirma tu contraseña<input type="password" name="password" autocomplete="current-password" required></label><button class="primary">Crear clave</button> <button type="button" id="cron-cancel" class="link-button">Cancelar</button><p id="cron-confirm-result" class="dialog-copy" role="status"></p></form>`:'';
+ if(created){
+  const use=data.externalCheckUse;
+  const used=use?.at?`Último uso: ${esc(new Date(use.at).toLocaleString('es-ES'))}${use.how==='address'?' · con la clave en la dirección':''}.`:'Todavía no se ha usado.';
+  return `<div class="external-check"><p>La revisión desde fuera está activada desde el ${esc(new Date(created).toLocaleDateString('es-ES'))}. ${used}</p>
+   ${ask||'<button id="cron-new" type="button">Cambiar la clave</button> <button id="cron-off" type="button" class="danger">Desactivar</button>'}</div>`;
+ }
+ if(running&&!ask)return '';
  return `<div class="external-check"><h3>La revisión no está corriendo en el servidor</h3>
-   <p>Sin ella los avisos sólo salen cuando alguien tiene Ágora abierta. Si el cron del servidor no se puede poner o no funciona, un servicio de cron externo puede hacer la revisión llamando cada minuto a una dirección secreta.</p>
-   <button id="cron-new" class="primary" type="button">Crear dirección de revisión</button></div>`;
+   <p>Sin ella los avisos sólo salen cuando alguien tiene Ágora abierta. Si el cron del servidor no se puede poner o no funciona, un servicio de cron externo puede hacer la revisión llamando cada minuto a Ágora con una clave.</p>
+   ${ask||'<button id="cron-new" class="primary" type="button">Crear clave de revisión</button>'}</div>`;
 }
 function bindExternalCheck(container,panel){
  const create=panel.querySelector('#cron-new');
- if(create)create.onclick=async()=>{
-  if(document.querySelector('#cron-off')&&!confirm('La dirección actual dejará de funcionar. ¿Crear una nueva?'))return;
-  create.disabled=true;
-  try{const {url}=await api('admin/cron-url','POST');freshCronUrl=url||''}
-  catch(error){alert(friendly(error))}
-  devicePanel(container);
+ if(create)create.onclick=()=>{
+  if(document.querySelector('#cron-off')&&!confirm('La clave actual dejará de funcionar. ¿Crear una nueva?'))return;
+  askCronPassword=true;devicePanel(container);
  };
+ const form=panel.querySelector('#cron-confirm');
+ if(form){
+  form.elements.password.focus();
+  form.onsubmit=async e=>{
+   e.preventDefault();const button=form.querySelector('button.primary');button.disabled=true;
+   try{freshCron=await api('admin/cron-url','POST',{password:form.elements.password.value});askCronPassword=false;devicePanel(container)}
+   catch(error){form.querySelector('#cron-confirm-result').textContent=friendly(error);button.disabled=false}
+  };
+  panel.querySelector('#cron-cancel').onclick=()=>{askCronPassword=false;devicePanel(container)};
+ }
  const off=panel.querySelector('#cron-off');
  if(off)off.onclick=async()=>{
   if(!confirm('La revisión desde fuera dejará de funcionar. ¿Desactivarla?'))return;
@@ -104,16 +121,23 @@ function bindExternalCheck(container,panel){
   try{await api('admin/cron-url','DELETE')}catch(error){alert(friendly(error))}
   devicePanel(container);
  };
- const copy=panel.querySelector('#cron-copy');
- if(copy)copy.onclick=async()=>{
-  const input=panel.querySelector('#cron-url');
-  try{await navigator.clipboard.writeText(input.value);copy.textContent='Copiada'}
-  catch{input.select();copy.textContent='Selecciónala y cópiala'}
- };
+ panel.querySelectorAll('[data-copy]').forEach(copy=>copy.onclick=async()=>{
+  const input=panel.querySelector('#'+copy.dataset.copy);
+  try{await navigator.clipboard.writeText(input.value);copy.textContent='Copiado'}
+  catch{input.select();copy.textContent='Selecciona y copia'}
+ });
  const done=panel.querySelector('#cron-done');
- if(done)done.onclick=()=>{freshCronUrl='';devicePanel(container)};
+ if(done)done.onclick=()=>{freshCron=null;devicePanel(container)};
 }
 
+// La copia diaria: cuándo fue la última y si incluye las claves.
+function backupNotice(b){
+ const day=86400000;
+ if(!b)return '<p class="settings-notice backup-notice warn"><b>Copias de seguridad:</b> todavía no se ha hecho ninguna. Añade en el servidor la tarea diaria <code>php agora-private/bin/backup.php</code> (las instrucciones están en la nota de la versión).</p>';
+ const when=new Date(b.at);const old=Date.now()-when.getTime()>2*day;
+ if(!b.ok)return `<p class="settings-notice backup-notice warn"><b>Copias de seguridad:</b> la última, el ${esc(when.toLocaleString('es-ES'))}, falló${b.error==='passphrase_short'?': la frase de cifrado necesita al menos 12 caracteres':'. Revisa los permisos de la carpeta de copias'}.</p>`;
+ return `<p class="settings-notice backup-notice${old||!b.encrypted?' warn':''}"><b>Copias de seguridad:</b> la última, el ${esc(when.toLocaleString('es-ES'))}${old?' (hace más de dos días: revisa la tarea diaria)':''}. ${b.encrypted?'Cifrada, con la base de datos y las claves.':'Sólo la base de datos: añade una frase de cifrado para que incluya también las claves.'}</p>`;
+}
 export async function renderIntegrations(container){
  const instance=Symbol();container.agoraIntegrationsInstance=instance;const active=()=>container.agoraIntegrationsInstance===instance&&container.dataset.view==='settings';
  container.innerHTML='<p class="empty">Comprobando tu sesión…</p>';
@@ -123,8 +147,8 @@ export async function renderIntegrations(container){
  try{
  const installation=await api('admin/diagnostics');if(!active())return;
  if(!installation.ready){renderSetup(container,installation);return}
- const {items,accessChannel={connectionId:null,ready:false}}=await api('admin/integrations');if(!active())return;
- container.innerHTML=`<div class="integration-heading"><div><span class="eyebrow">ADMINISTRACIÓN</span><h2 style="margin-top:8px">Cuentas conectadas</h2></div><div><button id="test-access-channel"${accessChannel.ready?'':' disabled'}>Probar canal de acceso</button> <button id="add-integration" class="primary">+ Añadir subcuenta</button></div></div><p class="settings-notice">Tu cuenta es la única administración propia de Ágora. El equipo se importa desde cada cuenta conectada con sus permisos y asignaciones; no se crean contraseñas locales para empleados.</p>${accessPanel(items,accessChannel)}<div id="integration-cards">${items.map(i=>`<article class="card integration-card"><span class="integration-status">${statusNames[i.status]||'Pendiente'}</span><h3>${esc(i.name)}</h3><p>Identificador: ${esc(i.location_id)}<br>Clave protegida · intervalo: ${i.sync_interval_seconds} s<br>Última comprobación: ${esc(i.last_checked_at||'Sin comprobar')}<br>Consultas programadas: ${Number(i.sync_enabled)?'activadas':'desactivadas'}<br>Última lectura: ${esc(i.last_success_at||'Sin sincronizar')}<br>Equipo importado: ${Number(i.externalUsers)||0} · ${esc(i.users_last_success_at||'Sin sincronizar')}${i.accessChannel?'<br>Canal de acceso del equipo':''}<br>Plantillas de WhatsApp: ${i.whatsapp_number_id?'número '+esc(i.whatsapp_number_id):'sin configurar'}</p><footer><button data-edit="${i.id}">Configurar conexión</button><button data-whatsapp="${i.id}">Plantillas de WhatsApp</button><button data-test="${i.id}">Comprobar conexión</button><button data-users="${i.id}">Equipo y permisos</button><button data-schedule="${i.id}" data-enabled="${Number(i.sync_enabled)||0}">${Number(i.sync_enabled)?'Pausar consultas':'Activar consultas'}</button><button data-remove="${i.id}" class="danger">Eliminar</button></footer></article>`).join('')||'<p class="empty">Todavía no tienes cuentas conectadas.<br>Añade una cuenta para empezar.</p>'}</div><p id="integration-feedback" class="dialog-copy" role="status"></p><section id="device-panel"></section>`;
+ const {items,accessChannel={connectionId:null,ready:false},backup=null}=await api('admin/integrations');if(!active())return;
+ container.innerHTML=`<div class="integration-heading"><div><span class="eyebrow">ADMINISTRACIÓN</span><h2 style="margin-top:8px">Cuentas conectadas</h2></div><div><button id="test-access-channel"${accessChannel.ready?'':' disabled'}>Probar canal de acceso</button> <button id="add-integration" class="primary">+ Añadir subcuenta</button></div></div><p class="settings-notice">Tu cuenta es la única administración propia de Ágora. El equipo se importa desde cada cuenta conectada con sus permisos y asignaciones; no se crean contraseñas locales para empleados.</p>${accessPanel(items,accessChannel)}<div id="integration-cards">${items.map(i=>`<article class="card integration-card"><span class="integration-status">${statusNames[i.status]||'Pendiente'}</span><h3>${esc(i.name)}</h3><p>Identificador: ${esc(i.location_id)}<br>Clave protegida · intervalo: ${i.sync_interval_seconds} s<br>Última comprobación: ${esc(i.last_checked_at||'Sin comprobar')}<br>Consultas programadas: ${Number(i.sync_enabled)?'activadas':'desactivadas'}<br>Última lectura: ${esc(i.last_success_at||'Sin sincronizar')}<br>Equipo importado: ${Number(i.externalUsers)||0} · ${esc(i.users_last_success_at||'Sin sincronizar')}${i.accessChannel?'<br>Canal de acceso del equipo':''}<br>Plantillas de WhatsApp: ${i.whatsapp_number_id?'número '+esc(i.whatsapp_number_id):'sin configurar'}</p><footer><button data-edit="${i.id}">Configurar conexión</button><button data-whatsapp="${i.id}">Plantillas de WhatsApp</button><button data-test="${i.id}">Comprobar conexión</button><button data-users="${i.id}">Equipo y permisos</button><button data-schedule="${i.id}" data-enabled="${Number(i.sync_enabled)||0}">${Number(i.sync_enabled)?'Pausar consultas':'Activar consultas'}</button><button data-remove="${i.id}" class="danger">Eliminar</button></footer></article>`).join('')||'<p class="empty">Todavía no tienes cuentas conectadas.<br>Añade una cuenta para empezar.</p>'}</div><p id="integration-feedback" class="dialog-copy" role="status"></p>${backupNotice(backup)}<section id="device-panel"></section>`;
  devicePanel(container);
  container.querySelector('#add-integration').onclick=()=>edit(null,container);
  container.querySelector('#test-access-channel').onclick=async e=>{e.currentTarget.disabled=true;const feedback=container.querySelector('#integration-feedback');feedback.textContent='Enviando prueba…';try{await api('admin/access-channel/test','POST');feedback.textContent='Prueba entregada al correo del administrador. Revisa la bandeja y la carpeta de spam.'}catch(error){feedback.textContent=friendly(error)}finally{e.currentTarget.disabled=false}};

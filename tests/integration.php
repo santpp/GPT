@@ -43,7 +43,7 @@ try {
  check($code===200&&$recovered['ready']===true,'a pending database update is applied on its own, with no button to press');
  check(in_array('directory_cache',array_column(query('SHOW TABLES')->fetchAll(PDO::FETCH_NUM),0),true),'the missing table is back after that single request');
  [$code,$diagnostics]=request('admin/diagnostics');
- check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.24.2','administrator sees installation readiness and version');
+ check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='0.25.0','administrator sees installation readiness and version');
  check(!str_contains(json_encode($diagnostics),'APP_KEY_FILE')&&!str_contains(json_encode($diagnostics),'integration.key'),'diagnostics expose no configuration values or key paths');
  check(request('admin/installation/encryption','POST')[0]===403,'preparation requires CSRF');
  [$code,$profile]=request('me');check($code===200&&!array_key_exists('ghl_user_id',$profile['user'])&&$profile['user']['capabilities']['configureConnections'],'public profile exposes capabilities without provider-specific fields');
@@ -146,8 +146,9 @@ try {
  request('devices','DELETE',['token'=>$endpoint],$headers);
  // ---- the check from outside, for when the server cron does not run --------
  check(request('cron/'.str_repeat('a',64))[0]===404,'with no address created, the outside check does not exist');
- [$code,$made]=request('admin/cron-url','POST',null,$headers);
- check($code===200&&preg_match('~/api/cron/([a-f0-9]{64})$~',$made['url']??'',$cronMatch)===1,'the owner creates an address for the check from outside');
+ check(request('admin/cron-url','POST',null,$headers)[0]===403&&request('admin/cron-url','POST',['password'=>'otra'],$headers)[0]===403,'the key is not created without the owner\'s password, typed again');
+ [$code,$made]=request('admin/cron-url','POST',['password'=>$password],$headers);
+ check($code===200&&preg_match('~/api/cron/([a-f0-9]{64})$~',$made['url']??'',$cronMatch)===1&&($made['endpoint']??'')==='http://localhost:8080/api/cron'&&($made['header']??'')==='X-Agora-Key'&&($made['key']??'')===$cronMatch[1],'with it, the owner gets the address, the header name and the key');
  $cronSecret=$cronMatch[1];
  check(!str_contains(json_encode(query("SELECT value FROM app_state WHERE name='cron_secret'")->fetchColumn()),$cronSecret),'only a fingerprint of that address is kept, never the address');
  query("DELETE FROM app_state WHERE name='sweep_last_run'");
@@ -157,13 +158,21 @@ try {
  check($status===200&&($body['ok']??false)===true&&!isset($body['skipped']),'calling it, with no session at all, runs the minute check');
  $trace=json_decode((string)query("SELECT value FROM app_state WHERE name='sweep_last_run'")->fetchColumn(),true);
  check(($trace['via']??null)==='url','and the owner can see the check came from outside');
+ check((json_decode((string)query("SELECT value FROM app_state WHERE name='cron_last_use'")->fetchColumn(),true)['how']??null)==='address','the owner can see when the key was last used, and how');
+ query("DELETE FROM app_state WHERE name='sweep_last_run'");
+ $viaHeader=curl_init('http://localhost:8080/api/cron');curl_setopt_array($viaHeader,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_HTTPHEADER=>['X-Agora-Key: '.$cronSecret]]);
+ $body=json_decode((string)curl_exec($viaHeader),true);$status=curl_getinfo($viaHeader,CURLINFO_RESPONSE_CODE);curl_close($viaHeader);
+ check($status===200&&($body['ok']??false)===true,'the key also works in a header, so it never appears in an address');
+ $noHeader=curl_init('http://localhost:8080/api/cron');curl_setopt_array($noHeader,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_HTTPHEADER=>['X-Agora-Key: '.str_repeat('c',64)]]);
+ curl_exec($noHeader);$status=curl_getinfo($noHeader,CURLINFO_RESPONSE_CODE);curl_close($noHeader);
+ check($status===404,'and a wrong key in the header answers as if nothing were there');
  $again=curl_init('http://localhost:8080/api/cron/'.$cronSecret);curl_setopt($again,CURLOPT_RETURNTRANSFER,true);
  $body=json_decode((string)curl_exec($again),true);curl_close($again);
  check(($body['skipped']??null)==='too_soon','a second call seconds later does not repeat the work');
  $wrong=curl_init('http://localhost:8080/api/cron/'.str_repeat('b',64));curl_setopt($wrong,CURLOPT_RETURNTRANSFER,true);
  curl_exec($wrong);$status=curl_getinfo($wrong,CURLINFO_RESPONSE_CODE);curl_close($wrong);
  check($status===404,'any other address answers as if it did not exist');
- [$code,$remade]=request('admin/cron-url','POST',null,$headers);
+ [$code,$remade]=request('admin/cron-url','POST',['password'=>$password],$headers);
  $old=curl_init('http://localhost:8080/api/cron/'.$cronSecret);curl_setopt($old,CURLOPT_RETURNTRANSFER,true);
  curl_exec($old);$status=curl_getinfo($old,CURLINFO_RESPONSE_CODE);curl_close($old);
  check($code===200&&$status===404,'changing the address retires the previous one');
