@@ -254,6 +254,13 @@ async function openSecurity(){
 $('#profile').onclick=openSecurity;
 $('#profile-top').onclick=openSecurity;
 window.addEventListener('agora:logout',()=>{if(!$('#app').hidden)showSignin()});
+// Desde la ficha de un contacto: abrir su conversación en la bandeja.
+window.addEventListener('agora:open-conversation',event=>{
+  const conversation=event.detail;if(!conversation?.id)return;
+  workspace.pendingConversation=conversation;
+  history.pushState(null,'','/conversations/'+encodeURIComponent(conversation.id));
+  show('inbox',{push:false});
+});
 
 const requestForm=$('#team-login-request'),verifyForm=$('#team-login-verify');
 requestForm.onsubmit=async e=>{

@@ -529,3 +529,16 @@ body.agora-focus .live-composer{padding-bottom:calc(10px + env(safe-area-inset-b
 .tpl-actions{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .tpl-note{font-size:11px}
 .live-composer.template-mode .live-composer-actions{display:none}
+/* 0.24.1 · filtro de canal como menú desplegable, en la misma línea que Todas / No leídas */
+.tabs{align-items:center}
+.live-channel-filters{display:block!important;margin-left:auto;padding:0!important}
+.live-channel-filters select{font-size:12px;color:var(--ink);padding:6px 26px 6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);max-width:150px;min-height:32px}
+.live-channel-filters select.filtered{border-color:var(--green);color:var(--green);font-weight:600}
+@media(max-width:600px){.live-channel-filters select{font-size:14px;min-height:38px;max-width:44vw}}
+.tabs .live-channel-filters{background:none;font-size:inherit;border-radius:0;color:inherit}
+/* 0.24.1 · escribir desde la ficha del contacto */
+.record-header>div:nth-child(3){flex:1;min-width:0}
+.record-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.secondary{background:var(--paper);border:1px solid var(--line);border-radius:5px;color:var(--ink);padding:10px 15px;font-size:10px}
+@media(max-width:600px){.record-header{flex-wrap:wrap}.record-actions{width:100%;justify-content:stretch}.record-actions button{flex:1;min-height:44px;font-size:13px}}
+@media(min-width:601px){.live-channel-filters select{max-width:none;font-size:11px;padding-right:22px}}

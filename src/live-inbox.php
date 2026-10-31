@@ -206,6 +206,18 @@ if($path==='/api/workspace/record'&&in_array($method,['GET','POST'],true)){
     catch(GhlApiException $e){respond(['error'=>'No se pudo abrir la ficha de ese contacto.','code'=>'record_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'La ficha recibida no tiene el formato esperado.','code'=>'record_invalid_response'],424);}
 }
+// Escribir a un contacto desde su ficha: su conversación, la que ya tenga o una nueva.
+if($path==='/api/workspace/contact-conversation'&&$method==='POST'){
+    if(!($membership['capabilities']['viewConversations']??false)||!($membership['capabilities']['sendMessages']??false))respond(['error'=>'Tu usuario no tiene permiso para escribir a los contactos.'],403);
+    $contactId=body()['contactId']??null;
+    if(!is_string($contactId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))respond(['error'=>'Contacto no válido.'],422);
+    try{$found=(new InboxFeed())->forContact($connection,$contactId);}
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La cuenta está en espera para respetar la cuota. Vuelve a intentarlo en unos segundos.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>in_array($e->status,[401,403],true)?'La clave de la cuenta no permite abrir conversaciones nuevas.':'No se pudo abrir la conversación con este contacto.','code'=>'conversation_upstream_'.$e->status],424);}
+    catch(Throwable $e){respond(['error'=>'No se pudo abrir la conversación con este contacto.','code'=>'conversation_failed'],424);}
+    if(!Actor::filterConversations([$found],$membership))respond(['error'=>'La conversación de este contacto está asignada a otra persona.','code'=>'conversation_not_assigned'],403);
+    respond(['conversation'=>$found]);
+}
 if($path==='/api/workspace/contacts'&&$method==='GET'){
     if(!($membership['capabilities']['viewContacts']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar contactos.'],403);
     require_once __DIR__.'/ContactDirectory.php';

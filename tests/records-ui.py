@@ -32,9 +32,18 @@ with sync_playwright() as p:
                       'total':1,'query':None,'restricted':False,'partial':False}
             elif path.startswith('workspace/record'):
                 if request.method=='POST':
+                    assert request.headers.get('x-csrf-token')=='t','a change carries the session token'
                     saved.append(json.loads(request.post_data or '{}'));data={'updated':True}
                 else:
                     data={'contact':dict(CONTACT),'canEdit':True,'fields':FIELDS,'assignees':[{'id':'u1','name':'Maria Carvallo'}]}
+            elif path.startswith('workspace/contact-conversation'):
+                assert request.method=='POST' and request.headers.get('x-csrf-token')=='t' and json.loads(request.post_data)=={'contactId':'c1'}
+                state['opened']=True
+                data={'conversation':{'id':'conv-new','contactId':'c1','locationId':'a','contactName':'Andreina Del Nogal','unreadCount':0}}
+            elif path.startswith('workspace/messages'):
+                data={'items':[],'hasMore':False}
+            elif path.startswith('workspace/contact?'):
+                data={'contact':dict(CONTACT),'canEdit':False,'channels':[{'type':'WhatsApp','label':'WhatsApp','available':True,'needsSubject':False,'reason':None}]}
             elif path.startswith('workspace/inbox'):
                 data={'syncIntervalSeconds':120,'limit':20,'items':[],'total':0,'syncedAt':None,'partial':False,'state':None}
             else: data={'items':[]}
@@ -85,6 +94,12 @@ with sync_playwright() as p:
     assert sent['addTags']==['Cliente'] and sent['removeTags']==['VIP'], sent
     assert sent['requestId'], 'an edit must carry its own key so a repeat cannot duplicate it'
     print('PASS only what changed is sent, tags apart, under a repeat-proof key')
+    page.wait_for_selector('#record-message')
+    page.locator('#record-message').click()
+    page.wait_for_selector('.live-chat-header h2:has-text("Andreina Del Nogal")')
+    page.wait_for_selector('#live-reply')
+    assert page.url.endswith('/conversations/conv-new'),page.url
+    print('PASS «Enviar mensaje» in the record opens that contact\'s conversation, ready to write')
     assert not errors, errors
     context.close()
 

@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.24.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.24.1.
 
 ## Completado y desplegable
 
@@ -68,6 +68,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## Limpieza de interfaz para el despliegue
 
 - 0.22.2: marca de Ágora en la cabecera, iconos dibujados en el menú, bandeja más compacta con hora corta, sin estados de entrega en lo recibido, sin canal repetido en el cuadro de respuesta, buscador de contactos completo, sin avisos técnicos y errores del navegador explicados en castellano.
+- 0.24.1: filtro de canales en menú desplegable, «Enviar mensaje» desde la ficha del contacto (abre o crea su conversación), logo en PNG transparente y token de seguridad al guardar la ficha desde Contactos.
 - Pendiente: revisar Conexiones, ficha del contacto y oportunidades en el teléfono con datos reales; modo oscuro al final.
 
 ## Para la v1.0

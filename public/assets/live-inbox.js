@@ -25,7 +25,7 @@ export async function renderLiveInbox(container){
  container.innerHTML='<p class="empty">Cargando conversaciones…</p>';
  try{
   const me=await request('me');const {items}=await request('workspace/connections');if(!active())return;
-  container.innerHTML=`<div class="live-toolbar"><p id="live-feedback" class="live-feedback" role="status"></p><label>Mostrar<select id="live-limit" aria-label="Cantidad de conversaciones"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label></div><p id="live-auto-status" class="live-auto-status" role="status" hidden></p><div class="live-inbox-layout"><section class="live-sidebar" aria-label="Lista de conversaciones"><label class="search"><span aria-hidden="true">⌕</span><input id="live-search" type="search" placeholder="Buscar nombre o mensaje" aria-label="Buscar en conversaciones cargadas"></label><div class="tabs"><button data-live-filter="all" class="active" aria-pressed="true">Todas</button><button data-live-filter="unread" aria-pressed="false">No leídas</button><button data-live-filter="mine" aria-pressed="false" id="live-filter-mine" hidden>Mías</button><span id="live-count"></span></div><div class="live-channel-filters" id="live-channel-filters" role="group" aria-label="Filtrar por canal"></div><div id="live-list"></div></section><section id="live-messages" aria-label="Conversación"><p class="empty">Selecciona una conversación para consultar su historial.</p></section><aside id="live-contact-panel" class="live-contact-panel" aria-label="Ficha del contacto"></aside></div>`;
+  container.innerHTML=`<div class="live-toolbar"><p id="live-feedback" class="live-feedback" role="status"></p><label>Mostrar<select id="live-limit" aria-label="Cantidad de conversaciones"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label></div><p id="live-auto-status" class="live-auto-status" role="status" hidden></p><div class="live-inbox-layout"><section class="live-sidebar" aria-label="Lista de conversaciones"><label class="search"><span aria-hidden="true">⌕</span><input id="live-search" type="search" placeholder="Buscar nombre o mensaje" aria-label="Buscar en conversaciones cargadas"></label><div class="tabs"><button data-live-filter="all" class="active" aria-pressed="true">Todas</button><button data-live-filter="unread" aria-pressed="false">No leídas</button><button data-live-filter="mine" aria-pressed="false" id="live-filter-mine" hidden>Mías</button><span class="live-channel-filters" id="live-channel-filters"></span><span id="live-count"></span></div><div id="live-list"></div></section><section id="live-messages" aria-label="Conversación"><p class="empty">Selecciona una conversación para consultar su historial.</p></section><aside id="live-contact-panel" class="live-contact-panel" aria-label="Ficha del contacto"></aside></div>`;
   const $=s=>container.querySelector(s), limit=$('#live-limit'),feedback=$('#live-feedback'),layout=$('.live-inbox-layout');
   const mineButton=$('#live-filter-mine');
   if(mineButton&&me?.user?.identity_type==='external')mineButton.hidden=false;
@@ -413,7 +413,11 @@ export async function renderLiveInbox(container){
     if(Array.isArray(data.channels)&&data.channels.length){
      chatChannels=data.channels;
      const draft=drafts.get(select.value+':'+c.id);
-     if(draft)applyChannels(c,chatChannels,draft);
+     // Una conversación recién abierta desde la ficha no tiene canal propio: el
+     // cuadro de respuesta aparece cuando la ficha dice por dónde se le puede escribir.
+     const readonly=$('.live-readonly');
+     if(!$('#live-composer')&&readonly){readonly.outerHTML=composer(c,chatChannels);bindComposer(c)}
+     else if(draft)applyChannels(c,chatChannels,draft);
     }
     let bindActivity=()=>{},bindOpportunities=()=>{};
     const bind=()=>{
@@ -608,6 +612,15 @@ export async function renderLiveInbox(container){
     nextCursor=data.nextCursor||null;hasMore=data.hasMore===true&&!!nextCursor;
     if(data.channels&&Object.keys(data.channels).length){channelNames=data.channels;paintChannelFilters()}
     list();
+    // Una conversación pedida desde otra pantalla (la ficha de un contacto) se abre
+    // aunque no esté entre las últimas de la lista.
+    const wanted=workspace.pendingConversation;
+    if(wanted&&!selected){
+     workspace.pendingConversation=null;
+     const known=conversations.find(c=>c.id===wanted.id);
+     if(!known){conversations=[wanted,...conversations];list()}
+     open(known||wanted);
+    }
     window.dispatchEvent(new CustomEvent('agora:unread',{detail:Number(data.unread)||0}));
     const scope=[filter==='unread'?'no leídas':filter==='mine'?'mías':null,channelNames[channelFilter],searchTerm?`«${searchTerm}»`:null].filter(Boolean).join(' · ');
     feedback.textContent=data.items.length
@@ -629,17 +642,17 @@ export async function renderLiveInbox(container){
    container.querySelectorAll('[data-live-filter]').forEach(n=>{n.classList.toggle('active',n===b);n.setAttribute('aria-pressed',String(n===b))});
    load();
   });
+  // Un menú desplegable, no una fila de botones: ocupa una línea en el teléfono.
   function paintChannelFilters(){
    const row=$('#live-channel-filters');if(!row)return;
    const entries=Object.entries(channelNames);
    if(!entries.length){row.innerHTML='';return}
-   row.innerHTML=`<button type="button" data-channel-filter="" class="${channelFilter?'':'selected'}">Todos los canales</button>`
-    +entries.map(([type,label])=>`<button type="button" data-channel-filter="${esc(type)}" class="${channelFilter===type?'selected':''}">${esc(label)}</button>`).join('');
-   row.querySelectorAll('[data-channel-filter]').forEach(button=>button.onclick=()=>{
-    const value=button.dataset.channelFilter;
+   row.innerHTML=`<select id="live-channel-select" aria-label="Filtrar por canal" class="${channelFilter?'filtered':''}"><option value="">Todos los canales</option>${entries.map(([type,label])=>`<option value="${esc(type)}"${channelFilter===type?' selected':''}>${esc(label)}</option>`).join('')}</select>`;
+   $('#live-channel-select').onchange=e=>{
+    const value=e.target.value;
     if(value===channelFilter)return;
     channelFilter=value;paintChannelFilters();load();
-   });
+   };
   }
 
   async function sync(automatic=false){

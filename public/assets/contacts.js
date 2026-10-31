@@ -6,7 +6,9 @@ const initials=name=>String(name||'·').split(/\s+/).slice(0,2).map(part=>[...pa
 const asList=value=>Array.isArray(value)?value:[];
 
 async function request(path,method='GET',body=null){
-  const r=await fetch('/api/'+path,{method,cache:'no-store',...(body!==null?{body:JSON.stringify(body)}:{}),headers:{'Content-Type':'application/json'}});
+  // Todo lo que cambia algo lleva el token de la sesión; sin él el servidor lo rechaza.
+  const csrf=method!=='GET'?(workspace.me?.csrf||''):'';
+  const r=await fetch('/api/'+path,{method,cache:'no-store',...(body!==null?{body:JSON.stringify(body)}:{}),headers:{'Content-Type':'application/json',...(csrf?{'X-CSRF-Token':csrf}:{})}});
   let data;try{data=await r.json()}catch{throw Object.assign(Error(`El servidor devolvió una respuesta no válida (HTTP ${r.status}).`),{status:r.status})}
   if(!r.ok)throw Object.assign(Error((data.error||'Error de conexión')+(data.retryAfter?` Espera ${data.retryAfter} segundos.`:'')),{status:r.status,code:data.code});
   return data;
@@ -62,6 +64,7 @@ export async function renderContacts(container){
   }
 
   let record=null,editing=false,tags={added:[],dropped:[]};
+  const canWrite=()=>{const c=workspace.me?.user?.capabilities||{};return c.viewConversations!==false&&c.sendMessages!==false};
 
   async function open(contactId){
     selected=contactId;editing=false;record=null;
@@ -98,7 +101,7 @@ export async function renderContacts(container){
       <button class="mobile-back" id="record-back" aria-label="Volver a la lista">←</button>
       <span class="avatar olive">${esc(initials(contact.name))}</span>
       <div><h2>${esc(contact.name)}</h2><p>${esc(contact.email||contact.phone||'Sin datos de contacto')}</p></div>
-      ${record.canEdit?'<button class="primary" id="record-edit">Editar ficha</button>':''}
+      <div class="record-actions">${canWrite()?'<button class="primary" id="record-message">Enviar mensaje</button>':''}${record.canEdit?'<button class="secondary" id="record-edit">Editar ficha</button>':''}</div>
      </header>
      ${contact.dnd?'<p class="record-flag">Marcado como no contactar.</p>':''}
      <div class="record-columns">
@@ -110,6 +113,16 @@ export async function renderContacts(container){
     panel.querySelector('#record-back').onclick=()=>{layout.classList.remove('record-open')};
     const edit=panel.querySelector('#record-edit');
     if(edit)edit.onclick=()=>{editing=true;show()};
+    const write=panel.querySelector('#record-message');
+    if(write)write.onclick=async()=>{
+      write.disabled=true;const status=panel.querySelector('#record-status');status.textContent='Abriendo la conversación…';
+      try{
+        const {conversation}=await request(`workspace/contact-conversation?connectionId=${encodeURIComponent(connection)}`,'POST',{contactId:selected});
+        if(!active())return;
+        // La bandeja la abre al cargar, aunque no esté entre las últimas.
+        window.dispatchEvent(new CustomEvent('agora:open-conversation',{detail:conversation}));
+      }catch(error){status.textContent=friendly(error);write.disabled=false}
+    };
   }
 
   async function save(event){

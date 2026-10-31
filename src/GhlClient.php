@@ -29,6 +29,8 @@ final class GhlClient {
     public function whatsappTemplates(string $location,string $numberId,int $skip=0):array {
         return $this->get('/locations/'.rawurlencode($location).'/templates?'.http_build_query(['type'=>'whatsapp','originId'=>$numberId,'deleted'=>'false','skip'=>(string)$skip,'limit'=>'100']),'2021-07-28');
     }
+    /** Abre una conversación con un contacto que aún no tenía (POST /conversations/). */
+    public function createConversation(string $location,string $contact):array {return $this->get('/conversations/','2021-04-15',['locationId'=>$location,'contactId'=>$contact]);}
     public function sendMessage(array $payload):array {return $this->get('/conversations/messages','2021-04-15',$payload);}
     public function duplicateContact(string $location,string $email):array {
         return $this->get('/contacts/search/duplicate?'.http_build_query(['locationId'=>$location,'email'=>$email]),'2021-07-28');

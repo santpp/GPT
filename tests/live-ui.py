@@ -94,11 +94,11 @@ with sync_playwright() as p:
         page.locator('[data-live-filter="unread"]').click()
         page.wait_for_function("document.querySelectorAll('[data-live-id]').length===1")
         assert inbox_queries[-1].get('status')=='unread', inbox_queries[-1]
-        page.wait_for_selector('[data-channel-filter="TYPE_WHATSAPP"]',state='attached')
-        page.locator('[data-channel-filter="TYPE_WHATSAPP"]').evaluate('(n)=>n.click()')
+        page.wait_for_selector('#live-channel-select option[value="TYPE_WHATSAPP"]',state='attached')
+        page.select_option('#live-channel-select','TYPE_WHATSAPP')
         page.wait_for_function("document.querySelectorAll('[data-live-id]').length===0")
         assert inbox_queries[-1].get('channel')=='TYPE_WHATSAPP' and inbox_queries[-1].get('status')=='unread', inbox_queries[-1]
-        page.locator('[data-channel-filter=""]').evaluate('(n)=>n.click()')
+        page.select_option('#live-channel-select','')
         page.locator('[data-live-filter="all"]').click()
         page.wait_for_function("document.querySelectorAll('[data-live-id]').length===2")
         assert page.locator('#nav-unread').inner_text()=='3', 'the menu shows what the account reported unread'

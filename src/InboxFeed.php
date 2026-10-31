@@ -173,6 +173,37 @@ final class InboxFeed {
         PushQueue::queue(['id'=>$connectionId],$items,$before);
     }
 
+    /**
+     * La conversación de un contacto, para escribirle desde su ficha. Se busca
+     * la que ya tiene; si no tiene ninguna, se abre una. Queda registrada para
+     * que el chat pueda leerla y responder como a cualquier otra.
+     */
+    public function forContact(array $connection,string $contact):array {
+        if(!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contact))throw new InvalidArgumentException('contact');
+        $data=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->conversations($connection['location_id'],5,['contactId'=>$contact]),false);
+        $found=null;
+        foreach((array)($data['conversations']??[]) as $item)
+            if(is_array($item)&&is_string($item['id']??null)&&($item['contactId']??null)===$contact&&($item['locationId']??null)===$connection['location_id']){$found=$item;break;}
+        if(!$found) {
+            $created=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->createConversation($connection['location_id'],$contact),false);
+            $conversation=is_array($created['conversation']??null)?$created['conversation']:[];
+            if(!is_string($conversation['id']??null)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation['id'])||($conversation['contactId']??$contact)!==$contact||($conversation['locationId']??$connection['location_id'])!==$connection['location_id'])throw new RuntimeException('Unconfirmed conversation');
+            $profile=query('SELECT payload FROM contact_profile_cache WHERE connection_id=? AND contact_id=?',[$connection['id'],$contact])->fetchColumn();
+            $profile=is_string($profile)?json_decode($profile,true):[];
+            $found=['id'=>$conversation['id'],'contactId'=>$contact,'locationId'=>$connection['location_id'],'unreadCount'=>0,
+                'contactName'=>is_array($profile)?($profile['name']??null):null,'fullName'=>is_array($profile)?($profile['name']??null):null,
+                'phone'=>is_array($profile)?($profile['phone']??null):null,'email'=>is_array($profile)?($profile['email']??null):null,
+                'assignedTo'=>$conversation['assignedTo']??null,'lastMessageType'=>null,'type'=>$conversation['type']??null];
+            $found=array_filter($found,fn($v)=>$v!==null);
+        }
+        // Se registra sin tocar la huella de contenido: abrirla no es un mensaje nuevo
+        // y no debe disparar un aviso.
+        query('INSERT INTO conversation_index(connection_id,conversation_id,payload,unread_count,assigned_to) VALUES(?,?,?,?,?)
+            ON DUPLICATE KEY UPDATE payload=VALUES(payload),seen_at=CURRENT_TIMESTAMP',
+            [$connection['id'],$found['id'],json_encode($found,JSON_THROW_ON_ERROR),max(0,(int)($found['unreadCount']??0)),is_string($found['assignedTo']??null)?substr($found['assignedTo'],0,80):null]);
+        return $found;
+    }
+
     /** The conversation as the account last showed it, for authorization. */
     public static function known(int $connectionId,string $conversationId):?array {
         $payload=query('SELECT payload FROM conversation_index WHERE connection_id=? AND conversation_id=?',[$connectionId,$conversationId])->fetchColumn();
