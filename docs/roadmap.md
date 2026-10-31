@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.0. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.1. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -139,6 +139,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Ficha del contacto: los campos personalizados se agrupan por las carpetas de la cuenta (en la ficha y en el editor), en el mismo orden; los que no tienen carpeta van al final en «Otros campos». Las carpetas se leen de `GET /custom-fields/object-key/contact`, que la referencia sólo documenta para objetos personalizados y empresas: si la cuenta no responde, los campos se muestran sin agrupar y el editor lo dice. Pendiente de probar en la cuenta real.
 - Etiquetas: al pulsar «Añadir» se ofrecen las etiquetas que ya existen en la cuenta (`GET /locations/{id}/tags`), con filtro al escribir; se sigue pudiendo crear una nueva.
 - Transiciones al aparecer listas y mensajes, y respuesta al pulsar botones. Todo se desactiva con «reducir movimiento» del dispositivo.
+
+## 1.5.1 · edición de la ficha
+- Carpetas de campos plegables (la primera abierta, con «n de m» rellenados), buscador de campos cuando hay más de 8, campos modificados marcados, contador en «Guardar ficha (n)», aviso de dos toques al descartar con cambios sin guardar, y espacio para que la barra de guardar no tape el último campo.
 
 ## Siguiente (a decidir)
 - Plantillas de WhatsApp: en espera del WABA ID o de la salida de «Comprobar plantillas».

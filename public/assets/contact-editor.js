@@ -51,13 +51,18 @@ export function contactForm(profile,directory=[],assignees=[]){
  const defined=asList(directory);
  const extra=asList(profile.customFields).filter(field=>!defined.some(d=>d.id===field.id)).map(field=>({id:field.id,name:'Campo personalizado',dataType:'TEXT',options:[]}));
  const customGroups=groupByFolder([...defined,...extra],defined);
- const customHtml=customGroups.length?customGroups.map(g=>`<fieldset class="contact-group"><legend>${esc(g.title)}</legend><div class="contact-grid">${g.items.map(field=>customControl(field,values.get(field.id))).join('')}</div></fieldset>`).join('')
+ const filledId=new Set(asList(profile.customFields).filter(f=>f.value!==''&&f.value!=null||asList(f.values).length||f.checked).map(f=>f.id));
+ const customHtml=customGroups.length?customGroups.map((g,i)=>{
+  const done=g.items.filter(f=>filledId.has(f.id)).length;
+  return `<details class="contact-group fold" data-fold${i===0?' open':''}><summary><span>${esc(g.title)}</span><small>${done} de ${g.items.length}</small></summary><div class="contact-grid">${g.items.map(field=>customControl(field,values.get(field.id))).join('')}</div></details>`;
+ }).join('')
   :'<fieldset class="contact-group"><legend>Campos personalizados</legend><span class="muted">Esta cuenta no define campos personalizados.</span></fieldset>';
+ const finder=defined.length>8?'<label class="field-finder"><span class="sr-only">Buscar un campo</span><input type="search" id="live-field-find" placeholder="Buscar un campo…" autocomplete="off"></label>':'';
  const noFolders=defined.length>0&&defined.every(f=>!f.folder)&&defined.some(f=>f.folderStatus&&f.folderStatus!=='ok');
  const tags=asList(profile.tags).map(tag=>`<span class="tag">${esc(tag)}<button type="button" data-drop-tag="${esc(tag)}" aria-label="Quitar etiqueta ${esc(tag)}">×</button></span>`).join('')||'<span class="muted">Sin etiquetas</span>';
  return `<form id="live-contact-form" class="live-contact-form contact-editor"><header class="live-profile-header"><div><span class="section-label">Editar ficha</span><h2>${esc(profile.name)}</h2></div><button type="button" id="live-edit-cancel" aria-label="Cancelar edición">×</button></header>
   ${groups}
-  ${noFolders?'<p class="muted folder-note">No se pudieron leer las carpetas de campos de la cuenta; se muestran sin agrupar.</p>':''}${customHtml}
+  ${noFolders?'<p class="muted folder-note">No se pudieron leer las carpetas de campos de la cuenta; se muestran sin agrupar.</p>':''}${finder}${customHtml}
   <fieldset class="contact-group"><legend>Etiquetas</legend><div class="live-profile-tags" id="live-tag-list">${tags}</div>
    <div class="tag-add"><label class="sr-only" for="live-new-tag">Añadir etiqueta</label><input id="live-new-tag" maxlength="100" placeholder="Nueva etiqueta"><button type="button" id="live-add-tag">Añadir</button></div></fieldset>
   <div class="contact-save"><p id="live-contact-status" role="status"></p><button type="button" class="link-button" data-cancel-edit>Cancelar</button><button class="primary" id="live-save-contact">Guardar ficha</button></div></form>`;
@@ -140,4 +145,60 @@ export function bindTagEditor(root,contact,loadTags=null){
   input.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();addValue(input.value)}};
   rebind();
   return state;
+}
+
+const FIELD_BOX='label,.live-field-group';
+/** Extras del editor: buscador de campos, marca de lo modificado, contador en «Guardar» y aviso al descartar cambios. */
+export function bindEditorExtras(root,contact,tagState,onCancel){
+  const form=root.querySelector('#live-contact-form');if(!form)return {dirty:()=>false};
+  const save=form.querySelector('#live-save-contact');
+  const changedCount=()=>{
+    const f=readContactForm(form,contact);
+    return Object.keys(f).filter(k=>k!=='customFields').length+(f.customFields?f.customFields.length:0)+(tagState?tagState.added.length+tagState.dropped.length:0);
+  };
+  const refresh=()=>{
+    form.querySelectorAll('.changed').forEach(n=>n.classList.remove('changed'));
+    const f=readContactForm(form,contact);
+    for(const key of Object.keys(f)){
+      if(key==='customFields')continue;
+      form.querySelector(`[name="${key}"]`)?.closest('label')?.classList.add('changed');
+    }
+    for(const item of asList(f.customFields))form.querySelector(`[data-field="${CSS.escape(item.id)}"]`)?.closest(FIELD_BOX)?.classList.add('changed');
+    const n=changedCount();
+    if(save)save.textContent=n?`Guardar ficha (${n})`:'Guardar ficha';
+  };
+  form.addEventListener('input',refresh);form.addEventListener('change',refresh);
+  // Las etiquetas se añaden y quitan sin pasar por input: se vigila la lista.
+  const tagList=form.querySelector('#live-tag-list');
+  if(tagList)new MutationObserver(refresh).observe(tagList,{childList:true});
+  const find=form.querySelector('#live-field-find');
+  if(find)find.oninput=()=>{
+    const q=find.value.trim().toLowerCase();
+    form.querySelectorAll('details[data-fold]').forEach(group=>{
+      let any=false;
+      group.querySelectorAll('.contact-grid > *').forEach(node=>{
+        const hit=!q||node.textContent.toLowerCase().includes(q);
+        node.hidden=!hit;if(hit)any=true;
+      });
+      group.hidden=!any;
+      if(q&&any)group.open=true;
+    });
+  };
+  // Descartar con cambios pide un segundo toque; sin cambios, sale directamente.
+  const status=form.querySelector('#live-contact-status');
+  let armed=null;
+  const guard=button=>{
+    if(!button)return;
+    const original=button.textContent;
+    button.onclick=()=>{
+      if(changedCount()===0||armed===button){onCancel();return}
+      armed=button;button.textContent='Descartar los cambios';
+      if(status)status.textContent=`Tienes ${changedCount()} cambio${changedCount()===1?'':'s'} sin guardar. Pulsa otra vez para descartarlos.`;
+      setTimeout(()=>{if(armed===button){armed=null;button.textContent=original;if(status&&status.textContent.startsWith('Tienes'))status.textContent=''}},4000);
+    };
+  };
+  guard(form.querySelector('[data-cancel-edit]'));
+  guard(form.querySelector('#live-edit-cancel'));
+  refresh();
+  return {dirty:()=>changedCount()>0};
 }

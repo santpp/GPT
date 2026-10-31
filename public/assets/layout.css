@@ -698,3 +698,18 @@ dialog[open]{animation:fade-up .35s var(--ease)}
 .tag-suggest{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;max-height:140px;overflow:auto;padding:2px}
 .tag-option{cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink);min-height:32px;padding:4px 12px;border-radius:999px;font-size:13px}
 .tag-option:hover{border-color:var(--green);color:var(--green)}
+/* 1.5.1 · edición de la ficha: carpetas plegables, buscador y cambios marcados */
+details.contact-group{padding:0;overflow:hidden}
+details.contact-group>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 14px;cursor:pointer;list-style:none;font-size:14px;font-weight:600;color:var(--ink);min-height:44px}
+details.contact-group>summary::-webkit-details-marker{display:none}
+details.contact-group>summary::after{content:'';width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .25s var(--ease);margin-left:4px;flex:none}
+details.contact-group[open]>summary::after{transform:rotate(-135deg)}
+details.contact-group>summary small{margin-left:auto;font-weight:400;color:var(--muted);font-size:12px}
+details.contact-group>.contact-grid{padding:2px 14px 14px;animation:fade-up .35s var(--ease) both}
+details.contact-group[hidden]{display:none}
+.field-finder{display:block;margin:14px 0 0}.field-finder input{width:100%}
+.contact-editor .changed{position:relative}
+.contact-editor label.changed>input,.contact-editor label.changed>select,.contact-editor label.changed>textarea,.contact-editor .live-field-group.changed{border-color:var(--green);box-shadow:0 0 0 2px #ad103c1f}
+.contact-editor .live-check.changed{color:var(--green)}
+.live-contact-form.contact-editor{padding-bottom:84px}
+@media(prefers-reduced-motion:reduce){details.contact-group>.contact-grid,details.contact-group>summary::after{animation:none;transition:none}}

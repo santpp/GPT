@@ -1,4 +1,4 @@
-import {contactForm,readContactForm,bindTagEditor,groupByFolder} from './contact-editor.js';
+import {contactForm,readContactForm,bindTagEditor,groupByFolder,bindEditorExtras} from './contact-editor.js';
 import {opportunityForm,readOpportunityForm,bindPipelineChoice} from './opportunity-editor.js';
 import {attachmentsOf,attachmentMarkup,bindAttachments,statusMarkup,UI_ICONS} from './message-view.js';
 import {workspace,friendly} from './workspace.js';
@@ -562,8 +562,8 @@ export async function renderLiveInbox(container){
     function bindEdit(){
      const form=panel.querySelector('#live-contact-form');if(!form)return;
      const status=panel.querySelector('#live-contact-status');
-     panel.querySelector('#live-edit-cancel').onclick=()=>{editing=false;show()};panel.querySelector('[data-cancel-edit]').onclick=()=>{editing=false;show()};
      tags=bindTagEditor(panel,data.contact,loadTags);
+     bindEditorExtras(panel,data.contact,tags,()=>{editing=false;show()});
      form.onsubmit=async event=>{
       event.preventDefault();
       const save=panel.querySelector('#live-save-contact');save.disabled=true;status.textContent='Guardando ficha…';

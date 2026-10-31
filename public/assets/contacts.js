@@ -1,6 +1,6 @@
 import {workspace,friendly} from './workspace.js';
 import {skeleton} from './skeleton.js';
-import {contactForm,readContactForm,bindTagEditor,groupByFolder} from './contact-editor.js';
+import {contactForm,readContactForm,bindTagEditor,groupByFolder,bindEditorExtras} from './contact-editor.js';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const initials=name=>String(name||'·').split(/\s+/).slice(0,2).map(part=>[...part][0]||'').join('').toUpperCase()||'··';
@@ -90,7 +90,7 @@ export async function renderContacts(container){
     if(editing){
       panel.innerHTML=contactForm(contact,asList(record.fields),asList(record.assignees));
       tags=bindTagEditor(panel,contact,loadTags);
-      panel.querySelector('#live-edit-cancel').onclick=()=>{editing=false;show()};panel.querySelector('[data-cancel-edit]').onclick=()=>{editing=false;show()};
+      bindEditorExtras(panel,contact,tags,()=>{editing=false;show()});
       panel.querySelector('#live-contact-form').onsubmit=save;
       return;
     }

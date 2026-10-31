@@ -28,8 +28,10 @@ with sync_playwright() as p:
     assert titles==['Datos personales','Ventas'],titles
     print('PASS the contact card shows its custom values grouped by the account\'s folders')
     page.locator('#live-edit-contact').click();page.wait_for_selector('#live-contact-form')
-    legends=page.locator('#live-contact-form legend').all_inner_texts()
-    assert legends[-5:-1]==['Datos personales','Ventas','Otros campos','Etiquetas'][0:4] or legends[-4:]==['Datos personales','Ventas','Otros campos','Etiquetas'],legends
+    names=page.locator('#live-contact-form details[data-fold] > summary > span').all_inner_texts()
+    assert names==['Datos personales','Ventas','Otros campos'],names
+    assert page.locator('details[data-fold]').nth(0).get_attribute('open') is not None and page.locator('details[data-fold]').nth(1).get_attribute('open') is None,'only the first folder starts open'
+    assert '1 de 1' in page.locator('details[data-fold] summary small').first.inner_text()
     print('PASS the editor splits the fields into the same folders, with the rest at the end')
     page.locator('#live-add-tag').click();page.wait_for_selector('.tag-option')
     options=page.locator('.tag-option').all_inner_texts()
@@ -39,6 +41,27 @@ with sync_playwright() as p:
     page.locator('.tag-option').click()
     assert 'vip' in page.locator('#live-tag-list').inner_text() and page.locator('.tag-option').count()==1
     print('PASS typing filters them, and tapping one adds it to the contact')
+    # cambios marcados, contador y aviso al descartar
+    assert page.locator('#live-save-contact').inner_text()=='Guardar ficha (1)',page.locator('#live-save-contact').inner_text()
+    page.locator('details[data-fold]').nth(0).locator('input').fill('Cuenca')
+    assert page.locator('.contact-editor label.changed').count()>=1 and page.locator('#live-save-contact').inner_text()=='Guardar ficha (2)'
+    page.screenshot(path='/tmp/contact-edit2.png')
+    print('PASS changed fields are marked and the save button counts the changes')
+    page.locator('[data-cancel-edit]').click()
+    assert page.locator('#live-contact-form').count()==1 and 'sin guardar' in page.locator('#live-contact-status').inner_text()
+    page.locator('[data-cancel-edit]').click();page.wait_for_selector('#live-contact-form',state='detached')
+    print('PASS discarding changes asks for a second tap, then leaves without saving')
     page.screenshot(path='/tmp/contact-edit.png',full_page=True)
+    # con muchos campos aparece el buscador
+    many=[{'id':'g%d'%i,'name':'Campo %d'%i,'dataType':'TEXT','options':[],'folder':'Datos personales' if i<6 else 'Ventas','position':i} for i in range(12)]
+    FIELDS[:]=many
+    page.evaluate("document.querySelector('#live-edit-contact')?.click()")
+    page.reload();page.wait_for_selector('[data-live-id]');page.locator('[data-live-id="c0"]').evaluate('(n)=>n.click()')
+    page.wait_for_selector('#live-contact-toggle',state='attached');page.evaluate("document.querySelector('#live-contact-toggle').click()")
+    page.locator('#live-edit-contact').click();page.wait_for_selector('#live-field-find')
+    page.fill('#live-field-find','campo 9')
+    visible=page.locator('details[data-fold]:not([hidden]) .contact-grid > *:not([hidden])').count()
+    assert visible==1,visible
+    print('PASS with many fields a finder narrows them down, opening the folder that matches')
     assert not errors,errors
     b.close()
