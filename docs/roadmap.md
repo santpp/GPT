@@ -133,6 +133,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Pila técnica sin cambios: HTML, CSS y JavaScript sin framework en el navegador, PHP 8.3 y MariaDB en el servidor.
 - Esqueletos de carga con brillo suave en lugar de textos «Cargando…» (conversaciones, mensajes, tablero, contactos, oportunidades, ficha y seguridad), con entrada escalonada.
 - El tablero dice «actualizado a las HH:MM» con un punto verde, en vez de «leídas a las…».
+- Menos aspecto de plantilla: títulos de sección en minúsculas y en negrita (sin mayúsculas separadas), cifras del tablero en una franja con separadores finos en vez de cajas, y fuera los textos de relleno bajo los números. El punto verde del tablero se quitó. Las tarjetas con borde se dejan como están por decisión del usuario, a ver cómo queda.
 - Transiciones al aparecer listas y mensajes, y respuesta al pulsar botones. Todo se desactiva con «reducir movimiento» del dispositivo.
 
 ## Siguiente (a decidir)

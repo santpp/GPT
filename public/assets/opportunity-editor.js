@@ -15,7 +15,7 @@ export function opportunityForm({pipelines=[],assignees=[],opportunity=null,titl
   const chosen=list.find(p=>p.id===current.pipelineId)||list[0]||{stages:[]};
   const stages=asList(chosen.stages);
   return `<form class="opportunity-form" data-opportunity="${esc(current.id??'')}">
-   <div class="section-label">${esc(title||(current.id?'EDITAR OPORTUNIDAD':'NUEVA OPORTUNIDAD'))}</div>
+   <div class="section-label">${esc(title||(current.id?'Editar oportunidad':'Nueva oportunidad'))}</div>
    <label>Nombre<input name="name" maxlength="190" value="${esc(current.name??'')}" required></label>
    <label>Embudo<select name="pipelineId">${list.map(p=>`<option value="${esc(p.id)}"${p.id===chosen.id?' selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
    <label>Etapa<select name="pipelineStageId">${stages.map(stage=>`<option value="${esc(stage.id)}"${stage.id===current.pipelineStageId?' selected':''}>${esc(stage.name)}</option>`).join('')}</select></label>

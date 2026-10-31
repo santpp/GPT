@@ -648,3 +648,15 @@ html[data-theme="dark"] .won-button{background:#173325;color:#7fd6a3;border-colo
 button,.primary,.link-button{transition:transform .12s ease,background-color .15s ease,box-shadow .15s ease,opacity .15s ease}
 button:active:not(:disabled){transform:scale(.97)}
 @media(prefers-reduced-motion:reduce){.sk,.sk-bubble{animation:none}.sk-row,.sk-tile,.sk-card,.fade-up,.conversation-item,.record-row,.bubble{animation:none}button:active:not(:disabled){transform:none}}
+/* 1.5 · sobriedad: títulos normales, cifras en franja y sin textos de relleno */
+.section-label{font-size:15px;font-weight:600;letter-spacing:0;color:var(--ink);margin:26px 0 12px}
+.eyebrow{font-size:12px;font-weight:500;letter-spacing:0;color:var(--muted)}
+.board-table thead th{font-size:12px;letter-spacing:0;text-transform:none;font-weight:600}
+.contact-group legend{font-size:13px;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink)}
+.dashboard-tiles{gap:0;row-gap:18px}
+.board-tile,.personal-tiles .board-tile,.personal-tiles>*{border:0;border-left:1px solid var(--line);border-radius:0;background:none;padding:2px 18px}
+.dashboard-tiles>.board-tile:first-child{border-left:0;padding-left:0}
+.board-tile span{font-size:12px}
+.board-tile strong{font:600 28px var(--sans);letter-spacing:-.5px;margin:4px 0 2px}
+.board-tile small{font-size:11px}
+@media(max-width:600px){.dashboard-tiles{grid-template-columns:repeat(2,1fr)}.dashboard-tiles>.board-tile:nth-child(odd){border-left:0;padding-left:0}.dashboard-tiles>.board-tile:nth-child(even){padding-left:16px}}

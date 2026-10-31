@@ -51,7 +51,7 @@ with sync_playwright() as p:
     page.goto(BASE+'/conexiones');page.wait_for_selector('#announce-form',timeout=15000)
     page.fill('#announce-form [name=title]','Nueva versión');page.fill('#announce-form [name=body]','Incluye:\n- Algo nuevo')
     page.locator('#announce-preview').click();page.wait_for_selector('.announce-title')
-    assert 'VISTA PREVIA' in page.locator('#dialog-content').inner_text() and page.locator('.announce-body li').count()==1
+    assert 'vista previa' in page.locator('#dialog-content').inner_text().lower() and page.locator('.announce-body li').count()==1
     page.locator('#announce-ok').click()
     print('PASS the administrator can preview how it will look before publishing')
     page.fill('#announce-form [name=linkLabel]','Ver');page.fill('#announce-form [name=linkUrl]','/tablero')

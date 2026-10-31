@@ -43,7 +43,7 @@ export function contactForm(profile,directory=[],assignees=[]){
  const custom=[...defined,...extra].map(field=>customControl(field,values.get(field.id))).join('')
   ||'<span class="muted">Esta cuenta no define campos personalizados.</span>';
  const tags=asList(profile.tags).map(tag=>`<span class="tag">${esc(tag)}<button type="button" data-drop-tag="${esc(tag)}" aria-label="Quitar etiqueta ${esc(tag)}">×</button></span>`).join('')||'<span class="muted">Sin etiquetas</span>';
- return `<form id="live-contact-form" class="live-contact-form contact-editor"><header class="live-profile-header"><div><span class="section-label">EDITAR FICHA</span><h2>${esc(profile.name)}</h2></div><button type="button" id="live-edit-cancel" aria-label="Cancelar edición">×</button></header>
+ return `<form id="live-contact-form" class="live-contact-form contact-editor"><header class="live-profile-header"><div><span class="section-label">Editar ficha</span><h2>${esc(profile.name)}</h2></div><button type="button" id="live-edit-cancel" aria-label="Cancelar edición">×</button></header>
   ${groups}
   <fieldset class="contact-group"><legend>Campos personalizados</legend><div class="contact-grid">${custom}</div></fieldset>
   <fieldset class="contact-group"><legend>Etiquetas</legend><div class="live-profile-tags" id="live-tag-list">${tags}</div>

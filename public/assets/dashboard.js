@@ -125,17 +125,17 @@ export async function renderDashboard(container){
     const feedback=$('#dashboard-feedback');feedback.hidden=false;feedback.innerHTML=`<span>${data.restricted?'Tus cifras':'Cifras de la cuenta'}${read?` · actualizado a las ${read}`:''}</span>`;
     const unread=data.conversations?.unread??0;
     const tiles=[
-      tile('Conversaciones',number(data.conversations?.total??0),'Abiertas en la cuenta'),
-      tile('Sin leer',number(unread),unread?'Esperan respuesta':'Nada pendiente'),
-      ...(data.contacts!==null&&data.contacts!==undefined?[tile('Contactos',number(data.contacts),'Personas en la cuenta')]:[]),
+      tile('Conversaciones',number(data.conversations?.total??0)),
+      tile('Sin leer',number(unread)),
+      ...(data.contacts!==null&&data.contacts!==undefined?[tile('Contactos',number(data.contacts))]:[]),
       ...(data.opportunities?[tile('Oportunidades abiertas',number(data.opportunities.count),`${money(data.opportunities.value)} en juego`)]:[]),
     ].join('');
     // Lo del día y lo de cada quien. Si falta un dato, el recuadro dice por qué.
     const leads=data.leads||null;const sales=month&&!month.error?month.sales:null;const mine=month&&!month.error?month.mine:null;
     const unlinked='Usa en Ágora el mismo correo que en la cuenta';
     const personal=[
-      ...(leads?[tile('Leads de hoy',leads.today===null||leads.today===undefined?null:number(leads.today),leads.today===null||leads.today===undefined?'La cuenta no devolvió este dato':(data.restricted?'Nuevos a tu nombre':'Contactos nuevos desde las 00:00'))]:[]),
-      ...(leads?[tile('Leads asignados a mí',leads.mine===null||leads.mine===undefined?null:number(leads.mine),leads.linked?(leads.mine===null||leads.mine===undefined?'La cuenta no devolvió este dato':'Contactos a tu nombre'):unlinked)]:[]),
+      ...(leads?[tile('Leads de hoy',leads.today===null||leads.today===undefined?null:number(leads.today),leads.today===null||leads.today===undefined?'La cuenta no devolvió este dato':'')]:[]),
+      ...(leads?[tile('Leads asignados a mí',leads.mine===null||leads.mine===undefined?null:number(leads.mine),leads.linked?(leads.mine===null||leads.mine===undefined?'La cuenta no devolvió este dato':''):unlinked)]:[]),
       ...(sales&&!data.restricted?[tile('Ventas ganadas del mes',number(sales.closings??0),`${money(sales.total??0)} en total`)]:[]),
       ...(month&&!month.error?[tile('Mis ventas del mes',mine?number(mine.closings):null,mine?`${money(mine.sold)} ganados`:unlinked)]:[]),    ].join('');
     const stages=data.opportunities?asList(data.opportunities.stages):[];
@@ -145,7 +145,7 @@ export async function renderDashboard(container){
     $('#dashboard-body').innerHTML=`<section class="board-block">
         ${personal?`<div class="dashboard-tiles personal-tiles">${personal}</div>`:''}
         <div class="dashboard-tiles">${tiles}</div>
-        <div class="section-label">EMBUDO POR ETAPA</div>${stageList}
+        <div class="section-label">Embudo por etapa</div>${stageList}
         ${data.opportunities?.sampled?'<p class="board-empty">Se resumen las oportunidades abiertas más recientes.</p>':''}
       </section>
       <section class="board-block" id="board-month">${monthBlock(month)}</section>
@@ -154,10 +154,10 @@ export async function renderDashboard(container){
   }
 
   function monthBlock(month){
-    if(!month)return '<div class="section-label">RENTABILIDAD DEL MES</div>'+skeleton('lines',3);
-    if(month.error)return `<div class="section-label">RENTABILIDAD DEL MES</div><p class="board-empty">${esc(month.error)}</p>`;
+    if(!month)return '<div class="section-label">Rentabilidad del mes</div>'+skeleton('lines',3);
+    if(month.error)return `<div class="section-label">Rentabilidad del mes</div><p class="board-empty">${esc(month.error)}</p>`;
     // Un resumen con otra forma no puede llevarse por delante el resto del tablero.
-    if(!month.profitability||!month.settings||!month.goal)return '<div class="section-label">RENTABILIDAD DEL MES</div><p class="board-empty">El resumen del mes no llegó completo. Vuelve a entrar en un momento.</p>';
+    if(!month.profitability||!month.settings||!month.goal)return '<div class="section-label">Rentabilidad del mes</div><p class="board-empty">El resumen del mes no llegó completo. Vuelve a entrar en un momento.</p>';
     const p=month.profitability,word=month.settings?.closingWord||'cierres';
     const missing=asList(month.missing);
     const NAMES={ads:'lo invertido en publicidad',fixedCosts:'los costos fijos',teamGoal:'la meta del equipo'};
@@ -172,14 +172,14 @@ export async function renderDashboard(container){
     const warn=missing.length
       ? `<p class="board-warning">Faltan por indicar ${esc(missing.map(k=>NAMES[k]||k).join(', '))}. ${month.canEdit?'Pulsa «Cifras del mes» para completarlos.':'Pídeselo a quien administra Ágora.'}</p>`
       : '';
-    const picker=`<div class="board-head"><div><div class="section-label">RENTABILIDAD DE ${esc(monthName(month.period).toUpperCase())}</div>
+    const picker=`<div class="board-head"><div><div class="section-label">Rentabilidad de ${esc(monthName(month.period))}</div>
         <p class="board-lead">${p.profit===null?'Indica lo invertido para ver la ganancia.':`Ganancia después de publicidad y comisiones<strong>${esc(money(p.profit))}</strong>${p.marginPerUnit!==null?`<small>De cada 1,00 vendido quedan ${esc(money(p.marginPerUnit))}.</small>`:''}`}</p></div>
       <div class="board-actions"><label class="board-month-pick">Mes<input type="month" id="board-period" value="${esc(month.period)}" max="${esc(new Date().toISOString().slice(0,7))}"></label>
       ${month.canEdit?'<button id="board-settings">Cifras del mes</button>':''}</div></div>`;
     const tiles=[
       tile('Ganancia real del mes',money(p.net),p.net===null?'Falta indicar los costos fijos':`Después de ${money(p.fixedCosts)} en costos fijos`),
       tile(`Costo por ${word.replace(/s$/,'')}`,money(p.costPerClosing),p.costPerClosing===null?'Falta lo invertido en publicidad':`${money(p.ads)} entre ${number(month.sales.closings)} ${word}`),
-      tile('Ventas por cada 100 invertido',money(p.returnPerHundred),'Retorno del gasto publicitario'),
+      tile('Ventas por cada 100 invertido',money(p.returnPerHundred),''),
       tile('Costos de mercadeo y ventas',money(p.marketingCost),p.marketingCost===null?'Faltan datos':`Fijos ${money(p.fixedCosts??0)} · variables ${money(p.ads??0)}`),
       tile(`Comisiones del equipo (${commissionText(month.commission,word)})`,money(p.commissions),month.commission?.kind==='per_closing'?`${number(month.sales.closings)} ${word}`:`Sobre ${money(p.sales)} vendidos`),
     ].join('');
@@ -189,7 +189,7 @@ export async function renderDashboard(container){
     return `${picker}${adsLine}${warn}
       <div class="board-split">${waterfall(p)}<div class="dashboard-tiles">${tiles}</div></div>
       ${origin(month,word)}
-      <div class="section-label">DESEMPEÑO DEL EQUIPO DE VENTAS</div>
+      <div class="section-label">Desempeño del equipo de ventas</div>
       <div class="board-goal">
         <div class="board-goal-main"><span>Avance del equipo frente a su meta</span><strong>${goal.progress===null?'—':number(Math.round(goal.progress))+' %'}</strong>
           <small>${goal.target===null?'Indica la meta del mes para ver el avance.':goal.missing>0?`Faltan ${esc(money(goal.missing))} para la meta de ${esc(money(goal.target))}.`:`Meta de ${esc(money(goal.target))} superada.`}</small></div>
@@ -225,7 +225,7 @@ export async function renderDashboard(container){
     const s=month.settings||{};
     const rows=asList(month.team).filter(row=>row.id).map(row=>
       `<label>${esc(row.name)}<input type="number" min="0" step="0.01" data-goal="${esc(row.id)}" value="${row.goal??''}" placeholder="Meta del mes"></label>`).join('');
-    document.querySelector('#dialog-content').innerHTML=`<span class="eyebrow">${esc(monthName(month.period).toUpperCase())}</span>
+    document.querySelector('#dialog-content').innerHTML=`<span class="eyebrow">${esc(monthName(month.period))}</span>
       <h2 style="margin-top:12px">Cifras del mes</h2>
       <p class="dialog-copy">Lo que la cuenta no sabe: lo que invertiste, lo que cuesta mantener la operación y las metas. Se guarda sólo para este mes y esta subcuenta.</p>
       <form id="board-form" class="dialog-form">
@@ -234,10 +234,10 @@ export async function renderDashboard(container){
         <label>Costos fijos del mes<input type="number" min="0" step="0.01" name="fixedCosts" value="${s.fixedCosts??''}"></label>
         <label>Meta de ventas del equipo<input type="number" min="0" step="0.01" name="teamGoal" value="${s.teamGoal??''}"></label>
         <label>¿Cómo llamas a cada cierre?<input name="closingWord" maxlength="24" value="${esc(s.closingWord||'cierres')}" placeholder="estudiantes, clientes, pólizas…"></label>
-        <div class="section-label">UMBRALES DEL SEMÁFORO</div>
+        <div class="section-label">Umbrales del semáforo</div>
         <label>Verde desde (%)<input type="number" min="0" max="100" step="1" name="green" value="${s.green??100}"></label>
         <label>Ámbar desde (%)<input type="number" min="0" max="100" step="1" name="amber" value="${s.amber??70}"></label>
-        ${rows?`<div class="section-label">METAS POR ASESORA</div>${rows}`:''}
+        ${rows?`<div class="section-label">Metas por asesora</div>${rows}`:''}
         <button class="primary">Guardar cifras</button><p id="board-form-status" role="status"></p>
       </form>`;
     dialog.showModal();

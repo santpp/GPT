@@ -106,9 +106,9 @@ export async function renderContacts(container){
      </header>
      ${contact.dnd?'<p class="record-flag">Marcado como no contactar.</p>':''}
      <div class="record-columns">
-      <div><div class="section-label">DATOS</div><div class="live-profile-details">${details}</div></div>
-      <div><div class="section-label">CAMPOS PERSONALIZADOS</div><div class="live-profile-fields">${custom}</div>
-       <div class="section-label">ETIQUETAS</div><div class="live-profile-tags">${asList(contact.tags).length?contact.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join(''):'<span class="muted">Sin etiquetas</span>'}</div></div>
+      <div><div class="section-label">Datos</div><div class="live-profile-details">${details}</div></div>
+      <div><div class="section-label">Campos personalizados</div><div class="live-profile-fields">${custom}</div>
+       <div class="section-label">Etiquetas</div><div class="live-profile-tags">${asList(contact.tags).length?contact.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join(''):'<span class="muted">Sin etiquetas</span>'}</div></div>
      </div>
      <p id="record-status" class="live-feedback" role="status"></p>`;
     panel.querySelector('#record-back').onclick=()=>{layout.classList.remove('record-open')};

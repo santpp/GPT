@@ -21,7 +21,7 @@ export function renderBody(text){
 /** El contenido de la ventana de una novedad. */
 export function windowMarkup(item,{preview=false}={}){
   const link=item.linkLabel&&item.linkUrl?`<a class="announce-link primary" href="${esc(item.linkUrl)}"${item.linkUrl.startsWith('https://')?' target="_blank" rel="noopener noreferrer"':''} data-announce-link>${esc(item.linkLabel)}</a>`:'';
-  return `<span class="eyebrow">NOVEDADES${preview?' · VISTA PREVIA':''}</span><h2 class="announce-title">${esc(item.title)}</h2>
+  return `<span class="eyebrow">Novedades${preview?' · vista previa':''}</span><h2 class="announce-title">${esc(item.title)}</h2>
    <div class="announce-body">${renderBody(item.body)}</div>
    <div class="dialog-actions announce-actions">${link}<button id="announce-ok" class="${link?'link-button':'primary'}" type="button">${preview?'Cerrar':'Entendido'}</button></div>`;
 }

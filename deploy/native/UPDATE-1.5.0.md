@@ -13,3 +13,8 @@ Pulido de la interfaz: pantallas de carga con esqueletos animados.
 - El tablero dice «actualizado a las 20:00» con un punto verde.
 - Las listas y los mensajes entran con una transición corta, y los botones responden al pulsarlos.
 - Si el dispositivo tiene activado «reducir movimiento», no hay animaciones.
+
+## Aspecto más sobrio
+
+- Títulos de sección normales (antes en mayúsculas separadas) y sin el punto verde del tablero.
+- Las cifras del tablero van en una franja con separadores finos, sin cajas, y sin los textos de relleno bajo cada número.
