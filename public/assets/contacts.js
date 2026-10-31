@@ -21,7 +21,7 @@ export async function renderContacts(container){
   const instance=Symbol();container.agoraViewInstance=instance;
   const active=()=>container.agoraViewInstance===instance&&container.dataset.view==='contacts';
   const connection=workspace.current();
-  if(!connection){container.innerHTML='<p class="empty">Añade una cuenta desde Conexiones para ver contactos.</p>';return}
+  if(!connection){container.innerHTML=`<p class="empty">${esc(workspace.noAccountText('contactos'))}</p>`;return}
   container.innerHTML=`<div class="records-layout" id="records-layout">
    <div class="records-list">
     <div class="live-toolbar"><label class="search"><span aria-hidden="true">⌕</span><input id="contact-search" type="search" placeholder="Buscar por nombre, correo o teléfono" aria-label="Buscar contactos"></label></div>

@@ -35,7 +35,7 @@ export async function renderLiveInbox(container){
   // The chosen account is read from the header on every use, so switching there
   // takes effect without this screen owning a control of its own.
   const select={get value(){return workspace.current()},set disabled(v){}};
-  if(!items.length){feedback.textContent='Añade una cuenta desde Conexiones para empezar.';return}
+  if(!items.length){feedback.textContent=workspace.noAccountText('las conversaciones');return}
   const PULSE=5,CHAT_FALLBACK=60;
   let disposed=false,timer=null,chatTimer=null,pollTimer=null,interval=120,pause=0,syncBusy=false,messageBusy=0,chatNeedsRefresh=false;
   // El modo foco esconde el menú y la lista, así que sólo puede estar puesto

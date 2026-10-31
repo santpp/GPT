@@ -169,12 +169,16 @@ function finishWelcome(){const done=welcomeDone;welcomeDone=null;if(done)done()}
 function welcomeThen(next){welcomeDone=next;welcome()}
 
 function renderAccounts(){
-  const select=$('#account');
+  const select=$('#account'),box=$('.account-switch');
+  const many=workspace.connections.length>1;
   select.innerHTML=workspace.connections.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
   select.value=workspace.current();
-  select.disabled=workspace.connections.length<2;
+  select.disabled=!many;
   $('#account-name').textContent=workspace.name()||'Sin cuenta';
-  $('.account-switch').hidden=!VIEWS[currentView].account||!workspace.connections.length;
+  // Con una sola subcuenta no hay nada que elegir: se muestra su nombre y se entra directo.
+  box.classList.toggle('single',!many);
+  const label=box.querySelector(':scope > span');if(label)label.textContent=many?'Cuenta':(workspace.name()||'');
+  box.hidden=!VIEWS[currentView].account||!workspace.connections.length;
 }
 
 /** «Ágora v1.0»: la versión del pie, sin el último número. */
@@ -191,7 +195,7 @@ async function startSession(){
   $('#user-initials-top').textContent=(me.user.email||'··').slice(0,2).toUpperCase();
   $('#menu-version').textContent=versionLabel();
   document.querySelectorAll('[data-admin-only]').forEach(n=>n.hidden=me.user.role!=='administrator');
-  try{const {items}=await api('workspace/connections');workspace.setConnections(items)}
+  try{const {items,reason}=await api('workspace/connections');workspace.setConnections(items,reason)}
   catch{workspace.setConnections([])}
   renderAccounts();
   // Un aviso trae a su conversación: /conversations/{id}?c={subcuenta}.

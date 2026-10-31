@@ -18,7 +18,7 @@ export async function renderBoard(container){
   const instance=Symbol();container.agoraViewInstance=instance;
   const active=()=>container.agoraViewInstance===instance&&container.dataset.view==='board';
   const connection=workspace.current();
-  if(!connection){container.innerHTML='<p class="empty">Añade una cuenta desde Conexiones para ver oportunidades.</p>';return}
+  if(!connection){container.innerHTML=`<p class="empty">${esc(workspace.noAccountText('oportunidades'))}</p>`;return}
   container.innerHTML=skeleton('cards',6);
   let generation=0,pipeline='',csrf='',board=null,directory=null,editing=null,notice='';
 

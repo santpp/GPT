@@ -715,3 +715,7 @@ details.contact-group[hidden]{display:none}
 @media(prefers-reduced-motion:reduce){details.contact-group>.contact-grid,details.contact-group>summary::after{animation:none;transition:none}}
 .folders-form{display:grid;gap:12px;margin-top:10px}.folders-form label{display:grid;gap:4px}
 .folder-samples{font-size:12px;color:var(--muted);line-height:1.4}
+/* 1.5.4 · selector de subcuenta: sólo cuando hay dónde elegir */
+.account-switch[hidden]{display:none!important}
+.account-switch.single select{display:none}
+.account-switch.single>span{display:inline!important;font-size:13px;font-weight:600;color:var(--ink)}

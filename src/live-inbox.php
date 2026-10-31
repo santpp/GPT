@@ -8,8 +8,10 @@ if(($u['identity_type']??'native')==='native'&&$u['role']!=='administrator')resp
 if(in_array($path,['/api/workspace/connections','/api/ghl/connections'],true) && $method==='GET') {
     if(($u['identity_type']??'native')==='native')$items=query('SELECT id,name,location_id,status FROM ghl_connections WHERE tenant_id=? ORDER BY id',[$u['tenant_id']])->fetchAll();
     else $items=query('SELECT DISTINCT c.id,c.name,c.location_id,c.status FROM ghl_connections c JOIN external_users eu ON eu.connection_id=c.id AND eu.active=TRUE JOIN external_identity_memberships m ON m.external_user_row_id=eu.id WHERE c.tenant_id=? AND m.identity_id=? ORDER BY c.id',[$u['tenant_id'],$u['id']])->fetchAll();
+    $total=count($items);
     $items=array_values(array_filter($items,fn(array $item)=>(Actor::connectionMembership($u,(int)$item['id'])['capabilities']['viewConversations']??false)===true));
-    respond(['items'=>$items]);
+    // Si no queda ninguna, se dice por qué: sin subcuenta asociada, o sin permiso de conversaciones en ella.
+    respond(['items'=>$items,'reason'=>$items?null:($total===0?'no_membership':'no_permission')]);
 }
 $id=filter_var($_GET['connectionId']??null,FILTER_VALIDATE_INT);
 if(!$id)respond(['error'=>'Selecciona una subcuenta'],422);

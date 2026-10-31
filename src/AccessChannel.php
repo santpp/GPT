@@ -36,6 +36,12 @@ final class AccessChannel {
         return $row ?: null;
     }
 
+    /** La subcuenta comprobada en la que esta persona está activa como integrante, si hay una. */
+    public static function connectionFor(int $tenant,string $email):?array {
+        $row=query("SELECT c.* FROM external_users eu JOIN ghl_connections c ON c.id=eu.connection_id WHERE c.tenant_id=? AND eu.active=TRUE AND eu.email=? AND c.status='connected' ORDER BY c.id LIMIT 1",[$tenant,strtolower(trim($email))])->fetch();
+        return $row?:null;
+    }
+
     public static function configured(int $tenant):bool {
         $connection=self::connection($tenant);
         return $connection!==null && $connection['status']==='connected';
@@ -65,7 +71,8 @@ final class AccessChannel {
 
     private function deliver(int $tenant,string $email,string $subject,string $html,string $text):void {
         $email=self::email($email);
-        $connection=self::connection($tenant);
+        // El código sale desde la subcuenta a la que pertenece la persona; la cuenta elegida como canal queda de respaldo.
+        $connection=self::connectionFor($tenant,$email)??self::connection($tenant);
         if(!$connection)throw new AccessDeliveryProblem('access_channel_unconfigured');
         if($connection['status']!=='connected')throw new AccessDeliveryProblem('access_channel_unverified');
         $id=(int)$connection['id'];

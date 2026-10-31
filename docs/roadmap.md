@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.3. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.4. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -146,6 +146,12 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## 1.5.2 y 1.5.3 · carpetas de campos
 - Diagnóstico en la cuenta real: los 22 campos traen su carpeta (`parentId`), pero `GET /custom-fields/object-key/contact` responde 400 («Api does not support objectKey of type contact or opportunity»). Se deja de llamarlo (cada 400 pausaba la cuenta unos segundos).
 - 1.5.3: los campos se agrupan por `parentId`. El nombre se pide una vez por carpeta con `GET /custom-fields/{id}` (la referencia lo describe como «campo o carpeta por id», pero sólo para objetos personalizados y empresas); si la cuenta no lo da, no se reintenta hasta 24 h después. Mientras tanto las carpetas se llaman «Carpeta 1, 2…» en el orden de los campos, y el administrador las nombra en Conexiones → «Carpetas de campos», reconociéndolas por campos de muestra. Los nombres puestos a mano mandan siempre.
+
+## 1.5.4 · entrada de los usuarios de subcuenta
+- El selector de subcuenta sólo aparece cuando hay más de una; con una se muestra su nombre y la persona ya está dentro. (Antes quedaba un selector vacío visible porque un estilo anulaba el atributo «oculto».)
+- Si a un usuario de subcuenta no le queda ninguna, se le explica por qué (sin subcuenta asociada, o sin permiso de conversaciones en ella) en lugar de mandarle a «Conexiones», que sólo ve quien administra Ágora.
+- El código de acceso por correo sale desde la subcuenta a la que pertenece la persona (integrante activo de una subcuenta comprobada); la cuenta elegida como canal de acceso queda de respaldo.
+- Pendiente de verificar con el usuario afectado: su caso mostraba la lista de subcuentas vacía; el mensaje nuevo dirá la causa.
 
 ## Siguiente (a decidir)
 - Plantillas de WhatsApp: en espera del WABA ID o de la salida de «Comprobar plantillas».

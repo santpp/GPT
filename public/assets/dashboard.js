@@ -95,7 +95,7 @@ export async function renderDashboard(container){
   const instance=Symbol();container.agoraViewInstance=instance;
   const active=()=>container.agoraViewInstance===instance&&container.dataset.view==='dashboard';
   const connection=workspace.current();
-  if(!connection){container.innerHTML='<p class="empty">Añade una cuenta desde Conexiones para ver el tablero.</p>';return}
+  if(!connection){container.innerHTML=`<p class="empty">${esc(workspace.noAccountText('el tablero'))}</p>`;return}
   container.innerHTML=`<p id="dashboard-feedback" class="updated-at" role="status" hidden></p><div id="dashboard-body">${skeleton('tiles',4)}</div>`;
   const $=s=>container.querySelector(s);
   let csrf='',month=null,period=new Date().toISOString().slice(0,7);
