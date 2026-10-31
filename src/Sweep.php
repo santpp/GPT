@@ -48,6 +48,35 @@ final class Sweep {
         return ['swept'=>$swept,'connections'=>count($rows),'delivered'=>PushDelivery::deliverPending(),'skipped'=>null];
     }
 
+    /**
+     * Revisa cada $every segundos durante $seconds. Un servicio de cron por web
+     * llama como mucho una vez por minuto; quedándose a revisar hasta la llamada
+     * siguiente, un mensaje se descubre en segundos y no en un minuto. Un segundo
+     * bucle no arranca mientras otro sigue en marcha.
+     *
+     * @return int las pasadas hechas
+     */
+    public static function loop(string $via,int $seconds,int $every=10):int {
+        if((int)query("SELECT GET_LOCK('agora-sweep-loop',0)")->fetchColumn()!==1)return 0;
+        $passes=0;$deadline=microtime(true)+$seconds;
+        try {
+            do {
+                $started=microtime(true);
+                self::run($via);
+                $passes++;
+                $next=$started+$every;
+                if($next>=$deadline)break;
+                usleep((int)max(0,($next-microtime(true))*1e6));
+            } while(microtime(true)<$deadline);
+        } finally {query("SELECT RELEASE_LOCK('agora-sweep-loop')");}
+        return $passes;
+    }
+
+    /** Si hay un bucle de revisión en marcha, otra llamada no hace falta. */
+    public static function looping():bool {
+        return (int)query("SELECT IS_FREE_LOCK('agora-sweep-loop')")->fetchColumn()===0;
+    }
+
     /** Si la última pasada fue hace muy poco, una llamada externa no repite el trabajo. */
     public static function tooSoon():bool {
         $last=PushDelivery::recall('sweep_last_run');

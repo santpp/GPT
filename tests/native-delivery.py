@@ -56,6 +56,11 @@ self.addEventListener('fetch',e=>{
             page.wait_for_function('navigator.serviceWorker.controller !== null')
             # The packaged entry opens on the sign-in gate, never on a workspace.
             page.goto(base + '/conexiones.html')
+            # The app replaces the stale worker with its own and reloads once:
+            # wait for that, as a person would, before using the page.
+            page.wait_for_function("navigator.serviceWorker.controller?.scriptURL.endsWith('/sw.js')",timeout=20000)
+            page.wait_for_load_state('load')
+            page.wait_for_timeout(1500)
             page.wait_for_selector('#signin:not([hidden])')
             assert page.locator('#app').is_hidden()
             page.locator('.admin-login summary').click()

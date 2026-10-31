@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require __DIR__.'/../src/bootstrap.php';
 require __DIR__.'/../src/Pulse.php';
+require __DIR__.'/../src/Sweep.php';
 
 require __DIR__.'/../src/Actor.php';
 
@@ -73,7 +74,9 @@ try {
  pulseCheck($changed['token']!==$first['token'],'a new message changes the token');
  pulseCheck($changed['unread']===2,'and the pending count the menu shows');
  pulseCheck((int)query('SELECT COUNT(*) FROM push_queue WHERE connection_id=?',[$connectionId])->fetchColumn()===1,'and leaves one notice ready to be delivered');
- pulseCheck(query('SELECT body FROM push_queue WHERE connection_id=?',[$connectionId])->fetchColumn()==='Nuevo mensaje','with what the account showed as the preview');
+ $queued=query('SELECT title,body FROM push_queue WHERE connection_id=?',[$connectionId])->fetch();
+ pulseCheck($queued['title']==='Contacto a · WhatsApp','the notice says who wrote and by which channel: '.$queued['title']);
+ pulseCheck($queued['body']==='Nuevo mensaje · 2 mensajes sin leer','and what they wrote, with how many are waiting: '.$queued['body']);
 
  pulseDue($connectionId);$api->reset();
  $pulse->read($connection,$admin);
@@ -134,6 +137,25 @@ try {
  pulseDue($connectionId);$api->reset();
  pulseCheck($pulse->sweep($unverified)===false&&$api->calls===[],'and a connection nobody verified is left alone by the schedule too');
  query("UPDATE ghl_connections SET status='connected' WHERE id=?",[$connectionId]);
+
+ // ---- the pace: every 10 seconds, whatever the old connection setting says --
+ query('UPDATE ghl_connections SET sync_interval_seconds=120 WHERE id=?',[$connectionId]);
+ $slow=query('SELECT * FROM ghl_connections WHERE id=?',[$connectionId])->fetch();
+ pulseDue($connectionId);$api->reset();
+ $pulse->sweep($slow);
+ $next=(int)query('SELECT pulse_next_at FROM ghl_sync_state WHERE connection_id=?',[$connectionId])->fetchColumn();
+ pulseCheck($next-time()<=10,'the account is checked every 10 seconds even where the old setting said 120');
+ pulseCheck($pulse->read($slow,$admin,false)['intervalSeconds']===10,'and the screens are told the same pace');
+
+ // ---- one check at a time, kept going until the next call ------------------
+ $holder=new PDO(getenv('DB_DSN'),getenv('DB_USER')?:null,getenv('DB_PASSWORD')?:null);
+ $holder->query("SELECT GET_LOCK('agora-sweep-loop',0)");
+ pulseCheck(Sweep::looping()&&Sweep::loop('test',1,1)===0,'while one check loop is running, another does not start');
+ $holder->query("SELECT RELEASE_LOCK('agora-sweep-loop')");
+ $started=microtime(true);
+ $passes=Sweep::loop('test',2,1);
+ pulseCheck($passes>=2&&$passes<=3&&microtime(true)-$started<3.5,'a loop checks at its pace and stops on time: '.$passes.' passes');
+ pulseCheck(!Sweep::looping(),'and leaves the way free for the next call');
 
  echo 'PASS '.$checks.' live sync checks (simulated API client, real MariaDB)'.PHP_EOL;
 } finally {

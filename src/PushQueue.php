@@ -22,12 +22,35 @@ final class PushQueue {
             // A conversation already known and not more unread than before is not news.
             if($unread<1||($was!==null&&$unread<=$was))continue;
             $fingerprint=md5(json_encode([$conversation['id'],$conversation['lastMessageDate']??null,$unread],JSON_THROW_ON_ERROR));
-            $name=self::text($conversation['contactName']??$conversation['fullName']??null,190)??'Nuevo mensaje';
-            $body=self::text($conversation['lastMessageBody']??null,self::BODY)??'Tienes un mensaje nuevo.';
+            [$name,$body]=self::describe($conversation,$unread);
             $assigned=is_string($conversation['assignedTo']??null)?substr($conversation['assignedTo'],0,80):null;
             query('INSERT IGNORE INTO push_queue(connection_id,conversation_id,fingerprint,title,body,assigned_to) VALUES(?,?,?,?,?,?)',
                 [(int)$connection['id'],$conversation['id'],$fingerprint,$name,$body,$assigned]);
         }
+    }
+
+    private const CHANNELS=['TYPE_WHATSAPP'=>'WhatsApp','TYPE_SMS'=>'SMS','TYPE_INSTAGRAM'=>'Instagram','TYPE_FACEBOOK'=>'Messenger',
+        'TYPE_EMAIL'=>'Correo','TYPE_WEBCHAT'=>'Chat web','TYPE_CALL'=>'Llamada','TYPE_GMB'=>'Google','TYPE_LIVE_CHAT'=>'Chat web'];
+
+    /**
+     * Quién escribe, por qué canal y qué dice. El texto genérico salía cada vez
+     * que a la conversación le faltaba un dato; ahora se busca el siguiente que
+     * haya, y un mensaje sin texto dice que llegó un adjunto.
+     *
+     * @return array{0:string,1:string}
+     */
+    public static function describe(array $conversation,int $unread=1):array {
+        $who=null;
+        foreach(['contactName','fullName','phone','email'] as $field)
+            if($who===null)$who=self::text($conversation[$field]??null,120);
+        $channel=self::CHANNELS[$conversation['lastMessageType']??'']??null;
+        $title=($who??'Contacto sin nombre').($channel?' · '.$channel:'');
+        $text=$conversation['lastMessageBody']??null;
+        // Los correos llegan con etiquetas y espacios de sobra.
+        $text=is_string($text)?trim(preg_replace('/\s+/u',' ',html_entity_decode(strip_tags(str_ireplace(['<br>','<br/>','<br />','</p>'],' ',$text)),ENT_QUOTES|ENT_HTML5,'UTF-8'))):'';
+        $body=$text!==''?mb_substr($text,0,self::BODY-30):'Envió un archivo o un mensaje sin texto';
+        if($unread>1)$body.=' · '.$unread.' mensajes sin leer';
+        return [mb_substr($title,0,190),$body];
     }
 
     /** The unread count each conversation had before a pass, to compare against. */

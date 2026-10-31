@@ -199,6 +199,25 @@ function hasUnsentText(){
 }
 globalThis.agoraHasUnsentText=hasUnsentText;
 
+/**
+ * Los avisos los pinta el service worker, que se actualiza aparte de la página.
+ * Si se queda en una versión anterior, el pie lo dice: así no vuelve a pasar
+ * desapercibido, como cuando los avisos mostraban un texto genérico.
+ */
+function checkWorker(){
+  const worker=navigator.serviceWorker?.controller;if(!worker)return;
+  const page=($('#app-version')?.textContent.match(/v(\d+\.\d+\.\d+)/)||[])[1];
+  const channel=new MessageChannel();
+  channel.port1.onmessage=event=>{
+    const served=(String(event.data?.cache||'').match(/agora-shell-(\d+\.\d+\.\d+)/)||[])[1];
+    const label=$('#app-version');
+    if(!page||!served||!label)return;
+    label.dataset.worker=served;
+    if(served!==page)label.textContent=`ÁGORA · v${page} · avisos en v${served}: cierra y vuelve a abrir la app`;
+  };
+  try{worker.postMessage({type:'VERSION'},[channel.port2])}catch{}
+}
+
 // Offline shell. A new build installs itself: nobody should have to press
 // anything. The only thing worth waiting for is unsent text, so the swap is
 // held back while something is being written and applied as soon as it is not.
@@ -220,6 +239,7 @@ if('serviceWorker' in navigator){
     });
     // Look for a new build on every return to the app, not only on a cold start.
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)registration.update().catch(()=>{})});
+    checkWorker();
     let reloading=false,hadController=!!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener('controllerchange',()=>{
       if(!hadController){hadController=true;return}

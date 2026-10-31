@@ -39,4 +39,9 @@ with sync_playwright() as p:
     shown=push({})
     assert any(n['title']=='Ágora' for n in shown), shown
     print('PASS an empty push still shows a notice, as browsers require')
+    # The page can ask which version paints the notices, to notice a stale worker.
+    cache=page.evaluate("""new Promise(done=>{const c=new MessageChannel();c.port1.onmessage=e=>done(e.data?.cache||null);
+      navigator.serviceWorker.controller.postMessage({type:'VERSION'},[c.port2]);setTimeout(()=>done(null),3000)})""")
+    assert isinstance(cache,str) and cache.startswith('agora-shell-'), cache
+    print('PASS the service worker says which version is painting the notices')
     b.close()

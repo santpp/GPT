@@ -414,3 +414,15 @@ No hay forma de corregir desde aquí un cron de CyberPanel que no se ejecuta, as
 - Cambiarla retira la anterior. Desactivarla la borra.
 
 La pasada está ahora en una sola clase, `Sweep`, que llaman tanto `bin/sync-inbox.php` como la dirección. El rastro indica cuál de los dos la hizo, y el panel lo muestra («desde el servidor» o «desde la dirección de revisión»).
+
+## Avisos en segundos y con contenido 0.21.3
+
+Sin cambios en el uso de la cuenta: la misma búsqueda de conversaciones, más a menudo.
+
+**Por qué tardaba.** La revisión respetaba el «intervalo» de la conexión, un ajuste heredado de la sincronización antigua que vale 120 segundos por defecto, y la conexión del usuario lo tenía en 120. Aunque el servicio externo llamara cada minuto, la cuenta sólo se leía cada dos. Ahora la revisión lee cada 10 segundos, sea cual sea ese ajuste. Es una búsqueda por conexión cada 10 segundos, frente a las 20 cada 10 que admite el presupuesto interno, que ya es la quinta parte del límite publicado.
+
+**Por qué un minuto seguía siendo mucho.** Un servicio de cron por web llama como mucho una vez por minuto. Ahora cada llamada responde enseguida y se queda revisando cada 10 segundos durante 50, hasta la siguiente. Para eso cierra la conexión antes de seguir trabajando (`litespeed_finish_request` en LiteSpeed). Si el servidor no permite cerrarla, se hace una sola pasada, como antes. Un candado impide que dos bucles corran a la vez, y el cron del servidor hace lo mismo. Latencia esperada con la app cerrada: unos 10 a 15 segundos.
+
+**Qué dice el aviso.** El título lleva quién escribe y por qué canal («Raissa Moreno · WhatsApp»), y el cuerpo, lo que escribió, con cuántos mensajes hay sin leer si son varios. Si a la conversación le falta el nombre, se usa el siguiente dato que haya: nombre completo, teléfono o correo. Un mensaje sin texto dice que llegó un adjunto, y a los correos se les quitan las etiquetas. Antes, cualquier dato ausente producía el texto genérico.
+
+**Service worker atrasado.** La página pregunta al service worker qué versión pinta los avisos. Si no coincide con la de la página, el pie lo dice y pide cerrar y volver a abrir la app. Uno de los fallos anteriores fue justo un service worker que se quedó atrás sin que nada lo mostrara.

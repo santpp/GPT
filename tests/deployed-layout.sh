@@ -56,7 +56,7 @@ query("DELETE FROM push_devices WHERE token=?",["https://push.invalid/deployed-l
 query("INSERT INTO push_devices(tenant_id,identity_type,actor_id,token,platform,p256dh,auth) VALUES(?,?,?,?,?,?,?)",[$u["tenant_id"],"native",$u["id"],"https://push.invalid/deployed-layout-unreachable","web",$b64($point),$b64(random_bytes(16))]);
 query("INSERT INTO push_queue(connection_id,conversation_id,fingerprint,title,body) VALUES(?,?,?,?,?)",[$c,$argv[4],md5(uniqid()),"Raissa","Hola"]);
 file_put_contents($argv[3],$c);' "$ROOT" "$EMAIL" "$ROOT/connection" "$NOTICE"
-php "$ROOT/agora-private/bin/sync-inbox.php" >"$ROOT/cron.out" 2>&1 || true
+php "$ROOT/agora-private/bin/sync-inbox.php" --once >"$ROOT/cron.out" 2>&1 || true
 grep -qE "Notices [1-9]" "$ROOT/cron.out" || { echo "FAIL the single cron did not pick up the waiting notice: $(cat "$ROOT/cron.out")"; exit 1; }
 echo "PASS the message check alone picks up and tries to deliver a waiting notice"
 STATE=$(php -r 'require $argv[1]."/agora-private/src/bootstrap.php";echo json_encode(query("SELECT state,attempts,last_error FROM push_queue WHERE conversation_id=?",[$argv[2]])->fetch());' "$ROOT" "$NOTICE")

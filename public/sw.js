@@ -1,7 +1,11 @@
 const CACHE='agora-shell-v22';
 const SHELL=['/','/bandeja','/contactos','/oportunidades','/tablero','/assets/app.css','/assets/layout.css','/assets/app.js','/assets/workspace.js','/assets/contacts.js','/assets/board.js','/assets/icon.svg','/assets/agora-logo.svg','/assets/integrations.js','/assets/live-inbox.js','/assets/contact-editor.js','/assets/dashboard.js','/assets/opportunity-editor.js','/assets/native.js','/assets/push.js','/manifest.webmanifest'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL.map(url=>new Request(url,{cache:'reload'}))))));
-self.addEventListener('message',e=>{if(e.data?.type==='ACTIVATE')self.skipWaiting()});
+self.addEventListener('message',e=>{
+ if(e.data?.type==='ACTIVATE')self.skipWaiting();
+ // La app pregunta qué versión atiende los avisos, para notar si se quedó atrás.
+ if(e.data?.type==='VERSION')e.ports?.[0]?.postMessage({cache:CACHE});
+});
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('agora-shell-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 // A notice arrives for a conversation: it is shown, and opening it goes to that
 // conversation. Nothing of the message is stored by the worker.

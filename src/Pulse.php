@@ -24,7 +24,10 @@ final class Pulse {
 
     public function read(array $connection,array $membership,bool $refresh=true):array {
         $id=(int)$connection['id'];
-        $interval=max(self::FLOOR,(int)$connection['sync_interval_seconds']);
+        // El intervalo de la conexión venía de la sincronización antigua (120 s
+        // por defecto) y hacía que un aviso tardara hasta dos minutos. Leer cada
+        // 10 segundos es una petición de cada doscientas que permite la cuota.
+        $interval=self::FLOOR;
         $paused=null;$retryAfter=0;$refreshed=false;
         if($refresh&&$connection['status']==='connected') {
             try {$refreshed=$this->refreshIfDue($connection,$interval);}
@@ -61,7 +64,7 @@ final class Pulse {
      */
     public function sweep(array $connection):bool {
         if($connection['status']!=='connected')return false;
-        return $this->refreshIfDue($connection,max(self::FLOOR,(int)$connection['sync_interval_seconds']));
+        return $this->refreshIfDue($connection,self::FLOOR);
     }
 
     /**

@@ -33,9 +33,15 @@ try {
     if (preg_match('~^/api/cron/([a-f0-9]{64})$~', $path, $cron) && in_array($method,['GET','POST'],true)) {
         require_once $appRoot.'/src/Sweep.php';
         if (!Sweep::secretMatches($cron[1])) respond(['error'=>'Not found'],404);
-        if (Sweep::tooSoon()) respond(['ok'=>true,'skipped'=>'too_soon']);
-        @set_time_limit(55);
+        if (Sweep::looping()) respond(['ok'=>true,'skipped'=>'already_checking']);
+        @set_time_limit(70);
         ignore_user_abort(true);
+        // Responde enseguida al servicio de cron y se queda revisando cada 10
+        // segundos hasta su siguiente llamada. Si el servidor no sabe cerrar la
+        // conexión antes, hace una sola pasada, como antes.
+        if (function_exists('litespeed_finish_request') || function_exists('fastcgi_finish_request'))
+            respondThen(['ok'=>true,'checking'=>true],fn()=>Sweep::loop('url',50));
+        if (Sweep::tooSoon()) respond(['ok'=>true,'skipped'=>'too_soon']);
         $result=Sweep::run('url');
         respond(['ok'=>true,'swept'=>$result['swept'],'skipped'=>$result['skipped']]);
     }
