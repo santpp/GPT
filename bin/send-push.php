@@ -4,7 +4,11 @@ if(PHP_SAPI!=='cli'){http_response_code(404);exit;}
 require __DIR__.'/../src/bootstrap.php';
 require __DIR__.'/../src/PushDelivery.php';
 // One bounded pass, suitable for a once-per-minute CyberPanel cron as site user.
-if(!PushDelivery::configured()){echo "Notifications are not configured; nothing to deliver\n";exit(0);}
+if(!PushDelivery::configured()){
+    // También queda constancia de esto: es la causa más fácil de pasar por alto.
+    PushDelivery::remember('push_last_run',['at'=>gmdate('c'),'configured'=>false]);
+    echo "Notifications are not configured; nothing to deliver\n";exit(0);
+}
 if((int)query("SELECT GET_LOCK('agora-push-cron',0)")->fetchColumn()!==1){echo "Previous delivery pass still running\n";exit(0);}
 try {
     $result=(new PushDelivery())->run(20);

@@ -51,7 +51,7 @@ final class PushDelivery {
                 query("UPDATE push_queue SET state='sent',sent_at=CURRENT_TIMESTAMP,attempts=attempts+1 WHERE id=?",[$notice['id']]);
                 continue;
             }
-            $retry=false;
+            $retry=false;$reason=null;
             foreach($recipients as $recipient) {
                 try {
                     $this->deliver($recipient,$notice);
@@ -59,9 +59,13 @@ final class PushDelivery {
                     $sent++;
                 } catch(PushProblem $e) {
                     if($e->reason==='unregistered'){query('DELETE FROM push_devices WHERE id=?',[$recipient['device']]);$dropped++;continue;}
-                    $retry=true;
+                    $retry=true;$reason=$e->reason.': '.mb_substr($e->getMessage(),0,60);
+                } catch(Throwable $e) {
+                    // Nada imprevisto puede tumbar la pasada entera: queda anotado y sigue.
+                    $retry=true;$reason='unexpected: '.get_class($e);
                 }
             }
+            if($reason!==null)query('UPDATE push_queue SET last_error=? WHERE id=?',[mb_substr($reason,0,80),$notice['id']]);
             if($retry) {
                 $attempts=(int)$notice['attempts']+1;
                 $failed++;
@@ -74,11 +78,52 @@ final class PushDelivery {
             }
             query("UPDATE push_queue SET state='sent',sent_at=CURRENT_TIMESTAMP,attempts=attempts+1 WHERE id=?",[$notice['id']]);
         }
-        return ['notices'=>$notices,'sent'=>$sent,'retried'=>$failed,'dropped'=>$dropped];
+        $result=['notices'=>$notices,'sent'=>$sent,'retried'=>$failed,'dropped'=>$dropped];
+        self::remember('push_last_run',$result+['at'=>gmdate('c')]);
+        return $result;
+    }
+
+    /**
+     * Un aviso de prueba a los dispositivos de una persona, entregado en el acto.
+     * Separa de un golpe las dos mitades de la cadena: si llega, el transporte, el
+     * service worker y el teléfono funcionan, y el fallo está en descubrir el
+     * mensaje o en el cron; si no llega, el resultado de cada dispositivo dice por qué.
+     *
+     * @return list<array{device:int,label:?string,platform:string,result:string}>
+     */
+    public function test(int $tenantId,string $identityType,int $actorId):array {
+        $devices=query('SELECT id,token,platform,p256dh,auth,label FROM push_devices WHERE tenant_id=? AND identity_type=? AND actor_id=?',[$tenantId,$identityType,$actorId])->fetchAll();
+        $notice=['title'=>'Ágora','body'=>'Aviso de prueba: si lo ves, este dispositivo recibe los avisos.','conversation_id'=>'prueba','connection_id'=>0,'unread'=>0];
+        $results=[];
+        foreach($devices as $device) {
+            $recipient=['token'=>$device['token'],'device'=>(int)$device['id'],'platform'=>$device['platform'],'p256dh'=>$device['p256dh'],'auth'=>$device['auth']];
+            try {
+                $this->deliver($recipient,$notice);
+                query('UPDATE push_devices SET last_sent_at=CURRENT_TIMESTAMP WHERE id=?',[$device['id']]);
+                $result='sent';
+            } catch(PushProblem $e) {
+                if($e->reason==='unregistered')query('DELETE FROM push_devices WHERE id=?',[$device['id']]);
+                $result=$e->reason;
+            } catch(Throwable $e) {$result='unexpected';}
+            $results[]=['device'=>(int)$device['id'],'label'=>$device['label'],'platform'=>$device['platform'],'result'=>$result];
+        }
+        return $results;
+    }
+
+    public static function remember(string $name,array $value):void {
+        try {query('INSERT INTO app_state(name,value) VALUES(?,?) ON DUPLICATE KEY UPDATE value=VALUES(value)',[$name,json_encode($value,JSON_THROW_ON_ERROR)]);}
+        catch(Throwable $e){}
+    }
+    public static function recall(string $name):?array {
+        try {$raw=query('SELECT value FROM app_state WHERE name=?',[$name])->fetchColumn();}
+        catch(Throwable $e){return null;}
+        $value=is_string($raw)?json_decode($raw,true):null;
+        return is_array($value)?$value:null;
     }
 
     /** Each device by the road its own system uses. */
     private function deliver(array $recipient,array $notice):void {
+        if(isset($recipient['unread']))$notice['unread']=$recipient['unread'];
         if(($recipient['platform']??'android')==='web') {
             require_once __DIR__.'/WebPush.php';
             ($this->browser??=new WebPush())->send($recipient,$notice);

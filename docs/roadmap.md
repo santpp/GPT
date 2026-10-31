@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.20.1.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 0.21.0.
 
 ## Completado y desplegable
 
@@ -50,7 +50,8 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Avisos en Android e iPhone **sin tienda de aplicaciones**: Web Push propio, con la aplicación instalada desde el navegador (0.19.0). La activación fallaba en el servidor por una ruta de desarrollo; corregido y probado sobre el paquete desplegado en 0.20.1. Pendiente de prueba con teléfonos reales.
 - Firebase Cloud Messaging para el APK: registro del dispositivo, cola de avisos y entrega por cron (0.18.0). Pendiente de prueba contra el proyecto real.
 - El pase que descubre mensajes corre también desde el reloj, de modo que hay aviso con todas las aplicaciones cerradas (0.19.0).
-- Contadores de la aplicación en el icono y agrupación de avisos por conversación.
+- Contador en el icono: número en iPhone instalada y escritorio; punto del sistema en Android (0.21.0). Pendiente: agrupación de avisos por conversación.
+- Diagnóstico de avisos en Conexiones, eslabón a eslabón, con aviso de prueba (0.21.0).
 - Deep links a contacto y oportunidad (la conversación ya funciona).
 - Cola offline para operaciones compatibles y reconciliación al recuperar conexión.
 
@@ -60,6 +61,6 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Fuera de alcance por decisión de producto: calendario, agendar cita y workflows. Los workflows se gestionan directamente en la cuenta; las citas ya creadas se siguen viendo en la ficha del contacto.
 - Pendiente como pantalla propia: tareas, que hoy sólo aparecen dentro de la conversación.
 - Resúmenes y sugerencias con IA, intención, clasificación y scoring.
-- Tablero: cifras de la cuenta en 0.16.0; rentabilidad del mes y desempeño del equipo con metas y semáforo en 0.20.0. Pendientes: comparación entre meses y reportes exportables.
+- Tablero: cifras de la cuenta en 0.16.0; rentabilidad del mes y desempeño del equipo con metas y semáforo en 0.20.0; lo invertido en Meta leído de la cuenta publicitaria conectada en 0.21.0. Pendientes: comparación entre meses y reportes exportables.
 - Reportes, Ágora Digital ERP, cobranza, facturación y pagos.
 - Varias subcuentas por empresa y posterior arquitectura SaaS multiempresa.

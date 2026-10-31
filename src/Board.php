@@ -14,7 +14,7 @@ require_once __DIR__.'/GhlGateway.php';
  * en lugar de enseñar un cero que parezca un resultado.
  */
 final class Board {
-    public const DEFAULTS=['adSpend'=>null,'fixedCosts'=>null,'commissionRate'=>10.0,'teamGoal'=>null,'goals'=>[],'closingWord'=>'cierres','green'=>100.0,'amber'=>70.0];
+    public const DEFAULTS=['otherAds'=>null,'fixedCosts'=>null,'commissionRate'=>10.0,'teamGoal'=>null,'goals'=>[],'closingWord'=>'cierres','green'=>100.0,'amber'=>70.0];
     private const PAGE=100;
     private const PAGES=10;
 
@@ -62,7 +62,9 @@ final class Board {
         $green=$rate($input['green']??null,self::DEFAULTS['green']);
         $amber=$rate($input['amber']??null,self::DEFAULTS['amber']);
         return [
-            'adSpend'=>$money($input['adSpend']??null),
+            // Lo que no pasa por la cuenta publicitaria conectada (otras redes,
+            // impresos). Se suma a lo que informa la cuenta, nunca lo sustituye.
+            'otherAds'=>$money($input['otherAds']??null),
             'fixedCosts'=>$money($input['fixedCosts']??null),
             'commissionRate'=>$rate($input['commissionRate']??null,self::DEFAULTS['commissionRate']),
             'teamGoal'=>$money($input['teamGoal']??null),
@@ -93,7 +95,9 @@ final class Board {
         $mine=$membership['external_user_id']??null;
         if($restricted&&$mine===null)return self::empty($period,$settings,true);
 
-        [$records,$total,$partial]=$this->gateway->execute($connection,function(GhlClient $client)use($connection,$from,$to):array {
+        [$records,$total,$partial,$ads]=$this->gateway->execute($connection,function(GhlClient $client)use($connection,$from,$to,$period,$restricted):array {
+            // Lo invertido es de la empresa: quien sólo ve lo suyo no lo recibe.
+            $ads=$restricted?['amount'=>null,'source'=>null,'reason'=>'restricted']:self::adSpend($client,$connection['location_id'],$period);
             $records=[];$total=null;$partial=false;
             for($page=1;$page<=self::PAGES;$page++) {
                 $data=$client->wonOpportunities($connection['location_id'],$from,$to,$page,self::PAGE);
@@ -109,17 +113,17 @@ final class Board {
                         'value'=>is_int($value)||is_float($value)?(float)$value:(is_string($value)&&is_numeric($value)?(float)$value:0.0),
                     ];
                 }
-                if(count($items)<self::PAGE)return [$records,$total,false];
+                if(count($items)<self::PAGE)return [$records,$total,false,$ads];
                 if($page===self::PAGES)$partial=true;
             }
-            return [$records,$total,$partial];
+            return [$records,$total,$partial,$ads];
         },false);
 
         if($restricted)$records=array_values(array_filter($records,fn(array $row):bool=>$row['assignedTo']===$mine));
-        return $this->present($connection,$period,$settings,$records,$restricted?count($records):($total??count($records)),$partial,$restricted,$mine);
+        return $this->present($connection,$period,$settings,$records,$restricted?count($records):($total??count($records)),$partial,$restricted,$mine,$ads);
     }
 
-    private function present(array $connection,string $period,array $settings,array $records,int $total,bool $partial,bool $restricted,?string $mine):array {
+    private function present(array $connection,string $period,array $settings,array $records,int $total,bool $partial,bool $restricted,?string $mine,array $ads):array {
         $sales=0.0;$byMember=[];
         foreach($records as $row) {
             $sales+=$row['value'];
@@ -131,7 +135,11 @@ final class Board {
         $closings=count($records);
         $rate=(float)$settings['commissionRate'];
         $commissions=round($sales*$rate/100,2);
-        $ads=$settings['adSpend'];
+        // Lo que dice la cuenta publicitaria, más lo que se indicó a mano aparte.
+        $account=$ads['amount'];
+        $other=$settings['otherAds'];
+        $adSource=$ads;
+        $ads=$account===null&&$other===null?null:round(($account??0)+($other??0),2);
         $fixed=$settings['fixedCosts'];
         $profit=$ads===null?null:round($sales-$ads-$commissions,2);
         $net=$profit===null||$fixed===null?null:round($profit-$fixed,2);
@@ -146,6 +154,10 @@ final class Board {
             'profitability'=>[
                 'sales'=>round($sales,2),
                 'ads'=>$ads,
+                'adsFromAccount'=>$account,
+                'adsOther'=>$other,
+                'adsSource'=>$adSource['source'],
+                'adsReason'=>$adSource['reason'],
                 'commissions'=>$commissions,
                 'profit'=>$profit,
                 'fixedCosts'=>$fixed,
@@ -166,12 +178,60 @@ final class Board {
                 'missing'=>$goal!==null?round(max(0,$goal-($restricted?array_sum(array_column($team,'sold')):$sales)),2):null,
             ],
             'missing'=>array_values(array_filter([
-                $ads===null?'adSpend':null,
+                $ads===null?'ads':null,
                 $fixed===null?'fixedCosts':null,
                 $goal===null?'teamGoal':null,
             ])),
             'readAt'=>gmdate('c'),
         ];
+    }
+
+    /**
+     * Lo gastado en anuncios durante el mes, según la cuenta.
+     *
+     * La respuesta de este informe no tiene esquema publicado, así que se lee
+     * sin suponer su forma: se buscan los valores numéricos de `spend` y se
+     * suman los del nivel más alto en que aparecen, de modo que un total y sus
+     * filas nunca se cuenten dos veces. Si no aparece ninguno, no hay cifra.
+     *
+     * @return array{amount:?float,source:?string,reason:?string}
+     */
+    public static function adSpend(GhlClient $client,string $location,string $period):array {
+        $start=$period.'-01';
+        $end=(new DateTimeImmutable($start,new DateTimeZone('UTC')))->modify('last day of this month')->format('Y-m-d');
+        $reason='not_connected';
+        foreach(['INTEGRATION','AD_MANAGER'] as $type) {
+            try {$response=$client->adReporting($location,$start,$end,$type);}
+            catch(GhlApiException $e) {
+                // Sin el permiso de anuncios en la clave, la otra fuente tampoco responderá.
+                if(in_array($e->status,[401,403],true))return ['amount'=>null,'source'=>null,'reason'=>'permission'];
+                continue;
+            }
+            catch(Throwable $e){$reason='unreadable';continue;}
+            $amount=self::spendIn($response);
+            if($amount!==null)return ['amount'=>round($amount,2),'source'=>$type,'reason'=>null];
+            $reason='no_spend';
+        }
+        return ['amount'=>null,'source'=>null,'reason'=>$reason];
+    }
+
+    /** Suma los `spend` del nivel más alto en que aparecen. */
+    public static function spendIn(mixed $node):?float {
+        $found=[];
+        $walk=function(mixed $value,int $depth)use(&$walk,&$found):void {
+            if($depth>6||!is_array($value))return;
+            foreach($value as $key=>$child) {
+                if(is_string($key)&&strtolower($key)==='spend') {
+                    $number=is_int($child)||is_float($child)?(float)$child:(is_string($child)&&is_numeric(trim($child))?(float)trim($child):null);
+                    if($number!==null&&$number>=0&&$number<1e10)$found[$depth][]=$number;
+                    continue;
+                }
+                $walk($child,$depth+1);
+            }
+        };
+        $walk($node,0);
+        if($found===[])return null;
+        return array_sum($found[min(array_keys($found))]);
     }
 
     /** Una fila por integrante activo del equipo importado, más su estado. */
@@ -207,9 +267,9 @@ final class Board {
     private static function empty(string $period,array $settings,bool $restricted):array {
         return ['period'=>$period,'restricted'=>$restricted,'settings'=>$settings,
             'sales'=>['total'=>0.0,'closings'=>0,'counted'=>0,'partial'=>false],
-            'profitability'=>['sales'=>0.0,'ads'=>null,'commissions'=>0.0,'profit'=>null,'fixedCosts'=>null,'net'=>null,
+            'profitability'=>['sales'=>0.0,'ads'=>null,'adsFromAccount'=>null,'adsOther'=>null,'adsSource'=>null,'adsReason'=>'restricted','commissions'=>0.0,'profit'=>null,'fixedCosts'=>null,'net'=>null,
                 'marginPerUnit'=>null,'adsPerUnit'=>null,'commissionPerUnit'=>null,'costPerClosing'=>null,'returnPerHundred'=>null,'marketingCost'=>null],
             'team'=>[],'goal'=>['target'=>null,'sold'=>0.0,'progress'=>null,'missing'=>null],
-            'missing'=>['adSpend','fixedCosts','teamGoal'],'readAt'=>gmdate('c')];
+            'missing'=>['ads','fixedCosts','teamGoal'],'readAt'=>gmdate('c')];
     }
 }

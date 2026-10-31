@@ -8,12 +8,19 @@ self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise
 self.addEventListener('push',event=>{
  let data={};
  try{data=event.data?event.data.json():{}}catch{data={}}
- const payload=data.notification||data.data||data;
- const title=typeof payload.title==='string'&&payload.title?payload.title:'Ágora';
- const body=typeof payload.body==='string'?payload.body:'Tienes un mensaje nuevo.';
- const path=typeof (data.data?.path)==='string'?data.data.path:(typeof payload.path==='string'?payload.path:'/bandeja');
+ // El aviso trae el título y el texto arriba; los datos de navegación van aparte.
+ // Antes se leían los datos como si fueran el aviso y se perdía quién escribía.
+ const source=data.notification&&typeof data.notification==='object'?data.notification:data;
+ const title=typeof source.title==='string'&&source.title?source.title:'Ágora';
+ const body=typeof source.body==='string'&&source.body?source.body:'Tienes un mensaje nuevo.';
+ const path=typeof data.data?.path==='string'?data.data.path:'/bandeja';
  const safe=/^\/[A-Za-z0-9/_-]{0,120}$/.test(path)?path:'/bandeja';
- event.waitUntil(self.registration.showNotification(title,{body,data:{path:safe},tag:safe,icon:'/assets/icon.svg',badge:'/assets/icon.svg'}));
+ const unread=Number.isFinite(Number(data.unread))?Math.max(0,Number(data.unread)):null;
+ event.waitUntil(Promise.all([
+  self.registration.showNotification(title,{body,data:{path:safe},tag:safe,renotify:true,icon:'/assets/icon.svg',badge:'/assets/icon.svg'}),
+  // El número del icono donde el sistema lo permite (iPhone instalada, escritorio).
+  unread!==null&&self.navigator?.setAppBadge?(unread>0?self.navigator.setAppBadge(unread):self.navigator.clearAppBadge()).catch(()=>{}):Promise.resolve(),
+ ]));
 });
 self.addEventListener('notificationclick',event=>{
  event.notification.close();

@@ -121,7 +121,22 @@ try {
             // A pending database update must say so, not look like a broken server.
             respond(['items'=>[],'browser'=>false,'android'=>false,'code'=>'push_schema_pending','error'=>'Falta aplicar la última actualización de la base de datos.'],200);
         }
-        respond(['items'=>$rows,'browser'=>PushDelivery::browserConfigured(),'android'=>PushDelivery::firebaseConfigured()]);
+        // El estado de cada eslabón, para saber dónde se corta un aviso que no llega.
+        $queue=['pending'=>0,'sent'=>0,'failed'=>0,'lastError'=>null];
+        try {
+            foreach(query('SELECT q.state,COUNT(*) AS n FROM push_queue q JOIN ghl_connections c ON c.id=q.connection_id WHERE c.tenant_id=? AND q.created_at>=NOW()-INTERVAL 7 DAY GROUP BY q.state',[$u['tenant_id']])->fetchAll() as $r)$queue[$r['state']]=(int)$r['n'];
+            $last=query("SELECT q.last_error FROM push_queue q JOIN ghl_connections c ON c.id=q.connection_id WHERE c.tenant_id=? AND q.last_error IS NOT NULL ORDER BY q.id DESC LIMIT 1",[$u['tenant_id']])->fetchColumn();
+            $queue['lastError']=is_string($last)?$last:null;
+        } catch(PDOException $e) {}
+        respond(['items'=>$rows,'browser'=>PushDelivery::browserConfigured(),'android'=>PushDelivery::firebaseConfigured(),
+            'queue'=>$queue,'delivery'=>PushDelivery::recall('push_last_run'),'discovery'=>PushDelivery::recall('sweep_last_run')]);
+    }
+    // Un aviso de prueba a los dispositivos de quien lo pide, entregado en el acto.
+    if ($path === '/api/devices/test' && $method === 'POST') {
+        require_once $appRoot.'/src/PushDelivery.php';
+        $type=($u['identity_type'] ?? 'native')==='native'?'native':'external';
+        try {respond(['results'=>(new PushDelivery())->test((int)$u['tenant_id'],$type,(int)$u['id'])]);}
+        catch(Throwable $e){respond(['error'=>'No se pudo enviar el aviso de prueba.','code'=>'push_test_failed'],200);}
     }
     if ($path === '/api/me' && $method === 'GET') respond(['user'=>array_intersect_key($u,array_flip(['id','email','role','identity_type','capabilities'])),'csrf'=>$_SESSION['csrf']]);
     // A phone registers the token its own system gives it, so Ágora can notify

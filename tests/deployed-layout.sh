@@ -36,5 +36,15 @@ echo "PASS a phone registers itself on the deployed tree"
 LIST=$(curl -s -b "$J" http://127.0.0.1:$PORT/api/devices)
 echo "$LIST" | grep -q '"browser":true' || { echo "FAIL the device list does not see the notification keys: $LIST"; exit 1; }
 echo "PASS and the owner sees it ready in the device list"
+TEST=$(curl -s -b "$J" -X POST -H 'Content-Type: application/json' -H "X-CSRF-Token: $CSRF" -H "Origin: http://localhost:$PORT" http://127.0.0.1:$PORT/api/devices/test)
+echo "$TEST" | grep -q '"results":\[{' || { echo "FAIL the test notice does not run on the deployed tree: $TEST"; tail -5 "$ROOT/server.log"; exit 1; }
+echo "PASS the test notice runs on the deployed tree and reports per device"
+# Both crons, run from where the server keeps them, must leave their trace.
+php "$ROOT/agora-private/bin/sync-inbox.php" >/dev/null 2>&1 || true
+php "$ROOT/agora-private/bin/send-push.php" >/dev/null 2>&1 || true
+CHAIN=$(curl -s -b "$J" http://127.0.0.1:$PORT/api/devices)
+echo "$CHAIN" | grep -q '"discovery":{"at"' || { echo "FAIL the message check left no trace: $CHAIN"; exit 1; }
+echo "$CHAIN" | grep -q '"delivery":{' || { echo "FAIL the delivery pass left no trace: $CHAIN"; exit 1; }
+echo "PASS both crons run from the deployed tree and the owner can see when"
 php -r 'require $argv[1]."/agora-private/src/bootstrap.php";query("DELETE FROM push_devices WHERE token LIKE ?",["%deployed-layout%"]);query("DELETE FROM users WHERE email=?",[$argv[2]]);' "$ROOT" "$EMAIL"
 echo "PASS deployed layout checks"

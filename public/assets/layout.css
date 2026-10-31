@@ -413,3 +413,15 @@ body.agora-focus .live-composer{padding-bottom:calc(10px + env(safe-area-inset-b
  .board-table td b{font-size:12px}
  .board-state{font-size:11px}
 }
+
+/* La cadena de un aviso, eslabón a eslabón. */
+.push-chain{list-style:none;padding:0;margin:0 0 14px;display:grid;gap:6px}
+.push-chain li{font-size:11px;line-height:1.6;padding:8px 10px 8px 26px;border-radius:6px;position:relative;background:#fbfbfd;border:1px solid var(--line)}
+.push-chain li::before{content:'';position:absolute;left:10px;top:13px;width:8px;height:8px;border-radius:50%;background:#4b9b6e}
+.push-chain li.bad{background:#fff6e2;border-color:#f2e3bd;color:#7a5c18}
+.push-chain li.bad::before{background:var(--accent)}
+#push-test{margin-bottom:6px}
+@media(max-width:600px){#push-test{width:100%;min-height:44px}.push-chain li{font-size:12px}}
+
+.board-source{font-size:10px;color:var(--muted);line-height:1.6;margin:12px 0 0}
+.board-source.warn{color:#8a6a1f}

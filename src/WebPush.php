@@ -41,7 +41,9 @@ final class WebPush {
         $payload=json_encode([
             'title'=>(string)$notice['title'],
             'body'=>(string)$notice['body'],
-            'data'=>['path'=>'/conversations/'.$notice['conversation_id'],'conversationId'=>(string)$notice['conversation_id'],'connectionId'=>(string)$notice['connection_id']],
+            // Lo pendiente de quien lo recibe, para el contador del icono.
+            'unread'=>max(0,(int)($notice['unread']??0)),
+            'data'=>['path'=>$notice['conversation_id']==='prueba'?'/bandeja':'/conversations/'.$notice['conversation_id'],'conversationId'=>(string)$notice['conversation_id'],'connectionId'=>(string)$notice['connection_id']],
         ],JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE);
         $body=$this->encrypt($payload,(string)($device['p256dh']??''),(string)($device['auth']??''));
         $origin=parse_url($endpoint,PHP_URL_SCHEME).'://'.parse_url($endpoint,PHP_URL_HOST);

@@ -148,6 +148,12 @@ final class InboxFeed {
      * nothing new, and a screen is never reloaded for nothing.
      */
     public static function index(int $connectionId,array $items):void {
+        // Lo que había antes de escribir, para que cualquier lectura que descubra
+        // un mensaje nuevo deje preparado su aviso. Si sólo lo hiciera el pase
+        // compartido, una búsqueda en otro dispositivo podía registrar el mensaje
+        // antes que él, y el teléfono nunca se enteraba.
+        require_once __DIR__.'/PushQueue.php';
+        $before=PushQueue::before($connectionId);
         foreach($items as $conversation) {
             if(!is_array($conversation)||!is_string($conversation['id']??null))continue;
             $unread=max(0,(int)($conversation['unreadCount']??0));
@@ -164,6 +170,7 @@ final class InboxFeed {
                 content_hash=VALUES(content_hash)',
                 [$connectionId,$conversation['id'],json_encode($conversation,JSON_THROW_ON_ERROR),$hash,$unread,$assigned]);
         }
+        PushQueue::queue(['id'=>$connectionId],$items,$before);
     }
 
     /** The conversation as the account last showed it, for authorization. */

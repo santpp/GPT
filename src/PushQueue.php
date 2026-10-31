@@ -60,10 +60,17 @@ final class PushQueue {
         foreach($rows as $row) {
             $restricted=((int)$row['assigned_data_only'])===1;
             if($restricted&&($notice['assigned_to']===null||$notice['assigned_to']!==$row['external_user_id']))continue;
-            $tokens[$row['token']]=self::device($row);
+            $tokens[$row['token']]=self::device($row)+['unread'=>self::pending((int)$notice['connection_id'],$restricted?$row['external_user_id']:null)];
         }
-        foreach($owners as $row)$tokens[$row['token']]=self::device($row);
+        foreach($owners as $row)$tokens[$row['token']]=self::device($row)+['unread'=>self::pending((int)$notice['connection_id'],null)];
         return array_values($tokens);
+    }
+
+    /** Lo que esa persona tiene sin leer, para el número del icono. */
+    private static function pending(int $connectionId,?string $assignee):int {
+        return (int)($assignee===null
+            ? query('SELECT COALESCE(SUM(unread_count),0) FROM conversation_index WHERE connection_id=?',[$connectionId])->fetchColumn()
+            : query('SELECT COALESCE(SUM(unread_count),0) FROM conversation_index WHERE connection_id=? AND assigned_to=?',[$connectionId,$assignee])->fetchColumn());
     }
 
     private static function device(array $row):array {

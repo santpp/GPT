@@ -11,6 +11,7 @@ if((int)query("SELECT GET_LOCK('agora-inbox-cron',0)")->fetchColumn()!==1){echo 
 // message be discovered, and a notice prepared, while every phone is asleep.
 $rows=query("SELECT c.* FROM ghl_connections c JOIN ghl_sync_state s ON s.connection_id=c.id WHERE s.enabled=TRUE AND c.status='connected' AND s.request_not_before<=UNIX_TIMESTAMP() ORDER BY s.pulse_next_at LIMIT 20")->fetchAll();
 $failed=0;$pulse=new Pulse();
+try{query('INSERT INTO app_state(name,value) VALUES(?,?) ON DUPLICATE KEY UPDATE value=VALUES(value)',['sweep_last_run',json_encode(['at'=>gmdate('c'),'connections'=>count($rows)])]);}catch(Throwable $e){}
 foreach($rows as $row) {
     try {echo ($pulse->sweep($row)?'Swept connection ':'Already current ').(int)$row['id'].PHP_EOL;}
     catch(GhlCooldown $e) {echo 'Deferred connection '.(int)$row['id'].PHP_EOL;}

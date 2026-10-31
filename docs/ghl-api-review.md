@@ -358,3 +358,30 @@ Sin cambios en el uso de la cuenta. Fallo propio, documentado porque explica por
 En el servidor el código vive en `agora-private/src` y el router lo localiza con `$appRoot`. Las tres rutas de avisos añadidas en 0.19.0 cargaban sus clases con la ruta del árbol de desarrollo (`dirname(__DIR__).'/src'`), que sólo existe en este entorno. En producción el archivo no se encontraba y la petición acababa en el error genérico con referencia: activar los avisos era imposible en cualquier teléfono.
 
 Las pruebas HTTP corrían contra el árbol de desarrollo, y la del paquete servía la interfaz con las respuestas de la API simuladas, de modo que ninguna ejecutó PHP con la estructura desplegada. Hay ahora dos defensas: el empaquetador rechaza cualquier router que construya rutas con la estructura de desarrollo, y `tests/deployed-layout.sh` descomprime el paquete tal cual, lo sirve con PHP y base de datos reales y recorre lo que hace un teléfono al activar los avisos. Esa prueba falla con el paquete 0.20.0 —con el mismo error que vio el usuario— y pasa con 0.20.1.
+
+## Publicidad desde la cuenta de Meta y diagnóstico de avisos 0.21.0
+
+Misma fuente oficial y mismo commit `0af86a4cbd48c66a4071c7e509d1079f9f10ed17`.
+
+| Uso | Método y endpoint | Scope publicado | Version |
+| --- | --- | --- | --- |
+| Lo invertido en Meta en el mes | `GET /ad-publishing/facebook/reporting` | `adPublishing.readonly` | 2021-07-28 |
+
+**Lo que publica.** «Retrieve aggregated Facebook ad reporting metrics for a location». Parámetros obligatorios: `locationId`, `groupBy` (`day`, `week`, `month`), `startDate` y `endDate` en `AAAA-MM-DD`, `type` (`AD_MANAGER` o `INTEGRATION`) y `fields`, una lista separada por comas de `impressions`, `clicks`, `spend`, `cpc`, `cost_per_conversion`, `conversions`, `cpm`, `reach` y `frequency`. El esquema de seguridad dice expresamente que acepta la **clave privada de integración de subcuenta**, que es la que usa Ágora.
+
+**Lo que no publica: la respuesta.** El 200 no tiene esquema. Ágora no supone una forma: recorre la respuesta buscando valores numéricos bajo la clave `spend` y suma los del nivel más alto en que aparecen, de modo que un total junto a sus filas nunca se cuente dos veces. Si no aparece ningún gasto numérico, no hay cifra; nunca un cero. Las pruebas cubren un total suelto, filas sueltas, un total junto a sus filas, y respuestas sin gasto.
+
+**Qué fuente.** Primero `INTEGRATION`, la cuenta publicitaria de Meta conectada a la subcuenta, que es lo que el usuario pidió. Si no informa gasto, `AD_MANAGER`, las campañas creadas desde el gestor de anuncios. Un 401 o 403 significa que la clave no tiene `adPublishing.readonly`, y entonces no se insiste con la otra fuente porque tampoco respondería. Cada caso se nombra en el tablero en palabras, sin nombres técnicos: sin permiso, sin cuenta conectada, sin gasto en el mes, o respuesta ilegible.
+
+**Lo manual pasa a ser lo de fuera.** El campo que antes recogía toda la publicidad a mano recoge ahora sólo «otros gastos de publicidad», lo que no pasa por Meta, y se suma a lo que informa la cuenta. El valor guardado con el nombre anterior se ignora, para que lo escrito a mano antes no se sume dos veces a lo que ahora llega de Meta.
+
+Lo invertido es una cifra de la empresa: a un integrante limitado a sus datos no se le pide ni se le muestra.
+
+**Avisos: dos fallos propios y diagnóstico.** Sin cambios en el uso de la cuenta.
+
+1. El service worker leía el bloque de navegación del aviso como si fuera el aviso, así que mostraba «Ágora / Tienes un mensaje nuevo» en lugar de quién escribía y qué. Ahora una prueba entrega un aviso real al service worker real mediante el protocolo de depuración del navegador y lee lo que mostró; con el service worker de 0.20.1 esa prueba falla.
+2. Sólo el pase compartido preparaba avisos. Cualquier otra lectura de la bandeja —una búsqueda o un filtro en otro dispositivo— podía registrar el mensaje nuevo antes que él, y entonces el pase ya no lo veía como nuevo. Ahora el aviso se prepara en el mismo punto en que cualquier lectura registra una conversación.
+
+Para que un aviso que no llega diga dónde se corta, la entrega anota el motivo de cada fallo, los dos crones dejan constancia de cuándo corrieron, y *Conexiones* lo enseña eslabón a eslabón, con un botón que manda un aviso de prueba a los dispositivos de quien lo pulsa, en el acto y sin pasar por los crones.
+
+**Contador en el icono.** Cada aviso lleva lo pendiente de quien lo recibe, y la aplicación abierta lo actualiza con cada pulso, mediante la API de contadores del navegador. Donde existe —iPhone con la aplicación instalada, escritorio— aparece el número. Android no implementa esa API: allí el icono muestra el punto del sistema cuando hay un aviso sin leer, que depende de que el aviso llegue.

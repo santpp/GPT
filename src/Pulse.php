@@ -88,14 +88,11 @@ final class Pulse {
             if(!is_array($items)||!array_is_list($items)||!is_numeric($total))throw new RuntimeException('Invalid inbox response');
             foreach($items as $conversation)
                 if(!is_array($conversation)||!is_string($conversation['id']??null)||($conversation['locationId']??null)!==$connection['location_id'])throw new RuntimeException('Inbox location mismatch');
-            // What each conversation had before this pass, to tell real news apart.
-            $before=PushQueue::before($id);
             db()->beginTransaction();
             try {
                 query('INSERT INTO ghl_inbox_snapshots(connection_id,payload,total) VALUES(?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload),total=VALUES(total),synced_at=CURRENT_TIMESTAMP',[$id,json_encode($items,JSON_THROW_ON_ERROR),(int)$total]);
                 InboxFeed::index($id,$items);
                 query('UPDATE ghl_sync_state SET last_success_at=CURRENT_TIMESTAMP,last_error=NULL WHERE connection_id=?',[$id]);
-                PushQueue::queue($connection,$items,$before);
                 db()->commit();
             } catch(Throwable $e) {if(db()->inTransaction())db()->rollBack();throw $e;}
             return true;

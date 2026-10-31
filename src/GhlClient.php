@@ -52,6 +52,16 @@ final class GhlClient {
             'page'=>$page,'limit'=>$limit,'order'=>'added_desc',
         ]),'2021-07-28');
     }
+    /**
+     * Lo gastado en anuncios de Meta en un periodo, según la cuenta publicitaria
+     * conectada (INTEGRATION) o las campañas del gestor de anuncios (AD_MANAGER).
+     */
+    public function adReporting(string $location,string $from,string $to,string $type):array {
+        return $this->get('/ad-publishing/facebook/reporting?'.http_build_query([
+            'locationId'=>$location,'groupBy'=>'month','startDate'=>$from,'endDate'=>$to,'type'=>$type,
+            'fields'=>'spend,conversions,cost_per_conversion,clicks,impressions',
+        ]),'2021-07-28');
+    }
     /** One page of contacts, used only to read the total the search reports. */
     public function countContacts(string $location):array {
         return $this->get('/contacts/search','2021-07-28',['locationId'=>$location,'pageLimit'=>1,'page'=>1]);

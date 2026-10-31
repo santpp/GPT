@@ -126,7 +126,15 @@ export async function renderDashboard(container){
     if(!month.profitability||!month.settings||!month.goal)return '<div class="section-label">RENTABILIDAD DEL MES</div><p class="board-empty">El resumen del mes no llegó completo. Vuelve a entrar en un momento.</p>';
     const p=month.profitability,word=month.settings?.closingWord||'cierres';
     const missing=asList(month.missing);
-    const NAMES={adSpend:'lo invertido en publicidad',fixedCosts:'los costos fijos',teamGoal:'la meta del equipo'};
+    const NAMES={ads:'lo invertido en publicidad',fixedCosts:'los costos fijos',teamGoal:'la meta del equipo'};
+    // De dónde sale la publicidad, o por qué la cuenta no la ha dado.
+    const WHY={permission:'La clave de la cuenta no tiene permiso para leer los anuncios. Pídele a quien administra Ágora que lo añada.',
+      not_connected:'La cuenta no tiene una cuenta publicitaria de Meta conectada.',
+      no_spend:'La cuenta publicitaria no informa gasto para este mes.',
+      unreadable:'La cuenta publicitaria respondió con un formato que no se pudo leer.'};
+    const adsLine=p.adsFromAccount!==null&&p.adsFromAccount!==undefined
+      ? `<p class="board-source">Publicidad: ${esc(money(p.adsFromAccount))} según la cuenta publicitaria de Meta conectada${p.adsOther?` + ${esc(money(p.adsOther))} de otros gastos indicados aparte`:''}.</p>`
+      : (p.adsReason&&p.adsReason!=='restricted'?`<p class="board-source warn">${esc(WHY[p.adsReason]||'La cuenta no ha informado lo invertido en publicidad.')}${p.adsOther?` Se usan ${esc(money(p.adsOther))} indicados aparte.`:''}</p>`:'');
     const warn=missing.length
       ? `<p class="board-warning">Faltan por indicar ${esc(missing.map(k=>NAMES[k]||k).join(', '))}. ${month.canEdit?'Pulsa «Cifras del mes» para completarlos.':'Pídeselo a quien administra Ágora.'}</p>`
       : '';
@@ -144,7 +152,7 @@ export async function renderDashboard(container){
     const goal=month.goal;
     const progress=Math.max(0,Math.min(100,Number(goal.progress)||0));
     const counts=asList(month.team).reduce((acc,row)=>{acc[row.state]=(acc[row.state]||0)+1;return acc},{});
-    return `${picker}${warn}
+    return `${picker}${adsLine}${warn}
       <div class="board-split">${waterfall(p)}<div class="dashboard-tiles">${tiles}</div></div>
       <div class="section-label">DESEMPEÑO DEL EQUIPO DE VENTAS</div>
       <div class="board-goal">
@@ -186,7 +194,8 @@ export async function renderDashboard(container){
       <h2 style="margin-top:12px">Cifras del mes</h2>
       <p class="dialog-copy">Lo que la cuenta no sabe: lo que invertiste, lo que cuesta mantener la operación y las metas. Se guarda sólo para este mes y esta subcuenta.</p>
       <form id="board-form" class="dialog-form">
-        <label>Publicidad y gastos del mes<input type="number" min="0" step="0.01" name="adSpend" value="${s.adSpend??''}"></label>
+        <p class="dialog-copy">Lo invertido en Meta lo informa la cuenta publicitaria conectada. Aquí sólo lo que no pasa por ella.</p>
+        <label>Otros gastos de publicidad (fuera de Meta)<input type="number" min="0" step="0.01" name="otherAds" value="${s.otherAds??''}"></label>
         <label>Costos fijos del mes<input type="number" min="0" step="0.01" name="fixedCosts" value="${s.fixedCosts??''}"></label>
         <label>Comisión del equipo (%)<input type="number" min="0" max="100" step="0.1" name="commissionRate" value="${s.commissionRate??10}"></label>
         <label>Meta de ventas del equipo<input type="number" min="0" step="0.01" name="teamGoal" value="${s.teamGoal??''}"></label>
@@ -203,7 +212,7 @@ export async function renderDashboard(container){
       event.preventDefault();
       const status=form.querySelector('#board-form-status'),button=form.querySelector('button.primary');
       button.disabled=true;status.textContent='Guardando…';
-      const payload=Object.fromEntries(['adSpend','fixedCosts','commissionRate','teamGoal','closingWord','green','amber'].map(k=>[k,form.elements[k].value]));
+      const payload=Object.fromEntries(['otherAds','fixedCosts','commissionRate','teamGoal','closingWord','green','amber'].map(k=>[k,form.elements[k].value]));
       payload.goals=Object.fromEntries([...form.querySelectorAll('[data-goal]')].map(input=>[input.dataset.goal,input.value]));
       try{
         await request(`workspace/board-month?connectionId=${encodeURIComponent(connection)}&period=${period}`,'POST',csrf,payload);

@@ -174,6 +174,8 @@ window.addEventListener('agora:unread',event=>{
   const count=Number(event.detail)||0;
   badge.hidden=count<1;
   badge.textContent=count>99?'99+':String(count);
+  // El mismo número en el icono de la app, donde el sistema lo admite.
+  try{if(navigator.setAppBadge)(count>0?navigator.setAppBadge(count):navigator.clearAppBadge()).catch(()=>{})}catch{}
   badge.setAttribute('aria-label',`${count} conversaciones sin leer`);
 });
 

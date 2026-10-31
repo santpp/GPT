@@ -11,18 +11,52 @@ async function api(path,method='GET',data){
  * Which devices will be told about a new message, and when each was last told.
  * It is the quickest way to tell a delivery problem from a sending one.
  */
+// El resultado del último aviso de prueba sobrevive al redibujado del panel:
+// si no, se borraba en el mismo instante en que aparecía.
+let lastTestResult='';
 async function devicePanel(container){
  const panel=container.querySelector('#device-panel');if(!panel)return;
  let data;
  try{data=await api('devices')}catch{panel.innerHTML='';return}
  const names={web:'Navegador o aplicación instalada',android:'Aplicación Android'};
- const when=value=>value?String(value).replace('T',' ').slice(0,16):null;
+ const when=value=>{if(!value)return null;const d=new Date(String(value).includes('T')?value:String(value).replace(' ','T')+'Z');return Number.isNaN(d.getTime())?String(value):d.toLocaleString('es-ES',{dateStyle:'short',timeStyle:'short'})};
+ const ago=value=>{if(!value)return null;const d=new Date(value);const s=Math.round((Date.now()-d.getTime())/1000);return Number.isNaN(s)?null:s<90?'hace un momento':s<3600?`hace ${Math.round(s/60)} min`:`hace ${Math.round(s/3600)} h`};
  const ready=[data.browser?'navegador':null,data.android?'Android':null].filter(Boolean).join(' y ');
+ // Cada eslabón de la cadena, en el orden en que viaja un aviso.
+ const links=[];
+ const discovered=data.discovery?.at;
+ links.push(discovered&&Date.now()-new Date(discovered).getTime()<5*60000
+   ? ['ok',`Revisión de mensajes nuevos: activa, ${ago(discovered)}.`]
+   : ['bad',discovered?`Revisión de mensajes nuevos: la última fue ${ago(discovered)}. Revisa el cron de revisión.`:'Revisión de mensajes nuevos: no consta que haya corrido. Revisa el cron de revisión.']);
+ const delivered=data.delivery;
+ if(delivered?.configured===false)links.push(['bad','Entrega de avisos: el cron corre, pero no encuentra las claves de avisos. Revisa la línea de configuración y que la carpeta privada sea legible por el cron.']);
+ else links.push(delivered?.at&&Date.now()-new Date(delivered.at).getTime()<5*60000
+   ? ['ok',`Entrega de avisos: activa, ${ago(delivered.at)}${delivered.sent?` · ${delivered.sent} enviados en la última pasada`:''}.`]
+   : ['bad',delivered?.at?`Entrega de avisos: la última fue ${ago(delivered.at)}. Revisa el cron de entrega.`:'Entrega de avisos: no consta que haya corrido. Revisa el cron de entrega.']);
+ const q=data.queue||{};
+ links.push([q.failed?'bad':'ok',`Últimos 7 días: ${Number(q.sent)||0} avisos entregados, ${Number(q.pending)||0} pendientes, ${Number(q.failed)||0} fallidos.${q.lastError?` Último error: ${q.lastError}.`:''}`]);
  panel.innerHTML=`<div class="section-label">AVISOS EN DISPOSITIVOS</div><p class="settings-notice">${ready
    ? `Preparado para avisar por ${esc(ready)}. Cada persona activa los avisos desde su propio dispositivo.`
-   : 'Todavía no hay avisos preparados en el servidor. Revisa la configuración privada antes de activarlos en un dispositivo.'}</p><div class="device-list">${
+   : 'Todavía no hay avisos preparados en el servidor. Revisa la configuración privada antes de activarlos en un dispositivo.'}</p>
+  <ul class="push-chain">${links.map(([kind,text])=>`<li class="${kind}">${esc(text)}</li>`).join('')}</ul>
+  <button id="push-test" class="primary">Enviar un aviso de prueba a mis dispositivos</button>
+  <p id="push-test-result" class="dialog-copy" role="status">${esc(lastTestResult)}</p>
+  <div class="device-list">${
   (data.items||[]).map(d=>`<article class="card"><h3>${esc(d.label||names[d.platform]||'Dispositivo')}</h3><small>${esc(names[d.platform]||d.platform)}<br>Registrado: ${esc(when(d.created_at)||'—')}<br>Visto: ${esc(when(d.last_seen_at)||'—')}<br>Último aviso enviado: ${esc(when(d.last_sent_at)||'Ninguno todavía')}</small></article>`).join('')
   ||'<p class="empty">Ningún dispositivo ha activado los avisos todavía.</p>'}</div>`;
+ const RESULT={sent:'enviado',unregistered:'el servicio ya no reconoce este dispositivo y se ha quitado de la lista; vuelve a activar los avisos en él',unavailable:'el servicio de avisos no respondió; vuelve a probar en un momento',unconfigured:'faltan las claves de avisos en el servidor',invalid_credentials:'las claves de avisos del servidor no se pueden leer',unexpected:'error inesperado en el servidor'};
+ panel.querySelector('#push-test').onclick=async event=>{
+  const button=event.currentTarget,out=panel.querySelector('#push-test-result');
+  button.disabled=true;out.textContent='Enviando…';
+  try{
+   const {results=[],error}=await api('devices/test','POST');
+   if(error){lastTestResult=error;return}
+   lastTestResult=results.length
+     ? results.map(r=>`${r.label||names[r.platform]||'Dispositivo'}: ${RESULT[r.result]||r.result}`).join(' · ')+(results.some(r=>r.result==='sent')?'. Si un dispositivo dice «enviado» y no muestra nada, el aviso salió de aquí y el teléfono lo retuvo: revisa los ajustes de notificaciones del sistema para Ágora y el ahorro de batería.':'')
+     : 'Este usuario no tiene ningún dispositivo con los avisos activados. Actívalos primero en el teléfono, con el mismo usuario.';
+  }catch(error){lastTestResult=error.message}
+  finally{button.disabled=false;out.textContent=lastTestResult;devicePanel(container)}
+ };
 }
 
 export async function renderIntegrations(container){

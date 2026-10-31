@@ -132,3 +132,48 @@ with sync_playwright() as pw:
     assert not errors, errors
     context.close()
     b.close()
+
+# --- the delivery chain in Connections, and the test notice result staying put ---
+with sync_playwright() as pw:
+    b=pw.chromium.launch(executable_path=os.getenv('CHROMIUM_PATH','/usr/bin/chromium'),args=['--no-sandbox'])
+    context=b.new_context(viewport={'width':412,'height':915},service_workers='block')
+    page=context.new_page()
+    errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+    state={'logged':False}
+    def api(route,request):
+        path=request.url.split('/api/')[1];status=200
+        if path=='me':
+            if not state['logged']: status=401;data={'error':'Inicia sesión'}
+            else: data={'user':{'role':'administrator','email':'admin@example.test'},'csrf':'t'}
+        elif path=='login': state['logged']=True;data={'csrf':'t'}
+        elif path=='admin/diagnostics': data={'ready':True,'version':'0.21.0','checks':[]}
+        elif path.startswith('admin/integrations'): data={'items':[],'accessChannel':{'connectionId':None,'ready':False}}
+        elif path=='devices/test': data={'results':[{'device':1,'label':'Android (instalada)','platform':'web','result':'sent'}]}
+        elif path=='devices': data={'items':[{'id':1,'platform':'web','label':'Android (instalada)','created_at':'2026-10-31 08:00:00','last_seen_at':'2026-10-31 08:00:00','last_sent_at':None}],
+            'browser':True,'android':False,'queue':{'pending':2,'sent':0,'failed':1,'lastError':'unavailable: El servicio de avisos del navegador respondió 503.'},
+            'delivery':{'at':'2020-01-01T00:00:00Z','sent':0},'discovery':None}
+        elif path.startswith('workspace/connections'): data={'items':[]}
+        else: data={'items':[]}
+        route.fulfill(status=status,content_type='application/json',body=json.dumps(data))
+    page.route('**/api/**',api)
+    page.goto(BASE+'/')
+    page.wait_for_selector('#signin:not([hidden])')
+    page.locator('.admin-login summary').click()
+    page.locator('#login-form [name="email"]').fill('admin@example.test')
+    page.locator('#login-form [name="password"]').fill('secret')
+    page.locator('#login-form button').click()
+    page.wait_for_selector('#app:not([hidden])')
+    page.locator('[data-view="settings"]').evaluate('(n)=>n.click()')
+    page.wait_for_selector('.push-chain',state='attached')
+    chain=page.locator('.push-chain').inner_text()
+    assert 'no consta que haya corrido' in chain and 'Revisa el cron de revisión' in chain, chain
+    assert 'Revisa el cron de entrega' in chain, chain
+    assert '1 fallidos' in chain and 'respondió 503' in chain, chain
+    print('PASS the device list says which link of the chain is broken, in words')
+    page.locator('#push-test').click()
+    page.wait_for_function("()=>(document.querySelector('#push-test-result')?.textContent||'').includes('enviado')")
+    page.wait_for_timeout(800)
+    assert 'enviado' in page.locator('#push-test-result').inner_text(), 'the result must survive the panel being redrawn'
+    print('PASS the test notice result stays on screen after the panel refreshes')
+    assert not errors, errors
+    context.close();b.close()
