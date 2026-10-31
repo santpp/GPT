@@ -1,6 +1,6 @@
 # Actualizar Ágora a 1.4.0
 
-Notas de voz por WhatsApp.
+Notas de voz por WhatsApp. Se quita la cita de mensajes: WhatsApp no la mostraba al cliente.
 
 ## Pasos
 

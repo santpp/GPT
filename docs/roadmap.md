@@ -120,10 +120,11 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## 1.2.1
 - El aviso dice de qué subcuenta es cuando hay más de una; abre la conversación aunque sea de otra subcuenta o no traiga la suya, y no pierde la apertura si la app se recarga. Pendiente de confirmar en el teléfono.
 
-## 1.3.0
-- Responder citando un mensaje: botón en cada burbuja, tarjeta sobre el cuadro, envío con `replyMessageId` y cita visible en las respuestas enviadas desde Ágora. Pendiente de probar por canal.
+## 1.3.0 (retirada en 1.4.0)
+- Se probó citar un mensaje con `replyMessageId`. La cuenta aceptaba el envío, pero WhatsApp no mostraba la cita al cliente (sólo se veía dentro de Ágora). Se quitó en la 1.4.0 mientras se busca otra forma.
 
 ## 1.4.0
+- Se quita la cita de mensajes (ver arriba).
 - Notas de voz por WhatsApp (solo WhatsApp, por decisión del usuario): micrófono en el cuadro de escritura, grabación con cancelar/detener, escucha previa, descartar o enviar. El navegador reempaqueta WebM/Opus a OGG/Opus (lo único que WhatsApp muestra como nota de voz). Subida en dos pasos a la conversación y envío como adjunto, con la protección contra duplicados de siempre. Pendiente de probar en la cuenta real: que acepte `audio/ogg`, que WhatsApp lo muestre como nota de voz (iPhone/Safari graba AAC y saldría como audio) y la ventana de 24 h.
 
 ## Siguiente (a decidir)

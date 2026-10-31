@@ -154,9 +154,6 @@ html[data-theme="dark"] .welcome-sheet{box-shadow:0 12px 40px #00000066}
 html[data-theme="dark"] .contact-switch .switch-track::after{background:#1d1f2b;box-shadow:0 1px 3px #00000066}
 @media(max-width:600px){html[data-theme="dark"] .won-button span[aria-hidden]{background:#222634;border:1px solid #2f8a57;color:#7ed3a3}html[data-theme="dark"][data-theme="dark"] .won-button span[aria-hidden]{background:#173325;border-color:#2f7a52;color:#8cb39c}}
 html[data-theme="dark"] .announce-link{color:#fff}
-html[data-theme="dark"] .bubble-quote{background:#0000000d}
-html[data-theme="dark"] .bubble-quote.mine{border-left-color:#2f8a57}
-html[data-theme="dark"] .quote-card{background:#0000000d}
 html[data-theme="dark"] .voice-bar{background:#0000000a}
 html[data-theme="dark"] .rec-dot{background:#d11a3a}
 /* ---- a mano: paleta base y piezas que el generador no puede adivinar ---- */

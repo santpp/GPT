@@ -131,14 +131,6 @@ export async function renderLiveInbox(container){
     hasMore=false;
    }finally{loadingMore=false;if(active())list()}
   }
-  /** La tarjeta con el mensaje que se va a citar, sobre el cuadro de escritura. */
-  function paintQuote(draft){
-   const slot=$('#live-quote-slot');if(!slot)return;
-   const quote=draft?.reply&&chatChannel!=='Email'?draft.reply:null;
-   if(!quote){slot.innerHTML='';return}
-   slot.innerHTML=`<div class="quote-card"><div><b>Respondes a ${quote.direction==='outbound'?'tu mensaje':'este mensaje'}</b><span>${esc(quote.snippet||'Mensaje citado')}</span></div><button type="button" id="quote-clear" aria-label="No citar">×</button></div>`;
-   slot.querySelector('#quote-clear').onclick=()=>{draft.reply=null;paintQuote(draft)};
-  }
   function renderMessages(){
    const log=$('#live-log');
    // El aviso de las 24 horas depende de lo último que escribió el contacto.
@@ -147,24 +139,9 @@ export async function renderLiveInbox(container){
     const files=attachmentsOf(m);
     const body=m.body?esc(m.body):(files.length?'':'Mensaje sin texto');
     const failed=['failed','undelivered','opt_out'].includes(m.status);
-    const quote=m.replyTo?`<button type="button" class="bubble-quote ${m.replyTo.direction==='outbound'?'mine':'theirs'}" data-quote-of="${esc(m.replyTo.id)}"><b>${m.replyTo.direction==='outbound'?'Tú':'Contacto'}</b><span>${esc(m.replyTo.snippet||'Mensaje citado')}</span></button>`:'';
-    const reply=!failed&&chatChannel!=='Email'?`<button type="button" class="bubble-reply" data-reply="${esc(m.id)}" aria-label="Responder a este mensaje" title="Responder a este mensaje"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7 4 12l5 5"/><path d="M4 12h9a7 7 0 0 1 7 7"/></svg></button>`:'';
-    return `<div class="bubble ${m.direction==='outbound'?'out':''}${failed?' failed':''}" data-mid="${esc(m.id)}">${reply}${quote}${body}${files.length?`<div class="live-attachments">${files.map(attachmentMarkup).join('')}</div>`:''}${statusMarkup(m,date(m.dateAdded))}</div>`;
+    return `<div class="bubble ${m.direction==='outbound'?'out':''}${failed?' failed':''}" data-mid="${esc(m.id)}">${body}${files.length?`<div class="live-attachments">${files.map(attachmentMarkup).join('')}</div>`:''}${statusMarkup(m,date(m.dateAdded))}</div>`;
    }).join('')||'<p class="empty">No hay mensajes disponibles.</p>';
    bindAttachments(log);
-   // Citar: el botón de cada burbuja pone ese mensaje sobre el cuadro de escritura.
-   log.querySelectorAll('[data-reply]').forEach(button=>button.onclick=()=>{
-    const found=messages.get(button.dataset.reply);if(!found||!selected)return;
-    const draft=drafts.get(select.value+':'+selected.id);if(!draft)return;
-    const text=String(found.body||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
-    draft.reply={id:found.id,snippet:(text||(attachmentsOf(found).length?'Archivo adjunto':'')).slice(0,160),direction:found.direction};
-    paintQuote(draft);$('#live-reply')?.focus();
-   });
-   // Tocar la cita lleva al mensaje citado, si está a la vista.
-   log.querySelectorAll('[data-quote-of]').forEach(button=>button.onclick=()=>{
-    const target=log.querySelector(`[data-mid="${CSS.escape(button.dataset.quoteOf)}"]`);
-    if(target){target.scrollIntoView({block:'center',behavior:'smooth'});target.classList.add('flash');setTimeout(()=>target.classList.remove('flash'),1400)}
-   });
    // Volver a escribir un mensaje que no salió: el texto vuelve al cuadro de
    // respuesta para revisarlo, y se envía sólo cuando la persona lo decide.
    log.querySelectorAll('[data-retry]').forEach(button=>button.onclick=()=>{
@@ -225,7 +202,7 @@ export async function renderLiveInbox(container){
    if(!usable.length||!c.contactId)return '<p class="live-readonly">Este canal todavía no admite respuestas desde aquí.</p>';
    const chosen=usable.find(o=>o.type===chatChannel)||usable[0];
    chatChannel=chosen.type;
-   return `<form id="live-composer" class="live-composer"><div class="live-channels" id="live-channel-row" role="group" aria-label="Canal de envío">${pickerMarkup(offered)}</div><div id="live-subject-slot">${chosen.needsSubject?'<label class="live-subject-field">Asunto<input id="live-subject" maxlength="200" required></label>':''}</div><p id="live-window-hint" class="live-window-hint" hidden>Han pasado más de 24 horas desde su último mensaje. WhatsApp sólo permite escribir con una plantilla aprobada.</p><div id="live-template-slot"></div><div id="live-quote-slot"></div><div id="live-voice-slot"></div><label class="sr-only" for="live-reply">Respuesta</label><textarea id="live-reply" maxlength="4000" rows="3" required placeholder="Escribe una respuesta…"></textarea><div class="live-composer-actions"><span id="live-channel-name">${esc(chosen.label)}</span><button type="button" id="live-mic" class="mic-button" hidden aria-label="Grabar una nota de voz" title="Grabar una nota de voz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button><button type="button" id="live-template-toggle" class="link-button" hidden>Usar plantilla</button><button id="live-send" class="primary">Enviar</button></div><p id="live-send-status" role="status"></p></form>`;
+   return `<form id="live-composer" class="live-composer"><div class="live-channels" id="live-channel-row" role="group" aria-label="Canal de envío">${pickerMarkup(offered)}</div><div id="live-subject-slot">${chosen.needsSubject?'<label class="live-subject-field">Asunto<input id="live-subject" maxlength="200" required></label>':''}</div><p id="live-window-hint" class="live-window-hint" hidden>Han pasado más de 24 horas desde su último mensaje. WhatsApp sólo permite escribir con una plantilla aprobada.</p><div id="live-template-slot"></div><div id="live-voice-slot"></div><label class="sr-only" for="live-reply">Respuesta</label><textarea id="live-reply" maxlength="4000" rows="3" required placeholder="Escribe una respuesta…"></textarea><div class="live-composer-actions"><span id="live-channel-name">${esc(chosen.label)}</span><button type="button" id="live-mic" class="mic-button" hidden aria-label="Grabar una nota de voz" title="Grabar una nota de voz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button><button type="button" id="live-template-toggle" class="link-button" hidden>Usar plantilla</button><button id="live-send" class="primary">Enviar</button></div><p id="live-send-status" role="status"></p></form>`;
   }
 
   /**
@@ -538,7 +515,7 @@ export async function renderLiveInbox(container){
   function bindComposer(c){
    const form=$('#live-composer');if(!form)return;
    const connection=select.value,version=chatGeneration,key=connection+':'+c.id;
-   const draft=drafts.get(key)||{message:'',subject:'',sending:false,notice:'',reply:null};drafts.set(key,draft);
+   const draft=drafts.get(key)||{message:'',subject:'',sending:false,notice:''};drafts.set(key,draft);
    applyChannels(c,chatChannels??threadChannel(c),draft);
    const text=$('#live-reply'),subject=$('#live-subject');
    // Looked up when used, not captured: switching channel replaces these nodes
@@ -550,7 +527,6 @@ export async function renderLiveInbox(container){
     if(topic){topic.value=draft.subject;topic.disabled=draft.sending}
     if(send){send.disabled=draft.sending;send.textContent=draft.sending?'Enviando…':'Enviar'}
     if(notice)notice.textContent=draft.notice;
-    paintQuote(draft);
    };
    show();
    text.oninput=()=>draft.message=text.value;if(subject)subject.oninput=()=>draft.subject=subject.value;
@@ -559,8 +535,6 @@ export async function renderLiveInbox(container){
     draft.sending=true;draft.notice='Enviando…';show();
     let storageKey;
     const body={channel:chatChannel||sendChannels[c.lastMessageType],message:draft.message.trim(),subject:draft.subject.trim()};
-    const quoted=draft.reply&&chatChannel!=='Email'?draft.reply:null;
-    if(quoted)body.replyTo=quoted.id;
     try{
      const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(body)));
      storageKey='agora-send:'+key+':'+Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
@@ -568,7 +542,7 @@ export async function renderLiveInbox(container){
      const requestId=sessionStorage.getItem(storageKey)||crypto.randomUUID();sessionStorage.setItem(storageKey,requestId);
      const result=await request(`workspace/send?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(c.id)}`,'POST',me.csrf,{...body,requestId});
      sessionStorage.removeItem(storageKey);draft.message='';draft.notice=result.deliveryStatus==='failed'?'El canal registró el mensaje como fallido. Revisa su configuración.':'Mensaje aceptado por el canal.';
-     draft.reply=null;if(active()&&version===chatGeneration){messages.set(result.messageId,{id:result.messageId,body:body.message,direction:'outbound',dateAdded:new Date().toISOString(),status:result.deliveryStatus,replyTo:quoted?{id:quoted.id,snippet:quoted.snippet,direction:quoted.direction}:undefined});renderMessages();$('#live-log').scrollTop=$('#live-log').scrollHeight;c.lastMessageBody=body.message;list()}
+     if(active()&&version===chatGeneration){messages.set(result.messageId,{id:result.messageId,body:body.message,direction:'outbound',dateAdded:new Date().toISOString(),status:result.deliveryStatus});renderMessages();$('#live-log').scrollTop=$('#live-log').scrollHeight;c.lastMessageBody=body.message;list()}
     }catch(error){draft.notice=friendly(error);if(storageKey&&['send_rejected','invalid_message','invalid_subject','unsupported_channel','invalid_contact','connection_unverified'].includes(error.code))sessionStorage.removeItem(storageKey)}
     finally{draft.sending=false;if(active()&&version===chatGeneration)show()}
    };
