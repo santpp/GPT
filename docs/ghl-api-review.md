@@ -426,3 +426,17 @@ Sin cambios en el uso de la cuenta: la misma búsqueda de conversaciones, más a
 **Qué dice el aviso.** El título lleva quién escribe y por qué canal («Raissa Moreno · WhatsApp»), y el cuerpo, lo que escribió, con cuántos mensajes hay sin leer si son varios. Si a la conversación le falta el nombre, se usa el siguiente dato que haya: nombre completo, teléfono o correo. Un mensaje sin texto dice que llegó un adjunto, y a los correos se les quitan las etiquetas. Antes, cualquier dato ausente producía el texto genérico.
 
 **Service worker atrasado.** La página pregunta al service worker qué versión pinta los avisos. Si no coincide con la de la página, el pie lo dice y pide cerrar y volver a abrir la app. Uno de los fallos anteriores fue justo un service worker que se quedó atrás sin que nada lo mostrara.
+
+## Adjuntos, motivos de fallo e iconos del chat 0.22.0
+
+Sin cambios en el uso de la cuenta.
+
+**Motivo de un envío fallido.** `GetMessageResponseDto` publica `status` con `failed`, `undelivered` y `opt_out` entre sus valores, pero **ningún campo con el motivo**. `MessageMeta` sólo publica datos de llamadas y de correo. Así que, ante un mensaje que no salió, el chat:
+
+- explica el estado en palabras («No enviado», «No entregado», «Se dio de baja»);
+- si el mensaje trae un motivo en alguno de los campos que las cuentas reales suelen añadir (`error`, `errorMessage`, `meta.error`, `meta.errorMessage`, `meta.reason`), lo enseña tal cual como «motivo indicado por el canal», recortado y escapado;
+- si no trae ninguno, lo dice («la cuenta no indica el motivo») y lista las causas habituales de ese canal, presentadas como habituales y no como la causa cierta. En WhatsApp, la primera es la ventana de 24 horas sin plantilla.
+
+«Volver a escribirlo» devuelve el texto al cuadro de respuesta para revisarlo. No envía nada. A quien se dio de baja no se le ofrece.
+
+**Adjuntos.** Se siguen aceptando sólo enlaces `https`, y el nombre sale de la ruta del archivo. Las imágenes se ven en miniatura con su proporción, con un estado de carga, y al tocarlas se abren en un visor a pantalla completa, con enlace al original. Si no cargan, se sustituyen por un aviso y un enlace en vez de dejar un hueco. Audio y vídeo se reproducen en el propio chat; los documentos muestran su nombre y un botón para abrirlos.

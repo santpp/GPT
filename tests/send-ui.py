@@ -56,7 +56,7 @@ with sync_playwright() as p:
   page.locator('#live-send').click()
   page.wait_for_function('document.querySelector("#live-reply").value===""')
   assert sent[-1]['requestId']==first
-  assert 'Pendiente' in page.locator('#live-log').inner_text()
+  assert 'Enviando…' in page.locator('#live-log').inner_text(), 'a message still on its way says so'
   # No Enter-to-send shortcut; drafts survive chat changes.
   page.locator('#live-reply').fill('Borrador')
   page.locator('#live-reply').press('Enter')

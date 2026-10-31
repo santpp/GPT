@@ -1,5 +1,6 @@
 import {contactForm,readContactForm,bindTagEditor} from './contact-editor.js';
 import {opportunityForm,readOpportunityForm,bindPipelineChoice} from './opportunity-editor.js';
+import {attachmentsOf,attachmentMarkup,bindAttachments,statusMarkup,UI_ICONS} from './message-view.js';
 import {workspace} from './workspace.js';
 const drafts=new Map();
 window.addEventListener('agora:logout',()=>{drafts.clear();for(const key of Object.keys(sessionStorage))if(key.startsWith('agora-send:'))sessionStorage.removeItem(key)});
@@ -9,7 +10,6 @@ const channel=value=>({TYPE_WHATSAPP:'WhatsApp',TYPE_INSTAGRAM:'Instagram',TYPE_
 const name=c=>c.contactName||c.fullName||[c.firstName,c.lastName].filter(Boolean).join(' ')||'Contacto sin nombre';
 const initials=c=>name(c).split(/\s+/).slice(0,2).map(s=>[...s][0]).join('').toUpperCase();
 const date=value=>{if(!value)return '';const d=new Date(typeof value==='string'&&/^\d{4}-\d\d-\d\d \d\d:/.test(value)?value.replace(' ','T')+'Z':value);return Number.isNaN(d.getTime())?'':new Intl.DateTimeFormat('es',{dateStyle:'short',timeStyle:'short'}).format(d)};
-const status=value=>({delivered:'Entregado',sent:'Enviado',read:'Leído',pending:'Pendiente',failed:'Fallido',received:'Recibido'}[value]||'');
 const normalize=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase();
 async function request(path,method='GET',csrf='',body=null){
  const r=await fetch('/api/'+path,{method,cache:'no-store',...(body!==null?{body:JSON.stringify(body)}:{}),headers:{'Content-Type':'application/json',...(csrf?{'X-CSRF-Token':csrf}:{})}});
@@ -128,31 +128,27 @@ export async function renderLiveInbox(container){
     hasMore=false;
    }finally{loadingMore=false;if(active())list()}
   }
-  const IMAGE=/\.(png|jpe?g|gif|webp|avif|bmp|svg)(\?|$)/i;
-  // Only the account's own https links are followed, and the name shown is the
-  // file's, never anything the sender could use to dress the link up.
-  function attachmentsOf(message){
-   const raw=Array.isArray(message.attachments)?message.attachments:[];
-   const files=[];
-   for(const item of raw.slice(0,10)){
-    const url=typeof item==='string'?item:(item&&typeof item.url==='string'?item.url:null);
-    if(!url)continue;
-    let parsed;try{parsed=new URL(url)}catch{continue}
-    if(parsed.protocol!=='https:')continue;
-    const name=decodeURIComponent(parsed.pathname.split('/').filter(Boolean).pop()||'archivo').slice(0,80);
-    files.push({url:parsed.href,name,image:IMAGE.test(parsed.pathname)});
-   }
-   return files;
-  }
-  const attachmentMarkup=file=>file.image
-   ? `<a class="live-attachment image" href="${esc(file.url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(file.url)}" alt="${esc(file.name)}" loading="lazy"></a>`
-   : `<a class="live-attachment" href="${esc(file.url)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">⇩</span>${esc(file.name)}</a>`;
   function renderMessages(){
-   $('#live-log').innerHTML=[...messages.values()].sort((a,b)=>(Date.parse(a.dateAdded)||0)-(Date.parse(b.dateAdded)||0)).map(m=>{
+   const log=$('#live-log');
+   log.innerHTML=[...messages.values()].sort((a,b)=>(Date.parse(a.dateAdded)||0)-(Date.parse(b.dateAdded)||0)).map(m=>{
     const files=attachmentsOf(m);
     const body=m.body?esc(m.body):(files.length?'':'Mensaje sin texto');
-    return `<div class="bubble ${m.direction==='outbound'?'out':''}">${body}${files.length?`<div class="live-attachments">${files.map(attachmentMarkup).join('')}</div>`:''}<time>${esc(date(m.dateAdded))}${status(m.status)?' · '+status(m.status):''}</time></div>`;
+    const failed=['failed','undelivered','opt_out'].includes(m.status);
+    return `<div class="bubble ${m.direction==='outbound'?'out':''}${failed?' failed':''}">${body}${files.length?`<div class="live-attachments">${files.map(attachmentMarkup).join('')}</div>`:''}${statusMarkup(m,date(m.dateAdded))}</div>`;
    }).join('')||'<p class="empty">No hay mensajes disponibles.</p>';
+   bindAttachments(log);
+   // Volver a escribir un mensaje que no salió: el texto vuelve al cuadro de
+   // respuesta para revisarlo, y se envía sólo cuando la persona lo decide.
+   log.querySelectorAll('[data-retry]').forEach(button=>button.onclick=()=>{
+    const original=messages.get(button.dataset.retry);
+    const field=$('#live-reply');
+    if(!original||!field)return;
+    field.value=original.body;
+    field.dispatchEvent(new Event('input',{bubbles:true}));
+    field.focus();
+    const notice=$('#live-send-status');
+    if(notice)notice.textContent='Revisa el texto, elige el canal y pulsa Enviar.';
+   });
   }
   async function page(older=false,refresh=false){
    messageBusy++;
@@ -478,7 +474,7 @@ export async function renderLiveInbox(container){
   }
   function open(c){
    selected=c;chatNeedsRefresh=false;chatGeneration++;messages=new Map();cursor=null;chatChannel=sendChannels[c.lastMessageType]||null;chatChannels=null;list();layout.classList.add('chat-open');layout.classList.remove('contact-open');
-   $('#live-messages').innerHTML=`<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">←</button><span class="avatar">${esc(initials(c))}</span><div><h2>${esc(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div><button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">⤢</button><button id="live-contact-toggle" aria-label="Ver ficha del contacto">ⓘ</button></header><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
+   $('#live-messages').innerHTML=`<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">${UI_ICONS.back}</button><span class="avatar">${esc(initials(c))}</span><div><h2>${esc(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div><button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">${UI_ICONS.expand}</button><button id="live-contact-toggle" aria-label="Ver ficha del contacto" title="Ver ficha del contacto">${UI_ICONS.contact}</button></header><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
    $('#live-back').onclick=()=>{clearTimeout(pollTimer);document.body.classList.remove('agora-focus');layout.classList.remove('chat-open','contact-open');say();$('#live-search').focus()};
    $('#live-contact-toggle').onclick=()=>layout.classList.toggle('contact-open');
    if(Number(c.unreadCount)>0&&me?.csrf){
@@ -489,7 +485,7 @@ export async function renderLiveInbox(container){
    $('#live-older').onclick=()=>page(true);
    const focus=$('#live-focus');
    // Focus hides the menu and the list so the conversation owns the screen.
-   const paintFocus=()=>{const on=document.body.classList.contains('agora-focus');focus.textContent=on?'⤡':'⤢';focus.setAttribute('aria-label',on?'Reducir la conversación':'Ampliar la conversación');focus.title=focus.getAttribute('aria-label')};
+   const paintFocus=()=>{const on=document.body.classList.contains('agora-focus');focus.innerHTML=on?UI_ICONS.shrink:UI_ICONS.expand;focus.classList.toggle('active',on);focus.setAttribute('aria-label',on?'Reducir la conversación':'Ampliar la conversación');focus.title=focus.getAttribute('aria-label')};
    // Se recupera la preferencia al abrir una conversación, nunca antes.
    document.body.classList.toggle('agora-focus',focusWanted);
    focus.onclick=()=>{focusWanted=!document.body.classList.contains('agora-focus');document.body.classList.toggle('agora-focus',focusWanted);try{localStorage.setItem('agora-focus',focusWanted?'1':'0')}catch{}paintFocus()};

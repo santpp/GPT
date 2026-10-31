@@ -165,10 +165,11 @@ with sync_playwright() as p:
         if width==390:
             page.locator('#live-contact-toggle').click();assert page.locator('#live-contact-panel').is_visible();page.locator('#live-profile-close').click()
         # Attachments are shown; only the account's https links are followed.
-        page.wait_for_selector('.live-attachment',state='attached')
-        links=page.locator('#live-log .live-attachment').evaluate_all('ns=>ns.map(n=>n.getAttribute("href"))')
+        page.wait_for_selector('#live-log .att-image, #live-log .att-file',state='attached')
+        # A picture that cannot load becomes a link to the original, so read both forms.
+        links=page.locator('#live-log .att-image, #live-log .att-file').evaluate_all('ns=>ns.map(n=>n.dataset.view||n.getAttribute("href"))')
         assert links==['https://cdn.example.test/fotos/propuesta.png','https://cdn.example.test/docs/contrato.pdf'], links
-        assert page.locator('#live-log .live-attachment.image img').count()==1, 'an image is shown inline'
+        assert page.locator('#live-log .att-image img, #live-log .att-file.broken').count()==1, 'an image is shown inline, or says it could not load'
         assert 'contrato.pdf' in page.locator('#live-log').evaluate('(n)=>n.textContent'), 'a file shows its own name'
         assert page.locator('#live-log a[href^="javascript:"]').count()==0 and page.locator('#live-log a[href^="http:"]').count()==0
         # Opening an unread conversation clears it in the account.
