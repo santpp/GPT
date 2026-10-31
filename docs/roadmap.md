@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.4.0. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.0. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -125,9 +125,15 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## 1.4.0
 - Se quita la cita de mensajes (ver arriba).
-- Conversaciones que empiezan con un comentario en una publicación de Instagram o Facebook: aviso arriba («Su primera interacción fue un comentario…»), etiqueta en cada comentario y respuesta como mensaje directo. Pendiente de probar: la API no documenta la respuesta privada a un comentario, y Meta sólo la permite durante unos días.
+- Conversaciones que empiezan con un comentario en una publicación de Instagram o Facebook: aviso arriba («Su primera interacción fue un comentario…»), etiqueta en cada comentario y respuesta como mensaje directo. Probado por el usuario: funciona.
 - Si la cuenta rechaza un envío, el mensaje de error incluye el motivo que da (sin marcas), para diagnosticar. 
 - **Notas de voz: descartadas definitivamente.** La subida (de dos pasos y clásica) funcionaba y el archivo se servía como `audio/ogg`, pero la cuenta rechazaba siempre el envío por WhatsApp (HTTP 400). Se retiró todo el código de la 1.4.0. Si se retoma, hay que abrir un caso con el soporte de la cuenta.
+
+## 1.5.0 · pulido de la interfaz
+- Pila técnica sin cambios: HTML, CSS y JavaScript sin framework en el navegador, PHP 8.3 y MariaDB en el servidor.
+- Esqueletos de carga con brillo suave en lugar de textos «Cargando…» (conversaciones, mensajes, tablero, contactos, oportunidades, ficha y seguridad), con entrada escalonada.
+- El tablero dice «actualizado a las HH:MM» con un punto verde, en vez de «leídas a las…».
+- Transiciones al aparecer listas y mensajes, y respuesta al pulsar botones. Todo se desactiva con «reducir movimiento» del dispositivo.
 
 ## Siguiente (a decidir)
 - Plantillas de WhatsApp: en espera del WABA ID o de la salida de «Comprobar plantillas».

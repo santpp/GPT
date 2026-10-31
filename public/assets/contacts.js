@@ -1,4 +1,5 @@
 import {workspace,friendly} from './workspace.js';
+import {skeleton} from './skeleton.js';
 import {contactForm,readContactForm,bindTagEditor} from './contact-editor.js';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -24,8 +25,8 @@ export async function renderContacts(container){
   container.innerHTML=`<div class="records-layout" id="records-layout">
    <div class="records-list">
     <div class="live-toolbar"><label class="search"><span aria-hidden="true">⌕</span><input id="contact-search" type="search" placeholder="Buscar por nombre, correo o teléfono" aria-label="Buscar contactos"></label></div>
-    <p id="contact-feedback" class="live-feedback" role="status">Cargando contactos…</p>
-    <div id="contact-results" role="list"></div>
+    <p id="contact-feedback" class="live-feedback" role="status"></p>
+    <div id="contact-results" role="list">${skeleton('list',7)}</div>
    </div>
    <section class="records-record" id="contact-record" aria-live="polite"><p class="empty">Elige una persona de la lista para ver y editar su ficha.</p></section>
   </div>`;
@@ -42,7 +43,7 @@ export async function renderContacts(container){
 
   async function load(search=''){
     const version=++generation;
-    $('#contact-feedback').textContent='Cargando contactos…';
+    $('#contact-feedback').textContent='';if(!$('#contact-results').children.length||$('#contact-results .sk-wrap'))$('#contact-results').innerHTML=skeleton('list',7);
     try{
       const data=await request(`workspace/contacts?connectionId=${encodeURIComponent(connection)}${search?'&query='+encodeURIComponent(search):''}`);
       if(!active()||version!==generation)return;

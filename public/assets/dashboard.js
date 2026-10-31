@@ -1,4 +1,5 @@
 import {workspace,friendly} from './workspace.js';
+import {skeleton} from './skeleton.js';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const asList=value=>Array.isArray(value)?value:[];
@@ -95,13 +96,13 @@ export async function renderDashboard(container){
   const active=()=>container.agoraViewInstance===instance&&container.dataset.view==='dashboard';
   const connection=workspace.current();
   if(!connection){container.innerHTML='<p class="empty">Añade una cuenta desde Conexiones para ver el tablero.</p>';return}
-  container.innerHTML='<p id="dashboard-feedback" class="live-feedback" role="status">Leyendo la cuenta…</p><div id="dashboard-body"></div>';
+  container.innerHTML=`<p id="dashboard-feedback" class="updated-at" role="status" hidden></p><div id="dashboard-body">${skeleton('tiles',4)}</div>`;
   const $=s=>container.querySelector(s);
   let csrf='',month=null,period=new Date().toISOString().slice(0,7);
   try{csrf=(await request('me')).csrf||''}catch{}
 
   async function load(){
-    $('#dashboard-feedback').textContent='Leyendo la cuenta…';
+    if(!$('#dashboard-body').children.length||$('#dashboard-body .sk-wrap'))$('#dashboard-body').innerHTML=skeleton('tiles',4);
     try{
       const zone=(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch{return ''}})();
       const now=await request(`workspace/dashboard?connectionId=${encodeURIComponent(connection)}${zone?'&tz='+encodeURIComponent(zone):''}`);
@@ -113,7 +114,7 @@ export async function renderDashboard(container){
       paint(now,month);
     }catch(error){
       if(!active())return;
-      $('#dashboard-feedback').textContent=friendly(error);
+      const feedback=$('#dashboard-feedback');feedback.hidden=false;feedback.textContent=friendly(error);
       $('#dashboard-body').innerHTML='';
       if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
     }
@@ -121,7 +122,7 @@ export async function renderDashboard(container){
 
   function paint(data,month){
     const read=data.readAt?new Date(data.readAt).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):'';
-    $('#dashboard-feedback').textContent=`${data.restricted?'Tus cifras en esta cuenta':'Cifras de la cuenta'}${read?` · leídas a las ${read}`:''}`;
+    const feedback=$('#dashboard-feedback');feedback.hidden=false;feedback.innerHTML=`<i aria-hidden="true"></i><span>${data.restricted?'Tus cifras':'Cifras de la cuenta'}${read?` · actualizado a las ${read}`:''}</span>`;
     const unread=data.conversations?.unread??0;
     const tiles=[
       tile('Conversaciones',number(data.conversations?.total??0),'Abiertas en la cuenta'),
@@ -153,7 +154,7 @@ export async function renderDashboard(container){
   }
 
   function monthBlock(month){
-    if(!month)return '<div class="section-label">RENTABILIDAD DEL MES</div><p class="board-empty">Calculando el mes…</p>';
+    if(!month)return '<div class="section-label">RENTABILIDAD DEL MES</div>'+skeleton('lines',3);
     if(month.error)return `<div class="section-label">RENTABILIDAD DEL MES</div><p class="board-empty">${esc(month.error)}</p>`;
     // Un resumen con otra forma no puede llevarse por delante el resto del tablero.
     if(!month.profitability||!month.settings||!month.goal)return '<div class="section-label">RENTABILIDAD DEL MES</div><p class="board-empty">El resumen del mes no llegó completo. Vuelve a entrar en un momento.</p>';

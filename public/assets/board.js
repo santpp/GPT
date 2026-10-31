@@ -1,4 +1,5 @@
 import {workspace,friendly} from './workspace.js';
+import {skeleton} from './skeleton.js';
 import {opportunityForm,readOpportunityForm,bindPipelineChoice} from './opportunity-editor.js';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -18,7 +19,7 @@ export async function renderBoard(container){
   const active=()=>container.agoraViewInstance===instance&&container.dataset.view==='board';
   const connection=workspace.current();
   if(!connection){container.innerHTML='<p class="empty">Añade una cuenta desde Conexiones para ver oportunidades.</p>';return}
-  container.innerHTML='<p class="empty">Cargando oportunidades…</p>';
+  container.innerHTML=skeleton('cards',6);
   let generation=0,pipeline='',csrf='',board=null,directory=null,editing=null,notice='';
 
   try{csrf=(await request('me')).csrf||''}catch{}

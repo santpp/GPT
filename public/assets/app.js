@@ -1,4 +1,5 @@
 import {workspace} from './workspace.js';
+import {skeleton} from './skeleton.js';
 import {renderIntegrations} from './integrations.js';
 import {renderLiveInbox} from './live-inbox.js';
 import {renderContacts} from './contacts.js';
@@ -303,7 +304,7 @@ async function enrollPasskey(){
 const when=value=>{if(!value)return 'todavía no';const d=new Date(value);return Number.isNaN(d.getTime())?'':new Intl.DateTimeFormat('es',{dateStyle:'medium',timeStyle:'short'}).format(d)};
 async function openSecurity(){
   const dialog=$('#action-dialog');
-  $('#dialog-content').innerHTML='<h2>Seguridad y sesión</h2><p class="dialog-copy">Cargando…</p>';
+  $('#dialog-content').innerHTML='<h2>Seguridad y sesión</h2>'+skeleton('lines',4);
   if(!dialog.open)dialog.showModal();
   let data;
   try{data=await api('security')}catch(error){$('#dialog-content').innerHTML=`<h2>Seguridad y sesión</h2><p class="dialog-copy">${esc(error.message)}</p><button id="signout" class="primary">Cerrar sesión</button>`;$('#signout').onclick=signOut;return}
