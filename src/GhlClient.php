@@ -32,6 +32,8 @@ final class GhlClient {
     /** Abre una conversación con un contacto que aún no tenía (POST /conversations/). */
     public function createConversation(string $location,string $contact):array {return $this->get('/conversations/','2021-04-15',['locationId'=>$location,'contactId'=>$contact]);}
     /** Subida de un archivo a la conversación, en dos pasos: dirección firmada y confirmación. */
+    /** Subida clásica de un adjunto a la conversación: multipart con el archivo en `fileAttachment`. */
+    public function uploadAttachment(array $fields,string $filename,string $mime,string $bytes):array {return $this->get('/conversations/messages/upload','2021-04-15',$fields+['__file'=>['name'=>$filename,'mime'=>$mime,'bytes'=>$bytes]]);}
     public function sendMessage(array $payload):array {return $this->get('/conversations/messages','2021-04-15',$payload);}
     public function duplicateContact(string $location,string $email):array {
         return $this->get('/contacts/search/duplicate?'.http_build_query(['locationId'=>$location,'email'=>$email]),'2021-07-28');
@@ -106,7 +108,12 @@ final class GhlClient {
             curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>15,CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$this->token,'Version: '.$version,'Accept: application/json'],CURLOPT_HEADERFUNCTION=>function($ch,string $line):int {
                 $parts=explode(':',$line,2);if(count($parts)===2)$this->headers[strtolower(trim($parts[0]))]=trim($parts[1]);return strlen($line);
             }]);
-            if($payload!==null)curl_setopt_array($ch,[CURLOPT_CUSTOMREQUEST=>$method,CURLOPT_POSTFIELDS=>json_encode($payload,JSON_THROW_ON_ERROR),CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$this->token,'Version: '.$version,'Accept: application/json','Content-Type: application/json']]);
+            if(is_array($payload)&&isset($payload['__file'])) {
+                $file=$payload['__file'];unset($payload['__file']);
+                $payload['fileAttachment']=new CURLStringFile($file['bytes'],$file['name'],$file['mime']);
+                curl_setopt_array($ch,[CURLOPT_CUSTOMREQUEST=>'POST',CURLOPT_POSTFIELDS=>$payload,CURLOPT_TIMEOUT=>40]);
+            }
+            elseif($payload!==null)curl_setopt_array($ch,[CURLOPT_CUSTOMREQUEST=>$method,CURLOPT_POSTFIELDS=>json_encode($payload,JSON_THROW_ON_ERROR),CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$this->token,'Version: '.$version,'Accept: application/json','Content-Type: application/json']]);
             $raw=curl_exec($ch);$this->status=curl_getinfo($ch,CURLINFO_RESPONSE_CODE);curl_close($ch);
         }
         if($raw===false || $this->status<200 || $this->status>=300) {

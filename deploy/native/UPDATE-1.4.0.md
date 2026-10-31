@@ -1,13 +1,30 @@
 # Actualizar Ágora a 1.4.0
 
-Conversaciones que vienen de un comentario en una publicación. Se quita la cita de mensajes (WhatsApp no la mostraba al cliente) y se descartan las notas de voz (la cuenta rechazaba el envío).
+Notas de voz por WhatsApp. Se quita la cita de mensajes: WhatsApp no la mostraba al cliente.
 
 ## Pasos
 
 1. Extraer `agora-update-1.4.0.zip` sobre las carpetas existentes. No hay migraciones nuevas.
 2. En el teléfono, cerrar Ágora del todo y volver a abrirla. El pie debe decir **v1.4.0**.
 
+## Cómo se usa
+
+- En una conversación de WhatsApp (con la ventana de 24 h abierta) aparece un micrófono junto a «Usar plantilla».
+- Al pulsarlo el navegador pide permiso para el micrófono (una vez). Graba hasta 5 minutos; **Detener** o **Cancelar**.
+- Puedes escucharla antes de **Enviar** o **Descartar**.
+- Si se pierde la conexión al enviar, repetir no duplica la nota.
+
+## Lo que hay que saber
+
+- Es lo primero que se prueba: enviar una nota a tu propio WhatsApp. No se ha podido comprobar contra la cuenta real que acepte el audio ni cómo lo muestra WhatsApp.
+- WhatsApp sólo la muestra como nota de voz si es OGG con Opus. Chrome/Android la graba así (Ágora la convierte). iPhone/Safari graba AAC: llegaría como archivo de audio, no como nota de voz.
+- Sólo WhatsApp: en otros canales no aparece el micrófono.
+
 ## También en esta versión
 
 - **Comentarios:** si el contacto llegó por un comentario en una publicación de Instagram o Facebook, la conversación lo dice arriba y marca cada comentario. Responder sale como **mensaje directo**. La API no documenta la respuesta privada a un comentario, así que hay que probarla; Meta sólo la admite durante unos días.
-- **Errores de envío:** el aviso incluye el motivo que da la cuenta.
+- **Errores de envío:** el aviso incluye el motivo que da la cuenta. Si la nota de voz sigue rechazada, ese texto dice por qué.
+
+## Nota de voz (última prueba)
+
+- Micrófono en conversaciones de WhatsApp con la ventana de 24 h abierta. Ágora sube el audio con la subida clásica de la cuenta. Si la cuenta responde que no admite el tipo (415) o rechaza el envío, el aviso dice el motivo y la función se descarta.

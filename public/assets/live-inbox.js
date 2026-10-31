@@ -2,6 +2,7 @@ import {contactForm,readContactForm,bindTagEditor} from './contact-editor.js';
 import {opportunityForm,readOpportunityForm,bindPipelineChoice} from './opportunity-editor.js';
 import {attachmentsOf,attachmentMarkup,bindAttachments,statusMarkup,UI_ICONS} from './message-view.js';
 import {workspace,friendly} from './workspace.js';
+import {supported as voiceSupported,record as voiceRecord,MAX_SECONDS as VOICE_MAX} from './voice.js';
 const drafts=new Map();
 window.addEventListener('agora:logout',()=>{drafts.clear();for(const key of Object.keys(sessionStorage))if(key.startsWith('agora-send:'))sessionStorage.removeItem(key)});
 const sendChannels={TYPE_SMS:'SMS',TYPE_WHATSAPP:'WhatsApp',TYPE_INSTAGRAM:'IG',TYPE_FACEBOOK:'FB',TYPE_EMAIL:'Email',TYPE_INSTAGRAM_COMMENT:'IG',TYPE_FACEBOOK_COMMENT:'FB'};
@@ -86,7 +87,7 @@ export async function renderLiveInbox(container){
    await page(false,true);
   }
   function wake(){clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);clearTimeout(pulseTimer);if(canRefresh()){say();schedule(Math.max(1,pause-Date.now()/1000));scheduleChat();schedulePulse(1)}else say(navigator.onLine?'En pausa mientras la pantalla está oculta':'Sin conexión · se reanudará solo')}
-  container.agoraLiveDispose=()=>{disposed=true;document.body.classList.remove('agora-focus');clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);clearTimeout(pulseTimer);document.removeEventListener('visibilitychange',wake);window.removeEventListener('online',wake);window.removeEventListener('offline',wake)};
+  container.agoraLiveDispose=()=>{disposed=true;try{abortVoice()}catch{}document.body.classList.remove('agora-focus');clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);clearTimeout(pulseTimer);document.removeEventListener('visibilitychange',wake);window.removeEventListener('online',wake);window.removeEventListener('offline',wake)};
   document.addEventListener('visibilitychange',wake);window.addEventListener('online',wake);window.addEventListener('offline',wake);
   async function tick(){if(!canRefresh())return;if(syncBusy||messageBusy||[...drafts.values()].some(d=>d.sending)){schedule(5);return}if(pause>Date.now()/1000){schedule(pause-Date.now()/1000);return}await sync(true)}
   let generation=0, chatGeneration=0, conversations=[], selected=null, filter='all', nextCursor=null, hasMore=false, loadingMore=false, pulseToken=null, pulseTimer=null, messages=new Map(), cursor=null, chatChannel=null, chatChannels=null, channelFilter='', searchTerm='', searchTimer=null, channelNames={}, templates={open:false,items:null,configured:true,error:'',chosen:'',values:{},sending:false,notice:'',generation:-1};
@@ -211,7 +212,7 @@ export async function renderLiveInbox(container){
    if(!usable.length||!c.contactId)return '<p class="live-readonly">Este canal todavía no admite respuestas desde aquí.</p>';
    const chosen=usable.find(o=>o.type===chatChannel)||usable[0];
    chatChannel=chosen.type;
-   return `<form id="live-composer" class="live-composer"><div class="live-channels" id="live-channel-row" role="group" aria-label="Canal de envío">${pickerMarkup(offered)}</div><div id="live-subject-slot">${chosen.needsSubject?'<label class="live-subject-field">Asunto<input id="live-subject" maxlength="200" required></label>':''}</div><p id="live-window-hint" class="live-window-hint" hidden>Han pasado más de 24 horas desde su último mensaje. WhatsApp sólo permite escribir con una plantilla aprobada.</p><div id="live-template-slot"></div><label class="sr-only" for="live-reply">Respuesta</label><textarea id="live-reply" maxlength="4000" rows="3" required placeholder="Escribe una respuesta…"></textarea><div class="live-composer-actions"><span id="live-channel-name">${esc(chosen.label)}</span><button type="button" id="live-template-toggle" class="link-button" hidden>Usar plantilla</button><button id="live-send" class="primary">Enviar</button></div><p id="live-send-status" role="status"></p></form>`;
+   return `<form id="live-composer" class="live-composer"><div class="live-channels" id="live-channel-row" role="group" aria-label="Canal de envío">${pickerMarkup(offered)}</div><div id="live-subject-slot">${chosen.needsSubject?'<label class="live-subject-field">Asunto<input id="live-subject" maxlength="200" required></label>':''}</div><p id="live-window-hint" class="live-window-hint" hidden>Han pasado más de 24 horas desde su último mensaje. WhatsApp sólo permite escribir con una plantilla aprobada.</p><div id="live-template-slot"></div><div id="live-voice-slot"></div><label class="sr-only" for="live-reply">Respuesta</label><textarea id="live-reply" maxlength="4000" rows="3" required placeholder="Escribe una respuesta…"></textarea><div class="live-composer-actions"><span id="live-channel-name">${esc(chosen.label)}</span><button type="button" id="live-mic" class="mic-button" hidden aria-label="Grabar una nota de voz" title="Grabar una nota de voz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button><button type="button" id="live-template-toggle" class="link-button" hidden>Usar plantilla</button><button id="live-send" class="primary">Enviar</button></div><p id="live-send-status" role="status"></p></form>`;
   }
 
   /**
@@ -340,6 +341,93 @@ export async function renderLiveInbox(container){
     }
    };
   }
+
+  // ---- Nota de voz (sólo WhatsApp): grabar, escuchar y enviar ------------------------------
+  let voice=null;
+  const clock=seconds=>`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
+  function abortVoice(){
+   if(!voice)return;
+   clearInterval(voice.timer);
+   try{voice.recorder?.cancel()}catch{}
+   if(voice.url)URL.revokeObjectURL(voice.url);
+   voice=null;paintVoice();
+   if(selected)syncMic(selected);
+  }
+  function syncMic(c){
+   const mic=$('#live-mic');if(!mic)return;
+   const ok=chatChannel==='WhatsApp'&&voiceSupported()&&!windowClosed()&&!templates.open&&!voice&&(me?.user?.capabilities?.sendMessages!==false);
+   mic.hidden=!ok;
+   if(ok)mic.onclick=()=>startVoice(c);
+   else if(voice&&chatChannel!=='WhatsApp')abortVoice();
+  }
+  async function startVoice(c){
+   if(voice)return;
+   voice={state:'starting',conversation:c.id,connection:select.value,version:chatGeneration};paintVoice();
+   const mine=voice;
+   try{
+    mine.recorder=await voiceRecord();
+    if(voice!==mine){mine.recorder.cancel();return}
+    mine.state='recording';
+    mine.timer=setInterval(()=>{const t=$('#voice-time');const secs=mine.recorder.seconds();if(t)t.textContent=clock(secs);if(secs>=VOICE_MAX)stopVoice()},250);
+   }catch(error){
+    if(voice===mine){voice=null;const note=$('#live-send-status');if(note)note.textContent=error.message||'No se pudo usar el micrófono.'}
+   }
+   paintVoice();syncMic(c);
+  }
+  async function stopVoice(){
+   const mine=voice;if(!mine||mine.state!=='recording')return;
+   clearInterval(mine.timer);
+   try{
+    const result=await mine.recorder.stop();
+    if(voice!==mine)return;
+    mine.blob=result.blob;mine.mime=result.mime;mine.seconds=result.seconds;mine.url=URL.createObjectURL(result.blob);
+    mine.requestId=crypto.randomUUID().replace(/-/g,'');mine.state='ready';
+   }catch(error){voice=null;const note=$('#live-send-status');if(note)note.textContent='No se pudo preparar la grabación. Vuelve a intentarlo.'}
+   paintVoice();
+  }
+  async function sendVoice(c){
+   const mine=voice;if(!mine||!['ready','error'].includes(mine.state))return;
+   mine.state='sending';mine.error='';paintVoice();
+   try{
+    const response=await fetch(`/api/workspace/voice?connectionId=${encodeURIComponent(mine.connection)}&conversationId=${encodeURIComponent(mine.conversation)}&requestId=${encodeURIComponent(mine.requestId)}`,
+     {method:'POST',cache:'no-store',headers:{'Content-Type':mine.mime,'X-CSRF-Token':me.csrf},body:mine.blob});
+    let data={};try{data=await response.json()}catch{}
+    if(!response.ok)throw Object.assign(new Error(data.error||'No se pudo enviar la nota de voz.'),{status:response.status,code:data.code});
+    if(voice!==mine)return;
+    if(active()&&chatGeneration===mine.version){
+     messages.set(data.messageId,{id:data.messageId,body:'',direction:'outbound',dateAdded:new Date().toISOString(),status:data.deliveryStatus,attachments:data.url?[data.url]:[]});
+     renderMessages();const log=$('#live-log');if(log)log.scrollTop=log.scrollHeight;
+     const note=$('#live-send-status');if(note)note.textContent='Nota de voz enviada.';
+    }
+    if(mine.url)URL.revokeObjectURL(mine.url);
+    voice=null;paintVoice();syncMic(c);
+   }catch(error){
+    if(voice!==mine)return;
+    mine.state='error';
+    // Un envío que ya no se puede repetir pide grabar de nuevo; los fallos de red permiten reintentar.
+    mine.retry=!['voice_format','voice_too_large','voice_empty','unsupported_channel','invalid_contact','voice_upload_rejected','send_rejected'].includes(error.code);
+    mine.error=friendly(error);paintVoice();
+   }
+  }
+  function paintVoice(){
+   const slot=$('#live-voice-slot'),form=$('#live-composer');
+   if(!slot||!form)return;
+   form.classList.toggle('voice-mode',!!voice&&voice.state!=='starting');
+   if(!voice||voice.state==='starting'){slot.innerHTML=voice?'<div class="voice-bar"><span class="muted">Activando el micrófono…</span></div>':'';return}
+   const c=selected;
+   if(voice.state==='recording'){
+    slot.innerHTML=`<div class="voice-bar recording"><span class="rec-dot" aria-hidden="true"></span><b id="voice-time">${clock(voice.recorder.seconds())}</b><span class="muted voice-hint">Grabando…</span><button type="button" id="voice-cancel" class="link-button">Cancelar</button><button type="button" id="voice-stop" class="primary">Detener</button></div>`;
+    slot.querySelector('#voice-cancel').onclick=abortVoice;slot.querySelector('#voice-stop').onclick=stopVoice;return;
+   }
+   const sending=voice.state==='sending';
+   slot.innerHTML=`<div class="voice-bar ready"><audio controls preload="metadata" src="${esc(voice.url)}"></audio>
+     <span class="muted voice-hint">${sending?'Enviando la nota de voz…':voice.error?esc(voice.error):`Nota de voz de ${clock(voice.seconds)}`}</span>
+     <div class="voice-actions"><button type="button" id="voice-discard" class="link-button"${sending?' disabled':''}>Descartar</button><button type="button" id="voice-send" class="primary"${sending?' disabled':''}>${voice.state==='error'&&voice.retry?'Reintentar':'Enviar'}</button></div></div>`;
+   slot.querySelector('#voice-discard').onclick=abortVoice;
+   const send=slot.querySelector('#voice-send');if(voice.state==='error'&&!voice.retry)send.hidden=true;
+   send.onclick=()=>sendVoice(c);
+  }
+
   // ---- Plantillas de WhatsApp: para escribir pasadas las 24 horas ------------------
   const FIELD_NAMES={'contact.name':'nombre del contacto','contact.first_name':'nombre','contact.last_name':'apellidos','contact.full_name':'nombre completo','contact.phone':'teléfono','contact.email':'correo','contact.company_name':'empresa','user.name':'tu nombre','user.first_name':'tu nombre','location.name':'nombre de la empresa'};
   const CATEGORY={MARKETING:'Promoción',UTILITY:'Servicio',AUTHENTICATION:'Verificación'};
@@ -397,6 +485,7 @@ export async function renderLiveInbox(container){
    const toggle=$('#live-template-toggle');if(toggle)toggle.hidden=!whatsapp||templates.open;
    const hint=$('#live-window-hint');if(hint)hint.hidden=!(whatsapp&&windowClosed());
    form.classList.toggle('template-mode',templates.open);
+   syncMic(c);
    const slot=$('#live-template-slot');if(!slot)return;
    slot.innerHTML=templateMarkup();
    const back=$('#tpl-close');if(back)back.onclick=()=>{templates.open=false;templates.notice='';syncTemplates(c)};
@@ -691,6 +780,7 @@ export async function renderLiveInbox(container){
    catch(error){if(active()&&version===chatGeneration)panel.innerHTML=`<p class="empty">${esc(friendly(error))}</p>`}
   }
   function open(c){
+   abortVoice();
    selected=c;chatNeedsRefresh=false;chatGeneration++;messages=new Map();cursor=null;chatChannel=sendChannels[c.lastMessageType]||null;chatChannels=null;list();layout.classList.add('chat-open');layout.classList.remove('contact-open');
    $('#live-messages').innerHTML=`<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">${UI_ICONS.back}</button><span class="avatar">${esc(initials(c))}</span><div><h2>${esc(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div>${canWin()?'<button id="live-won" class="won-button" title="¿Venta ganada?" aria-label="¿Venta ganada?"><span aria-hidden="true">✓</span><span class="won-long">¿Venta ganada?</span><span class="won-short">¿Ganada?</span><span class="sr-only">¿Venta ganada?</span></button>':''}<button id="live-assign" class="assign-button" hidden title="Asignar la conversación" aria-label="Asignar la conversación"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20c.7-3.6 3.2-5.5 6.5-5.5s5.8 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg></span><span class="assign-text">Asignar</span></button><button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">${UI_ICONS.expand}</button><button id="live-contact-toggle" aria-label="Ver ficha del contacto" title="Ver ficha del contacto">${UI_ICONS.contact}</button></header><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
    $('#live-back').onclick=()=>{clearTimeout(pollTimer);document.body.classList.remove('agora-focus');layout.classList.remove('chat-open','contact-open');say();$('#live-search').focus()};

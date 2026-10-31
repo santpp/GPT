@@ -126,8 +126,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## 1.4.0
 - Se quita la cita de mensajes (ver arriba).
 - Conversaciones que empiezan con un comentario en una publicación de Instagram o Facebook: aviso arriba («Su primera interacción fue un comentario…»), etiqueta en cada comentario y respuesta como mensaje directo. Pendiente de probar: la API no documenta la respuesta privada a un comentario, y Meta sólo la permite durante unos días.
-- Si la cuenta rechaza un envío, el mensaje de error incluye el motivo que da (sin marcas), para diagnosticar. 
-- **Notas de voz: descartadas.** La subida funcionaba, pero la cuenta rechazaba el envío del audio por WhatsApp (HTTP 400, sin detalle útil) con dos etiquetas de tipo distintas. Se retiró todo el código de la 1.4.0.
+- Nota de voz rechazada con «Twilio Error ERR_BAD_REQUEST» (HTTP 400) aunque el WhatsApp es WABA directo: la etiqueta viene de la cuenta, no de Ágora. Subir el audio como `audio/ogg; codecs=opus` fue rechazado por la cuenta (la subida, no el envío), así que se vuelve a `audio/ogg`. Si el envío vuelve a fallar, el error dirá con qué tipo sirve el almacén el archivo.
+- Si la cuenta rechaza un envío, el mensaje de error incluye el motivo que da (sin marcas), para diagnosticar. Primer caso: nota de voz rechazada con HTTP 400 tras subir el audio.
+- Notas de voz por WhatsApp (solo WhatsApp, por decisión del usuario): micrófono en el cuadro de escritura, grabación con cancelar/detener, escucha previa, descartar o enviar. El navegador reempaqueta WebM/Opus a OGG/Opus (lo único que WhatsApp muestra como nota de voz). Subida en dos pasos a la conversación y envío como adjunto, con la protección contra duplicados de siempre. Pendiente de probar en la cuenta real: que acepte `audio/ogg`, que WhatsApp lo muestre como nota de voz (iPhone/Safari graba AAC y saldría como audio) y la ventana de 24 h.
 
 ## Siguiente (a decidir)
 - Plantillas de WhatsApp: en espera del WABA ID o de la salida de «Comprobar plantillas».
