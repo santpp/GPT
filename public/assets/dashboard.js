@@ -150,6 +150,10 @@ export async function renderDashboard(container){
     const m=$('#period-month'),f=$('#period-from'),t=$('#period-to'),apply=$('#period-apply');
     m.onchange=()=>{if(/^\d{4}-\d{2}$/.test(m.value)){menuOpen=false;choose({kind:'monthpick',month:m.value})}};
     const ready=()=>{apply.disabled=!(f.value&&t.value&&f.value<=t.value)};
+    // Un periodo se elige o con los botones o con el mes/rango, nunca los dos a la vez: al tocar uno, el otro se apaga.
+    const clearPresets=()=>bar.querySelectorAll('.period-list button').forEach(b=>{b.classList.remove('on');b.setAttribute('aria-checked','false')});
+    m.oninput=()=>{f.value='';t.value='';ready();clearPresets()};
+    f.oninput=t.oninput=()=>{m.value='';ready();clearPresets()};
     f.onchange=t.onchange=ready;ready();
     apply.onclick=()=>{if(!apply.disabled){menuOpen=false;choose({kind:'custom',from:f.value,to:t.value})}};
   }

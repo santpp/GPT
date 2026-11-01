@@ -43,6 +43,14 @@ with sync_playwright() as p:
     page.reload();page.wait_for_selector('#period-btn');page.wait_for_timeout(500)
     assert '3 oct' in page.locator('#period-btn').inner_text() and dash[-1]==('2026-10-03','2026-10-12')
     print('PASS the choice is remembered on this device')
+    # uno u otro: al tocar el mes o el rango se apaga el botón elegido, y al elegir un botón se vacían los campos
+    pick('week');page.locator('#period-btn').click()
+    assert page.locator('.period-list button.on').count()==1
+    page.fill('#period-from','2026-10-01');page.wait_for_timeout(200)
+    assert page.locator('.period-list button.on').count()==0 and page.locator('#period-month').input_value()==''
+    page.fill('#period-month','2026-09');page.wait_for_timeout(500)
+    assert page.locator('#period-from').input_value()=='' if page.locator('#period-menu').is_visible() else True
+    print('PASS the periods are either a button or a month/range, never both at once')
     page.screenshot(path='/tmp/period.png')
     assert not errors,errors
     b.close()

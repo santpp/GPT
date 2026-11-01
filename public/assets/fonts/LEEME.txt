@@ -1,0 +1,7 @@
+Aquí va la tipografía Author (Fontshare, licencia libre para uso comercial).
+
+1. Descarga la familia en https://www.fontshare.com/fonts/author  ("Download family").
+2. Del ZIP, copia a esta carpeta los archivos WOFF2:
+     Author-Variable.woff2
+     Author-Italic-Variable.woff2   (opcional)
+3. Recarga Ágora. No hace falta tocar nada más: sin los archivos se usa la fuente del sistema.
