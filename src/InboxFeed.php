@@ -158,6 +158,8 @@ final class InboxFeed {
         foreach($items as $conversation) {
             if(!is_array($conversation)||!is_string($conversation['id']??null))continue;
             $unread=max(0,(int)($conversation['unreadCount']??0));
+            require_once __DIR__.'/ConversationNetworks.php';
+            ConversationNetworks::fromListing($connectionId,$conversation);
             $assigned=is_string($conversation['assignedTo']??null)?substr($conversation['assignedTo'],0,80):null;
             $hash=md5(json_encode([
                 $conversation['lastMessageDate']??null,

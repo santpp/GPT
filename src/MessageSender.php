@@ -26,6 +26,9 @@ final class MessageSender {
         $hasPhone=is_array($profile)&&is_string($profile['phone']??null)&&trim($profile['phone'])!=='';
         $hasEmail=is_array($profile)&&is_string($profile['email']??null)&&trim($profile['email'])!=='';
         $allowed=$current!==null?[$current]:[];
+        // Una red por la que el contacto ya escribió sigue disponible aunque el último mensaje haya sido por otro canal.
+        require_once __DIR__.'/ConversationNetworks.php';
+        foreach(ConversationNetworks::seen((int)($connection['id']??0),(string)($conversation['id']??'')) as $network)if(!in_array($network,$allowed,true))$allowed[]=$network;
         foreach(self::LABELS as $type=>$label) {
             if(in_array($type,$allowed,true))continue;
             if(in_array($type,self::NEEDS_PHONE,true)&&$hasPhone)$allowed[]=$type;

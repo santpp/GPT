@@ -197,6 +197,8 @@ export async function renderLiveInbox(container){
    try{
     const r=await request(`workspace/messages?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(conversation)}${previous?'&lastMessageId='+encodeURIComponent(previous):''}`);
     if(!active()||current!==chatGeneration)return;
+    // El historial dice por qué redes ha escrito el contacto: se actualizan los canales ofrecidos.
+    if(Array.isArray(r.channels)&&r.channels.length){chatChannels=r.channels;const d=drafts.get(connection+':'+conversation);if(d&&$('#live-composer'))applyChannels(selected,chatChannels,d)}
     const log=$('#live-log'),height=log.scrollHeight,top=log.scrollTop,hadMessages=messages.size>0;
     for(const m of r.items)messages.set(m.id,m);
     if(!refresh||!hadMessages)cursor=r.hasMore&&r.lastMessageId&&r.lastMessageId!==previous?r.lastMessageId:null;
