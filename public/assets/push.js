@@ -59,6 +59,23 @@ export async function enable(csrf){
   return 'on';
 }
 
+/**
+ * Si este navegador ya tiene avisos, los pone a nombre de quien acaba de entrar. Sin esto, una persona que
+ * entra donde antes había entrado otra heredaría los avisos de ésta: la suscripción es del navegador, no de la persona.
+ * No pregunta nada: sólo actúa si el permiso ya se dio y la suscripción ya existe.
+ */
+export async function claim(csrf){
+  try{
+    if(!supported()||Notification.permission!=='granted')return;
+    const registration=await navigator.serviceWorker.ready;
+    const subscription=await registration.pushManager.getSubscription();
+    if(!subscription)return;
+    const json=subscription.toJSON();
+    await api('devices',{token:subscription.endpoint,platform:'web',label:label(),
+      keys:{p256dh:json.keys?.p256dh||encode(subscription.getKey('p256dh')),auth:json.keys?.auth||encode(subscription.getKey('auth'))}},csrf);
+  }catch{}
+}
+
 /** Stops this device from being notified, here and in the browser. */
 export async function disable(csrf){
   try{

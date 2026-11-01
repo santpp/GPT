@@ -5,7 +5,7 @@ import {renderLiveInbox} from './live-inbox.js';
 import {renderContacts} from './contacts.js';
 import {renderDashboard} from './dashboard.js';
 import {connectDevice,releaseDevice,isNative} from './native.js';
-import {enable as enablePush,disable as disablePush,state as pushState,isApple,installed} from './push.js';
+import {enable as enablePush,disable as disablePush,claim as claimPush,state as pushState,isApple,installed} from './push.js';
 import {renderBoard} from './board.js';
 import {windowMarkup} from './announce.js';
 import {supported as passkeysSupported,platformReady,remembered as passkeyRemembered,remember as rememberPasskey,create as createPasskey,sign as signPasskey,trouble as passkeyTrouble} from './passkeys.js';
@@ -198,6 +198,8 @@ async function startSession(){
   try{const {items,reason}=await api('workspace/connections');workspace.setConnections(items,reason)}
   catch{workspace.setConnections([])}
   renderAccounts();
+  // Los avisos del navegador pasan a ser de quien entra ahora, no de quien entró antes.
+  claimPush(me.csrf||'');
   // Un aviso trae a su conversación: /conversations/{id}?c={subcuenta}.
   let deep=location.pathname.match(/^\/conversations\/([A-Za-z0-9_-]{1,80})$/);
   let wanted=deep?new URLSearchParams(location.search).get('c'):null;

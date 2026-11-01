@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.5. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.6. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -155,6 +155,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## 1.5.5 · administradores de subcuenta
 - Un administrador de la subcuenta entraba sin acceso a nada («no tiene activadas las conversaciones») porque la cuenta no lista los permisos de un administrador y Ágora exigía verlos activados. Ahora quien tiene rol `admin` (o `agency`) en la subcuenta tiene todo, salvo lo que se le desactive expresamente, sin depender de la lista de alcances, y sin restricción a lo asignado a él. Nunca configura conexiones (eso es del propietario de Ágora).
+
+## 1.5.6 · avisos de otra persona
+- Error de privacidad: la suscripción de avisos es del navegador, no de la persona. Si el propietario había activado avisos en un navegador y otra persona entraba allí (con la sesión del propietario caducada, sin «cerrar sesión»), el navegador seguía registrado a nombre del propietario y mostraba a la nueva persona los avisos de todas las subcuentas. Ahora, al entrar, Ágora registra a nombre de quien entra la suscripción que el navegador ya tenga (sin preguntar nada), y los avisos pasan a filtrarse por sus subcuentas. El servidor ya filtraba por destinatario; el fallo era de a quién pertenecía el navegador.
 
 ## Siguiente (a decidir)
 - Plantillas de WhatsApp: en espera del WABA ID o de la salida de «Comprobar plantillas».
