@@ -90,7 +90,7 @@ with sync_playwright() as pw:
     # iPhone in Safari, not yet on the home screen: it must explain, never ask.
     page,errors,devices,context=session(b,apple=True)
     assert page.locator('#push-toggle').get_attribute('data-state')=='needs-install'
-    assert 'pantalla de inicio' in page.locator('#push-toggle').inner_text()
+    assert 'Instala' in page.locator('#push-toggle').inner_text()
     page.locator('#push-toggle').click()
     page.wait_for_selector('#toast:not([hidden])')
     assert 'Compartir' in page.locator('#toast').inner_text()

@@ -218,7 +218,8 @@ async function commissionDialog(item){
  try{data=await api(`admin/integrations/${item.id}/commission`)}catch(error){content.innerHTML=`<h2>Comisión</h2><p class="dialog-copy">${esc(friendly(error))}</p>`;return}
  const paint=data=>{
   const c=data.current;
-  content.innerHTML=`<h2>Comisión de ${esc(item.name)}</h2>
+  content.innerHTML=`<h2>Comisión y moneda de ${esc(item.name)}</h2>
+   <form id="currency-form" class="dialog-form currency-form"><label>Moneda de esta subcuenta<select name="currency"><option value="USD"${item.currency!=='EUR'?' selected':''}>Dólares ($)</option><option value="EUR"${item.currency==='EUR'?' selected':''}>Euros (€)</option></select></label><p id="currency-result" class="dialog-copy" role="status"></p></form>
    <p class="dialog-copy">Así se calculan las comisiones del tablero de esta subcuenta. <b>Sólo tú puedes cambiarla</b>. Vale desde este mes (${esc(monthLabel(new Date().toISOString().slice(0,7)))}); los meses anteriores conservan la regla con la que se calcularon.</p>
    <form id="commission-form" class="dialog-form">
     <label>Cómo se paga<select name="kind"><option value="percent"${c.kind==='percent'?' selected':''}>Porcentaje de la venta</option><option value="per_closing"${c.kind==='per_closing'?' selected':''}>Monto fijo por cada cierre</option></select></label>
@@ -228,6 +229,12 @@ async function commissionDialog(item){
    </form>
    <p class="dialog-copy"><b>Ahora:</b> ${esc(ruleText(c))}${c.since?` · desde ${esc(monthLabel(c.since))}`:' · la de siempre'}.</p>
    ${data.history.length?`<details><summary>Cambios anteriores</summary><ul class="security-list">${data.history.map(h=>`<li><span><b>${esc(ruleText(h))}</b><small>Desde ${esc(monthLabel(h.since))}</small></span></li>`).join('')}</ul></details>`:''}`;
+  const money=content.querySelector('#currency-form'),moneyResult=content.querySelector('#currency-result');
+  money.elements.currency.onchange=async()=>{
+   moneyResult.textContent='Guardando…';
+   try{const r=await api(`admin/integrations/${item.id}/currency`,'PUT',{currency:money.elements.currency.value});item.currency=r.currency;moneyResult.textContent='Guardado. Las cifras de esta subcuenta se muestran en '+(r.currency==='EUR'?'euros':'dólares')+'.'}
+   catch(error){moneyResult.textContent=friendly(error)}
+  };
   const form=content.querySelector('#commission-form'),result=content.querySelector('#commission-result');
   form.elements.kind.onchange=()=>{content.querySelector('#commission-unit').textContent=form.elements.kind.value==='percent'?'Porcentaje (%)':'Monto por cierre';form.elements.amount.max=form.elements.kind.value==='percent'?'100':''};
   form.onsubmit=async e=>{

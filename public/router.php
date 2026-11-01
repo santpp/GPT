@@ -286,6 +286,14 @@ try {
     // A phone registers the token its own system gives it, so Ágora can notify
     // it. Nothing else about the device is stored, and the token belongs to the
     // signed-in person: signing out on that phone removes it.
+    // ¿Sigue este navegador registrado a nombre de quien está dentro? Lo usa el navegador para rehacer sus avisos si no.
+    if ($path === '/api/devices' && $method === 'GET') {
+        $token=$_GET['token']??null;
+        if(!is_string($token)||strlen($token)>512)respond(['registered'=>false]);
+        $type=($u['identity_type'] ?? 'native')==='native'?'native':'external';
+        $found=query('SELECT 1 FROM push_devices WHERE tenant_id=? AND identity_type=? AND actor_id=? AND token=?',[$u['tenant_id'],$type,$u['id'],$token])->fetchColumn();
+        respond(['registered'=>(bool)$found]);
+    }
     if ($path === '/api/devices' && in_array($method,['POST','DELETE'],true)) {
         $body=body();
         $token=$body['token'] ?? null;

@@ -6,8 +6,8 @@ require_once __DIR__.'/MessageHistory.php';
 require_once __DIR__.'/MessageFeed.php';
 if(($u['identity_type']??'native')==='native'&&$u['role']!=='administrator')respond(['error'=>'Acceso restringido'],403);
 if(in_array($path,['/api/workspace/connections','/api/ghl/connections'],true) && $method==='GET') {
-    if(($u['identity_type']??'native')==='native')$items=query('SELECT id,name,location_id,status FROM ghl_connections WHERE tenant_id=? ORDER BY id',[$u['tenant_id']])->fetchAll();
-    else $items=query('SELECT DISTINCT c.id,c.name,c.location_id,c.status FROM ghl_connections c JOIN external_users eu ON eu.connection_id=c.id AND eu.active=TRUE JOIN external_identity_memberships m ON m.external_user_row_id=eu.id WHERE c.tenant_id=? AND m.identity_id=? ORDER BY c.id',[$u['tenant_id'],$u['id']])->fetchAll();
+    if(($u['identity_type']??'native')==='native')$items=query('SELECT id,name,location_id,status,currency FROM ghl_connections WHERE tenant_id=? ORDER BY id',[$u['tenant_id']])->fetchAll();
+    else $items=query('SELECT DISTINCT c.id,c.name,c.location_id,c.status,c.currency FROM ghl_connections c JOIN external_users eu ON eu.connection_id=c.id AND eu.active=TRUE JOIN external_identity_memberships m ON m.external_user_row_id=eu.id WHERE c.tenant_id=? AND m.identity_id=? ORDER BY c.id',[$u['tenant_id'],$u['id']])->fetchAll();
     $total=count($items);
     $items=array_values(array_filter($items,fn(array $item)=>(Actor::connectionMembership($u,(int)$item['id'])['capabilities']['viewConversations']??false)===true));
     // Si no queda ninguna, se dice por qué: sin subcuenta asociada, o sin permiso de conversaciones en ella.
@@ -21,10 +21,31 @@ $membership=Actor::connectionMembership($u,(int)$id);
 if(!$membership||!($membership['capabilities']['viewConversations']??false))respond(['error'=>'No tienes permiso para consultar esta cuenta.'],403);
 // Quién es «yo» en la cuenta: el usuario sincronizado, o el del propietario si lo tiene enlazado.
 $membership['self_id']=$membership['external_user_id']??((($u['identity_type']??'native')==='native'&&is_string($u['ghl_user_id']??null)&&$u['ghl_user_id']!=='')?$u['ghl_user_id']:null);
+// El propietario puede haber elegido quién es entre los usuarios de la subcuenta.
+if($membership['self_id']===null&&($u['identity_type']??'native')==='native'){
+    $chosen=query('SELECT l.external_user_id FROM owner_links l JOIN external_users eu ON eu.connection_id=l.connection_id AND eu.external_user_id=l.external_user_id AND eu.active=TRUE WHERE l.user_id=? AND l.connection_id=?',[$u['id'],$id])->fetchColumn();
+    if(is_string($chosen)&&$chosen!=='')$membership['self_id']=$chosen;
+}
 // El propietario sin enlace manual se reconoce por su correo entre los usuarios de la cuenta.
 if($membership['self_id']===null&&($u['identity_type']??'native')==='native'&&is_string($u['email']??null)){
     $byMail=query('SELECT external_user_id FROM external_users WHERE connection_id=? AND active=TRUE AND LOWER(email)=LOWER(?) LIMIT 1',[$id,$u['email']])->fetchColumn();
     if(is_string($byMail)&&$byMail!=='')$membership['self_id']=$byMail;
+}
+// Quién es el propietario entre los usuarios de esta subcuenta: sólo él, y sólo para sus propias cifras.
+if($path==='/api/workspace/self'&&in_array($method,['GET','PUT'],true)){
+    if(($u['identity_type']??'native')!=='native'||($u['role']??null)!=='administrator')respond(['error'=>'Sólo quien administra Ágora puede elegir esto.'],403);
+    if($method==='PUT'){
+        $b=body();$pick=$b['externalUserId']??null;
+        if($pick===null||$pick===''){query('DELETE FROM owner_links WHERE user_id=? AND connection_id=?',[$u['id'],$id]);}
+        else{
+            if(!is_string($pick)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$pick)||!query('SELECT 1 FROM external_users WHERE connection_id=? AND external_user_id=? AND active=TRUE',[$id,$pick])->fetchColumn())respond(['error'=>'Ese usuario no está en esta subcuenta.'],422);
+            query('INSERT INTO owner_links(user_id,connection_id,external_user_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE external_user_id=VALUES(external_user_id)',[$u['id'],$id,$pick]);
+        }
+        query("DELETE FROM directory_cache WHERE connection_id=? AND cache_key LIKE 'board:%'",[$id]);
+    }
+    $current=query('SELECT external_user_id FROM owner_links WHERE user_id=? AND connection_id=?',[$u['id'],$id])->fetchColumn();
+    $options=query('SELECT external_user_id AS id,display_name AS name,email FROM external_users WHERE connection_id=? AND active=TRUE ORDER BY display_name',[$id])->fetchAll();
+    respond(['linked'=>is_string($current)?$current:null,'detected'=>$membership['self_id'],'options'=>$options]);
 }
 if($path==='/api/workspace/sync'&&$method==='POST'){
     $requested=filter_var($_GET['limit']??null,FILTER_VALIDATE_INT);

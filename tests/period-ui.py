@@ -48,7 +48,7 @@ with sync_playwright() as p:
     assert page.locator('.period-list button.on').count()==1
     page.fill('#period-from','2026-10-01');page.wait_for_timeout(200)
     assert page.locator('.period-list button.on').count()==0 and page.locator('#period-month').input_value()==''
-    page.fill('#period-month','2026-09');page.wait_for_timeout(500)
+    page.select_option('#period-month','2026-09');page.wait_for_timeout(500)
     assert page.locator('#period-from').input_value()=='' if page.locator('#period-menu').is_visible() else True
     print('PASS the periods are either a button or a month/range, never both at once')
     page.screenshot(path='/tmp/period.png')

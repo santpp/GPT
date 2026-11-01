@@ -5,7 +5,7 @@ import {renderLiveInbox} from './live-inbox.js';
 import {renderContacts} from './contacts.js';
 import {renderDashboard} from './dashboard.js';
 import {connectDevice,releaseDevice,isNative} from './native.js';
-import {enable as enablePush,disable as disablePush,claim as claimPush,state as pushState,isApple,installed} from './push.js';
+import {enable as enablePush,disable as disablePush,heal as healPush,state as pushState,isApple,installed} from './push.js';
 import {renderBoard} from './board.js';
 import {windowMarkup} from './announce.js';
 import {supported as passkeysSupported,platformReady,remembered as passkeyRemembered,remember as rememberPasskey,create as createPasskey,sign as signPasskey,trouble as passkeyTrouble} from './passkeys.js';
@@ -55,13 +55,23 @@ function show(name,{push=true}={}){
 
 // Notifications on this very device. Nothing is asked until the person asks:
 // on iOS a refused prompt cannot be shown again, so the button explains first.
+const BELL='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21h4"/></svg>';
+const BELL_OFF='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21h4"/><path d="M4 4l16 16"/></svg>';
 const PUSH_TEXT={
-  off:'Activar avisos en este dispositivo',
-  on:'Avisos activados · tocar para desactivar',
-  blocked:'Avisos bloqueados en los ajustes del navegador',
-  'needs-install':'Para recibir avisos, añade Ágora a la pantalla de inicio',
-  unconfigured:'Los avisos aún no están configurados en el servidor',
-  unsupported:'Este navegador no admite avisos',
+  off:'Activar avisos',
+  on:'Avisos activos',
+  blocked:'Avisos bloqueados',
+  'needs-install':'Instala Ágora para recibir avisos',
+  unconfigured:'Avisos no configurados',
+  unsupported:'Sin avisos en este navegador',
+};
+const PUSH_HELP={
+  off:'Los avisos están desactivados en este dispositivo. Actívalos para no perder mensajes.',
+  on:'Este dispositivo recibe avisos. Toca para desactivarlos.',
+  blocked:'El navegador tiene bloqueados los avisos de Ágora. Toca el candado junto a la dirección, entra en Permisos y activa Notificaciones; al volver aquí se activarán solos.',
+  'needs-install':'Para recibir avisos, añade Ágora a la pantalla de inicio.',
+  unconfigured:'Los avisos aún no están configurados en el servidor.',
+  unsupported:'Este navegador no admite avisos.',
 };
 let pushNow='off';
 async function paintPush(){
@@ -72,7 +82,31 @@ async function paintPush(){
   button.disabled=['unsupported','unconfigured'].includes(pushNow);
   button.dataset.state=pushNow;
   $('#push-label').textContent=PUSH_TEXT[pushNow]||PUSH_TEXT.off;
+  button.querySelector('.push-mark').innerHTML=pushNow==='on'?BELL:BELL_OFF;
+  button.title=PUSH_HELP[pushNow]||'';button.setAttribute('aria-label',PUSH_TEXT[pushNow]||PUSH_TEXT.off);
+  paintNudge();
 }
+// Si los avisos no están activos, se le dice a la persona, una vez al día como mucho.
+const NUDGE_KEY='agora-push-nudge';
+const nudgeSnoozed=()=>{try{return Date.now()-Math.max(Number(localStorage.getItem(NUDGE_KEY)||0),Number(localStorage.getItem('agora-welcome-later')||0))<864e5}catch{return false}};
+function paintNudge(){
+  const bar=$('#push-banner');if(!bar)return;
+  const needs=['off','blocked','needs-install'].includes(pushNow);
+  if(!needs||nudgeSnoozed()||$('#app').hidden||($('#welcome')&&!$('#welcome').hidden)){bar.hidden=true;return}
+  const action=pushNow==='off'?'<button type="button" class="primary" id="push-nudge-go">Activar avisos</button>':'';
+  bar.innerHTML=`<p>${esc(PUSH_HELP[pushNow])}</p><div class="push-banner-actions">${action}<button type="button" class="link-button" id="push-nudge-later">Ahora no</button></div>`;
+  bar.hidden=false;
+  const go=$('#push-nudge-go');if(go)go.onclick=()=>$('#push-toggle').click();
+  $('#push-nudge-later').onclick=()=>{try{localStorage.setItem(NUDGE_KEY,String(Date.now()))}catch{}bar.hidden=true};
+}
+// Al volver a la pestaña (por ejemplo, tras activar el permiso en los ajustes) se comprueba y, si hace falta, se rehacen los avisos.
+let healing=false;
+async function checkPush(){
+  if(healing||$('#app').hidden||isNative())return;
+  healing=true;
+  try{await healPush(workspace.me?.csrf||'');await paintPush()}finally{healing=false}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkPush()});
 $('#push-toggle').onclick=async()=>{
   const button=$('#push-toggle');
   if(pushNow==='needs-install'){
@@ -81,7 +115,7 @@ $('#push-toggle').onclick=async()=>{
       : 'Instala Ágora desde el menú del navegador («Instalar aplicación») y vuelve a pulsar aquí.');
     return;
   }
-  if(pushNow==='blocked'){toast('Los avisos están bloqueados para este sitio. Actívalos en los ajustes del navegador y vuelve a pulsar aquí.');return}
+  if(pushNow==='blocked'){toast(PUSH_HELP.blocked);return}
   button.disabled=true;
   try{
     const answer=pushNow==='on'?await disablePush(workspace.me?.csrf||''):await enablePush(workspace.me?.csrf||'');
@@ -198,8 +232,8 @@ async function startSession(){
   try{const {items,reason}=await api('workspace/connections');workspace.setConnections(items,reason)}
   catch{workspace.setConnections([])}
   renderAccounts();
-  // Los avisos del navegador pasan a ser de quien entra ahora, no de quien entró antes.
-  claimPush(me.csrf||'');
+  // Los avisos del navegador pasan a ser de quien entra ahora, y se rehacen si se perdieron.
+  checkPush();
   // Un aviso trae a su conversación: /conversations/{id}?c={subcuenta}.
   let deep=location.pathname.match(/^\/conversations\/([A-Za-z0-9_-]{1,80})$/);
   let wanted=deep?new URLSearchParams(location.search).get('c'):null;

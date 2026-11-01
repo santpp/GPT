@@ -60,21 +60,35 @@ export async function enable(csrf){
 }
 
 /**
- * Si este navegador ya tiene avisos, los pone a nombre de quien acaba de entrar. Sin esto, una persona que
- * entra donde antes había entrado otra heredaría los avisos de ésta: la suscripción es del navegador, no de la persona.
- * No pregunta nada: sólo actúa si el permiso ya se dio y la suscripción ya existe.
+ * Rehace los avisos de este navegador cuando el permiso ya está dado pero algo se rompió: falta la suscripción
+ * (el navegador la borró), el servidor ya no la tiene (el servicio de avisos la dio de baja, o era de otra persona
+ * que usó antes este navegador). No pregunta nada: sólo actúa si el permiso ya se concedió.
+ * Devuelve 'ok' (todo bien), 'renewed' (se rehízo), 'skipped' (no aplica) o 'failed'.
  */
-export async function claim(csrf){
+export async function heal(csrf){
   try{
-    if(!supported()||Notification.permission!=='granted')return;
+    if(!supported()||Notification.permission!=='granted')return 'skipped';
+    if(isApple()&&!installed())return 'skipped';
     const registration=await navigator.serviceWorker.ready;
-    const subscription=await registration.pushManager.getSubscription();
-    if(!subscription)return;
+    let subscription=await registration.pushManager.getSubscription();
+    if(subscription){
+      const known=await api('devices?token='+encodeURIComponent(subscription.endpoint),undefined,'','GET').catch(()=>null);
+      if(known&&known.registered)return 'ok';
+      // El servidor no la tiene a nombre de quien está dentro: se empieza de cero con una suscripción nueva.
+      try{await subscription.unsubscribe()}catch{}
+      subscription=null;
+    }
+    const answer=await api('push-key',undefined,'','GET');
+    if(!answer.ready||!answer.key)return 'skipped';
+    subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decode(answer.key)});
     const json=subscription.toJSON();
     await api('devices',{token:subscription.endpoint,platform:'web',label:label(),
       keys:{p256dh:json.keys?.p256dh||encode(subscription.getKey('p256dh')),auth:json.keys?.auth||encode(subscription.getKey('auth'))}},csrf);
-  }catch{}
+    return 'renewed';
+  }catch{return 'failed'}
 }
+/** Compatibilidad con el nombre anterior. */
+export const claim=heal;
 
 /** Stops this device from being notified, here and in the browser. */
 export async function disable(csrf){

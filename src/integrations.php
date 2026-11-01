@@ -11,7 +11,7 @@ require_once __DIR__.'/ExternalAuth.php';
 require_once __DIR__.'/AccessChannel.php';
 Installation::assertReady();
 if ($path === '/api/admin/integrations' && $method === 'GET') {
-    $rows=query('SELECT c.id,c.name,c.location_id,c.whatsapp_number_id,c.whatsapp_account_id,c.sync_interval_seconds,c.status,c.last_checked_at,COALESCE(s.enabled,0) AS sync_enabled,s.last_success_at,s.last_error,s.requests_today,s.quota,s.users_last_success_at,s.users_last_error FROM ghl_connections c LEFT JOIN ghl_sync_state s ON s.connection_id=c.id WHERE c.tenant_id=? ORDER BY c.id',[$u['tenant_id']])->fetchAll();
+    $rows=query('SELECT c.id,c.name,c.location_id,c.currency,c.whatsapp_number_id,c.whatsapp_account_id,c.sync_interval_seconds,c.status,c.last_checked_at,COALESCE(s.enabled,0) AS sync_enabled,s.last_success_at,s.last_error,s.requests_today,s.quota,s.users_last_success_at,s.users_last_error FROM ghl_connections c LEFT JOIN ghl_sync_state s ON s.connection_id=c.id WHERE c.tenant_id=? ORDER BY c.id',[$u['tenant_id']])->fetchAll();
     foreach($rows as &$row){$row['tokenConfigured']=true;$row['externalUsers']=(int)query('SELECT COUNT(*) FROM external_users WHERE connection_id=? AND active=TRUE',[$row['id']])->fetchColumn();}
     $channel=AccessChannel::connection((int)$u['tenant_id']);
     foreach($rows as &$row)$row['accessChannel']=$channel&&(int)$channel['id']===(int)$row['id'];
@@ -59,7 +59,7 @@ if(preg_match('~^/api/admin/integrations/(\d+)/users(?:/(sync))?$~',$path,$userM
     }
     respond(['error'=>'Not found'],404);
 }
-if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|/whatsapp/check|/fields/folders|/commission)?$~',$path,$match)) {
+if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|/whatsapp/check|/fields/folders|/currency|/commission)?$~',$path,$match)) {
     $row=query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$match[1],$u['tenant_id']])->fetch();
     if(!$row) respond(['error'=>'Integración no encontrada'],404);
     if((!isset($match[2]) && in_array($method,['PUT','DELETE'],true)) || (($match[2]??'')==='/schedule' && $method==='POST')) {
@@ -124,6 +124,13 @@ if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|
         catch(GhlApiException $e){respond(['error'=>in_array($e->status,[401,403],true)?'La clave de esta cuenta no tiene el permiso de lectura de plantillas.':'La cuenta respondió con un error al pedir las plantillas (código '.$e->status.').','status'=>$e->status],424);}
         catch(Throwable $e){respond(['error'=>'La respuesta de la cuenta no se pudo leer.'],424);}
         respond(['diagnosis'=>WhatsappTemplates::diagnosis((int)$row['id'])]);
+    }
+    // Moneda de la subcuenta: sólo euros o dólares.
+    if(($match[2]??'')==='/currency' && $method==='PUT') {
+        $b=body();$cur=$b['currency']??null;
+        if(!in_array($cur,['EUR','USD'],true))respond(['error'=>'Elige euros o dólares.'],422);
+        query('UPDATE ghl_connections SET currency=? WHERE id=? AND tenant_id=?',[$cur,$row['id'],$u['tenant_id']]);
+        respond(['currency'=>$cur]);
     }
     // Carpetas de los campos personalizados: la cuenta da el id de cada una; si no da el nombre, lo pone el administrador.
     if(($match[2]??'')==='/fields/folders' && in_array($method,['GET','PUT'],true)) {

@@ -3,6 +3,7 @@ import {opportunityForm,readOpportunityForm,bindPipelineChoice} from './opportun
 import {attachmentsOf,attachmentMarkup,bindAttachments,statusMarkup,UI_ICONS} from './message-view.js';
 import {workspace,friendly} from './workspace.js';
 import {skeleton} from './skeleton.js';
+import {money as fmtMoney} from './format.js';
 const calm=()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches}catch{return false}};
 const scrollEnd=(el,smooth)=>el.scrollTo({top:el.scrollHeight,behavior:smooth&&!calm()?'smooth':'auto'});
 const drafts=new Map();
@@ -302,7 +303,7 @@ export async function renderLiveInbox(container){
 
   // ---- «¿Venta ganada?»: cerrar una venta sin salir del chat --------------------------
   const canWin=()=>{const caps=me?.user?.capabilities||{};return caps.viewOpportunities!==false&&caps.editOpportunities!==false};
-  const money=value=>new Intl.NumberFormat('es-ES',{maximumFractionDigits:2}).format(value);
+  const money=value=>fmtMoney(value)??String(value);
   async function winDialog(c){
    const dialog=document.querySelector('#action-dialog'),content=document.querySelector('#dialog-content');
    const connection=select.value,version=chatGeneration;
@@ -492,7 +493,7 @@ export async function renderLiveInbox(container){
    if(toggle)toggle.onclick=()=>{templates.open=true;templates.notice='';if(templates.items===null||templates.error)loadTemplates(c);else syncTemplates(c)};
    syncTemplates(c);
   }
-  const amount=value=>typeof value==='number'&&isFinite(value)?new Intl.NumberFormat('es-ES',{maximumFractionDigits:2,useGrouping:'always'}).format(value):null;
+  const amount=value=>typeof value==='number'&&isFinite(value)?fmtMoney(value):null;
   function opportunityCard(item,canEdit=false){
    const rows=[['Pipeline',item.pipelineName],['Etapa',item.stageName],['Estado',item.statusLabel],['Valor',amount(item.monetaryValue)],['Responsable',item.assignedName],['Fuente',item.source]].filter(([,value])=>value);
    return `<div class="live-opportunity"><h3>${esc(item.name||'Oportunidad sin nombre')}</h3>${rows.map(([label,value])=>`<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}${canEdit?`<button class="live-opportunity-edit" data-edit-opportunity="${esc(item.id)}">Editar oportunidad</button>`:''}</div>`;

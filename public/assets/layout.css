@@ -759,3 +759,23 @@ h1,h2,h3,.section-label,.folder-title{letter-spacing:-.012em}
 svg[stroke]{stroke-width:1.5;stroke-linecap:square;stroke-linejoin:miter}
 /* Movimiento con motivo: los datos aparecen quietos; sólo se animan lo que llega, los paneles y los diálogos. */
 .board-block,.board-tile,.board-stage,.board-goal,.records-record{animation:none}
+/* 1.7.1 · campana de avisos, aviso de «actívalos», tablero alineado y selector de mes */
+.push-toggle{gap:8px;padding:8px 12px;font-size:12px;font-weight:600;border-radius:10px;min-height:44px}
+.push-toggle .push-mark{width:20px;height:20px;border-radius:0;background:none;display:inline-grid;place-items:center;color:var(--muted)}
+.push-toggle[data-state="on"]{background:var(--paper);border-color:var(--line);color:var(--ink)}
+.push-toggle[data-state="on"] .push-mark{background:none;color:var(--ink)}
+.push-toggle[data-state="off"]{border-color:var(--green);color:var(--green)}
+.push-toggle[data-state="off"] .push-mark{background:none;color:var(--green)}
+.push-toggle[data-state="blocked"] .push-mark,.push-toggle[data-state="needs-install"] .push-mark{background:none;color:var(--muted)}
+.push-toggle[data-state="blocked"]{border-style:dashed}
+.push-banner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin:0 22px 12px;padding:10px 0 10px 14px;border-left:2px solid var(--green);font-size:13px;line-height:1.5;color:var(--ink)}
+.push-banner[hidden]{display:none}
+.push-banner p{margin:0;flex:1 1 260px}
+.push-banner-actions{display:flex;align-items:center;gap:12px}
+.push-banner .primary{min-height:40px;padding:8px 16px;font-size:13px}
+@media(max-width:600px){.push-banner{margin:0 14px 10px}}
+.dashboard-tiles{align-items:start}
+.board-tile{min-height:84px}
+.board-tile .link-button{font-size:12px;padding:0;min-height:0}
+.board-month-pick select{min-width:170px}
+.currency-form{margin-bottom:6px}

@@ -1,11 +1,11 @@
 import {workspace,friendly} from './workspace.js';
 import {skeleton} from './skeleton.js';
+import {number,money as fmtMoney} from './format.js';
+const money=value=>fmtMoney(value);
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const asList=value=>Array.isArray(value)?value:[];
-const number=value=>new Intl.NumberFormat('es-ES').format(Number(value)||0);
 // La cuenta no publica moneda, así que la cifra va sin símbolo.
-const money=value=>Number.isFinite(Number(value))?new Intl.NumberFormat('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value)):null;
 const MONTHS=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const pad2=n=>String(n).padStart(2,'0');
 const ymd=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
@@ -28,6 +28,14 @@ export function periodOf(sel,now=new Date()){
   }
 }
 const dayLabel=v=>{const [y,m,d]=v.split('-').map(Number);return `${d} ${MONTHS[m-1].slice(0,3)}${y!==new Date().getFullYear()?' '+y:''}`};
+const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+/** Opciones de mes en español («Noviembre 2026»), del actual hacia atrás; incluye el elegido aunque sea más antiguo. */
+const monthOptions=(selected,count=24)=>{
+  const now=new Date(),seen=[];
+  for(let i=0;i<count;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);seen.push(`${d.getFullYear()}-${pad2(d.getMonth()+1)}`)}
+  if(selected&&/^\d{4}-\d{2}$/.test(selected)&&!seen.includes(selected))seen.push(selected);
+  return seen.map(v=>{const [y,m]=v.split('-');return `<option value="${v}"${v===selected?' selected':''}>${cap(MONTHS[Number(m)-1])} ${y}</option>`}).join('');
+};
 const monthNameShort=p=>{const [y,m]=String(p).split('-');return MONTHS[Number(m)-1]?`${MONTHS[Number(m)-1]} ${y}`:p};
 const monthName=period=>{const [y,m]=String(period||'').split('-');return MONTHS[Number(m)-1]?`${MONTHS[Number(m)-1]} de ${y}`:period};
 
@@ -63,7 +71,7 @@ function origin(month,word){
   </ul></details>`;
 }
 function tile(label,value,note){
-  return `<div class="board-tile"><span>${esc(label)}</span><strong>${value===null||value===undefined?'—':esc(value)}</strong>${note?`<small>${esc(note)}</small>`:''}</div>`;
+  return `<div class="board-tile"><span>${esc(label)}</span><strong>${value===null||value===undefined?'—':esc(value)}</strong>${note?`<small>${typeof note==='object'?note.html:esc(note)}</small>`:''}</div>`;
 }
 
 /**
@@ -141,7 +149,7 @@ export async function renderDashboard(container){
      <div id="period-menu" class="period-menu" role="menu"${menuOpen?'':' hidden'}>
       <div class="period-list">${QUICK.map(([k,l])=>`<button type="button" role="menuitemradio" aria-checked="${sel.kind===k}" class="${sel.kind===k?'on':''}" data-period="${k}">${l}</button>`).join('')}</div>
       <div class="period-custom">
-       <label>Otro mes<input type="month" id="period-month" value="${esc(sel.kind==='monthpick'?sel.month:'')}" max="${today.slice(0,7)}"></label>
+       <label>Otro mes<select id="period-month"><option value="">Elegir mes…</option>${monthOptions(sel.kind==='monthpick'?sel.month:'')}</select></label>
        <div class="period-range"><label>Desde<input type="date" id="period-from" value="${esc(sel.kind==='custom'?sel.from:'')}" max="${today}"></label><label>Hasta<input type="date" id="period-to" value="${esc(sel.kind==='custom'?sel.to:'')}" max="${today}"></label></div>
        <button type="button" id="period-apply" class="primary" disabled>Aplicar rango</button>
       </div></div></div>`;
@@ -204,7 +212,9 @@ export async function renderDashboard(container){
     ].join('');
     // Lo del día y lo de cada quien. Si falta un dato, el recuadro dice por qué.
     const leads=data.leads||null;const sales=month&&!month.error?month.sales:null;const mine=month&&!month.error?month.mine:null;
-    const unlinked='Usa en Ágora el mismo correo que en la cuenta';
+    // Quien administra Ágora elige quién es entre los usuarios de la subcuenta; los demás se reconocen por su correo.
+    const isOwner=workspace.me?.user?.role==='administrator'&&workspace.me?.user?.identity_type==='native';
+    const unlinked=isOwner?{html:'<button type="button" class="link-button" data-self>Elegir quién soy</button>'}:'Usa en Ágora el mismo correo que en la cuenta';
     const personal=[
       ...(leads?[tile(sel.kind==='today'?'Leads de hoy':sel.kind==='yesterday'?'Leads de ayer':'Leads nuevos',leads.today===null||leads.today===undefined?null:number(leads.today),leads.today===null||leads.today===undefined?'La cuenta no devolvió este dato':(['today','yesterday'].includes(sel.kind)?'':range.label))]:[]),
       ...(leads?[tile('Leads asignados a mí',leads.mine===null||leads.mine===undefined?null:number(leads.mine),leads.linked?(leads.mine===null||leads.mine===undefined?'La cuenta no devolvió este dato':''):unlinked)]:[]),
@@ -223,6 +233,7 @@ export async function renderDashboard(container){
       <section class="board-block" id="board-month">${monthBlock(month)}</section>
 `;
     bindMonth();
+    container.querySelectorAll('[data-self]').forEach(b=>b.onclick=selfDialog);
   }
 
   function monthBlock(month){
@@ -246,7 +257,7 @@ export async function renderDashboard(container){
       : '';
     const picker=`<div class="board-head"><div><div class="section-label">Rentabilidad de ${esc(monthName(month.period))}</div>
         <p class="board-lead">${p.profit===null?'Indica lo invertido para ver la ganancia.':`Ganancia después de publicidad y comisiones<strong>${esc(money(p.profit))}</strong>${p.marginPerUnit!==null?`<small>De cada 1,00 vendido quedan ${esc(money(p.marginPerUnit))}.</small>`:''}`}</p></div>
-      <div class="board-actions"><label class="board-month-pick">Mes<input type="month" id="board-period" value="${esc(month.period)}" max="${esc(new Date().toISOString().slice(0,7))}"></label>
+      <div class="board-actions"><label class="board-month-pick">Mes<select id="board-period">${monthOptions(month.period)}</select></label>
       ${month.canEdit?'<button id="board-settings">Cifras del mes</button>':''}</div></div>`;
     const tiles=[
       tile('Ganancia real del mes',money(p.net),p.net===null?'Falta indicar los costos fijos':`Después de ${money(p.fixedCosts)} en costos fijos`),
@@ -276,6 +287,25 @@ export async function renderDashboard(container){
       <p class="board-note">Verde desde ${number(month.settings.green)} %, ámbar desde ${number(month.settings.amber)} %, roja por debajo.${month.sales.partial?' Se resumen los primeros cierres del mes.':''}${month.sales.counted!==null?` ${number(month.sales.counted)} ${esc(word)} en el mes.`:''}</p>`;
   }
 
+  async function selfDialog(){
+    const dialog=document.querySelector('#action-dialog'),content=document.querySelector('#dialog-content');
+    content.innerHTML='<h2>¿Quién eres en esta subcuenta?</h2><p class="dialog-copy">Leyendo los usuarios…</p>';
+    if(!dialog.open)dialog.showModal();
+    try{
+      const data=await request(`workspace/self?connectionId=${encodeURIComponent(connection)}`);
+      const rows=Array.isArray(data.options)?data.options:[];
+      content.innerHTML=`<h2>¿Quién eres en esta subcuenta?</h2>
+       <p class="dialog-copy">Con esto, «Leads asignados a mí» y «Mis ventas del mes» cuentan lo que tiene asignado ese usuario. Se guarda sólo para ti en esta subcuenta.</p>
+       <form id="self-form" class="dialog-form"><label>Soy<select name="who"><option value="">Ninguno (no mostrar mis cifras)</option>${rows.map(r=>`<option value="${esc(r.id)}"${r.id===(data.linked||data.detected)?' selected':''}>${esc(r.name)}${r.email?` · ${esc(r.email)}`:''}</option>`).join('')}</select></label>
+       <p id="self-result" role="status" class="dialog-copy"></p><div class="dialog-actions"><button class="primary">Guardar</button><button type="button" class="secondary" data-close-dialog>Cerrar</button></div></form>`;
+      content.querySelector('[data-close-dialog]').onclick=()=>dialog.close();
+      content.querySelector('#self-form').onsubmit=async e=>{
+        e.preventDefault();const result=content.querySelector('#self-result');result.textContent='Guardando…';
+        try{await request(`workspace/self?connectionId=${encodeURIComponent(connection)}`,'PUT',csrf,{externalUserId:e.target.elements.who.value||null});dialog.close();$('#dashboard-body').innerHTML=skeleton('tiles',4);load()}
+        catch(error){result.textContent=friendly(error)}
+      };
+    }catch(error){content.innerHTML=`<h2>¿Quién eres en esta subcuenta?</h2><p class="dialog-copy">${esc(friendly(error))}</p>`}
+  }
   function bindMonth(){
     const pick=$('#board-period');
     if(pick)pick.onchange=()=>{if(/^\d{4}-\d{2}$/.test(pick.value))choose({kind:'monthpick',month:pick.value})};

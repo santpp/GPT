@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.7.0. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.7.1. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -181,7 +181,21 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - **Selector de periodo:** o un botón rápido o un mes/rango; al tocar uno se apaga el otro.
 - Se dejan como están el selector de canal y las tarjetas con borde, por decisión del usuario.
 
+## 1.7.1 · pulidos del tablero y de los avisos
+- Mes en español («Noviembre 2026») con un selector que no se corta, tanto en el resumen como en «Otro mes».
+- Botón de avisos con campana en lugar de punto: activa, desactivada (con campana tachada) o bloqueada. Si los avisos no están activos aparece una línea que lo dice, con botón «Activar avisos» y «Ahora no» (una vez al día como mucho); si el navegador los tiene bloqueados explica cómo permitirlos.
+- Recuperación automática: al entrar y al volver a la pestaña, si el permiso ya está dado pero falta la suscripción, o el servidor ya no la tiene a nombre de quien está dentro, Ágora la rehace sola (`GET /api/devices?token=` indica si el servidor la tiene).
+- Cifras con punto de miles («1.520»).
+- Moneda por subcuenta, sólo euros o dólares (por defecto dólares), que fija el propietario en Conexiones → Comisión y moneda; todos los importes la usan (migración 027).
+- «Elegir quién soy» para el propietario: en «Leads asignados a mí» y «Mis ventas del mes» elige su usuario entre los de la subcuenta (se guarda sólo para él, por subcuenta). Los administradores de subcuenta ya se reconocen por su correo.
+- Tablero con filas alineadas.
+
 ## Siguiente (a decidir)
-- Pendiente: poner en el servidor los archivos de la tipografía Author (1.7.0); sin ellos se ve la fuente del sistema.
+- **Siguiente, ya acordado con el usuario (por orden):**
+  - 1.8: **conversaciones sin respuesta** (lista de las que llevan tiempo esperando); avisos push cuando se **asigna** una conversación a alguien y aviso de **mensaje sin leer tras 10 minutos** (por defecto, configurable por subcuenta sólo por el propietario, en Conexiones).
+  - 1.9: arreglar la prueba `announce-ui` intermitente y una **revisión de seguridad** completa (permisos por rol, límites de intentos, sesiones y avisos).
+  - 1.10: **pantalla de mantenimiento** para cuando el servidor no responda o el propietario lo ponga en pausa.
+  - **V2.1:** resumen diario o semanal (leads, ventas ganadas, conversaciones sin responder).
+  - Descartado por el usuario: búsqueda global, vista de conversación con ficha fija en escritorio, avisos configurables por canal.
 - Plantillas de WhatsApp: en espera del WABA ID o de la salida de «Comprobar plantillas».
 - Motivos de pérdida de oportunidades: bloqueado, la cuenta no devuelve ninguno.

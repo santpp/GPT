@@ -33,6 +33,8 @@ export const workspace={
     if(reason==='no_membership')return 'Tu correo todavía no está asociado a ninguna subcuenta en Ágora. Pide al administrador que sincronice el equipo.';
     return 'Tu usuario todavía no tiene acceso a ninguna subcuenta.';
   },
+  /** Moneda de la subcuenta en uso: euros o dólares (dólares si no se sabe). */
+  currency(){const found=connections.find(c=>String(c.id)===current);return found?.currency==='EUR'?'EUR':'USD'},
   name(){const found=connections.find(c=>String(c.id)===current);return found?found.name:''},
   onChange(listener){listeners.add(listener);return()=>listeners.delete(listener)},
   reset(){connections=[];current='';profile=null;reason=null;remember('')},

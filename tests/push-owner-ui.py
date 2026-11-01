@@ -18,6 +18,8 @@ with sync_playwright() as p:
     page.add_init_script(INIT)
     def api(route):
         req=route.request;path=urlparse(req.url).path
+        if path=='/api/devices' and req.method=='GET':route.fulfill(status=200,content_type='application/json',body='{"registered":false}');return
+        if path=='/api/push-key':route.fulfill(status=200,content_type='application/json',body=json.dumps({'ready':True,'key':'B'+'A'*86}));return
         if path=='/api/devices':posted.append((req.method,req.post_data_json));route.fulfill(status=200,content_type='application/json',body='{"registered":true}');return
         if path=='/api/me':data={'user':{'role':'team','email':'ana@example.test','identity_type':'external','capabilities':{'viewConversations':True}},'csrf':'tok','passkeys':0}
         elif path=='/api/workspace/connections':data={'items':[{'id':1,'name':'Cuenta'}],'reason':None}
@@ -25,5 +27,5 @@ with sync_playwright() as p:
         route.fulfill(status=200,content_type='application/json',body=json.dumps(data))
     page.route('**/api/**',api);page.goto(BASE+'/tablero');page.wait_for_selector('#app:not([hidden])');page.wait_for_timeout(600)
     assert posted and posted[0][0]=='POST' and posted[0][1]['token']=='https://push.example.test/send/abcdef123456',posted
-    print('PASS on entering, the notices already on this browser are registered to the person who just came in')
+    print('PASS on entering, a browser whose notices belong to someone else gets fresh ones for the person who just came in')
     b.close()

@@ -1,10 +1,11 @@
 import {workspace,friendly} from './workspace.js';
 import {skeleton} from './skeleton.js';
+import {money as fmtMoney} from './format.js';
 import {opportunityForm,readOpportunityForm,bindPipelineChoice} from './opportunity-editor.js';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // The account publishes no currency code, so the amount is shown without a symbol.
-const amount=value=>typeof value==='number'&&isFinite(value)?new Intl.NumberFormat('es-ES',{maximumFractionDigits:2,useGrouping:'always'}).format(value):null;
+const amount=value=>typeof value==='number'&&isFinite(value)?fmtMoney(value):null;
 const asList=value=>Array.isArray(value)?value:[];
 
 async function request(path,method='GET',csrf='',body=null){
