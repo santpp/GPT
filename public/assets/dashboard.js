@@ -124,16 +124,41 @@ export async function renderDashboard(container){
   const $=s=>container.querySelector(s);
   let csrf='',month=null,period=periodOf(sel).month,range=periodOf(sel);
   const today=ymd(new Date());
+  const ICON={cal:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+    down:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>'};
+  const QUICK=[['today','Hoy'],['yesterday','Ayer'],['week','Últimos 7 días'],['d30','Últimos 30 días'],['month','Este mes'],['prev','Mes anterior']];
+  const nowLabel=()=>{const r=periodOf(sel);
+    if(sel.kind==='today')return `Hoy · ${dayLabel(r.from)}`;
+    if(sel.kind==='yesterday')return `Ayer · ${dayLabel(r.from)}`;
+    if(sel.kind==='week')return 'Últimos 7 días';if(sel.kind==='d30')return 'Últimos 30 días';
+    if(sel.kind==='month'||sel.kind==='prev'||sel.kind==='monthpick')return r.month?monthName(r.month):r.label;
+    return r.label};
+  let menuOpen=false;
+  const closeMenu=()=>{if(!menuOpen)return;menuOpen=false;const m=$('#period-menu'),b=$('#period-btn');if(m){m.hidden=true;b?.setAttribute('aria-expanded','false')}};
   function paintBar(){
-    const extra=sel.kind==='monthpick'?`<label class="period-field">Mes<input type="month" id="period-month" value="${esc(sel.month||today.slice(0,7))}" max="${today.slice(0,7)}"></label>`
-      :sel.kind==='custom'?`<label class="period-field">Desde<input type="date" id="period-from" value="${esc(sel.from||today)}" max="${today}"></label><label class="period-field">Hasta<input type="date" id="period-to" value="${esc(sel.to||today)}" max="${today}"></label>`:'';
-    $('#period-bar').innerHTML=`<div class="period-chips" role="group" aria-label="Periodo">${PRESETS.map(([k,l])=>`<button type="button" class="chip${sel.kind===k?' on':''}" data-period="${k}" aria-pressed="${sel.kind===k}">${l}</button>`).join('')}</div>${extra?`<div class="period-extra">${extra}</div>`:''}`;
-    $('#period-bar').querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>choose({kind:b.dataset.period,month:sel.month,from:sel.from,to:sel.to}));
-    const m=$('#period-month');if(m)m.onchange=()=>{if(/^\d{4}-\d{2}$/.test(m.value))choose({kind:'monthpick',month:m.value})};
-    const f=$('#period-from'),t=$('#period-to');
-    const range=()=>{if(f.value&&t.value&&f.value<=t.value)choose({kind:'custom',from:f.value,to:t.value})};
-    if(f)f.onchange=range;if(t)t.onchange=range;
+    const bar=$('#period-bar');
+    bar.innerHTML=`<div class="period"><button type="button" id="period-btn" class="period-btn" aria-haspopup="true" aria-expanded="${menuOpen}">${ICON.cal}<span>${esc(nowLabel())}</span>${ICON.down}</button>
+     <div id="period-menu" class="period-menu" role="menu"${menuOpen?'':' hidden'}>
+      <div class="period-list">${QUICK.map(([k,l])=>`<button type="button" role="menuitemradio" aria-checked="${sel.kind===k}" class="${sel.kind===k?'on':''}" data-period="${k}">${l}</button>`).join('')}</div>
+      <div class="period-custom">
+       <label>Otro mes<input type="month" id="period-month" value="${esc(sel.kind==='monthpick'?sel.month:'')}" max="${today.slice(0,7)}"></label>
+       <div class="period-range"><label>Desde<input type="date" id="period-from" value="${esc(sel.kind==='custom'?sel.from:'')}" max="${today}"></label><label>Hasta<input type="date" id="period-to" value="${esc(sel.kind==='custom'?sel.to:'')}" max="${today}"></label></div>
+       <button type="button" id="period-apply" class="primary" disabled>Aplicar rango</button>
+      </div></div></div>`;
+    $('#period-btn').onclick=e=>{e.stopPropagation();menuOpen=!menuOpen;$('#period-menu').hidden=!menuOpen;$('#period-btn').setAttribute('aria-expanded',String(menuOpen))};
+    bar.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{menuOpen=false;choose({kind:b.dataset.period})});
+    const m=$('#period-month'),f=$('#period-from'),t=$('#period-to'),apply=$('#period-apply');
+    m.onchange=()=>{if(/^\d{4}-\d{2}$/.test(m.value)){menuOpen=false;choose({kind:'monthpick',month:m.value})}};
+    const ready=()=>{apply.disabled=!(f.value&&t.value&&f.value<=t.value)};
+    f.onchange=t.onchange=ready;ready();
+    apply.onclick=()=>{if(!apply.disabled){menuOpen=false;choose({kind:'custom',from:f.value,to:t.value})}};
   }
+  // Se cierra al pulsar fuera o con Escape.
+  const outside=e=>{if(menuOpen&&!e.target.closest('.period'))closeMenu()};
+  document.addEventListener('click',outside);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&menuOpen){closeMenu();$('#period-btn')?.focus()}});
+  const stopOutside=new MutationObserver(()=>{if(!container.isConnected||container.dataset.view!=='dashboard'){document.removeEventListener('click',outside);stopOutside.disconnect()}});
+  stopOutside.observe(container,{attributes:true,attributeFilter:['data-view']});
   function choose(next){
     sel=next;try{localStorage.setItem('agora-board-period',JSON.stringify(sel))}catch{}
     range=periodOf(sel);period=range.month;paintBar();

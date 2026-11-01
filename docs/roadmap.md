@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.6.0. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.6.1. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -168,6 +168,10 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## 1.6.0 · periodo del tablero
 - Selector de periodo en el tablero: Hoy, Ayer, 7 días, 30 días, Este mes, Mes anterior, Otro mes y Rango de fechas. Cambia los **leads nuevos** (contactos creados en ese periodo, con los días de la zona del dispositivo) y el **mes** del resumen de rentabilidad y ventas, que sigue siendo de un mes natural: con un periodo corto usa el mes en curso y con un rango usa el mes en que termina. Conversaciones, sin leer, oportunidades y «asignados a mí» son el estado actual, no dependen del periodo. La elección se recuerda en el dispositivo. El selector de mes del propio resumen sigue ahí y mueve el mismo control.
 
+## 1.6.1 · selector de periodo rediseñado
+- La fila de chips pasa a un solo botón («Hoy · 1 nov») que abre una lista con los periodos rápidos, «Otro mes» y un rango de fechas con «Aplicar rango»; en el móvil ocupa el ancho y la lista se abre debajo. Se cierra al elegir, al pulsar fuera o con Escape.
+
 ## Siguiente (a decidir)
+- **Menos aspecto de IA (estudio):** ver la lista de rasgos y propuestas entregada al usuario; pendiente de que elija por dónde empezar.
 - Plantillas de WhatsApp: en espera del WABA ID o de la salida de «Comprobar plantillas».
 - Motivos de pérdida de oportunidades: bloqueado, la cuenta no devuelve ninguno.

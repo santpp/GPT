@@ -16,28 +16,32 @@ def api(route):
         months.append(q['period'][0]);data={'error':'x'}
     else:data={'items':[]}
     route.fulfill(status=200,content_type='application/json',body=json.dumps(data))
+def_pick='''
+'''
 with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.getenv('CHROMIUM_PATH','/usr/bin/chromium'),args=['--no-sandbox'])
     ctx=b.new_context(viewport={'width':390,'height':844},service_workers='block');page=ctx.new_page()
+    def pick(kind):
+        page.locator('#period-btn').click();page.locator(f'[data-period="{kind}"]').click()
     errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.route('**/api/**',api)
-    page.goto(BASE+'/tablero');page.wait_for_selector('.period-chips');page.wait_for_selector('.board-tile')
+    page.goto(BASE+'/tablero');page.wait_for_selector('#period-btn');page.wait_for_selector('.board-tile')
     assert dash[-1]==(today.isoformat(),today.isoformat()) and 'Leads de hoy' in page.locator('#dashboard-body').inner_text()
     print('PASS the board opens on today, as before')
-    page.locator('[data-period="yesterday"]').click();page.wait_for_function("document.querySelector('.board-tile span')?.textContent.includes('ayer')")
+    pick('yesterday');page.wait_for_function("document.querySelector('.board-tile span')?.textContent.includes('ayer')")
     y=(today-datetime.timedelta(days=1)).isoformat();assert dash[-1]==(y,y)
-    page.locator('[data-period="week"]').click();page.wait_for_function("document.querySelector('.board-tile small')?.textContent.includes('7 días')")
+    pick('week');page.wait_for_function("document.querySelector('.board-tile small')?.textContent.includes('7 días')")
     assert dash[-1]==((today-datetime.timedelta(days=6)).isoformat(),today.isoformat())
     print('PASS yesterday and the last 7 days change the leads period and say which one it is')
-    page.locator('[data-period="prev"]').click();page.wait_for_timeout(500)
+    pick('prev');page.wait_for_timeout(500)
     first_this=today.replace(day=1);last_prev=first_this-datetime.timedelta(days=1)
     assert dash[-1]==(last_prev.replace(day=1).isoformat(),last_prev.isoformat()) and months[-1]==last_prev.strftime('%Y-%m')
     print('PASS the previous month sets both the leads period and the month of the monthly summary')
-    page.locator('[data-period="custom"]').click();page.wait_for_selector('#period-from')
-    page.fill('#period-from','2026-10-03');page.fill('#period-to','2026-10-12');page.wait_for_timeout(500)
+    page.locator('#period-btn').click();page.wait_for_selector('#period-from')
+    page.fill('#period-from','2026-10-03');page.fill('#period-to','2026-10-12');page.locator('#period-apply').click();page.wait_for_timeout(500)
     assert dash[-1]==('2026-10-03','2026-10-12') and months[-1]=='2026-10'
     print('PASS a custom range is sent as chosen, and the summary follows the month it ends in')
-    page.reload();page.wait_for_selector('.period-chips');page.wait_for_timeout(500)
-    assert page.locator('[data-period="custom"].on').count()==1 and dash[-1]==('2026-10-03','2026-10-12')
+    page.reload();page.wait_for_selector('#period-btn');page.wait_for_timeout(500)
+    assert '3 oct' in page.locator('#period-btn').inner_text() and dash[-1]==('2026-10-03','2026-10-12')
     print('PASS the choice is remembered on this device')
     page.screenshot(path='/tmp/period.png')
     assert not errors,errors
