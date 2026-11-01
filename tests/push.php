@@ -38,9 +38,9 @@ try {
  $connectionId=(int)db()->lastInsertId();
  query("INSERT INTO users(tenant_id,email,password_hash,role) VALUES(?,?,?,'administrator')",[$tenant,'owner-'.$suffix.'@example.test','x']);
  $ownerId=(int)db()->lastInsertId();
- foreach([['seller-1','Ana',1],['seller-2','Luis',0]] as [$external,$name,$restricted]) {
-  query('INSERT INTO external_users(connection_id,external_user_id,email,display_name,permissions,scopes,assigned_data_only) VALUES(?,?,?,?,?,?,?)',
-   [$connectionId,$external,$external.'-'.$suffix.'@example.test',$name,'{}','[]',$restricted]);
+ foreach([['seller-1','Ana',1,null],['seller-2','Luis',0,'admin'],['seller-3','Eva',0,null]] as [$external,$name,$restricted,$roleName]) {
+  query('INSERT INTO external_users(connection_id,external_user_id,email,display_name,role_name,permissions,scopes,assigned_data_only) VALUES(?,?,?,?,?,?,?,?)',
+   [$connectionId,$external,$external.'-'.$suffix.'@example.test',$name,$roleName,'{}','[]',$restricted]);
   $row=(int)db()->lastInsertId();
   query('INSERT INTO external_identities(tenant_id,email) VALUES(?,?)',[$tenant,$external.'-'.$suffix.'@example.test']);
   $identity=(int)db()->lastInsertId();
@@ -62,7 +62,7 @@ try {
  $sorted=function()use($fcm):array{$tokens=array_map(fn($c)=>$c['payload']['message']['token'],$fcm->sends());sort($tokens);return $tokens;};
  $queue('conv-1','seller-1');
  $result=$delivery()->run();
- pushCheck($sorted()===['token-owner-'.$suffix,'token-seller-1-'.$suffix,'token-seller-2-'.$suffix],'a conversation reaches its assignee, whoever sees the whole account, and the owner');
+ pushCheck($sorted()===['token-owner-'.$suffix,'token-seller-1-'.$suffix,'token-seller-2-'.$suffix],'a conversation reaches its assignee, the sub-account administrator and the owner, but not another member who is not assigned to it');
  pushCheck($result['sent']===3&&$result['retried']===0,'and the pass reports what it sent');
  pushCheck(query('SELECT state FROM push_queue WHERE conversation_id=?',['conv-1'])->fetchColumn()==='sent','the notice is marked as delivered');
 

@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.6. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.7. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -158,6 +158,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## 1.5.6 · avisos de otra persona
 - Error de privacidad: la suscripción de avisos es del navegador, no de la persona. Si el propietario había activado avisos en un navegador y otra persona entraba allí (con la sesión del propietario caducada, sin «cerrar sesión»), el navegador seguía registrado a nombre del propietario y mostraba a la nueva persona los avisos de todas las subcuentas. Ahora, al entrar, Ágora registra a nombre de quien entra la suscripción que el navegador ya tenga (sin preguntar nada), y los avisos pasan a filtrarse por sus subcuentas. El servidor ya filtraba por destinatario; el fallo era de a quién pertenecía el navegador.
+
+## 1.5.7 · avisos sólo de lo asignado
+- Los avisos (y el número del icono) llegan a cada persona sólo por las conversaciones que tiene asignadas, dentro de su subcuenta. Reciben los de toda su subcuenta únicamente los administradores de esa subcuenta (rol `admin` o `agency`) y el propietario de Ágora. Antes, quien no tenía marcada la restricción «sólo lo asignado» recibía todas.
 
 ## Siguiente (a decidir)
 - Plantillas de WhatsApp: en espera del WABA ID o de la salida de «Comprobar plantillas».

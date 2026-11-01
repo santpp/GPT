@@ -67,12 +67,13 @@ final class PushQueue {
 
     /**
      * The device tokens that should receive one notice. Only members of that
-     * connection, and only those allowed to see that conversation.
+     * connection; administrators of the sub-account (and the owner) for every
+     * conversation, everyone else only for conversations assigned to them.
      *
      * @return list<array{token:string,device:int,platform:string,p256dh:?string,auth:?string}>
      */
     public static function recipients(array $notice):array {
-        $rows=query('SELECT DISTINCT d.id,d.token,d.platform,d.p256dh,d.auth,eu.external_user_id,eu.assigned_data_only
+        $rows=query('SELECT DISTINCT d.id,d.token,d.platform,d.p256dh,d.auth,eu.external_user_id,eu.assigned_data_only,eu.role_name,eu.role_type
             FROM push_devices d
             JOIN external_identity_memberships m ON m.identity_id=d.actor_id AND d.identity_type=\'external\'
             JOIN external_users eu ON eu.id=m.external_user_row_id AND eu.active=TRUE
@@ -85,7 +86,9 @@ final class PushQueue {
             WHERE c.id=?',[(int)$notice['connection_id']])->fetchAll();
         $tokens=[];
         foreach($rows as $row) {
-            $restricted=((int)$row['assigned_data_only'])===1;
+            // Sólo los administradores de la subcuenta reciben avisos de todas sus conversaciones; el resto, los de las que tiene asignadas.
+            $admin=($row['role_name']??null)==='admin'||($row['role_type']??null)==='agency';
+            $restricted=!$admin;
             if($restricted&&($notice['assigned_to']===null||$notice['assigned_to']!==$row['external_user_id']))continue;
             $tokens[$row['token']]=self::device($row)+['unread'=>self::pending((int)$notice['connection_id'],$restricted?$row['external_user_id']:null)];
         }
