@@ -56,6 +56,7 @@ try {
  asg(array_values(array_unique(array_map(fn($w)=>$w[2]['assignedTo']??null,array_slice($writes,1))))===['ana'],'todas a la misma persona');
  asg($result['assigned']===true&&$result['assignedName']==='Ana Ventas'&&$result['opportunities']===['updated'=>2,'failed'=>0],'se cuenta cuántas oportunidades se movieron');
  asg(json_decode((string)query('SELECT payload FROM conversation_index WHERE connection_id=? AND conversation_id=?',[$id,'conv-1'])->fetchColumn(),true)['assignedTo']==='ana'&&query('SELECT assigned_to FROM conversation_index WHERE connection_id=? AND conversation_id=?',[$id,'conv-1'])->fetchColumn()==='ana','la lista de conversaciones lo refleja al momento');
+ asg((int)query("SELECT COUNT(*) FROM push_queue WHERE connection_id=? AND conversation_id='conv-1' AND kind='assigned' AND target='ana'",[$id])->fetchColumn()===1,'la persona elegida recibe el aviso «te asignaron»');
 
  $free();$calls=[];
  $service->assign($connection,['assignedTo'=>'ana']+$conversation,$admin,['assignedTo'=>'','requestId'=>str_repeat('d',20)]);

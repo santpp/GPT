@@ -76,6 +76,37 @@ try {
  $delivery()->run();
  pushCheck($sorted()===['token-owner-'.$suffix,'token-seller-2-'.$suffix],'and an unassigned conversation reaches only those who can see it');
 
+ // ---- «te asignaron» y el recordatorio de lo que sigue sin leer -----------------------
+ $fcm->reset();
+ $assignedConv=['id'=>'conv-a','contactName'=>'Lucía Gómez','lastMessageType'=>'TYPE_WHATSAPP','lastMessageBody'=>'Hola','unreadCount'=>0,'assignedTo'=>'seller-3','lastMessageDate'=>time()*1000];
+ PushQueue::queue(['id'=>$connectionId],[$assignedConv],['conv-a'=>0],['conv-a'=>'seller-1']);
+ $delivery()->run();
+ pushCheck($sorted()===['token-seller-3-'.$suffix]&&query("SELECT kind FROM push_queue WHERE conversation_id='conv-a'")->fetchColumn()==='assigned','when a conversation is assigned to someone, only that person is told');
+ $fcm->reset();
+ PushQueue::queue(['id'=>$connectionId],[$assignedConv],['conv-a'=>0],['conv-a'=>'seller-3']);
+ pushCheck((int)query("SELECT COUNT(*) FROM push_queue WHERE conversation_id='conv-a' AND kind='assigned'")->fetchColumn()===1,'a conversation that stays with the same person is not announced again');
+ $oldMs=(time()-15*60)*1000;
+ $remind=function(string $id,?string $assigned,int $at,int $unread=1)use($connectionId){
+  query('INSERT INTO conversation_index(connection_id,conversation_id,payload,content_hash,unread_count,assigned_to) VALUES(?,?,?,?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload),unread_count=VALUES(unread_count),assigned_to=VALUES(assigned_to)',
+   [$connectionId,$id,json_encode(['id'=>$id,'contactName'=>'Pedro Salas','lastMessageType'=>'TYPE_INSTAGRAM','lastMessageBody'=>'¿Precio?','lastMessageDirection'=>'inbound','lastMessageDate'=>$at,'unreadCount'=>$unread,'assignedTo'=>$assigned]),md5($id.$at),$unread,$assigned]);
+ };
+ $remind('conv-r1','seller-1',$oldMs);
+ $remind('conv-r2','seller-1',(time()-2*60)*1000);
+ pushCheck(PushQueue::reminders()===1,'only a message that has waited longer than the sub-account\'s minutes is reminded');
+ $fcm->reset();$delivery()->run();
+ pushCheck($sorted()===['token-seller-1-'.$suffix],'the reminder goes to the person the conversation is assigned to');
+ pushCheck(PushQueue::reminders()===0,'and a message is reminded once, not on every pass');
+ $remind('conv-r3',null,$oldMs);
+ PushQueue::reminders();$fcm->reset();$delivery()->run();
+ pushCheck($sorted()===['token-owner-'.$suffix,'token-seller-2-'.$suffix],'an unassigned message is reminded to the administrators and the owner');
+ query('UPDATE ghl_connections SET unread_reminder_minutes=0 WHERE id=?',[$connectionId]);
+ $remind('conv-r4','seller-1',$oldMs);
+ pushCheck(PushQueue::reminders()===0,'with the reminder set to 0 nothing is reminded');
+ query("DELETE FROM conversation_index WHERE connection_id=? AND conversation_id='conv-r4'",[$connectionId]);
+ query('UPDATE ghl_connections SET unread_reminder_minutes=10 WHERE id=?',[$connectionId]);
+ $remind('conv-r5','seller-1',(time()-3*86400)*1000);
+ pushCheck(PushQueue::reminders()===0,'a very old message is not reminded after a long pause');
+
  // ---- the request is the one the service documents --------------------------
  $fcm->reset();
  $queue('conv-3','seller-1');

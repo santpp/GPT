@@ -43,7 +43,7 @@ try {
  check($code===200&&$recovered['ready']===true,'a pending database update is applied on its own, with no button to press');
  check(in_array('directory_cache',array_column(query('SHOW TABLES')->fetchAll(PDO::FETCH_NUM),0),true),'the missing table is back after that single request');
  [$code,$diagnostics]=request('admin/diagnostics');
- check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='1.7.1','administrator sees installation readiness and version');
+ check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='1.8.0','administrator sees installation readiness and version');
  check(!str_contains(json_encode($diagnostics),'APP_KEY_FILE')&&!str_contains(json_encode($diagnostics),'integration.key'),'diagnostics expose no configuration values or key paths');
  check(request('admin/installation/encryption','POST')[0]===403,'preparation requires CSRF');
  [$code,$profile]=request('me');check($code===200&&!array_key_exists('ghl_user_id',$profile['user'])&&$profile['user']['capabilities']['configureConnections'],'public profile exposes capabilities without provider-specific fields');
@@ -59,6 +59,9 @@ try {
  check(request('admin/integrations/'.$id.'/currency','PUT',['currency'=>'GBP'],$headers)[0]===422,'only euros or dollars are accepted as a currency');
  check(request('admin/integrations/'.$id.'/currency','PUT',['currency'=>'EUR'],$headers)[1]['currency']==='EUR','the administrator sets a sub-account\'s currency');
  [$code,$list]=request('workspace/connections');check($code===200&&$list['items'][0]['currency']==='EUR'||(int)query('SELECT currency="EUR" FROM ghl_connections WHERE id=?',[$id])->fetchColumn()===1,'the chosen currency is stored and offered to the screens');
+ check(request('admin/integrations/'.$id.'/reminder','PUT',['minutes'=>2000],$headers)[0]===422&&request('admin/integrations/'.$id.'/reminder','PUT',['minutes'=>'diez'],$headers)[0]===422,'the unread reminder only accepts whole minutes up to a day');
+ check(request('admin/integrations/'.$id.'/reminder','PUT',['minutes'=>15],$headers)[1]['minutes']===15&&(int)query('SELECT unread_reminder_minutes FROM ghl_connections WHERE id=?',[$id])->fetchColumn()===15,'the owner sets when an unread message is reminded, per sub-account');
+ check(request('admin/integrations/'.$id.'/reminder','PUT',['minutes'=>0],$headers)[1]['minutes']===0,'and can turn the reminder off with 0');
  // Quién soy: el propietario elige entre los usuarios de la subcuenta, y sólo entre los activos de ella.
  query('INSERT INTO external_users(connection_id,external_user_id,email,display_name,permissions,scopes,assigned_data_only) VALUES(?,?,?,?,?,?,?)',[$id,'owner-pick','pick@example.test','Para elegir','{}','[]',0]);
  check(request('workspace/self?connectionId='.$id.'','PUT',['externalUserId'=>'nobody'],$headers)[0]===422,'the owner cannot pick someone who is not in the sub-account');

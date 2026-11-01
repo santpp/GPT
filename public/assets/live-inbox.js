@@ -29,7 +29,7 @@ export async function renderLiveInbox(container){
  container.innerHTML=skeleton('list',7);
  try{
   const me=await request('me');const {items}=await request('workspace/connections');if(!active())return;
-  container.innerHTML=`<div class="live-toolbar"><p id="live-feedback" class="live-feedback" role="status"></p><label>Mostrar<select id="live-limit" aria-label="Cantidad de conversaciones"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label></div><p id="live-auto-status" class="live-auto-status" role="status" hidden></p><div class="live-inbox-layout"><section class="live-sidebar" aria-label="Lista de conversaciones"><label class="search"><span aria-hidden="true">⌕</span><input id="live-search" type="search" placeholder="Buscar nombre o mensaje" aria-label="Buscar en conversaciones cargadas"></label><div class="tabs"><button data-live-filter="all" class="active" aria-pressed="true">Todas</button><button data-live-filter="unread" aria-pressed="false">No leídas</button><button data-live-filter="mine" aria-pressed="false" id="live-filter-mine" hidden>Mías</button><span class="live-channel-filters" id="live-channel-filters"></span><span id="live-count"></span></div><div id="live-list"></div></section><section id="live-messages" aria-label="Conversación"><p class="empty">Selecciona una conversación para consultar su historial.</p></section><aside id="live-contact-panel" class="live-contact-panel" aria-label="Ficha del contacto"></aside></div>`;
+  container.innerHTML=`<div class="live-toolbar"><p id="live-feedback" class="live-feedback" role="status"></p><label>Mostrar<select id="live-limit" aria-label="Cantidad de conversaciones"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label></div><p id="live-auto-status" class="live-auto-status" role="status" hidden></p><div class="live-inbox-layout"><section class="live-sidebar" aria-label="Lista de conversaciones"><label class="search"><span aria-hidden="true">⌕</span><input id="live-search" type="search" placeholder="Buscar nombre o mensaje" aria-label="Buscar en conversaciones cargadas"></label><div class="tabs"><button data-live-filter="all" class="active" aria-pressed="true">Todas</button><button data-live-filter="unread" aria-pressed="false">No leídas</button><button data-live-filter="waiting" aria-pressed="false" title="Conversaciones donde lo último lo escribió el cliente">Sin respuesta</button><button data-live-filter="mine" aria-pressed="false" id="live-filter-mine" hidden>Mías</button><span class="live-channel-filters" id="live-channel-filters"></span><span id="live-count"></span></div><div id="live-list"></div></section><section id="live-messages" aria-label="Conversación"><p class="empty">Selecciona una conversación para consultar su historial.</p></section><aside id="live-contact-panel" class="live-contact-panel" aria-label="Ficha del contacto"></aside></div>`;
   const $=s=>container.querySelector(s), limit=$('#live-limit'),feedback=$('#live-feedback'),layout=$('.live-inbox-layout');
   const mineButton=$('#live-filter-mine');
   if(mineButton&&me?.user?.identity_type==='external')mineButton.hidden=false;
@@ -94,10 +94,13 @@ export async function renderLiveInbox(container){
   document.addEventListener('visibilitychange',wake);window.addEventListener('online',wake);window.addEventListener('offline',wake);
   async function tick(){if(!canRefresh())return;if(syncBusy||messageBusy||[...drafts.values()].some(d=>d.sending)){schedule(5);return}if(pause>Date.now()/1000){schedule(pause-Date.now()/1000);return}await sync(true)}
   let generation=0, chatGeneration=0, conversations=[], selected=null, filter='all', nextCursor=null, hasMore=false, loadingMore=false, pulseToken=null, pulseTimer=null, messages=new Map(), cursor=null, chatChannel=null, chatChannels=null, channelFilter='', searchTerm='', searchTimer=null, channelNames={}, templates={open:false,items:null,configured:true,error:'',chosen:'',values:{},sending:false,notice:'',generation:-1};
+  // Otra pantalla puede abrir la bandeja ya filtrada (el tablero, con «Esperando respuesta»).
+  if(['waiting','unread','mine'].includes(workspace.pendingFilter)){filter=workspace.pendingFilter;workspace.pendingFilter=null;container.querySelectorAll('[data-live-filter]').forEach(n=>{const on=n.dataset.liveFilter===filter;n.classList.toggle('active',on);n.setAttribute('aria-pressed',String(on))})}
   const inboxQuery=()=>{
    const parts=[`connectionId=${encodeURIComponent(select.value)}`,`limit=${encodeURIComponent(limit.value||'20')}`];
    if(filter==='unread')parts.push('status=unread');
    if(filter==='mine')parts.push('mine=1');
+   if(filter==='waiting')parts.push('direction=inbound');
    if(channelFilter)parts.push('channel='+encodeURIComponent(channelFilter));
    if(searchTerm)parts.push('query='+encodeURIComponent(searchTerm));
    return parts.join('&');
@@ -105,10 +108,13 @@ export async function renderLiveInbox(container){
   const loadTags=()=>request(`workspace/tags?connectionId=${encodeURIComponent(select.value)}`).then(r=>asList(r.items));
   let listLoading=false;
   function list(){
-   const visible=conversations;
+   const stamp=c=>{const n=Number(c.lastMessageDate);return Number.isFinite(n)&&n>0?n:(Date.parse(c.lastMessageDate)||0)};
+   // «Sin respuesta»: primero las que más llevan esperando.
+   const visible=filter==='waiting'?conversations.filter(c=>c.lastMessageDirection!=='outbound').sort((a,b)=>stamp(a)-stamp(b)):conversations;
+   const waited=c=>{const m=Math.max(0,Math.round((Date.now()-stamp(c))/60000));return m<60?`${m} min`:m<1440?`${Math.floor(m/60)} h`:`${Math.floor(m/1440)} d`};
    $('#live-count').textContent=visible.length;
    const listEl=$('#live-list');if(visible.length&&!listEl.dataset.painted)setTimeout(()=>{listEl.dataset.painted='1'},1200);
-   $('#live-list').innerHTML=visible.map(c=>`<button class="conversation-item live-conversation ${selected?.id===c.id?'selected':''}" data-live-id="${esc(c.id)}" aria-label="Abrir conversación de ${esc(name(c))}" aria-pressed="${selected?.id===c.id}"><span class="avatar">${esc(initials(c))}</span><span class="conversation-info"><header><strong>${esc(name(c))}</strong><time title="${esc(date(c.lastMessageDate))}">${esc(when(c.lastMessageDate))}</time></header><p>${esc(c.lastMessageBody||'Sin vista previa')}</p><footer><span class="channel">${channel(c.lastMessageType)}</span>${Number(c.unreadCount)>0?`<b class="unread">${Number(c.unreadCount)}<span class="sr-only"> pendientes</span></b>`:''}</footer></span></button>`).join('')||(listLoading?skeleton('list',7):'<p class="empty">No hay conversaciones con este filtro.</p>');
+   $('#live-list').innerHTML=visible.map(c=>`<button class="conversation-item live-conversation ${selected?.id===c.id?'selected':''}" data-live-id="${esc(c.id)}" aria-label="Abrir conversación de ${esc(name(c))}" aria-pressed="${selected?.id===c.id}"><span class="avatar">${esc(initials(c))}</span><span class="conversation-info"><header><strong>${esc(name(c))}</strong><time title="${esc(date(c.lastMessageDate))}">${esc(when(c.lastMessageDate))}</time></header><p>${esc(c.lastMessageBody||'Sin vista previa')}</p><footer><span class="channel">${channel(c.lastMessageType)}</span>${filter==='waiting'&&stamp(c)?`<span class="waiting${Date.now()-stamp(c)>36e5?' late':''}">Espera ${waited(c)}</span>`:''}${Number(c.unreadCount)>0?`<b class="unread">${Number(c.unreadCount)}<span class="sr-only"> pendientes</span></b>`:''}</footer></span></button>`).join('')||(listLoading?skeleton('list',7):'<p class="empty">No hay conversaciones con este filtro.</p>');
    // The account keeps a position to continue from, so the list is not confined
    // to the window of 20, 50 or 100.
    if(hasMore)$('#live-list').insertAdjacentHTML('beforeend',`<button id="live-more" class="live-more"${loadingMore?' disabled':''}>${loadingMore?'Cargando…':'Cargar más conversaciones'}</button>`);
@@ -788,7 +794,7 @@ export async function renderLiveInbox(container){
      }
     }
     window.dispatchEvent(new CustomEvent('agora:unread',{detail:Number(data.unread)||0}));
-    const scope=[filter==='unread'?'no leídas':filter==='mine'?'mías':null,channelNames[channelFilter],searchTerm?`«${searchTerm}»`:null].filter(Boolean).join(' · ');
+    const scope=[filter==='unread'?'no leídas':filter==='mine'?'mías':filter==='waiting'?'sin respuesta':null,channelNames[channelFilter],searchTerm?`«${searchTerm}»`:null].filter(Boolean).join(' · ');
     feedback.textContent=data.items.length
      ? `${data.items.length} de ${data.total} conversaciones${scope?' · '+scope:''}${data.partial?' · ventana parcial':''}`
      : (scope?`Ninguna conversación con este filtro (${scope}).`:'Esta cuenta todavía no tiene conversaciones.');

@@ -154,6 +154,7 @@ final class InboxFeed {
         // antes que él, y el teléfono nunca se enteraba.
         require_once __DIR__.'/PushQueue.php';
         $before=PushQueue::before($connectionId);
+        $assignedBefore=PushQueue::beforeAssigned($connectionId);
         foreach($items as $conversation) {
             if(!is_array($conversation)||!is_string($conversation['id']??null))continue;
             $unread=max(0,(int)($conversation['unreadCount']??0));
@@ -170,7 +171,7 @@ final class InboxFeed {
                 content_hash=VALUES(content_hash)',
                 [$connectionId,$conversation['id'],json_encode($conversation,JSON_THROW_ON_ERROR),$hash,$unread,$assigned]);
         }
-        PushQueue::queue(['id'=>$connectionId],$items,$before);
+        PushQueue::queue(['id'=>$connectionId],$items,$before,$assignedBefore);
     }
 
     /**

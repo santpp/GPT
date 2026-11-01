@@ -53,6 +53,16 @@ final class ConversationAssignment {
             }
         } catch(Throwable $e) {$failed++;}
 
+        // «Te asignaron una conversación»: se avisa a la persona elegida antes de que el índice refleje el cambio.
+        if($assignee!=='') {
+            try {
+                require_once __DIR__.'/PushQueue.php';
+                $row=query('SELECT payload,assigned_to FROM conversation_index WHERE connection_id=? AND conversation_id=?',[$connection['id'],$conversation['id']])->fetch();
+                $payload=$row?json_decode((string)$row['payload'],true):null;
+                if(is_array($payload)&&($row['assigned_to']??null)!==$assignee)
+                    PushQueue::queue(['id'=>(int)$connection['id']],[array_merge($payload,['id'=>$conversation['id'],'assignedTo'=>$assignee,'unreadCount'=>0])],[$conversation['id']=>0],[$conversation['id']=>$row['assigned_to']]);
+            } catch(Throwable $e) {error_log('Assignment notice failed: '.get_class($e));}
+        }
         // La lista de conversaciones y las pantallas guardadas reflejan el cambio ya.
         if($assignee==='')query("UPDATE conversation_index SET payload=JSON_REMOVE(payload,'\$.assignedTo'),assigned_to=NULL,content_hash=NULL,content_changed_at=CURRENT_TIMESTAMP(3) WHERE connection_id=? AND conversation_id=?",[$connection['id'],$conversation['id']]);
         else query("UPDATE conversation_index SET payload=JSON_SET(payload,'\$.assignedTo',?),assigned_to=?,content_hash=NULL,content_changed_at=CURRENT_TIMESTAMP(3) WHERE connection_id=? AND conversation_id=?",[$assignee,$assignee,$connection['id'],$conversation['id']]);

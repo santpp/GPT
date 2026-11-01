@@ -58,13 +58,14 @@ try {
  query('DELETE FROM pipeline_cache WHERE connection_id=?',[$connectionId]);
  $board=new Dashboard($api->gateway(),new PipelineDirectory($api->gateway()));
  $view=$board->get($connection,$admin);
- boardCheck($api->paths()===['/conversations/search','/conversations/search','/contacts/search','/opportunities/search','/opportunities/pipelines','/contacts/search'],'the board reads conversations, contacts, opportunities, the pipeline names and today\'s leads');
- $todayAsk=$api->payloads[5]['filters'][0]??[];
+ boardCheck($api->paths()===['/conversations/search','/conversations/search','/conversations/search','/contacts/search','/opportunities/search','/opportunities/pipelines','/contacts/search'],'the board reads conversations (all, unread and awaiting a reply), contacts, opportunities, the pipeline names and today\'s leads');
+ $todayAsk=$api->payloads[6]['filters'][0]??[];
  boardCheck(($todayAsk['field']??null)==='dateAdded'&&($todayAsk['operator']??null)==='range'&&preg_match('/T\d\d:00:00Z$/',$todayAsk['value']['gt']??'')===1,'today\'s leads are asked for by the date they came in');
  boardCheck($view['leads']['today']===812&&$view['leads']['mine']===null&&$view['leads']['linked']===false,'without a linked user there is no «assigned to me» figure rather than a wrong one');
  boardCheck((int)query('SELECT requests_today FROM ghl_sync_state WHERE connection_id=?',[$connectionId])->fetchColumn()===1,'the whole board costs a single budget slot');
+ boardCheck(str_contains($api->calls[2],'lastMessageDirection=inbound')&&($view['conversations']['waiting']??null)!==null,'the figure of conversations awaiting a reply asks for those whose last message came from the contact');
  boardCheck(str_contains($api->calls[1],'status=unread')&&!str_contains($api->calls[0],'status='),'the pending figure is the account\'s unread total, not a window');
- boardCheck($view['conversations']===['total'=>47,'unread'=>5],'the account totals are reported as the account gave them');
+ boardCheck($view['conversations']['total']===47&&$view['conversations']['unread']===5,'the account totals are reported as the account gave them');
  boardCheck($view['contacts']===812,'the contact figure comes from the total the account reports');
 
  // A count that merely echoes the page size is not a total, and must not pass for one.
@@ -113,7 +114,7 @@ try {
  $api->reset();boardFree($connectionId);
  $reader=$board->get($connection,['external_user_id'=>null,'capabilities'=>['viewContacts'=>false,'viewOpportunities'=>false,'assignedDataOnly'=>false]]);
  boardCheck($reader['contacts']===null&&$reader['opportunities']===null&&$reader['conversations']['total']===47,'a user without those permissions sees only the conversations');
- boardCheck($api->paths()===['/conversations/search','/conversations/search'],'and nothing is read that the user may not see');
+ boardCheck($api->paths()===['/conversations/search','/conversations/search','/conversations/search'],'and nothing is read that the user may not see');
 
  $api->reset();boardFree($connectionId);
  $api->opportunities=['not-a-list'=>true];

@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.7.1. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.8.0. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -190,9 +190,13 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - «Elegir quién soy» para el propietario: en «Leads asignados a mí» y «Mis ventas del mes» elige su usuario entre los de la subcuenta (se guarda sólo para él, por subcuenta). Los administradores de subcuenta ya se reconocen por su correo.
 - Tablero con filas alineadas.
 
+## 1.8.0 · sin respuesta y avisos de asignación y de recordatorio
+- **Sin respuesta:** pestaña en la bandeja (conversaciones cuyo último mensaje es del contacto, las que más llevan esperando primero, con «Espera 3 h», en color si pasa de una hora) y tarjeta «Esperando respuesta» en el tablero con acceso a esa lista (una consulta más a la cuenta por carga del tablero).
+- **«Te asignaron una conversación»:** aviso push sólo a la persona asignada, tanto si el cambio se hace en Ágora como si llega desde la cuenta. No avisa al propietario ni a otros.
+- **Recordatorio de mensaje sin leer:** pasados N minutos (10 por defecto) de un mensaje entrante sin leer, un aviso a quien tiene asignada la conversación (o a los administradores de la subcuenta y al propietario si no tiene a nadie). Una vez por mensaje y sólo si es de las últimas 24 h. Los minutos (0 = desactivado) los fija el propietario por subcuenta en Conexiones → «Comisión, moneda y avisos» (migración 028).
+
 ## Siguiente (a decidir)
 - **Siguiente, ya acordado con el usuario (por orden):**
-  - 1.8: **conversaciones sin respuesta** (lista de las que llevan tiempo esperando); avisos push cuando se **asigna** una conversación a alguien y aviso de **mensaje sin leer tras 10 minutos** (por defecto, configurable por subcuenta sólo por el propietario, en Conexiones).
   - 1.9: arreglar la prueba `announce-ui` intermitente y una **revisión de seguridad** completa (permisos por rol, límites de intentos, sesiones y avisos).
   - 1.10: **pantalla de mantenimiento** para cuando el servidor no responda o el propietario lo ponga en pausa.
   - **V2.1:** resumen diario o semanal (leads, ventas ganadas, conversaciones sin responder).

@@ -207,6 +207,7 @@ export async function renderDashboard(container){
     const tiles=[
       tile('Conversaciones',number(data.conversations?.total??0)),
       tile('Sin leer',number(unread)),
+      ...(data.conversations?.waiting!==undefined?[tile('Esperando respuesta',number(data.conversations.waiting),{html:'<button type="button" class="link-button" data-go-waiting>Ver la lista</button>'})]:[]),
       ...(data.contacts!==null&&data.contacts!==undefined?[tile('Contactos',number(data.contacts))]:[]),
       ...(data.opportunities?[tile('Oportunidades abiertas',number(data.opportunities.count),`${money(data.opportunities.value)} en juego`)]:[]),
     ].join('');
@@ -234,6 +235,7 @@ export async function renderDashboard(container){
 `;
     bindMonth();
     container.querySelectorAll('[data-self]').forEach(b=>b.onclick=selfDialog);
+    container.querySelectorAll('[data-go-waiting]').forEach(b=>b.onclick=()=>window.dispatchEvent(new CustomEvent('agora:goto',{detail:{view:'inbox',filter:'waiting'}})));
   }
 
   function monthBlock(month){

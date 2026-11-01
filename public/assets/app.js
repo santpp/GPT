@@ -266,6 +266,7 @@ function showSignin(){
 $('#account').onchange=e=>{if(workspace.select(e.target.value))renderAccounts()};
 workspace.onChange(()=>{renderAccounts();if(VIEWS[currentView].account)show(currentView,{push:false})});
 document.querySelectorAll('button[data-view]').forEach(b=>b.onclick=()=>show(b.dataset.view));
+window.addEventListener('agora:goto',e=>{const d=e.detail||{};if(!VIEWS[d.view])return;workspace.pendingFilter=d.filter||null;show(d.view)});
 window.addEventListener('popstate',()=>{const name=requested();if(name)show(name,{push:false})});
 
 async function signOut(){

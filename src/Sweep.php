@@ -4,6 +4,7 @@ require_once __DIR__.'/Installation.php';
 require_once __DIR__.'/InboxSync.php';
 require_once __DIR__.'/Pulse.php';
 require_once __DIR__.'/PushDelivery.php';
+require_once __DIR__.'/PushQueue.php';
 require_once __DIR__.'/ExternalUserDirectory.php';
 
 /**
@@ -44,6 +45,8 @@ final class Sweep {
                 catch(Throwable $e) {query('UPDATE ghl_sync_state SET users_next_sync_at=?,users_last_error=? WHERE connection_id=?',[time()+300,'users_sync_failed',$row['id']]);}
             }
         } finally {query("SELECT RELEASE_LOCK('agora-inbox-cron')");}
+        // Los mensajes que llevan rato sin leerse se recuerdan antes de entregar, así salen en el mismo minuto.
+        try {PushQueue::reminders();} catch(Throwable $e) {error_log('Reminders failed: '.get_class($e));}
         // Lo recién descubierto sale en el mismo minuto.
         return ['swept'=>$swept,'connections'=>count($rows),'delivered'=>PushDelivery::deliverPending(),'skipped'=>null];
     }

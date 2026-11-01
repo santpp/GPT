@@ -39,11 +39,12 @@ final class Dashboard {
         $end=$last->setTime(0,0)->modify('+1 day')->setTimezone(new DateTimeZone('UTC'));
         $todayFilter=[['field'=>'dateAdded','operator'=>'range','value'=>['gt'=>$start->format('Y-m-d\TH:i:s\Z'),'lt'=>$end->format('Y-m-d\TH:i:s\Z')]]];
         if($assignee!==null)$todayFilter[]=['field'=>'assignedTo','operator'=>'eq','value'=>$assignee];
-        [$conversations,$unread,$contacts,$opportunities,$names,$leadsToday,$leadsMine]=$this->gateway->execute($connection,
+        [$conversations,$unread,$waiting,$contacts,$opportunities,$names,$leadsToday,$leadsMine]=$this->gateway->execute($connection,
             function(GhlClient $client)use($connection,$assignee,$canSeeOpportunities,$canSeeContacts,$canSeeLeads,$todayFilter,$self,$directory,$names):array {
                 $scope=$assignee!==null?['assignedTo'=>$assignee]:[];
                 $all=self::total($client->conversations($connection['location_id'],1,$scope));
                 $pending=self::total($client->conversations($connection['location_id'],1,$scope+['status'=>'unread']));
+                $waiting=self::total($client->conversations($connection['location_id'],1,$scope+['lastMessageDirection'=>'inbound']));
                 $people=$canSeeContacts?self::people($client,$connection['location_id']):null;
                 $deals=$canSeeOpportunities?$client->locationOpportunities($connection['location_id'],null,self::SAMPLE):null;
                 if($names===null&&$canSeeOpportunities) {
@@ -54,13 +55,13 @@ final class Dashboard {
                 $mine=null;
                 if($canSeeLeads&&$self!==null)foreach([['field'=>'assignedTo','operator'=>'eq','value'=>$self],['field'=>'assignedTo','operator'=>'eq','value'=>[$self]]] as $variant)
                     if(($mine=self::people($client,$connection['location_id'],[$variant],true))!==null)break;
-                return [$all,$pending,$people,$deals,$names??[],$today,$mine];
+                return [$all,$pending,$waiting,$people,$deals,$names??[],$today,$mine];
             },false);
 
         $open=$this->opportunities($opportunities,$connection,$assignee,$names);
         return [
             'restricted'=>$restricted,
-            'conversations'=>['total'=>$conversations,'unread'=>$unread],
+            'conversations'=>['total'=>$conversations,'unread'=>$unread,'waiting'=>$waiting],
             'contacts'=>$contacts,
             'leads'=>['today'=>$leadsToday,'mine'=>$leadsMine,'linked'=>$self!==null,'range'=>['from'=>$first->format('Y-m-d'),'to'=>$last->format('Y-m-d')]],
             'opportunities'=>$open,
@@ -140,6 +141,6 @@ final class Dashboard {
         return null;
     }
     private static function empty(bool $restricted):array {
-        return ['restricted'=>$restricted,'conversations'=>['total'=>0,'unread'=>0],'contacts'=>null,'leads'=>['today'=>null,'mine'=>null,'linked'=>false],'opportunities'=>null,'readAt'=>gmdate('c')];
+        return ['restricted'=>$restricted,'conversations'=>['total'=>0,'unread'=>0,'waiting'=>0],'contacts'=>null,'leads'=>['today'=>null,'mine'=>null,'linked'=>false],'opportunities'=>null,'readAt'=>gmdate('c')];
     }
 }
