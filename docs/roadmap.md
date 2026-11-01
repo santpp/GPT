@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.7. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.8. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -161,6 +161,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## 1.5.7 · avisos sólo de lo asignado
 - Los avisos (y el número del icono) llegan a cada persona sólo por las conversaciones que tiene asignadas, dentro de su subcuenta. Reciben los de toda su subcuenta únicamente los administradores de esa subcuenta (rol `admin` o `agency`) y el propietario de Ágora. Antes, quien no tenía marcada la restricción «sólo lo asignado» recibía todas.
+
+## 1.5.8 · responder como DM
+- Cada comentario de Instagram o Facebook trae un botón «Responder como DM»: elige el mensaje directo de esa red, lleva al cuadro de respuesta y avisa de que se responde por mensaje directo, no en el comentario. Responder en público al comentario no se ofrece: la API publicada no lo documenta.
 
 ## Siguiente (a decidir)
 - Plantillas de WhatsApp: en espera del WABA ID o de la salida de «Comprobar plantillas».

@@ -144,10 +144,21 @@ export async function renderLiveInbox(container){
     const files=attachmentsOf(m);
     const body=m.body?esc(m.body):(files.length?'':'Mensaje sin texto');
     const failed=['failed','undelivered','opt_out'].includes(m.status);
+    const dm={TYPE_INSTAGRAM_COMMENT:'IG',TYPE_FACEBOOK_COMMENT:'FB'}[m.messageType];
     const tag=commentTypes[m.messageType]?`<span class="comment-tag">Comentario en una publicación de ${commentTypes[m.messageType]}</span>`:'';
-    return `<div class="bubble ${m.direction==='outbound'?'out':''}${failed?' failed':''}" data-mid="${esc(m.id)}">${tag}${body}${files.length?`<div class="live-attachments">${files.map(attachmentMarkup).join('')}</div>`:''}${statusMarkup(m,date(m.dateAdded))}</div>`;
+    const dmButton=dm&&m.direction!=='outbound'?`<button type="button" class="reply-dm" data-dm="${dm}">Responder como DM</button>`:'';
+    return `<div class="bubble ${m.direction==='outbound'?'out':''}${failed?' failed':''}" data-mid="${esc(m.id)}">${tag}${body}${dmButton}${files.length?`<div class="live-attachments">${files.map(attachmentMarkup).join('')}</div>`:''}${statusMarkup(m,date(m.dateAdded))}</div>`;
    }).join('')||'<p class="empty">No hay mensajes disponibles.</p>';
    bindAttachments(log);
+   // «Responder como DM»: elige el mensaje directo de esa red y deja el cursor en el cuadro de respuesta.
+   log.querySelectorAll('[data-dm]').forEach(button=>button.onclick=()=>{
+    const row=$('#live-channel-row'),target=row?.querySelector(`[data-channel="${button.dataset.dm}"]`),notice=$('#live-send-status');
+    const already=chatChannel===button.dataset.dm;
+    if(!already&&(!target||target.disabled)){if(notice)notice.textContent='Este contacto todavía no se puede responder por mensaje directo.';return}
+    if(!already)target.click();
+    const field=$('#live-reply');if(field){field.scrollIntoView({block:'center',behavior:calm()?'auto':'smooth'});field.focus()}
+    if($('#live-send-status'))$('#live-send-status').textContent='Respondes por mensaje directo, no en el comentario.';
+   });
    // Las burbujas entran con animación sólo la primera vez; los refrescos no la repiten.
    if(messages.size&&!log.dataset.painted)setTimeout(()=>{log.dataset.painted='1'},1200);
    // Si el contacto llegó (o escribió) por un comentario en una publicación, se dice arriba.
@@ -703,6 +714,9 @@ export async function renderLiveInbox(container){
   function open(c){
    selected=c;chatNeedsRefresh=false;chatGeneration++;messages=new Map();cursor=null;chatChannel=sendChannels[c.lastMessageType]||null;chatChannels=null;list();layout.classList.add('chat-open');layout.classList.remove('contact-open');
    $('#live-messages').innerHTML=`<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">${UI_ICONS.back}</button><span class="avatar">${esc(initials(c))}</span><div><h2>${esc(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div>${canWin()?'<button id="live-won" class="won-button" title="¿Venta ganada?" aria-label="¿Venta ganada?"><span aria-hidden="true">✓</span><span class="won-long">¿Venta ganada?</span><span class="won-short">¿Ganada?</span><span class="sr-only">¿Venta ganada?</span></button>':''}<button id="live-assign" class="assign-button" hidden title="Asignar la conversación" aria-label="Asignar la conversación"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20c.7-3.6 3.2-5.5 6.5-5.5s5.8 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg></span><span class="assign-text">Asignar</span></button><button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">${UI_ICONS.expand}</button><button id="live-contact-toggle" aria-label="Ver ficha del contacto" title="Ver ficha del contacto">${UI_ICONS.contact}</button></header><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
+   // Si algo cambia el alto del historial (por ejemplo, el cuadro de respuesta al cargar los canales), sigue pegado al último mensaje mientras la persona no se haya ido hacia arriba.
+   {const log=$('#live-log');let stick=true;log.addEventListener('scroll',()=>{stick=log.scrollHeight-log.scrollTop-log.clientHeight<80},{passive:true});
+    if('ResizeObserver' in window)new ResizeObserver(()=>{if(stick&&messages.size)log.scrollTop=log.scrollHeight}).observe(log)}
    $('#live-back').onclick=()=>{clearTimeout(pollTimer);document.body.classList.remove('agora-focus');layout.classList.remove('chat-open','contact-open');say();$('#live-search').focus()};
    $('#live-contact-toggle').onclick=()=>layout.classList.toggle('contact-open');
    const won=$('#live-won');if(won)won.onclick=()=>winDialog(c);

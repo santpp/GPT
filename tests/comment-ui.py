@@ -25,5 +25,9 @@ with sync_playwright() as p:
     assert 'Comentario en una publicación de Instagram' in page.locator('.comment-tag').inner_text()
     assert 'Mensaje directo en Instagram' in page.locator('#live-messages').inner_text()
     print('PASS a conversation that began as a comment says so and offers a direct message reply')
+    assert page.locator('.reply-dm').count()==1 and 'Responder como DM' in page.locator('.reply-dm').inner_text()
+    page.wait_for_timeout(500);page.locator('.reply-dm').click()
+    assert page.evaluate("document.activeElement&&document.activeElement.id")=='live-reply' and 'mensaje directo' in page.locator('#live-send-status').inner_text()
+    print('PASS the «Responder como DM» button on a comment picks the direct message and moves to the reply box')
     assert not errors,errors
     b.close()
