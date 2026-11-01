@@ -7,7 +7,7 @@ Identidad visual: tipografía propia y una interfaz más sobria.
 1. Extraer `agora-update-1.7.0.zip` sobre las carpetas existentes. No hay migraciones nuevas.
 2. **Instalar la tipografía Author** (una sola vez):
    - Descargar la familia en https://www.fontshare.com/fonts/author («Download family»).
-   - Del ZIP, subir a `public_html/assets/fonts/` los archivos `Author-Variable.woff2` (y, si existe, `Author-Italic-Variable.woff2`). Los nombres deben ser exactamente esos.
+   - Del ZIP, subir a `public_html/assets/fonts/` los archivos `Author-Variable.woff2` (y, si existe, `Author-VariableItalic.woff2`). Los nombres deben ser exactamente esos.
    - Sin los archivos todo funciona igual, con la fuente del sistema.
 3. Cerrar Ágora del todo y volver a abrirla. El pie debe decir **v1.7.0**.
 
