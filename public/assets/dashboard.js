@@ -7,6 +7,28 @@ const number=value=>new Intl.NumberFormat('es-ES').format(Number(value)||0);
 // La cuenta no publica moneda, así que la cifra va sin símbolo.
 const money=value=>Number.isFinite(Number(value))?new Intl.NumberFormat('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value)):null;
 const MONTHS=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const pad2=n=>String(n).padStart(2,'0');
+const ymd=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const PRESETS=[['today','Hoy'],['yesterday','Ayer'],['week','7 días'],['d30','30 días'],['month','Este mes'],['prev','Mes anterior'],['monthpick','Otro mes'],['custom','Rango']];
+/** Periodo elegido: días para los leads y mes para el resumen mensual (el resumen es siempre de un mes natural). */
+export function periodOf(sel,now=new Date()){
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const cur=ymd(today).slice(0,7);
+  const monthly=(y,m)=>{const last=new Date(y,m+1,0);return {from:ymd(new Date(y,m,1)),to:ymd(last<today?last:today),month:`${y}-${pad2(m+1)}`}};
+  switch(sel?.kind){
+    case 'yesterday':{const d=addDays(today,-1);return {from:ymd(d),to:ymd(d),month:cur,label:'ayer'}}
+    case 'week':return {from:ymd(addDays(today,-6)),to:ymd(today),month:cur,label:'últimos 7 días'};
+    case 'd30':return {from:ymd(addDays(today,-29)),to:ymd(today),month:cur,label:'últimos 30 días'};
+    case 'month':return {...monthly(today.getFullYear(),today.getMonth()),label:'este mes'};
+    case 'prev':{const p=new Date(today.getFullYear(),today.getMonth()-1,1);return {...monthly(p.getFullYear(),p.getMonth()),label:'mes anterior'}}
+    case 'monthpick':{const m=/^(\d{4})-(\d{2})$/.exec(sel.month||'');if(m){const r=monthly(Number(m[1]),Number(m[2])-1);return {...r,label:monthNameShort(r.month)}}return {...monthly(today.getFullYear(),today.getMonth()),label:'este mes'}}
+    case 'custom':{const ok=v=>/^\d{4}-\d{2}-\d{2}$/.test(v||'');if(ok(sel.from)&&ok(sel.to)&&sel.from<=sel.to)return {from:sel.from,to:sel.to,month:sel.to.slice(0,7)>cur?cur:sel.to.slice(0,7),label:`${dayLabel(sel.from)} – ${dayLabel(sel.to)}`};return {from:ymd(today),to:ymd(today),month:cur,label:'hoy'}}
+    default:return {from:ymd(today),to:ymd(today),month:cur,label:'hoy'};
+  }
+}
+const dayLabel=v=>{const [y,m,d]=v.split('-').map(Number);return `${d} ${MONTHS[m-1].slice(0,3)}${y!==new Date().getFullYear()?' '+y:''}`};
+const monthNameShort=p=>{const [y,m]=String(p).split('-');return MONTHS[Number(m)-1]?`${MONTHS[Number(m)-1]} ${y}`:p};
 const monthName=period=>{const [y,m]=String(period||'').split('-');return MONTHS[Number(m)-1]?`${MONTHS[Number(m)-1]} de ${y}`:period};
 
 async function request(path,method='GET',csrf='',body=null){
@@ -96,16 +118,37 @@ export async function renderDashboard(container){
   const active=()=>container.agoraViewInstance===instance&&container.dataset.view==='dashboard';
   const connection=workspace.current();
   if(!connection){container.innerHTML=`<p class="empty">${esc(workspace.noAccountText('el tablero'))}</p>`;return}
-  container.innerHTML=`<p id="dashboard-feedback" class="updated-at" role="status" hidden></p><div id="dashboard-body">${skeleton('tiles',4)}</div>`;
+  let sel={kind:'today'};
+  try{const saved=JSON.parse(localStorage.getItem('agora-board-period')||'null');if(saved&&PRESETS.some(p=>p[0]===saved.kind))sel=saved}catch{}
+  container.innerHTML=`<div id="period-bar" class="period-bar"></div><p id="dashboard-feedback" class="updated-at" role="status" hidden></p><div id="dashboard-body">${skeleton('tiles',4)}</div>`;
   const $=s=>container.querySelector(s);
-  let csrf='',month=null,period=new Date().toISOString().slice(0,7);
+  let csrf='',month=null,period=periodOf(sel).month,range=periodOf(sel);
+  const today=ymd(new Date());
+  function paintBar(){
+    const extra=sel.kind==='monthpick'?`<label class="period-field">Mes<input type="month" id="period-month" value="${esc(sel.month||today.slice(0,7))}" max="${today.slice(0,7)}"></label>`
+      :sel.kind==='custom'?`<label class="period-field">Desde<input type="date" id="period-from" value="${esc(sel.from||today)}" max="${today}"></label><label class="period-field">Hasta<input type="date" id="period-to" value="${esc(sel.to||today)}" max="${today}"></label>`:'';
+    $('#period-bar').innerHTML=`<div class="period-chips" role="group" aria-label="Periodo">${PRESETS.map(([k,l])=>`<button type="button" class="chip${sel.kind===k?' on':''}" data-period="${k}" aria-pressed="${sel.kind===k}">${l}</button>`).join('')}</div>${extra?`<div class="period-extra">${extra}</div>`:''}`;
+    $('#period-bar').querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>choose({kind:b.dataset.period,month:sel.month,from:sel.from,to:sel.to}));
+    const m=$('#period-month');if(m)m.onchange=()=>{if(/^\d{4}-\d{2}$/.test(m.value))choose({kind:'monthpick',month:m.value})};
+    const f=$('#period-from'),t=$('#period-to');
+    const range=()=>{if(f.value&&t.value&&f.value<=t.value)choose({kind:'custom',from:f.value,to:t.value})};
+    if(f)f.onchange=range;if(t)t.onchange=range;
+  }
+  function choose(next){
+    sel=next;try{localStorage.setItem('agora-board-period',JSON.stringify(sel))}catch{}
+    range=periodOf(sel);period=range.month;paintBar();
+    // «Otro mes» y «Rango» esperan a que se elija la fecha; el resto carga de inmediato.
+    if((sel.kind==='monthpick'&&!sel.month)||(sel.kind==='custom'&&!(sel.from&&sel.to)))return;
+    $('#dashboard-body').innerHTML=skeleton('tiles',4);load();
+  }
+  paintBar();
   try{csrf=(await request('me')).csrf||''}catch{}
 
   async function load(){
     if(!$('#dashboard-body').children.length||$('#dashboard-body .sk-wrap'))$('#dashboard-body').innerHTML=skeleton('tiles',4);
     try{
       const zone=(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch{return ''}})();
-      const now=await request(`workspace/dashboard?connectionId=${encodeURIComponent(connection)}${zone?'&tz='+encodeURIComponent(zone):''}`);
+      const now=await request(`workspace/dashboard?connectionId=${encodeURIComponent(connection)}${zone?'&tz='+encodeURIComponent(zone):''}&from=${range.from}&to=${range.to}`);
       if(!active())return;
       paint(now,null);
       try{month=await request(`workspace/board-month?connectionId=${encodeURIComponent(connection)}&period=${period}`)}
@@ -134,7 +177,7 @@ export async function renderDashboard(container){
     const leads=data.leads||null;const sales=month&&!month.error?month.sales:null;const mine=month&&!month.error?month.mine:null;
     const unlinked='Usa en Ágora el mismo correo que en la cuenta';
     const personal=[
-      ...(leads?[tile('Leads de hoy',leads.today===null||leads.today===undefined?null:number(leads.today),leads.today===null||leads.today===undefined?'La cuenta no devolvió este dato':'')]:[]),
+      ...(leads?[tile(sel.kind==='today'?'Leads de hoy':sel.kind==='yesterday'?'Leads de ayer':'Leads nuevos',leads.today===null||leads.today===undefined?null:number(leads.today),leads.today===null||leads.today===undefined?'La cuenta no devolvió este dato':(['today','yesterday'].includes(sel.kind)?'':range.label))]:[]),
       ...(leads?[tile('Leads asignados a mí',leads.mine===null||leads.mine===undefined?null:number(leads.mine),leads.linked?(leads.mine===null||leads.mine===undefined?'La cuenta no devolvió este dato':''):unlinked)]:[]),
       ...(sales&&!data.restricted?[tile('Ventas ganadas del mes',number(sales.closings??0),`${money(sales.total??0)} en total`)]:[]),
       ...(month&&!month.error?[tile('Mis ventas del mes',mine?number(mine.closings):null,mine?`${money(mine.sold)} ganados`:unlinked)]:[]),    ].join('');
@@ -206,15 +249,7 @@ export async function renderDashboard(container){
 
   function bindMonth(){
     const pick=$('#board-period');
-    if(pick)pick.onchange=async()=>{
-      if(!/^\d{4}-\d{2}$/.test(pick.value))return;
-      period=pick.value;
-      $('#board-month').innerHTML=monthBlock(null);
-      try{month=await request(`workspace/board-month?connectionId=${encodeURIComponent(connection)}&period=${period}`)}
-      catch(error){month={error:friendly(error)}}
-      if(!active())return;
-      $('#board-month').innerHTML=monthBlock(month);bindMonth();
-    };
+    if(pick)pick.onchange=()=>{if(/^\d{4}-\d{2}$/.test(pick.value))choose({kind:'monthpick',month:pick.value})};
     const settings=$('#board-settings');
     if(settings)settings.onclick=()=>openSettings();
   }

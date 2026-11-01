@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.5.8. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.6.0. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -164,6 +164,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## 1.5.8 · responder como DM
 - Cada comentario de Instagram o Facebook trae un botón «Responder como DM»: elige el mensaje directo de esa red, lleva al cuadro de respuesta y avisa de que se responde por mensaje directo, no en el comentario. Responder en público al comentario no se ofrece: la API publicada no lo documenta.
+
+## 1.6.0 · periodo del tablero
+- Selector de periodo en el tablero: Hoy, Ayer, 7 días, 30 días, Este mes, Mes anterior, Otro mes y Rango de fechas. Cambia los **leads nuevos** (contactos creados en ese periodo, con los días de la zona del dispositivo) y el **mes** del resumen de rentabilidad y ventas, que sigue siendo de un mes natural: con un periodo corto usa el mes en curso y con un rango usa el mes en que termina. Conversaciones, sin leer, oportunidades y «asignados a mí» son el estado actual, no dependen del periodo. La elección se recuerda en el dispositivo. El selector de mes del propio resumen sigue ahí y mueve el mismo control.
 
 ## Siguiente (a decidir)
 - Plantillas de WhatsApp: en espera del WABA ID o de la salida de «Comprobar plantillas».

@@ -16,7 +16,7 @@ final class Dashboard {
 
     public function __construct(private readonly GhlGateway $gateway=new GhlGateway(),private readonly ?PipelineDirectory $pipelines=null) {}
 
-    public function get(array $connection,array $membership,string $zone='UTC'):array {
+    public function get(array $connection,array $membership,string $zone='UTC',?array $range=null):array {
         $restricted=($membership['capabilities']['assignedDataOnly']??false)===true;
         $assignee=$restricted?($membership['external_user_id']??null):null;
         if($restricted&&$assignee===null)return self::empty(true);
@@ -32,8 +32,12 @@ final class Dashboard {
         // a quien mira. Quien sólo ve lo suyo, ve sus leads de hoy.
         $self=$membership['self_id']??null;
         $canSeeLeads=($membership['capabilities']['viewContacts']??false)===true;
-        $today=(new DateTimeImmutable('today',new DateTimeZone($zone)))->setTimezone(new DateTimeZone('UTC'));
-        $todayFilter=[['field'=>'dateAdded','operator'=>'range','value'=>['gt'=>$today->format('Y-m-d\TH:i:s\Z'),'lt'=>$today->modify('+1 day')->format('Y-m-d\TH:i:s\Z')]]];
+        // Los leads se cuentan en el periodo pedido (por defecto, hoy), con los días de la zona del dispositivo.
+        $tz=new DateTimeZone($zone);
+        $first=new DateTimeImmutable(($range['from']??'today'),$tz);$last=new DateTimeImmutable(($range['to']??'today'),$tz);
+        $start=$first->setTime(0,0)->setTimezone(new DateTimeZone('UTC'));
+        $end=$last->setTime(0,0)->modify('+1 day')->setTimezone(new DateTimeZone('UTC'));
+        $todayFilter=[['field'=>'dateAdded','operator'=>'range','value'=>['gt'=>$start->format('Y-m-d\TH:i:s\Z'),'lt'=>$end->format('Y-m-d\TH:i:s\Z')]]];
         if($assignee!==null)$todayFilter[]=['field'=>'assignedTo','operator'=>'eq','value'=>$assignee];
         [$conversations,$unread,$contacts,$opportunities,$names,$leadsToday,$leadsMine]=$this->gateway->execute($connection,
             function(GhlClient $client)use($connection,$assignee,$canSeeOpportunities,$canSeeContacts,$canSeeLeads,$todayFilter,$self,$directory,$names):array {
@@ -58,7 +62,7 @@ final class Dashboard {
             'restricted'=>$restricted,
             'conversations'=>['total'=>$conversations,'unread'=>$unread],
             'contacts'=>$contacts,
-            'leads'=>['today'=>$leadsToday,'mine'=>$leadsMine,'linked'=>$self!==null],
+            'leads'=>['today'=>$leadsToday,'mine'=>$leadsMine,'linked'=>$self!==null,'range'=>['from'=>$first->format('Y-m-d'),'to'=>$last->format('Y-m-d')]],
             'opportunities'=>$open,
             'readAt'=>gmdate('c'),
         ];

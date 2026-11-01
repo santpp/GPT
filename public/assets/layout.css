@@ -723,3 +723,13 @@ details.contact-group[hidden]{display:none}
 .reply-dm{display:block;margin-top:8px;padding:6px 12px;min-height:36px;border:1px solid var(--line);border-radius:999px;background:var(--paper);color:var(--green);font-size:13px;font-weight:600;cursor:pointer}
 .reply-dm:hover{border-color:var(--green)}
 @media(max-width:600px){.reply-dm{min-height:44px;padding:10px 16px}}
+/* 1.6 · periodo del tablero */
+.period-bar{padding:0 22px 14px}
+.period-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
+.period-chips::-webkit-scrollbar{display:none}
+.period-chips .chip{flex:none;min-height:36px;padding:6px 14px;border:1px solid var(--line);border-radius:999px;background:var(--paper);color:var(--ink);font-size:13px;cursor:pointer;transition:background-color .2s var(--ease),border-color .2s var(--ease),color .2s var(--ease)}
+.period-chips .chip.on{background:var(--green);border-color:var(--green);color:#fff}
+.period-extra{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+.period-field{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.period-field input{min-height:40px}
+@media(max-width:600px){.period-bar{padding:0 14px 12px}.period-chips .chip{min-height:44px}}

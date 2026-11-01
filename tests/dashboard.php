@@ -74,6 +74,11 @@ try {
  $api->reset();boardFree($connectionId);
  $api->contactAnswer=['meta'=>['total'=>1464]];
  boardCheck($board->get($connection,$admin)['contacts']===1464,'a total reported under meta is accepted too');
+ // Periodo elegido: de principio de un día a final de otro, en la zona de quien mira.
+ $api->reset();boardFree($connectionId);$api->contactAnswer=['total'=>41];
+ $period=$board->get($connection,$admin,'Europe/Madrid',['from'=>'2026-10-01','to'=>'2026-10-31']);
+ $dated=array_values(array_filter($api->payloads,fn($p)=>is_array($p)&&(($p['filters'][0]['field']??null)==='dateAdded')));
+ boardCheck(($dated[0]['filters'][0]['value']['gt']??null)==='2026-09-30T22:00:00Z'&&($dated[0]['filters'][0]['value']['lt']??null)==='2026-10-31T23:00:00Z'&&$period['leads']['range']===['from'=>'2026-10-01','to'=>'2026-10-31'],'a chosen period counts leads from the start of its first day to the end of its last, where the person is');
  $api->contactAnswer=['total'=>812];
  boardCheck($view['opportunities']['count']===3&&$view['opportunities']['value']===3500.5,'opportunities of another account stay out of the totals');
  boardCheck(array_column($view['opportunities']['stages'],'name')===['Pipeline comercial · Propuesta enviada','Pipeline comercial · Nuevo lead','Sin etapa'],'stages carry their real names, ordered by what is at stake');
@@ -84,7 +89,7 @@ try {
  $api->contactAnswer=['total'=>3];
  $linked=$board->get($connection,$admin+['self_id'=>'owner-ghl'],'Europe/Madrid');
  $mineAsk=end($api->payloads)['filters'][0]??[];
- boardCheck($linked['leads']===['today'=>3,'mine'=>3,'linked'=>true]&&$mineAsk===['field'=>'assignedTo','operator'=>'eq','value'=>'owner-ghl'],'with a linked user, the leads assigned to that person are counted too');
+ boardCheck(($linked['leads']['today']??null)===3&&($linked['leads']['mine']??null)===3&&$linked['leads']['linked']===true&&$mineAsk===['field'=>'assignedTo','operator'=>'eq','value'=>'owner-ghl'],'with a linked user, the leads assigned to that person are counted too');
  $madrid=(new DateTimeImmutable('today',new DateTimeZone('Europe/Madrid')))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z');
  $dated=array_values(array_filter($api->payloads,fn($p)=>is_array($p)&&(($p['filters'][0]['field']??null)==='dateAdded')));
  boardCheck(($dated[0]['filters'][0]['value']['gt']??null)===$madrid,'«today» starts at midnight where the person is, not at midnight UTC');

@@ -157,6 +157,7 @@ html[data-theme="dark"] .announce-link{color:#fff}
 html[data-theme="dark"] .origin-note{background:#493a1c;color:#e9c167}
 html[data-theme="dark"] .sk{background:linear-gradient(100deg,#242736 30%,#20232f 50%,#242736 70%)}
 html[data-theme="dark"] .contact-editor label.changed>input,html[data-theme="dark"] .contact-editor label.changed>select,html[data-theme="dark"] .contact-editor label.changed>textarea,html[data-theme="dark"] .contact-editor .live-field-group.changed{box-shadow:0 0 0 2px #00000066}
+html[data-theme="dark"] .period-chips .chip.on{color:#fff}
 /* ---- a mano: paleta base y piezas que el generador no puede adivinar ---- */
 html[data-theme="dark"]{color-scheme:dark;--ink:#e6e8f0;--muted:#9aa0b4;--line:#2f3445;--paper:#1b1f2c;--bg:#12151f;--green:#d13c63;--accent:#f5b84a}
 html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}

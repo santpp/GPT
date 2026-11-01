@@ -170,7 +170,16 @@ if($path==='/api/workspace/board-month'&&in_array($method,['GET','POST'],true)){
 if($path==='/api/workspace/dashboard'&&$method==='GET'){
     require_once __DIR__.'/Dashboard.php';
     $zone=is_string($_GET['tz']??null)&&in_array($_GET['tz'],DateTimeZone::listIdentifiers(),true)?$_GET['tz']:'UTC';
-    try{respond((new Dashboard())->get($connection,$membership,$zone));}
+    // Periodo de los leads: dos fechas (día de la zona del dispositivo), como máximo un año y sin ir más allá de mañana.
+    $range=null;
+    $day=fn($v)=>is_string($v)&&preg_match('/^\d{4}-\d{2}-\d{2}$/D',$v)&&($d=DateTime::createFromFormat('!Y-m-d',$v))&&$d->format('Y-m-d')===$v?$v:null;
+    $from=$day($_GET['from']??null);$to=$day($_GET['to']??null);
+    if($from!==null&&$to!==null){
+        $a=new DateTimeImmutable($from);$b=new DateTimeImmutable($to);
+        if($a>$b||$a->diff($b)->days>366||$b>new DateTimeImmutable('+2 days'))respond(['error'=>'El periodo no es válido.'],422);
+        $range=['from'=>$from,'to'=>$to];
+    }
+    try{respond((new Dashboard())->get($connection,$membership,$zone,$range));}
     catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'El tablero está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
     catch(GhlApiException $e){respond(['error'=>'No se pudo leer el tablero. Revisa los permisos de la cuenta.','code'=>'dashboard_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'El tablero recibido no tiene el formato esperado.','code'=>'dashboard_invalid_response'],424);}
