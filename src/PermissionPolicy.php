@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 final class PermissionPolicy {
+    /** Módulos que la cuenta da por activados cuando no los menciona en los permisos de un usuario. */
+    private const DEFAULT_ON=['conversationsEnabled'=>true,'contactsEnabled'=>true,'opportunitiesEnabled'=>true,'appointmentsEnabled'=>true];
     public static function capabilities(array $actor):array {
         if(($actor['identity_type']??'native')==='native') {
             $admin=($actor['role']??null)==='administrator';
@@ -12,7 +14,9 @@ final class PermissionPolicy {
         // Quien administra la subcuenta tiene todo salvo lo que se le desactive expresamente: la cuenta
         // no siempre lista los permisos de un administrador, y su lista de alcances no lo limita.
         $admin=($actor['role_name']??null)==='admin'||($actor['role_type']??null)==='agency';
-        $enabled=fn(string $name):bool=>$admin?($permissions[$name]??true)!==false:($permissions[$name]??false)===true;
+        // Un permiso que la cuenta no lista vale lo que su referencia publica como valor por defecto (activado en los módulos de
+        // conversaciones, contactos, oportunidades y citas); uno que se desactiva sale explícitamente en falso y manda siempre.
+        $enabled=fn(string $name):bool=>$admin?($permissions[$name]??true)!==false:($permissions[$name]??(self::DEFAULT_ON[$name]??false))===true;
         $scope=fn(array $required):bool=>$admin||$scopes===[]||array_intersect($required,$scopes)!==[];
         $conversations=$enabled('conversationsEnabled')&&$scope(['conversations.readonly','conversations.write','conversations/message.readonly','conversations/message.write']);
         return [

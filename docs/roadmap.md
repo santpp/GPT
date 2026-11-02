@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.8.5. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.8.6. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -213,6 +213,10 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## 1.8.5 · Ganadas y resumen del equipo con la estética de la app
 - **Ganadas:** mes y vendedor en dos columnas sin desbordar; cifras con una línea separadora; cada venta sin la barra roja gruesa: nombre, «Sin monto» en rojo con el vendedor y la fecha, y el campo de monto con símbolo de moneda y Guardar integrado (igual que en la alerta); no se repite el contacto cuando se llama igual que la oportunidad; el aviso de que hay muchas ventas (se revisan las 500 más recientes) pasa a una línea breve y natural: «Hay muchas ventas en estos meses, así que puede faltar alguna de las más antiguas.»
 - **Tablero, resumen del equipo:** deja de ser una tarjeta más y pasa a una sección propia («Ventas ganadas sin monto»): el total, una lista de vendedores con su cuenta (una por línea) y «Ver y completar en Ganadas».
+
+## 1.8.6 · usuario nuevo sin acceso
+- Error: un usuario recién creado en la cuenta entraba y veía «Tu usuario no tiene activadas las conversaciones en su subcuenta». Causa: la cuenta sólo lista en los permisos de un usuario los que se tocaron; Ágora trataba un permiso no listado como desactivado, pero la referencia de la cuenta publica que conversaciones, contactos, oportunidades y citas están activados por defecto. Ahora un permiso no listado vale su valor por defecto (activado) y uno desactivado explícitamente sigue desactivado.
+- Para el propietario: si un usuario sigue sin acceso, Conexiones → «Equipo y permisos» muestra qué módulos tiene activados; si «conversaciones» sale desactivado, es que la cuenta lo desactivó para ese usuario.
 
 ## Siguiente (a decidir)
 - **Siguiente, ya acordado con el usuario (por orden):**

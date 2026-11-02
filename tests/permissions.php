@@ -30,4 +30,8 @@ policyCheck($agency['viewConversations']&&$agency['sendMessages'],'an agency use
 $adminOff=PermissionPolicy::capabilities(['identity_type'=>'external','role_name'=>'admin','permissions'=>['conversationsEnabled'=>false]]);
 policyCheck(!$adminOff['viewConversations']&&!$adminOff['sendMessages'],'a module switched off for an administrator stays off');
 $plain=PermissionPolicy::capabilities(['identity_type'=>'external','role_name'=>'user','permissions'=>[],'scopes'=>[]]);
-policyCheck(!$plain['viewConversations'],'an ordinary user with no listed permissions still sees nothing');
+policyCheck($plain['viewConversations']&&$plain['sendMessages']&&$plain['viewContacts']&&$plain['viewOpportunities']&&!$plain['configureConnections'],'a user whose permissions the account does not list gets the modules it publishes as on by default (a new user could not enter before)');
+$offConv=PermissionPolicy::capabilities(['identity_type'=>'external','role_name'=>'user','permissions'=>['conversationsEnabled'=>false,'contactsEnabled'=>true],'scopes'=>[]]);
+policyCheck(!$offConv['viewConversations']&&!$offConv['sendMessages']&&$offConv['viewContacts'],'but a module the account explicitly turns off stays off');
+$partial=PermissionPolicy::capabilities(['identity_type'=>'external','role_name'=>'user','permissions'=>['contactsEnabled'=>false],'scopes'=>[]]);
+policyCheck($partial['viewConversations']&&!$partial['viewContacts'],'and a module that is not mentioned is on while another one is off');
