@@ -1,6 +1,7 @@
 import {workspace,friendly} from './workspace.js';
 import {skeleton} from './skeleton.js';
 import {number,money as fmtMoney} from './format.js';
+import {wonAlertState} from './won-alert.js';
 const money=value=>fmtMoney(value);
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -227,12 +228,13 @@ export async function renderDashboard(container){
       : '<p class="board-empty">Todavía no hay oportunidades abiertas en esta cuenta.</p>';
     $('#dashboard-body').innerHTML=`<section class="board-block">
         ${personal?`<div class="dashboard-tiles personal-tiles">${personal}</div>`:''}
-        <div class="dashboard-tiles">${tiles}</div>
+        <div class="dashboard-tiles">${tiles}<div class="board-tile" id="won-team" hidden></div></div>
         <div class="section-label">Embudo por etapa</div>${stageList}
         ${data.opportunities?.sampled?'<p class="board-empty">Se resumen las oportunidades abiertas más recientes.</p>':''}
       </section>
       <section class="board-block" id="board-month">${monthBlock(month)}</section>
 `;
+    paintWonTeam();
     bindMonth();
     container.querySelectorAll('[data-self]').forEach(b=>b.onclick=selfDialog);
     container.querySelectorAll('[data-go-waiting]').forEach(b=>b.onclick=()=>window.dispatchEvent(new CustomEvent('agora:goto',{detail:{view:'inbox',filter:'waiting'}})));
@@ -289,6 +291,16 @@ export async function renderDashboard(container){
       <p class="board-note">Verde desde ${number(month.settings.green)} %, ámbar desde ${number(month.settings.amber)} %, roja por debajo.${month.sales.partial?' Se resumen los primeros cierres del mes.':''}${month.sales.counted!==null?` ${number(month.sales.counted)} ${esc(word)} en el mes.`:''}</p>`;
   }
 
+  // Para quien ve todo: cuántas ventas ganadas siguen sin monto y de quién son. Sale de la misma consulta de la alerta.
+  function paintWonTeam(){
+    const slot=container.querySelector('#won-team');if(!slot)return;
+    const team=wonAlertState()?.team;
+    if(!team||!team.missing){slot.hidden=true;slot.innerHTML='';return}
+    slot.hidden=false;slot.classList.add('bad');
+    slot.innerHTML=`<span>Ventas ganadas sin monto</span><strong>${number(team.missing)}</strong><small>${esc(team.bySeller.map(b=>`${b.name} ${b.missing}`).join(' · '))}</small>`;
+  }
+  const onWon=()=>{if(!container.isConnected||container.dataset.view!=='dashboard'){window.removeEventListener('agora:won-alert',onWon);return}paintWonTeam()};
+  window.addEventListener('agora:won-alert',onWon);
   async function selfDialog(){
     const dialog=document.querySelector('#action-dialog'),content=document.querySelector('#dialog-content');
     content.innerHTML='<h2>¿Quién eres en esta subcuenta?</h2><p class="dialog-copy">Leyendo los usuarios…</p>';

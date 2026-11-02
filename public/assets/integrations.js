@@ -221,6 +221,7 @@ async function commissionDialog(item){
   content.innerHTML=`<h2>Comisión, moneda y avisos de ${esc(item.name)}</h2>
    <form id="currency-form" class="dialog-form currency-form"><label>Moneda de esta subcuenta<select name="currency"><option value="USD"${item.currency!=='EUR'?' selected':''}>Dólares ($)</option><option value="EUR"${item.currency==='EUR'?' selected':''}>Euros (€)</option></select></label><p id="currency-result" class="dialog-copy" role="status"></p></form>
    <form id="reminder-form" class="dialog-form currency-form"><label>Recordar un mensaje sin leer a los (minutos)<input name="minutes" type="number" inputmode="numeric" min="0" max="1440" step="1" value="${esc(String(item.unread_reminder_minutes??10))}"></label><p class="dialog-copy">Si un mensaje sigue sin leerse pasado ese tiempo, se avisa otra vez a quien tiene asignada la conversación (a los administradores si no tiene a nadie). 0 desactiva el recordatorio.</p><div class="dialog-actions"><button class="secondary">Guardar recordatorio</button></div><p id="reminder-result" class="dialog-copy" role="status"></p></form>
+   <form id="won-form" class="dialog-form currency-form"><label>Alerta de ventas sin monto: días hasta que no se pueda cerrar<input name="days" type="number" inputmode="numeric" min="0" max="90" step="1" value="${esc(String(item.won_alert_days??7))}"></label><p class="dialog-copy">Quien tiene ventas ganadas sin monto (vacío o cero) ve una alerta al entrar. Si una lleva estos días o más, la ventana ya no se puede cerrar hasta completarlas. 0 = nunca bloquea.</p><div class="dialog-actions"><button class="secondary">Guardar</button></div><p id="won-result" class="dialog-copy" role="status"></p></form>
    <p class="dialog-copy">Así se calculan las comisiones del tablero de esta subcuenta. <b>Sólo tú puedes cambiarla</b>. Vale desde este mes (${esc(monthLabel(new Date().toISOString().slice(0,7)))}); los meses anteriores conservan la regla con la que se calcularon.</p>
    <form id="commission-form" class="dialog-form">
     <label>Cómo se paga<select name="kind"><option value="percent"${c.kind==='percent'?' selected':''}>Porcentaje de la venta</option><option value="per_closing"${c.kind==='per_closing'?' selected':''}>Monto fijo por cada cierre</option></select></label>
@@ -230,6 +231,12 @@ async function commissionDialog(item){
    </form>
    <p class="dialog-copy"><b>Ahora:</b> ${esc(ruleText(c))}${c.since?` · desde ${esc(monthLabel(c.since))}`:' · la de siempre'}.</p>
    ${data.history.length?`<details><summary>Cambios anteriores</summary><ul class="security-list">${data.history.map(h=>`<li><span><b>${esc(ruleText(h))}</b><small>Desde ${esc(monthLabel(h.since))}</small></span></li>`).join('')}</ul></details>`:''}`;
+  const wonForm=content.querySelector('#won-form');
+  wonForm.onsubmit=async e=>{
+   e.preventDefault();const out=content.querySelector('#won-result');out.textContent='Guardando…';
+   try{const r=await api(`admin/integrations/${item.id}/won-alert`,'PUT',{days:Number(wonForm.elements.days.value)});item.won_alert_days=r.days;out.textContent=r.days?`Guardado. La alerta se vuelve urgente a los ${r.days} días.`:'Guardado. La alerta nunca bloqueará.'}
+   catch(error){out.textContent=friendly(error)}
+  };
   const reminder=content.querySelector('#reminder-form');
   reminder.onsubmit=async e=>{
    e.preventDefault();const out=content.querySelector('#reminder-result');out.textContent='Guardando…';

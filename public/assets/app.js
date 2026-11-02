@@ -8,6 +8,7 @@ import {connectDevice,releaseDevice,isNative} from './native.js';
 import {enable as enablePush,disable as disablePush,heal as healPush,state as pushState,isApple,installed} from './push.js';
 import {renderBoard} from './board.js';
 import {windowMarkup} from './announce.js';
+import {startWonAlert} from './won-alert.js';
 import {supported as passkeysSupported,platformReady,remembered as passkeyRemembered,remember as rememberPasskey,create as createPasskey,sign as signPasskey,trouble as passkeyTrouble} from './passkeys.js';
 
 const $=s=>document.querySelector(s);
@@ -234,6 +235,8 @@ async function startSession(){
   renderAccounts();
   // Los avisos del navegador pasan a ser de quien entra ahora, y se rehacen si se perdieron.
   checkPush();
+  // Ventas ganadas sin monto: se consulta 4 segundos después de entrar.
+  startWonAlert();
   // Un aviso trae a su conversación: /conversations/{id}?c={subcuenta}.
   let deep=location.pathname.match(/^\/conversations\/([A-Za-z0-9_-]{1,80})$/);
   let wanted=deep?new URLSearchParams(location.search).get('c'):null;
@@ -264,7 +267,7 @@ function showSignin(){
 }
 
 $('#account').onchange=e=>{if(workspace.select(e.target.value))renderAccounts()};
-workspace.onChange(()=>{renderAccounts();if(VIEWS[currentView].account)show(currentView,{push:false})});
+workspace.onChange(()=>{startWonAlert();renderAccounts();if(VIEWS[currentView].account)show(currentView,{push:false})});
 document.querySelectorAll('button[data-view]').forEach(b=>b.onclick=()=>show(b.dataset.view));
 window.addEventListener('agora:goto',e=>{const d=e.detail||{};if(!VIEWS[d.view])return;workspace.pendingFilter=d.filter||null;show(d.view)});
 window.addEventListener('popstate',()=>{const name=requested();if(name)show(name,{push:false})});

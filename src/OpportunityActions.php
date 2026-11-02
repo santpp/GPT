@@ -199,6 +199,7 @@ final class OpportunityActions {
                 // The panel and the board must show the new state, not what was stored.
                 if($contactId!==null&&preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))query('DELETE FROM opportunity_cache WHERE connection_id=? AND contact_id=?',[$id,$contactId]);
                 query('DELETE FROM directory_cache WHERE connection_id=? AND cache_key LIKE ?',[$id,'board:%']);
+                query('DELETE FROM directory_cache WHERE connection_id=? AND cache_key LIKE ?',[$id,'won:%']);
                 return ['state'=>'accepted','id'=>$result,'requestId'=>$request];
             } catch(GhlCooldown $e) {
                 query('DELETE FROM opportunity_action_attempts WHERE connection_id=? AND request_id=?',[$id,$request]);

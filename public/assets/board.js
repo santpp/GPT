@@ -2,6 +2,8 @@ import {workspace,friendly} from './workspace.js';
 import {skeleton} from './skeleton.js';
 import {money as fmtMoney} from './format.js';
 import {opportunityForm,readOpportunityForm,bindPipelineChoice} from './opportunity-editor.js';
+import {renderWon} from './won.js';
+import {wonAlertState} from './won-alert.js';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // The account publishes no currency code, so the amount is shown without a symbol.
@@ -15,7 +17,7 @@ async function request(path,method='GET',csrf='',body=null){
   return data;
 }
 
-export async function renderBoard(container){
+async function renderFunnels(container){
   const instance=Symbol();container.agoraViewInstance=instance;
   const active=()=>container.agoraViewInstance===instance&&container.dataset.view==='board';
   const connection=workspace.current();
@@ -80,6 +82,7 @@ export async function renderBoard(container){
     try{
       await request(`workspace/opportunity/edit?connectionId=${encodeURIComponent(connection)}&opportunityId=${encodeURIComponent(editing)}`,'POST',csrf,{...payload,requestId});
       sessionStorage.removeItem(storageKey);
+      window.dispatchEvent(new Event('agora:opportunity-edited'));
       if(!active())return;
       editing=null;notice='Oportunidad guardada.';
       await load(pipeline);
@@ -114,4 +117,27 @@ export async function renderBoard(container){
 
   container.agoraLiveDispose=()=>{container.agoraViewInstance=null};
   await load(pipeline);
+}
+
+/** Oportunidades tiene dos pestañas: los embudos (lo de siempre) y las ventas ganadas. */
+export async function renderBoard(container){
+  const instance=Symbol();container.agoraViewInstance=instance;
+  const connection=workspace.current();
+  if(!connection){container.innerHTML=`<p class="empty">${esc(workspace.noAccountText('oportunidades'))}</p>`;return}
+  let tab=workspace.pendingOppTab||sessionStorage.getItem('agora-opp-tab')||'funnels';workspace.pendingOppTab=null;
+  if(!['funnels','won'].includes(tab))tab='funnels';
+  const badge=()=>{const n=wonAlertState()?.count||0;return n>0?`<span class="tab-badge" aria-label="${n} sin monto">${n}</span>`:''};
+  container.innerHTML=`<div class="opp-tabs" role="tablist" aria-label="Oportunidades"><button type="button" role="tab" data-opp-tab="funnels">Embudos</button><button type="button" role="tab" data-opp-tab="won">Ganadas<span id="won-badge">${badge()}</span></button></div><div id="opp-pane"></div>`;
+  const pane=container.querySelector('#opp-pane');
+  const active=()=>container.agoraViewInstance===instance&&container.dataset.view==='board'&&container.querySelector('#opp-pane')===pane;
+  const open=name=>{
+    tab=name;try{sessionStorage.setItem('agora-opp-tab',name)}catch{}
+    container.querySelectorAll('[data-opp-tab]').forEach(b=>{const on=b.dataset.oppTab===name;b.classList.toggle('on',on);b.setAttribute('aria-selected',String(on))});
+    pane.dataset.view='board';
+    if(name==='won')renderWon(pane,active);else renderFunnels(pane);
+  };
+  container.querySelectorAll('[data-opp-tab]').forEach(b=>b.onclick=()=>{if(b.dataset.oppTab!==tab)open(b.dataset.oppTab)});
+  const onAlert=()=>{const el=container.querySelector('#won-badge');if(!el){window.removeEventListener('agora:won-alert',onAlert);return}el.innerHTML=badge()};
+  window.addEventListener('agora:won-alert',onAlert);
+  open(tab);
 }

@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.8.1. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.8.2. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -197,6 +197,12 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## 1.8.1 · redes por las que escribe el contacto
 - Error: de un contacto que había escrito por Instagram (o comentado) y al que luego se le escribió por WhatsApp, Ágora sólo ofrecía WhatsApp. La cuenta guarda una conversación por contacto y su «último canal» cambia con cada mensaje; Ágora ofrecía Instagram o Messenger únicamente si el último mensaje era de esa red. Ahora recuerda cada red desde la que el contacto escribió (en el historial y en la lista) y la sigue ofreciendo; sólo se añaden, nunca se quitan (migración 029). El historial devuelve los canales posibles, así que el selector se actualiza al abrir la conversación. Meta sólo permite escribir por Instagram o Messenger dentro de su ventana de respuesta (unas 24 horas tras el último mensaje del contacto; algo más tras un comentario): fuera de ella la cuenta puede rechazar el envío y Ágora muestra su motivo.
+
+## 1.8.2 · ventas ganadas y alerta de ventas sin monto
+- **Oportunidades en dos pestañas:** Embudos (lo de siempre) y **Ganadas**: ventas ganadas del mes elegido (mes en español), número, monto vendido y cuántas están sin monto; las sin monto primero, con un campo para escribirlo ahí mismo (escribe el monto en la oportunidad de la cuenta). Cada vendedor ve las suyas; los administradores de la subcuenta y el propietario ven todas, con resumen y filtro por vendedor.
+- **Alerta de ventas ganadas sin monto** (monto vacío o cero), sólo del **mes en curso**: se consulta a la cuenta **4 segundos después de entrar** y **cada vez que se edita una oportunidad** (nunca por sondeo; el servidor guarda la lectura 2 minutos y la borra al editar). Al entrar: ventana con las ventas y un campo por cada una; después, franja roja fija y contador rojo en la pestaña Oportunidades. **Escalada:** si una lleva los días fijados (7 por defecto, 0 = nunca) la ventana no se puede cerrar (ni con Escape) hasta completar; si no se puede guardar por permisos, no atrapa a nadie. La reciben el vendedor con ventas suyas sin monto; los administradores, las sin responsable más un resumen del equipo en el tablero («Ventas ganadas sin monto», por vendedor).
+- Los días se fijan por subcuenta, sólo el propietario, en Conexiones → «Comisión, moneda y avisos» (migración 030).
+- Limitación conocida: la cuenta filtra las ganadas por una fecha que su referencia no precisa; una oportunidad creada otro mes y ganada este puede no aparecer si no se marcó como ganada desde Ágora (que guarda su fecha).
 
 ## Siguiente (a decidir)
 - **Siguiente, ya acordado con el usuario (por orden):**

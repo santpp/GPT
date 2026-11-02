@@ -159,6 +159,17 @@ html[data-theme="dark"] .sk{background:linear-gradient(100deg,#242736 30%,#20232
 html[data-theme="dark"] .contact-editor label.changed>input,html[data-theme="dark"] .contact-editor label.changed>select,html[data-theme="dark"] .contact-editor label.changed>textarea,html[data-theme="dark"] .contact-editor .live-field-group.changed{box-shadow:0 0 0 2px #00000066}
 html[data-theme="dark"] .period-menu{box-shadow:0 16px 40px #00000066}
 html[data-theme="dark"] .bubble.out{background:#232735;border-color:#363a49}
+html[data-theme="dark"] .tab-badge,html[data-theme="dark"] .nav.has-alert::after{background:#c0204b;color:#fff}
+html[data-theme="dark"] .won-stats .bad strong{color:#e66a8c}
+html[data-theme="dark"] .won-row.missing{border-left:3px solid #c0204b}
+html[data-theme="dark"] .won-flag{color:#e66a8c}
+html[data-theme="dark"] .won-banner{background:#c0204b;color:#fff}
+html[data-theme="dark"] .won-banner .primary{background:#1d1f2b;color:#e66a8c;border-color:#363a49}
+html[data-theme="dark"] .won-dialog::backdrop{background:#12151fb3}
+html[data-theme="dark"] .won-head.urgent{background:#c0204b;color:#fff}
+html[data-theme="dark"] .won-head.urgent p{color:#fff}
+html[data-theme="dark"] .won-item-status{color:#e66a8c}
+html[data-theme="dark"] #won-team.bad strong{color:#e66a8c}
 /* ---- a mano: paleta base y piezas que el generador no puede adivinar ---- */
 html[data-theme="dark"]{color-scheme:dark;--ink:#e6e8f0;--muted:#9aa0b4;--line:#2f3445;--paper:#1b1f2c;--bg:#12151f;--green:#d13c63;--accent:#f5b84a}
 html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}

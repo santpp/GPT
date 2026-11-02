@@ -781,3 +781,48 @@ svg[stroke]{stroke-width:1.5;stroke-linecap:square;stroke-linejoin:miter}
 .currency-form{margin-bottom:6px}
 .conversation-item .waiting{font-size:12px;color:var(--muted)}
 .conversation-item .waiting.late{color:var(--green);font-weight:600}
+/* 1.8.2 · ventas ganadas: pestañas, lista, alerta */
+.opp-tabs{display:flex;gap:6px;padding:0 22px 14px;border-bottom:1px solid var(--line);margin:0 0 16px}
+.opp-tabs button{min-height:44px;padding:8px 16px;border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.opp-tabs button.on{color:var(--ink);border-bottom-color:var(--green)}
+.tab-badge,.nav.has-alert::after{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#c0204b;color:#fff;font-size:11px;font-weight:700}
+.nav.has-alert{position:relative}
+.nav.has-alert::after{content:attr(data-count);position:absolute;top:4px;right:10px}
+@media(max-width:600px){.opp-tabs{padding:0 14px 10px}.nav.has-alert::after{top:2px;right:calc(50% - 22px)}}
+.won-toolbar{display:flex;flex-wrap:wrap;gap:12px;padding:0 22px 14px}
+.won-toolbar label{display:grid;gap:4px;font-size:12px;color:var(--muted)}
+.won-toolbar select{min-height:44px;min-width:180px}
+#won-summary,#won-list{padding:0 22px}
+.won-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-bottom:14px}
+.won-stats>div{padding:2px 16px;border-left:1px solid var(--line)}.won-stats>div:first-child{border-left:0;padding-left:0}
+.won-stats span{display:block;font-size:12px;color:var(--muted)}
+.won-stats strong{display:block;font:600 26px var(--sans);letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:4px}
+.won-stats .bad strong{color:#c0204b}
+.won-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:14px 0;border-bottom:1px solid var(--line)}
+.won-row-info{display:grid;gap:2px;min-width:0;flex:1 1 220px}.won-row-info small{color:var(--muted);font-size:12px}
+.won-amount{font-variant-numeric:tabular-nums;font-size:16px}
+.won-row.missing{border-left:3px solid #c0204b;padding-left:12px}
+.won-inline{display:flex;gap:8px}.won-inline input{width:130px;min-height:44px}.won-inline .primary{min-height:44px;padding:8px 16px}
+.won-flag{color:#c0204b;font-weight:600;font-size:13px}
+.won-inline-status{flex:1 1 100%;margin:0;font-size:12px;color:var(--muted)}.won-inline-status:empty{display:none}
+@media(max-width:600px){.won-toolbar,#won-summary,#won-list{padding:0 14px}.won-stats strong{font-size:22px}.won-inline{width:100%}.won-inline input{flex:1;width:auto}}
+.won-banner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin:0 22px 12px;padding:12px 16px;border-radius:10px;background:#c0204b;color:#fff;font-size:14px}
+.won-banner[hidden]{display:none}
+.won-banner p{margin:0;flex:1 1 260px}
+.won-banner.urgent{animation:won-pulse 2.4s ease-in-out infinite}
+.won-banner .primary{background:#fff;color:#c0204b;border-color:#fff;min-height:40px;padding:8px 16px}
+@keyframes won-pulse{50%{box-shadow:0 0 0 4px #c0204b40}}
+@media(max-width:600px){.won-banner{margin:0 14px 10px}}
+@media(prefers-reduced-motion:reduce){.won-banner.urgent{animation:none}}
+.won-dialog{width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 32px);padding:0;border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);overflow:auto}
+.won-dialog::backdrop{background:#12151fb3}
+.won-head{padding:20px 20px 12px;border-bottom:1px solid var(--line)}.won-head h2{margin:0 0 6px;font-size:20px}.won-head p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
+.won-head.urgent{background:#c0204b;color:#fff;border-bottom:0}.won-head.urgent p{color:#fff}
+.won-items{padding:6px 20px}
+.won-item{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.won-item-info{display:grid;gap:2px;flex:1 1 200px;min-width:0}.won-item-info small{color:var(--muted);font-size:12px}
+.won-item input{width:120px;min-height:44px}.won-item .primary{min-height:44px;padding:8px 16px}
+.won-item-status{flex:1 1 100%;margin:0;font-size:12px;color:#c0204b}.won-item-status:empty{display:none}
+.won-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px 18px}
+#won-team.bad strong{color:#c0204b}
+.won-item input,.won-inline input,.won-toolbar select{border:1px solid var(--line);border-radius:var(--r-md);padding:0 12px;background:var(--paper);color:var(--ink);font:inherit}

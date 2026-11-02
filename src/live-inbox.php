@@ -188,6 +188,21 @@ if($path==='/api/workspace/board-month'&&in_array($method,['GET','POST'],true)){
     catch(GhlApiException $e){respond(['error'=>'No se pudo leer lo cerrado del mes. Revisa el permiso de oportunidades.','code'=>'board_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'El resumen del mes recibido no tiene el formato esperado.','code'=>'board_invalid_response'],424);}
 }
+// Ventas ganadas: la lista del mes y la alerta de las que están sin monto.
+if(in_array($path,['/api/workspace/won','/api/workspace/won-alert'],true)&&$method==='GET'){
+    if(!($membership['capabilities']['viewOpportunities']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar oportunidades.'],403);
+    require_once __DIR__.'/WonSales.php';
+    try{
+        $won=new WonSales();
+        if($path==='/api/workspace/won-alert')respond($won->alert($connection,$membership));
+        $period=is_string($_GET['period']??null)&&preg_match('/^\d{4}-(0[1-9]|1[0-2])$/D',$_GET['period'])?$_GET['period']:gmdate('Y-m');
+        $seller=is_string($_GET['seller']??null)&&preg_match('/^(none|[A-Za-z0-9_-]{1,80})$/D',$_GET['seller'])?$_GET['seller']:null;
+        respond($won->listing($connection,$period,$membership,$seller)+['canEdit'=>($membership['capabilities']['editOpportunities']??false)===true]);
+    }
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'Las ventas están en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>'No se pudieron leer las ventas ganadas. Revisa los permisos de la cuenta.','code'=>'won_upstream_'.$e->status],424);}
+    catch(Throwable $e){respond(['error'=>'Las ventas recibidas no tienen el formato esperado.','code'=>'won_invalid_response'],424);}
+}
 if($path==='/api/workspace/dashboard'&&$method==='GET'){
     require_once __DIR__.'/Dashboard.php';
     $zone=is_string($_GET['tz']??null)&&in_array($_GET['tz'],DateTimeZone::listIdentifiers(),true)?$_GET['tz']:'UTC';

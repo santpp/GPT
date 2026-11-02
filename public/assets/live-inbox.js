@@ -360,6 +360,7 @@ export async function renderLiveInbox(container){
     try{
      await request(where,'POST',me.csrf,{...payload,requestId});
      sessionStorage.removeItem(storageKey);
+     window.dispatchEvent(new Event('agora:opportunity-edited'));
      dialog.close();
      window.dispatchEvent(new CustomEvent('agora:toast',{detail:`Venta ganada: ${money(value)}. Ya cuenta en el tablero del mes.`}));
      if(active()&&version===chatGeneration)loadContact(c,chatGeneration);
@@ -678,6 +679,7 @@ export async function renderLiveInbox(container){
      try{
       await request(where,'POST',me.csrf,{...payload,requestId});
       sessionStorage.removeItem(storageKey);
+      window.dispatchEvent(new Event('agora:opportunity-edited'));
       try{opportunities=await request(`workspace/opportunities?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}&refresh=1`)}
       catch(error){opportunities={error:friendly(error)}}
       if(!active()||version!==chatGeneration)return;

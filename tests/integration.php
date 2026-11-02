@@ -43,7 +43,7 @@ try {
  check($code===200&&$recovered['ready']===true,'a pending database update is applied on its own, with no button to press');
  check(in_array('directory_cache',array_column(query('SHOW TABLES')->fetchAll(PDO::FETCH_NUM),0),true),'the missing table is back after that single request');
  [$code,$diagnostics]=request('admin/diagnostics');
- check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='1.8.1','administrator sees installation readiness and version');
+ check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='1.8.2','administrator sees installation readiness and version');
  check(!str_contains(json_encode($diagnostics),'APP_KEY_FILE')&&!str_contains(json_encode($diagnostics),'integration.key'),'diagnostics expose no configuration values or key paths');
  check(request('admin/installation/encryption','POST')[0]===403,'preparation requires CSRF');
  [$code,$profile]=request('me');check($code===200&&!array_key_exists('ghl_user_id',$profile['user'])&&$profile['user']['capabilities']['configureConnections'],'public profile exposes capabilities without provider-specific fields');
@@ -62,6 +62,9 @@ try {
  check(request('admin/integrations/'.$id.'/reminder','PUT',['minutes'=>2000],$headers)[0]===422&&request('admin/integrations/'.$id.'/reminder','PUT',['minutes'=>'diez'],$headers)[0]===422,'the unread reminder only accepts whole minutes up to a day');
  check(request('admin/integrations/'.$id.'/reminder','PUT',['minutes'=>15],$headers)[1]['minutes']===15&&(int)query('SELECT unread_reminder_minutes FROM ghl_connections WHERE id=?',[$id])->fetchColumn()===15,'the owner sets when an unread message is reminded, per sub-account');
  check(request('admin/integrations/'.$id.'/reminder','PUT',['minutes'=>0],$headers)[1]['minutes']===0,'and can turn the reminder off with 0');
+ check(request('admin/integrations/'.$id.'/won-alert','PUT',['days'=>400],$headers)[0]===422&&request('admin/integrations/'.$id.'/won-alert','PUT',['days'=>'siete'],$headers)[0]===422,'the days before an unfinished sales alert becomes urgent are whole days up to 90');
+ check(request('admin/integrations/'.$id.'/won-alert','PUT',['days'=>5],$headers)[1]['days']===5&&(int)query('SELECT won_alert_days FROM ghl_connections WHERE id=?',[$id])->fetchColumn()===5,'the owner sets them per sub-account');
+ check(request('admin/integrations/'.$id.'/won-alert','PUT',['days'=>0],$headers)[1]['days']===0,'and 0 means it never blocks');
  // Quién soy: el propietario elige entre los usuarios de la subcuenta, y sólo entre los activos de ella.
  query('INSERT INTO external_users(connection_id,external_user_id,email,display_name,permissions,scopes,assigned_data_only) VALUES(?,?,?,?,?,?,?)',[$id,'owner-pick','pick@example.test','Para elegir','{}','[]',0]);
  check(request('workspace/self?connectionId='.$id.'','PUT',['externalUserId'=>'nobody'],$headers)[0]===422,'the owner cannot pick someone who is not in the sub-account');
