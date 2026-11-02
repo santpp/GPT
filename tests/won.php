@@ -9,12 +9,13 @@ try{
   query("INSERT INTO ghl_connections(tenant_id,name,location_id,token_ciphertext,status,won_alert_days) VALUES(?,?,?,?,'connected',7)",[$t,'C','loc-'.$s,'x']);$c=(int)db()->lastInsertId();
   $connection=query('SELECT * FROM ghl_connections WHERE id=?',[$c])->fetch();
   foreach([['ana','Ana'],['luis','Luis']] as [$u,$name])query("INSERT INTO external_users(connection_id,external_user_id,email,display_name,permissions,scopes,active) VALUES(?,?,?,?,'{}','[]',1)",[$c,$u,$u.'@example.test',$name]);
-  $now=time();$old=gmdate('c',$now-9*86400);$recent=gmdate('c',$now-86400);
+  $now=strtotime('2026-11-20 12:00:00 UTC');$old=gmdate('c',$now-9*86400);$recent=gmdate('c',$now-86400);
   $calls=0;$list=[
     ['id'=>'o1','name'=>'Curso A','locationId'=>'loc-'.$s,'monetaryValue'=>0,'assignedTo'=>'ana','lastStatusChangeAt'=>$old,'contact'=>['name'=>'Pedro']],
     ['id'=>'o2','name'=>'Curso B','locationId'=>'loc-'.$s,'monetaryValue'=>500,'assignedTo'=>'ana','lastStatusChangeAt'=>$recent,'contact'=>['name'=>'María']],
     ['id'=>'o3','name'=>'Curso C','locationId'=>'loc-'.$s,'assignedTo'=>'luis','lastStatusChangeAt'=>$recent,'contact'=>['name'=>'Raúl']],
     ['id'=>'o4','name'=>'Curso D','locationId'=>'loc-'.$s,'monetaryValue'=>0,'lastStatusChangeAt'=>$recent,'contact'=>['name'=>'Sin dueño']],
+    ['id'=>'oa','name'=>'Ganada en octubre','locationId'=>'loc-'.$s,'monetaryValue'=>0,'assignedTo'=>'ana','lastStatusChangeAt'=>'2026-10-28T10:00:00Z'],
     ['id'=>'ox','name'=>'Otra cuenta','locationId'=>'otra','monetaryValue'=>9,'assignedTo'=>'ana'],
   ];
   $gw=new GhlGateway(function()use(&$calls,&$list){return new GhlClient('fake',function($path)use(&$calls,&$list){$calls++;return ['status'=>200,'body'=>json_encode(['opportunities'=>$list,'meta'=>['total'=>count($list)]])];});});
@@ -26,6 +27,7 @@ try{
   wk($a['count']===1&&$a['items'][0]['id']==='o1'&&$a['items'][0]['days']===9,'a seller is alerted about their own won sales with no amount, with how many days they have been like that');
   wk($a['escalate']===true&&$a['days']===7&&$a['oldestDays']===9,'and it escalates when one has waited the days set for the sub-account');
   wk($calls===1,'the account is read once');
+  wk(!in_array('oa',array_column($a['items'],'id'),true),'a sale the account returns but that changed to won in another month is left out');
   $b=$won->alert($connection,$admin,$now);
   wk($calls===1,'a second screen within the cache time does not ask the account again');
   wk($b['count']===1&&$b['items'][0]['id']==='o4'&&$b['team']['missing']===3,'an administrator is alerted about the ones with nobody assigned and sees the team total');

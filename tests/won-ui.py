@@ -37,7 +37,7 @@ with sync_playwright() as p:
     n=len(calls);page.wait_for_timeout(2500);assert len(calls)==n,'no polling'
     page.locator('#won-banner-go').click();page.wait_for_selector('#won-dialog[open]')
     items.pop(0)
-    page.locator('.won-item input').first.fill('250');page.locator('.won-item .primary').first.click();page.wait_for_timeout(600)
+    page.locator('.won-item input').first.fill('250');page.locator('.won-item .won-save').first.click();page.wait_for_timeout(600)
     assert posts and posts[-1]['monetaryValue']==250 and len(posts[-1]['requestId'])>=16
     page.wait_for_timeout(2200)
     assert len(calls)==n+1 and '1 venta' in page.locator('#won-banner').inner_text(),(len(calls),n)
@@ -52,7 +52,7 @@ with sync_playwright() as p:
     assert page.locator('#won-later').count()==0 and 'Llevas 9 días' in page.locator('#won-dialog').inner_text() and page.locator('.won-banner.urgent').count()==1
     page.keyboard.press('Escape');page.keyboard.press('Escape');page.wait_for_timeout(300)
     assert page.locator('#won-dialog').evaluate('d=>d.open'),'an urgent alert cannot be closed with Escape'
-    items2.clear();page.locator('.won-item input').fill('90');page.locator('.won-item .primary').click()
+    items2.clear();page.locator('.won-item input').fill('90');page.locator('.won-item .won-save').click()
     page.wait_for_function("document.querySelector('#won-dialog').textContent.includes('Listo')",timeout=5000)
     page.wait_for_function("!document.querySelector('#won-dialog').open",timeout=5000)
     print('PASS after the set days the window cannot be closed until every sale has its amount, then it thanks and closes')

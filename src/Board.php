@@ -112,7 +112,9 @@ final class Board {
     private static function range(string $period):array {
         $start=DateTimeImmutable::createFromFormat('Y-m-d H:i:s',$period.'-01 00:00:00',new DateTimeZone('UTC'));
         $end=$start->modify('last day of this month');
-        return [$start->format('m-d-Y'),$end->format('m-d-Y')];
+        // La referencia no dice a qué fecha se aplica el filtro (creación o cambio de estado): se pide desde 90 días antes
+        // para no perder una venta creada antes y ganada este mes, y luego se descartan por su fecha de cambio de estado.
+        return [$start->modify('-90 days')->format('m-d-Y'),$end->format('m-d-Y')];
     }
 
     /**
@@ -127,7 +129,8 @@ final class Board {
         $mine=$membership['external_user_id']??null;
         if($restricted&&$mine===null)return self::empty($period,$settings,true);
 
-        [$records,$total,$partial,$ads]=$this->gateway->execute($connection,function(GhlClient $client)use($connection,$from,$to,$period,$restricted):array {
+        $monthStart=(int)strtotime($period.'-01 00:00:00 UTC');$monthEnd=(int)strtotime('+1 month',$monthStart);
+        [$records,$total,$partial,$ads]=$this->gateway->execute($connection,function(GhlClient $client)use($connection,$from,$to,$period,$restricted,$monthStart,$monthEnd):array {
             // Lo invertido es de la empresa: quien sólo ve lo suyo no lo recibe.
             $ads=$restricted?['amount'=>null,'source'=>null,'reason'=>'restricted']:self::adSpend($client,$connection['location_id'],$period);
             $records=[];$total=null;$partial=false;
@@ -139,6 +142,10 @@ final class Board {
                 foreach($items as $opportunity) {
                     if(!is_array($opportunity))continue;
                     if(isset($opportunity['locationId'])&&$opportunity['locationId']!==$connection['location_id'])continue;
+                    // Sólo cuenta lo ganado dentro del mes, según el cambio de estado que la cuenta informa.
+                    $when=$opportunity['lastStatusChangeAt']??($opportunity['updatedAt']??($opportunity['createdAt']??null));
+                    $at=is_string($when)?strtotime($when):false;
+                    if($at!==false&&($at<$monthStart||$at>=$monthEnd))continue;
                     $value=$opportunity['monetaryValue']??null;
                     $records[]=[
                         'id'=>is_string($opportunity['id']??null)?$opportunity['id']:null,

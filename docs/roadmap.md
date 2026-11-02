@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.8.2. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.8.3. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -202,7 +202,10 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - **Oportunidades en dos pestañas:** Embudos (lo de siempre) y **Ganadas**: ventas ganadas del mes elegido (mes en español), número, monto vendido y cuántas están sin monto; las sin monto primero, con un campo para escribirlo ahí mismo (escribe el monto en la oportunidad de la cuenta). Cada vendedor ve las suyas; los administradores de la subcuenta y el propietario ven todas, con resumen y filtro por vendedor.
 - **Alerta de ventas ganadas sin monto** (monto vacío o cero), sólo del **mes en curso**: se consulta a la cuenta **4 segundos después de entrar** y **cada vez que se edita una oportunidad** (nunca por sondeo; el servidor guarda la lectura 2 minutos y la borra al editar). Al entrar: ventana con las ventas y un campo por cada una; después, franja roja fija y contador rojo en la pestaña Oportunidades. **Escalada:** si una lleva los días fijados (7 por defecto, 0 = nunca) la ventana no se puede cerrar (ni con Escape) hasta completar; si no se puede guardar por permisos, no atrapa a nadie. La reciben el vendedor con ventas suyas sin monto; los administradores, las sin responsable más un resumen del equipo en el tablero («Ventas ganadas sin monto», por vendedor).
 - Los días se fijan por subcuenta, sólo el propietario, en Conexiones → «Comisión, moneda y avisos» (migración 030).
-- Limitación conocida: la cuenta filtra las ganadas por una fecha que su referencia no precisa; una oportunidad creada otro mes y ganada este puede no aparecer si no se marcó como ganada desde Ágora (que guarda su fecha).
+
+## 1.8.3 · alerta rediseñada y fecha de las ventas
+- **Alerta rediseñada:** hoja con una franja roja arriba (en el móvil sube desde abajo), etiqueta «Pendiente» o «Urgente», barra de progreso («0 de 2 completadas»), una tarjeta por venta con los días que lleva (en rojo si cumple la escalada), campo de monto con el símbolo de la moneda ($ o €) pegado al botón Guardar, Enter para guardar, el cursor ya en el primer monto, «Guardar N ventas» cuando hay varias rellenas y animación al completarse cada una.
+- **Fecha de las ventas ganadas:** la búsqueda de oportunidades de la cuenta acepta `date` y `endDate` («start date», «end date») sin decir si filtran por la fecha de creación o por la del cambio de estado; cada oportunidad sí trae `lastStatusChangeAt` (el «status changed on»). Ahora se pide desde 90 días antes del mes y se descartan las que no cambiaron a ganada dentro del mes según `lastStatusChangeAt`. Así una venta creada antes y ganada este mes cuenta este mes, en la lista, la alerta y también en el resumen del mes del tablero (ventas, comisiones, ganancia), sea cual sea la fecha a la que filtre la cuenta. Si el mes trae más ventas de las que se pueden leer de una vez, se avisa.
 
 ## Siguiente (a decidir)
 - **Siguiente, ya acordado con el usuario (por orden):**

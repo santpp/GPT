@@ -23,8 +23,11 @@ final class WonSales {
         $row=query('SELECT payload,UNIX_TIMESTAMP(fetched_at) AS at FROM directory_cache WHERE connection_id=? AND cache_key=?',[$id,$key])->fetch();
         if($row&&time()-(int)$row['at']<self::TTL){$cached=json_decode((string)$row['payload'],true);if(is_array($cached)&&isset($cached['records']))return $cached;}
         $start=DateTimeImmutable::createFromFormat('Y-m-d H:i:s',$period.'-01 00:00:00',new DateTimeZone('UTC'));
-        $from=$start->format('m-d-Y');$to=$start->modify('last day of this month')->format('m-d-Y');
-        [$records,$partial]=$this->gateway->execute($connection,function(GhlClient $client)use($connection,$from,$to):array {
+        // La referencia no dice a qué fecha se aplica el filtro (creación o cambio de estado): se pide desde 90 días antes y se
+        // descarta lo que no cambió a ganada dentro del mes, según el cambio de estado que la cuenta informa en cada oportunidad.
+        $from=$start->modify('-90 days')->format('m-d-Y');$to=$start->modify('last day of this month')->format('m-d-Y');
+        $monthStart=$start->getTimestamp();$monthEnd=$start->modify('+1 month')->getTimestamp();
+        [$records,$partial]=$this->gateway->execute($connection,function(GhlClient $client)use($connection,$from,$to,$monthStart,$monthEnd):array {
             $out=[];$partial=false;
             for($page=1;$page<=self::PAGES;$page++) {
                 $data=$client->wonOpportunities($connection['location_id'],$from,$to,$page,self::PAGE);
@@ -35,6 +38,8 @@ final class WonSales {
                     if(isset($o['locationId'])&&$o['locationId']!==$connection['location_id'])continue;
                     $value=$o['monetaryValue']??null;
                     $when=$o['lastStatusChangeAt']??($o['updatedAt']??($o['createdAt']??null));
+                    $at=is_string($when)?strtotime($when):false;
+                    if($at!==false&&($at<$monthStart||$at>=$monthEnd))continue;
                     $out[$o['id']]=[
                         'id'=>$o['id'],
                         'name'=>is_string($o['name']??null)?mb_substr($o['name'],0,190):null,

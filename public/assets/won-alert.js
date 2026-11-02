@@ -27,7 +27,7 @@ async function check(){
   try{
     const alert=await api(`workspace/won-alert?connectionId=${encodeURIComponent(connection)}`);
     if(connection!==workspace.current())return;
-    state={...alert,connection};
+    state={...alert,connection,total:state&&state.connection===connection&&state.total?state.total:alert.count};
     paintChrome();
     if(alert.count>0&&(popupPending||dialog?.open))openDialog();
     else if(alert.count===0&&dialog?.open)finish();
@@ -54,6 +54,7 @@ const daysText=d=>d===null||d===undefined?'':d<1?'hoy':d===1?'hace 1 día':`hace
 
 function openDialog(){
   if(!state||state.count<1)return;
+  if(dialog&&!dialog.open)delete dialog.dataset.focused;
   if(!dialog){
     dialog=document.createElement('dialog');dialog.id='won-dialog';dialog.className='won-dialog';
     document.body.append(dialog);
@@ -66,39 +67,71 @@ function openDialog(){
   if(!dialog.open)dialog.showModal();
 }
 
+const symbol=()=>workspace.currency()==='EUR'?'€':'$';
+
 function render(){
   const urgent=mustFinish();
-  const rows=(state.items||[]).map(item=>`<form class="won-item" data-won-form="${esc(item.id)}">
-    <div class="won-item-info"><strong>${esc(item.name||'Venta ganada')}</strong><small>${esc([item.contactName,item.assignedName,daysText(item.days)].filter(Boolean).join(' · '))}</small></div>
-    ${state.canEdit===false?'<small class="muted">Pide a un administrador que complete el monto.</small>'
-      :`<label class="sr-only" for="won-v-${esc(item.id)}">Monto</label><input id="won-v-${esc(item.id)}" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="Monto" required><button class="primary">Guardar</button>`}
-    <p class="won-item-status" role="status"></p></form>`).join('');
-  const more=state.count>(state.items||[]).length?`<p class="muted">Y ${state.count-state.items.length} más. Complétalas en Oportunidades → Ganadas.</p>`:'';
-  dialog.innerHTML=`<div class="won-head${urgent?' urgent':''}"><h2>${state.count===1?'Una venta ganada sin monto':`${state.count} ventas ganadas sin monto`}</h2>
-    <p>${urgent?`<b>Llevas ${state.oldestDays} días con ventas sin monto.</b> Complétalas ahora para seguir: sin el monto, la venta no cuenta en el tablero ni en tu comisión.`
-      :'Escribe el monto de cada venta. Sin él, la venta no cuenta en el tablero ni en tu comisión.'}</p></div>
+  const total=state.total??state.count;
+  const done=Math.max(0,total-state.count);
+  const rows=(state.items||[]).map(item=>{
+    const late=state.days>0&&(item.days||0)>=state.days;
+    return `<form class="won-item${late?' late':''}" data-won-form="${esc(item.id)}">
+      <div class="won-item-info"><strong>${esc(item.name||'Venta ganada')}</strong>
+        <small>${esc([item.contactName,item.assignedName].filter(Boolean).join(' · '))}</small>
+        <span class="won-age${late?' late':''}">${esc(daysText(item.days)||'')}</span></div>
+      ${state.canEdit===false?'<small class="muted won-nopermit">Pide a un administrador que complete el monto.</small>'
+        :`<div class="won-field"><label class="sr-only" for="won-v-${esc(item.id)}">Monto</label><span class="won-currency" aria-hidden="true">${symbol()}</span><input id="won-v-${esc(item.id)}" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0,00" autocomplete="off"><button class="primary won-save">Guardar</button></div>`}
+      <p class="won-item-status" role="status"></p></form>`;
+  }).join('');
+  const more=state.count>(state.items||[]).length?`<p class="won-more">Y ${state.count-state.items.length} más. Complétalas en Oportunidades → Ganadas.</p>`:'';
+  dialog.innerHTML=`<div class="won-sheet${urgent?' urgent':''}">
+    <header class="won-head"><span class="won-tag">${urgent?'Urgente':'Pendiente'}</span>
+      <h2>${state.count===1?'Una venta ganada sin monto':`${state.count} ventas ganadas sin monto`}</h2>
+      <p>${urgent?`Llevas <b>${state.oldestDays} días</b> con ventas sin monto. Complétalas para seguir: sin el monto, la venta no cuenta en el tablero ni en tu comisión.`
+        :'Escribe el monto de cada venta. Sin él, la venta no cuenta en el tablero ni en tu comisión.'}</p>
+      ${total>1?`<div class="won-progress" role="img" aria-label="${done} de ${total} completadas"><i style="width:${Math.round(done/total*100)}%"></i></div><small>${done} de ${total} completadas</small>`:''}
+    </header>
     <div class="won-items">${rows}</div>${more}
-    <div class="won-actions"><button type="button" class="secondary" id="won-go">Ver todas en Ganadas</button>${urgent?'':'<button type="button" class="link-button" id="won-later">Más tarde</button>'}</div>`;
+    <footer class="won-actions"><button type="button" class="link-button" id="won-go">Ver todas en Ganadas</button>
+      <span class="won-actions-end">${urgent?'':'<button type="button" class="secondary" id="won-later">Más tarde</button>'}<button type="button" class="primary" id="won-save-all" hidden></button></span></footer></div>`;
   dialog.querySelector('#won-go').onclick=()=>{if(!mustFinish())dialog.close();workspace.pendingOppTab='won';window.dispatchEvent(new CustomEvent('agora:goto',{detail:{view:'board'}}))};
   const later=dialog.querySelector('#won-later');if(later)later.onclick=()=>dialog.close();
-  dialog.querySelectorAll('[data-won-form]').forEach(form=>form.onsubmit=e=>save(e,form));
+  dialog.querySelectorAll('[data-won-form]').forEach(form=>{form.onsubmit=e=>{e.preventDefault();save(form)};form.querySelector('input')?.addEventListener('input',syncAll)});
+  const all=dialog.querySelector('#won-save-all');if(all)all.onclick=saveAll;
+  syncAll();
+  // El cursor queda en el primer monto para escribir sin tocar nada.
+  const first=dialog.querySelector('.won-item input');if(first&&!dialog.dataset.focused){dialog.dataset.focused='1';setTimeout(()=>first.focus(),50)}
 }
 
-async function save(event,form){
-  event.preventDefault();
-  const id=form.dataset.wonForm,input=form.querySelector('input'),button=form.querySelector('button'),status=form.querySelector('.won-item-status');
+/** Con varias rellenadas aparece «Guardar todas», para no repetir el gesto fila por fila. */
+function filled(){return [...dialog.querySelectorAll('[data-won-form]')].filter(f=>Number(f.querySelector('input')?.value)>0)}
+function syncAll(){
+  const all=dialog?.querySelector('#won-save-all');if(!all)return;
+  const n=filled().length;
+  all.hidden=n<2;all.textContent=`Guardar ${n} ventas`;
+}
+async function saveAll(){
+  const all=dialog.querySelector('#won-save-all');all.disabled=true;
+  for(const form of filled())await save(form,true);
+  if(dialog?.open&&state.count>0)render();
+}
+
+async function save(form,quiet=false){
+  const id=form.dataset.wonForm,input=form.querySelector('input'),button=form.querySelector('.won-save'),status=form.querySelector('.won-item-status');
   const value=Number(input.value);
-  if(!(value>0)){status.textContent='Escribe un monto mayor que cero.';return}
+  if(!(value>0)){status.textContent='Escribe un monto mayor que cero.';input.focus();return}
   button.disabled=true;status.textContent='Guardando…';
   try{
     const connection=encodeURIComponent(state.connection);
     await api(`workspace/opportunity/edit?connectionId=${connection}&opportunityId=${encodeURIComponent(id)}`,'POST',{monetaryValue:value,requestId:crypto.randomUUID().replace(/-/g,'')});
+    state.total??=state.count;
     state.items=state.items.filter(i=>i.id!==id);state.count=Math.max(0,state.count-1);
     // Si ya no queda ninguna con los días cumplidos, la alerta deja de ser urgente.
     state.oldestDays=Math.max(0,...state.items.map(i=>i.days||0));state.escalate=state.days>0&&state.oldestDays>=state.days&&state.count>0;
     paintChrome();
     window.dispatchEvent(new Event('agora:opportunity-edited'));
-    if(state.count===0)finish();else render();
+    form.classList.add('saved');
+    if(state.count===0)finish();else if(!quiet)setTimeout(()=>{if(dialog?.open)render()},350);
   }catch(error){
     button.disabled=false;status.textContent=friendly(error);
     // Si no se puede guardar por permisos, la ventana no atrapa a nadie.
@@ -108,6 +141,6 @@ async function save(event,form){
 
 function finish(){
   if(!dialog)return;
-  dialog.innerHTML=`<div class="won-head"><h2>¡Listo!</h2><p>Todas tus ventas ganadas tienen su monto.</p></div>`;
+  dialog.innerHTML=`<div class="won-sheet"><header class="won-head won-done"><h2>¡Listo!</h2><p>Todas tus ventas ganadas tienen su monto.</p></header></div>`;
   setTimeout(()=>{if(dialog?.open)dialog.close()},1400);
 }

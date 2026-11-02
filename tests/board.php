@@ -55,6 +55,7 @@ try {
    $won('seller-2',4794.00),
    $won('seller-3',2840.00),
    ['id'=>'ajena','locationId'=>'otra-cuenta','assignedTo'=>'seller-1','monetaryValue'=>9999.00],
+   ['id'=>'ganada-en-agosto','locationId'=>$location,'assignedTo'=>'seller-1','monetaryValue'=>777.00,'lastStatusChangeAt'=>'2026-08-15T10:00:00.000Z'],
    ['id'=>'sin-duenno','locationId'=>$location,'monetaryValue'=>403.00],
  ]];
  $owner=['external_user_id'=>null,'capabilities'=>['viewOpportunities'=>true,'assignedDataOnly'=>false]];
@@ -66,7 +67,7 @@ try {
  $month=$board()->month($connection,'2026-10',$owner);
  $q=$api->query();
  boardCheck(($q['status']??'')==='won','el mes se lee con la búsqueda publicada, filtrando por cerradas');
- boardCheck(($q['date']??'')==='10-01-2026'&&($q['endDate']??'')==='10-31-2026','y con el rango exacto del mes, en el formato que pide la cuenta');
+ boardCheck(($q['date']??'')===(new DateTimeImmutable('2026-10-01'))->modify('-90 days')->format('m-d-Y')&&($q['endDate']??'')==='10-31-2026','y desde 90 días antes (la cuenta no dice a qué fecha filtra) hasta el fin del mes, en el formato que pide la cuenta');
  boardCheck($month['sales']['total']===11895.25,'suma sólo lo cerrado de esta cuenta: '.$month['sales']['total']);
  boardCheck($month['sales']['closings']===5,'y cuenta los cierres que realmente llegaron');
  boardCheck($month['profitability']['commissions']===1189.53,'la comisión sale del porcentaje guardado, no de una cifra suelta');
@@ -137,7 +138,7 @@ try {
  $api->reset();boardFree($connectionId);
  $board()->month($connection,'2026-02',$owner);
  $q=$api->query();
- boardCheck(($q['date']??'')==='02-01-2026'&&($q['endDate']??'')==='02-28-2026','otro mes se pide con su último día real');
+ boardCheck(($q['date']??'')==='11-03-2025'&&($q['endDate']??'')==='02-28-2026','otro mes se pide con su último día real');
  boardCheck(Board::period('no-es-un-mes')===gmdate('Y-m')&&Board::period('2026-13')===gmdate('Y-m'),'un mes imposible se trata como el mes corriente');
 
  $api->reset();boardFree($connectionId);
