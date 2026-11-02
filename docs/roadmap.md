@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.8.6. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.8.7. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -217,6 +217,10 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## 1.8.6 · usuario nuevo sin acceso
 - Error: un usuario recién creado en la cuenta entraba y veía «Tu usuario no tiene activadas las conversaciones en su subcuenta». Causa: la cuenta sólo lista en los permisos de un usuario los que se tocaron; Ágora trataba un permiso no listado como desactivado, pero la referencia de la cuenta publica que conversaciones, contactos, oportunidades y citas están activados por defecto. Ahora un permiso no listado vale su valor por defecto (activado) y uno desactivado explícitamente sigue desactivado.
 - Para el propietario: si un usuario sigue sin acceso, Conexiones → «Equipo y permisos» muestra qué módulos tiene activados; si «conversaciones» sale desactivado, es que la cuenta lo desactivó para ese usuario.
+
+## 1.8.7
+- El selector del mes del resumen (y los de Ganadas y «Otro mes») tienen el estilo de la app: borde fino, esquinas redondeadas, flecha propia y foco con el color de marca; ya no se ven como el campo nativo.
+- Se quita el filo lateral de los avisos (24 horas de WhatsApp, comentario de origen, advertencias del tablero, «Activar avisos» y la nota de Ganadas); quedan como texto limpio. En oscuro, las cifras del tablero también van sin cajas.
 
 ## Siguiente (a decidir)
 - **Siguiente, ya acordado con el usuario (por orden):**

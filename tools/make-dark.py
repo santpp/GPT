@@ -136,7 +136,8 @@ html[data-theme="dark"] .breadcrumbs strong{color:var(--ink)}
 html[data-theme="dark"] .waterfall-step i,html[data-theme="dark"] .waterfall-step.up i{background:#8c3352}
 html[data-theme="dark"] .waterfall-step.down i{background:#46506e}
 html[data-theme="dark"] .waterfall-step.total i{background:var(--green)}
-html[data-theme="dark"] .origin-note,html[data-theme="dark"] .live-window-hint,html[data-theme="dark"] .board-warning,html[data-theme="dark"] .backup-notice.warn{background:none;border:0;border-left:2px solid var(--line);color:var(--muted)}
+html[data-theme="dark"] .origin-note,html[data-theme="dark"] .live-window-hint,html[data-theme="dark"] .board-warning,html[data-theme="dark"] .backup-notice.warn{background:none;border:0;color:var(--muted)}
+html[data-theme="dark"] .board-tile,html[data-theme="dark"] .personal-tiles .board-tile{background:none}
 html[data-theme="dark"] .bubble.out{background:#2a3048;border-color:#343b57}
 html[data-theme="dark"] img.brand-logo,html[data-theme="dark"] img.brand-dot{filter:brightness(1.25) saturate(1.1)}
 '''
