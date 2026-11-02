@@ -35,3 +35,13 @@ $offConv=PermissionPolicy::capabilities(['identity_type'=>'external','role_name'
 policyCheck(!$offConv['viewConversations']&&!$offConv['sendMessages']&&$offConv['viewContacts'],'but a module the account explicitly turns off stays off');
 $partial=PermissionPolicy::capabilities(['identity_type'=>'external','role_name'=>'user','permissions'=>['contactsEnabled'=>false],'scopes'=>[]]);
 policyCheck($partial['viewConversations']&&!$partial['viewContacts'],'and a module that is not mentioned is on while another one is off');
+// Quien no administra la subcuenta ve sólo lo suyo, marque o no esa restricción la cuenta.
+$seller=PermissionPolicy::capabilities(['identity_type'=>'external','role_name'=>'user','permissions'=>['conversationsEnabled'=>true],'scopes'=>[],'assigned_data_only'=>0]);
+policyCheck($seller['assignedDataOnly']===true,'a seller only sees what is assigned to them even when the account does not mark that restriction');
+$boss=PermissionPolicy::capabilities(['identity_type'=>'external','role_name'=>'admin','permissions'=>[],'scopes'=>[],'assigned_data_only'=>1]);
+policyCheck($boss['assignedDataOnly']===false,'a sub-account administrator sees everything');
+require_once __DIR__.'/../src/InboxFeed.php';
+$f=InboxFeed::readFilters([],['external_user_id'=>'ana','capabilities'=>['assignedDataOnly'=>true]]);
+policyCheck(($f['filters']['assignedTo']??null)==='ana','a seller\'s inbox is asked from the account already limited to their conversations');
+$f=InboxFeed::readFilters([],['external_user_id'=>'boss','capabilities'=>['assignedDataOnly'=>false]]);
+policyCheck(!isset($f['filters']['assignedTo']),'and an administrator\'s is not limited');

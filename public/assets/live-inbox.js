@@ -4,6 +4,8 @@ import {attachmentsOf,attachmentMarkup,bindAttachments,statusMarkup,UI_ICONS} fr
 import {workspace,friendly} from './workspace.js';
 import {skeleton} from './skeleton.js';
 import {money as fmtMoney} from './format.js';
+document.addEventListener('click',e=>{if(e.target.closest?.('.channel-menu'))return;document.querySelectorAll('.channel-list:not([hidden])').forEach(m=>{m.hidden=true;m.parentElement.querySelector('.channel-current')?.setAttribute('aria-expanded','false')})});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.channel-list:not([hidden])').forEach(m=>{m.hidden=true;m.parentElement.querySelector('.channel-current')?.setAttribute('aria-expanded','false')})});
 const calm=()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches}catch{return false}};
 const scrollEnd=(el,smooth)=>el.scrollTo({top:el.scrollHeight,behavior:smooth&&!calm()?'smooth':'auto'});
 const drafts=new Map();
@@ -226,14 +228,18 @@ export async function renderLiveInbox(container){
   const threadChannel=c=>sendChannels[c.lastMessageType]
     ? [{type:sendChannels[c.lastMessageType],label:commentTypes[c.lastMessageType]?'Mensaje directo en '+commentTypes[c.lastMessageType]:channel(c.lastMessageType),needsSubject:sendChannels[c.lastMessageType]==='Email'}] : [];
   const usableChannels=offered=>asList(offered).filter(o=>o.available!==false);
+  const CHEVRON='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  // El canal elegido es un solo botón; al pulsarlo se abre la lista de canales (ocupa una línea, no dos filas).
   const pickerMarkup=offered=>{
    const list=asList(offered);
    if(list.length<2&&!list.some(o=>o.available===false))return `<p class="live-channel-single">Respondes por ${esc(list[0]?.label??'')}</p>`;
-   return list.map(o=>{
+   const chosen=list.find(o=>o.type===chatChannel&&o.available!==false)||list.find(o=>o.available!==false)||list[0];
+   const items=list.map(o=>{
     const off=o.available===false;
     const title=off?` title="${esc(CHANNEL_REASONS[o.reason]||'No disponible para este contacto.')}"`:'';
-    return `<button type="button" data-channel="${esc(o.type)}" class="channel-${esc(o.type)}${o.type===chatChannel&&!off?' selected':''}${off?' unavailable':''}"${off?' disabled aria-disabled="true"':''} aria-pressed="${o.type===chatChannel&&!off}"${title}><span class="live-channel-mark" aria-hidden="true">${channelMarks[o.type]||''}</span><span class="live-channel-label">${esc(o.label)}</span></button>`;
+    return `<button type="button" role="menuitemradio" aria-checked="${o.type===chatChannel&&!off}" data-channel="${esc(o.type)}" class="channel-${esc(o.type)}${o.type===chatChannel&&!off?' selected':''}${off?' unavailable':''}"${off?' disabled aria-disabled="true"':''} aria-pressed="${o.type===chatChannel&&!off}"${title}><span class="live-channel-mark" aria-hidden="true">${channelMarks[o.type]||''}</span><span class="live-channel-label">${esc(o.label)}</span>${off?`<small>${esc(CHANNEL_REASONS[o.reason]||'No disponible')}</small>`:''}</button>`;
    }).join('');
+   return `<div class="channel-menu"><button type="button" class="channel-current" aria-haspopup="menu" aria-expanded="false" aria-label="Canal de envío: ${esc(chosen?.label??'')}"><span class="live-channel-mark" aria-hidden="true">${channelMarks[chosen?.type]||''}</span><span class="live-channel-label">${esc(chosen?.label??'')}</span><span class="channel-chevron">${CHEVRON}</span></button><div class="channel-list" role="menu" hidden>${items}</div></div>`;
   };
   function composer(c,channels=null){
    const offered=channels??threadChannel(c);
@@ -266,6 +272,8 @@ export async function renderLiveInbox(container){
     const topic=$('#live-subject');
     if(topic){topic.value=draft.subject;topic.disabled=draft.sending;topic.oninput=()=>draft.subject=topic.value}
    }
+   const current=row.querySelector('.channel-current'),menu=row.querySelector('.channel-list');
+   if(current&&menu)current.onclick=e=>{e.stopPropagation();const open=menu.hidden;menu.hidden=!open;current.setAttribute('aria-expanded',String(open))};
    row.querySelectorAll('[data-channel]:not([disabled])').forEach(button=>button.onclick=()=>{
     if(draft.sending||button.dataset.channel===chatChannel)return;
     chatChannel=button.dataset.channel;draft.notice='';
@@ -760,6 +768,7 @@ export async function renderLiveInbox(container){
     if(version!==generation||!active()||connection!==select.value)return false;
     const updated=selected?data.items.find(c=>c.id===selected.id):null;
     const changed=!!selected&&(!messages.size||!!updated&&[updated.lastMessageDate,updated.lastMessageBody,updated.unreadCount].join('|')!==[selected.lastMessageDate,selected.lastMessageBody,selected.unreadCount].join('|'));
+    if(data.restricted===true&&mineButton){mineButton.hidden=true;if(filter==='mine'){filter='all';container.querySelectorAll('[data-live-filter]').forEach(n=>{const on=n.dataset.liveFilter==='all';n.classList.toggle('active',on);n.setAttribute('aria-pressed',String(on))})}}
     if(updated)for(const field of ['lastMessageDate','lastMessageBody','unreadCount'])selected[field]=updated[field];
     interval=Math.max(60,Number(data.syncIntervalSeconds)||120);
     pause=Math.max(pause,Number(data.state?.request_not_before)||0);

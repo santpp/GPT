@@ -68,10 +68,10 @@ with sync_playwright() as p:
   assert page.locator('#live-reply').is_visible() and page.locator('.tpl-panel').count()==0
   print('PASS the template is sent with only its choice and values, and appears in the chat')
   assert len(reads)==1,'the list is read once per chat'
-  page.locator('[data-channel="SMS"]').click()
+  page.locator('.channel-current').click();page.locator('[data-channel="SMS"]').click()
   assert page.locator('#live-template-toggle').is_hidden() and page.locator('#live-window-hint').is_hidden()
   print('PASS on SMS there is no template button and no WhatsApp notice')
-  if width==390:page.locator('[data-channel="WhatsApp"]').click();page.locator('#live-template-toggle').click();page.wait_for_selector('#tpl-select');page.select_option('#tpl-select','tpl-1');page.screenshot(path='/tmp/template-phone.png')
+  if width==390:page.locator('.channel-current').click();page.locator('[data-channel="WhatsApp"]').click();page.locator('#live-template-toggle').click();page.wait_for_selector('#tpl-select');page.select_option('#tpl-select','tpl-1');page.screenshot(path='/tmp/template-phone.png')
   assert not errors,errors
  print('PASS no JS errors')
  browser.close()

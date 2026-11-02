@@ -28,7 +28,8 @@ final class PermissionPolicy {
             'viewOpportunities'=>$enabled('opportunitiesEnabled')&&$scope(['opportunities.readonly','opportunities.write']),
             'editOpportunities'=>$enabled('opportunitiesEnabled')&&$scope(['opportunities.write']),
             'viewCalendars'=>$enabled('appointmentsEnabled')&&$scope(['calendars.readonly','calendars.write','calendars/events.readonly','calendars/events.write']),
-            'assignedDataOnly'=>!$admin&&(($actor['assigned_data_only']??false)===true||(int)($actor['assigned_data_only']??0)===1),
+            // Quien no administra la subcuenta ve y trabaja sólo lo que tiene asignado, tenga o no marcada esa restricción en la cuenta.
+            'assignedDataOnly'=>!$admin,
         ];
     }
     private static function object(mixed $value):array {

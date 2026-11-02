@@ -178,6 +178,7 @@ html[data-theme="dark"] .won-age.late{color:#e9678a}
 html[data-theme="dark"] .won-miss{color:#e66a8c}
 html[data-theme="dark"] .won-team-head strong{color:#e66a8c}
 html[data-theme="dark"] .board-month-pick select:focus,html[data-theme="dark"] .won-toolbar select:focus,html[data-theme="dark"] .period-custom select:focus{box-shadow:0 0 0 3px #00000066}
+html[data-theme="dark"] .channel-list{box-shadow:0 16px 40px #00000066}
 /* ---- a mano: paleta base y piezas que el generador no puede adivinar ---- */
 html[data-theme="dark"]{color-scheme:dark;--ink:#e6e8f0;--muted:#9aa0b4;--line:#2f3445;--paper:#1b1f2c;--bg:#12151f;--green:#d13c63;--accent:#f5b84a}
 html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}

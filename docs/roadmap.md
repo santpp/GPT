@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.8.7. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.8.8. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -221,6 +221,10 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## 1.8.7
 - El selector del mes del resumen (y los de Ganadas y «Otro mes») tienen el estilo de la app: borde fino, esquinas redondeadas, flecha propia y foco con el color de marca; ya no se ven como el campo nativo.
 - Se quita el filo lateral de los avisos (24 horas de WhatsApp, comentario de origen, advertencias del tablero, «Activar avisos» y la nota de Ganadas); quedan como texto limpio. En oscuro, las cifras del tablero también van sin cajas.
+
+## 1.8.8 · cada vendedor ve lo suyo y selector de canal desplegable
+- **Privacidad:** los vendedores veían todas las conversaciones en «Todas» (sólo «Mías» las filtraba). La restricción a lo asignado dependía de una marca de la cuenta que la mayoría de usuarios no tiene. Ahora **todo usuario que no administra la subcuenta ve y trabaja sólo lo que tiene asignado** (conversaciones, contactos, oportunidades y cifras del tablero), tenga o no esa marca; los administradores de la subcuenta y el propietario ven todo. La bandeja pide a la cuenta sólo lo suyo (las páginas llegan completas) y la pestaña «Mías», redundante para ellos, se oculta. Consecuencia: lo que entra sin asignar sólo lo ve quien administra hasta que se asigna.
+- **Selector de canal desplegable:** en lugar de dos filas de botones, un único botón con el canal elegido que abre una lista (con el motivo de los no disponibles); se cierra al elegir, al pulsar fuera o con Escape. Ocupa una línea.
 
 ## Siguiente (a decidir)
 - **Siguiente, ya acordado con el usuario (por orden):**

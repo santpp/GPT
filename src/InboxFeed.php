@@ -26,6 +26,8 @@ final class InboxFeed {
         if(is_string($channel)&&isset(self::CHANNELS[$channel]))$filters['lastMessageType']=$channel;
         $direction=$input['direction']??null;
         if(is_string($direction)&&in_array($direction,['inbound','outbound'],true))$filters['lastMessageDirection']=$direction;
+        // Quien sólo ve lo suyo pide a la cuenta sólo lo suyo: así cada página llega completa y no casi vacía.
+        if(($membership['capabilities']['assignedDataOnly']??false)===true&&is_string($membership['external_user_id']??null))$filters['assignedTo']=$membership['external_user_id'];
         // "Mine" can only ever mean the member's own imported identity.
         if(($input['mine']??null)==='1'&&is_string($membership['external_user_id']??null))$filters['assignedTo']=$membership['external_user_id'];
         $query=$input['query']??null;
@@ -82,6 +84,7 @@ final class InboxFeed {
         $restricted=(bool)($membership['capabilities']['assignedDataOnly']??false);
         return [
             'items'=>$visible,
+            'restricted'=>$restricted,
             'total'=>$restricted?count($visible):$total,
             'partial'=>$total>count($items),
             'stale'=>$stale,
