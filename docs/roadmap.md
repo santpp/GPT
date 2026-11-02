@@ -247,4 +247,8 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Modo «Texto grande» (letra +15 % y negrita) por dispositivo, en «Mi cuenta»; explicado en el manual y el tutorial.
 - Encabezado alineado; `/ayuda` en las reglas del servidor real; `native-delivery` usa el paquete más reciente.
 - Revisión de seguridad dirigida (SQL, HTML, cookies, CSRF, secretos). Pendiente: cabeceras `X-Frame-Options`/CSP en el servidor nativo.
-- Descartado: despliegue por etiqueta. Siguiente: V2.1 (resumen diario o semanal).
+- Descartado: despliegue por etiqueta. Siguiente: V2.1.
+
+## V2.1 · planificada
+- Resumen diario o semanal.
+- Cabeceras de seguridad del servidor nativo (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`; `Content-Security-Policy` aparte y con cuidado), preparadas como archivo para probarlas con copia del `.htaccess` y, si funcionan, incluidas en el paquete.
