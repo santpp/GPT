@@ -1,7 +1,7 @@
 // Pestaña «Ganadas» de Oportunidades: las ventas ganadas del mes, su monto, y las que están sin monto para completarlas.
 import {workspace,friendly} from './workspace.js';
 import {skeleton} from './skeleton.js';
-import {money,number} from './format.js';
+import {money,number,symbol} from './format.js';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const MONTHS=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -36,18 +36,23 @@ export async function renderWon(pane,active=()=>true){
   }
   function paint(){
     const t=data.totals;
-    $('#won-summary').innerHTML=`<div class="won-stats"><div><span>Ventas ganadas</span><strong>${number(t.count)}</strong></div><div><span>Monto vendido</span><strong>${esc(money(t.sum)||'—')}</strong></div><div class="${t.missing?'bad':''}"><span>Sin monto</span><strong>${number(t.missing)}</strong></div></div>${data.partial?'<p class="muted">Se muestran las ventas más recientes del mes; hay más de las que se pueden leer de una vez.</p>':''}`;
+    $('#won-summary').innerHTML=`<div class="won-stats"><div><span>Ventas ganadas</span><strong>${number(t.count)}</strong></div><div><span>Monto vendido</span><strong>${esc(money(t.sum)||'—')}</strong></div><div class="${t.missing?'bad':''}"><span>Sin monto</span><strong>${number(t.missing)}</strong></div></div>${data.partial?'<p class="won-note">La cuenta tiene muchas oportunidades ganadas en estos meses y se revisaron las 500 más recientes por fecha de creación; alguna venta antigua podría no aparecer.</p>':''}`;
     const box=$('#won-seller-box');
     if(data.canSeeAll&&data.bySeller.length){
       box.hidden=false;
       $('#won-seller').innerHTML='<option value="">Todos</option>'+data.bySeller.map(b=>`<option value="${esc(b.id??'none')}"${seller===(b.id??'none')?' selected':''}>${esc(b.name)} · ${b.count}${b.missing?` (${b.missing} sin monto)`:''}</option>`).join('');
     }else box.hidden=true;
-    const rows=data.items.map(item=>`<article class="won-row${item.missing?' missing':''}" data-won-id="${esc(item.id)}">
-      <div class="won-row-info"><strong>${esc(item.name||'Venta ganada')}</strong><small>${esc([item.contactName,item.assignedName||(item.assignedTo?null:'Sin responsable'),dateLabel(item.wonAt)].filter(Boolean).join(' · '))}</small></div>
-      ${item.missing
-        ?(data.canEdit?`<form class="won-inline" data-won-form="${esc(item.id)}"><label class="sr-only" for="wv-${esc(item.id)}">Monto</label><input id="wv-${esc(item.id)}" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="Monto" required><button class="primary">Guardar</button></form>`:'<span class="won-flag">Sin monto</span>')
-        :`<strong class="won-amount">${esc(money(item.value)||'—')}</strong>`}
-      <p class="won-inline-status" role="status"></p></article>`).join('');
+    const rows=data.items.map(item=>{
+      // Muchas oportunidades se llaman igual que su contacto: no se repite.
+      const contact=item.contactName&&item.contactName!==item.name?item.contactName:null;
+      const meta=[contact,item.assignedName||(item.assignedTo?null:'Sin responsable'),dateLabel(item.wonAt)].filter(Boolean).join(' · ');
+      return `<article class="won-row${item.missing?' missing':''}" data-won-id="${esc(item.id)}">
+        <div class="won-row-info"><strong>${esc(item.name||'Venta ganada')}</strong><small>${item.missing?'<b class="won-miss">Sin monto</b>'+(meta?' · ':''):''}${esc(meta)}</small></div>
+        ${item.missing
+          ?(data.canEdit?`<form class="won-inline" data-won-form="${esc(item.id)}"><div class="won-field"><label class="sr-only" for="wv-${esc(item.id)}">Monto</label><span class="won-currency" aria-hidden="true">${symbol()}</span><input id="wv-${esc(item.id)}" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0,00" autocomplete="off"><button class="primary won-save">Guardar</button></div></form>`:'')
+          :`<strong class="won-amount">${esc(money(item.value)||'—')}</strong>`}
+        <p class="won-inline-status" role="status"></p></article>`;
+    }).join('');
     $('#won-list').innerHTML=rows||'<p class="empty">No hay ventas ganadas en este mes.</p>';
     pane.querySelectorAll('[data-won-form]').forEach(form=>form.onsubmit=e=>save(e,form));
   }

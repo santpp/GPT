@@ -228,7 +228,8 @@ export async function renderDashboard(container){
       : '<p class="board-empty">Todavía no hay oportunidades abiertas en esta cuenta.</p>';
     $('#dashboard-body').innerHTML=`<section class="board-block">
         ${personal?`<div class="dashboard-tiles personal-tiles">${personal}</div>`:''}
-        <div class="dashboard-tiles">${tiles}<div class="board-tile" id="won-team" hidden></div></div>
+        <div class="dashboard-tiles">${tiles}</div>
+        <section class="won-team" id="won-team" hidden></section>
         <div class="section-label">Embudo por etapa</div>${stageList}
         ${data.opportunities?.sampled?'<p class="board-empty">Se resumen las oportunidades abiertas más recientes.</p>':''}
       </section>
@@ -296,8 +297,12 @@ export async function renderDashboard(container){
     const slot=container.querySelector('#won-team');if(!slot)return;
     const team=wonAlertState()?.team;
     if(!team||!team.missing){slot.hidden=true;slot.innerHTML='';return}
-    slot.hidden=false;slot.classList.add('bad');
-    slot.innerHTML=`<span>Ventas ganadas sin monto</span><strong>${number(team.missing)}</strong><small>${esc(team.bySeller.map(b=>`${b.name} ${b.missing}`).join(' · '))}</small>`;
+    slot.hidden=false;
+    slot.innerHTML=`<div class="section-label">Ventas ganadas sin monto</div>
+      <div class="won-team-head"><strong>${number(team.missing)}</strong><span>${team.missing===1?'venta sin monto este mes':'ventas sin monto este mes'}</span></div>
+      <ul class="won-by">${team.bySeller.map(b=>`<li><span>${esc(b.name)}</span><b>${number(b.missing)}</b></li>`).join('')}</ul>
+      <button type="button" class="link-button" data-go-won>Ver y completar en Ganadas</button>`;
+    slot.querySelector('[data-go-won]').onclick=()=>{workspace.pendingOppTab='won';window.dispatchEvent(new CustomEvent('agora:goto',{detail:{view:'board'}}))};
   }
   const onWon=()=>{if(!container.isConnected||container.dataset.view!=='dashboard'){window.removeEventListener('agora:won-alert',onWon);return}paintWonTeam()};
   window.addEventListener('agora:won-alert',onWon);

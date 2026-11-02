@@ -845,6 +845,38 @@ svg[stroke]{stroke-width:1.5;stroke-linecap:square;stroke-linejoin:miter}
  .won-head{padding:20px 18px 12px}.won-items{padding:6px 14px 2px}.won-actions{padding:14px 18px 22px}
 }
 @media(prefers-reduced-motion:reduce){.won-progress i,.won-item{transition:none}}
-#won-team.bad strong{color:#c0204b}
 .won-inline input,.won-toolbar select{border:1px solid var(--line);border-radius:var(--r-md);padding:0 12px;background:var(--paper);color:var(--ink);font:inherit}
 .won-age{margin-top:4px;color:var(--muted);font-size:13px}.won-age.late{color:#a01238;font-weight:600}
+/* 1.8.5 · Ganadas y resumen del equipo, con la estética del resto de la app */
+.won-toolbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;padding:2px 22px 18px}
+.won-toolbar label{display:grid;gap:6px;font-size:12px;color:var(--muted)}
+.won-toolbar select{width:100%;min-height:48px;font-size:15px}
+.won-toolbar label[hidden]{display:none}
+.won-stats{margin:0 0 18px;padding:4px 0 18px;border-bottom:1px solid var(--line)}
+.won-stats>div{padding:2px 14px}
+.won-stats strong{font-size:24px}
+.won-note{margin:0 0 14px;padding-left:12px;border-left:2px solid var(--line);color:var(--muted);font-size:13px;line-height:1.5}
+.won-row{display:grid;gap:10px;padding:16px 0;border-bottom:1px solid var(--line);border-left:0;padding-left:0}
+.won-row.missing{border-left:0;padding-left:0}
+.won-row-info small{font-size:13px;line-height:1.45}
+.won-miss{color:#c0204b;font-weight:600}
+.won-amount{font-size:18px;font-weight:600;letter-spacing:-.01em}
+.won-inline{display:block;width:100%}
+.won-inline .won-field input{width:auto}
+.won-row .won-field{max-width:420px}
+@media(min-width:700px){.won-row{grid-template-columns:1fr auto;align-items:center}.won-row .won-inline-status{grid-column:1/-1}.won-inline{width:340px}}
+.won-team{padding:0 22px 8px}
+.won-team .section-label{padding:0;margin:22px 0 10px}
+.won-team-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+.won-team-head strong{font:600 28px var(--sans);color:#c0204b;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.won-team-head span{color:var(--muted);font-size:14px}
+.won-by{list-style:none;margin:0 0 10px;padding:0;max-width:420px}
+.won-by li{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.won-by li:last-child{border-bottom:0}.won-by b{font-variant-numeric:tabular-nums}
+@media(max-width:600px){.won-toolbar,#won-summary,#won-list,.won-team{padding-left:14px;padding-right:14px}.won-toolbar{grid-template-columns:1fr 1fr}}
+.won-toolbar{grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr))}
+.won-toolbar label,.won-toolbar select{min-width:0}
+.won-toolbar select{min-width:0!important}
+.board-block .won-team{padding:0}
+@media(max-width:600px){.won-toolbar{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.board-block .won-team{padding:0}}
+@media(max-width:600px){.won-toolbar{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)}.won-toolbar select{font-size:14px;padding-left:10px;padding-right:6px}}
