@@ -85,7 +85,7 @@ function render(){
   }).join('');
   const more=state.count>(state.items||[]).length?`<p class="won-more">Y ${state.count-state.items.length} más. Complétalas en Oportunidades → Ganadas.</p>`:'';
   dialog.innerHTML=`<div class="won-sheet${urgent?' urgent':''}">
-    <header class="won-head"><span class="won-tag">${urgent?'Urgente':'Pendiente'}</span>
+    <header class="won-head">
       <h2>${state.count===1?'Una venta ganada sin monto':`${state.count} ventas ganadas sin monto`}</h2>
       <p>${urgent?`Llevas <b>${state.oldestDays} días</b> con ventas sin monto. Complétalas para seguir: sin el monto, la venta no cuenta en el tablero ni en tu comisión.`
         :'Escribe el monto de cada venta. Sin él, la venta no cuenta en el tablero ni en tu comisión.'}</p>

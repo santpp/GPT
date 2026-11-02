@@ -818,10 +818,9 @@ svg[stroke]{stroke-width:1.5;stroke-linecap:square;stroke-linejoin:miter}
 .won-dialog::backdrop{background:#12151fcc;backdrop-filter:blur(2px)}
 .won-sheet{display:flex;flex-direction:column;min-height:0}
 .won-head{padding:22px 22px 14px;border-top:5px solid #c0204b}
-.won-head h2{margin:8px 0 6px;font-size:21px;letter-spacing:-.015em}
+.won-head h2{margin:0 0 6px;font-size:21px;letter-spacing:-.015em}
 .won-head p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}.won-head p b{color:#c0204b}
-.won-tag{display:inline-block;padding:3px 10px;border-radius:999px;background:#fbe3e8;color:#a01238;font-size:12px;font-weight:700}
-.won-sheet.urgent .won-head{background:#fff1f3}.won-sheet.urgent .won-tag{background:#c0204b;color:#fff}
+.won-sheet.urgent .won-head{background:#fff1f3}
 .won-progress{height:6px;border-radius:999px;background:var(--line);margin:14px 0 6px;overflow:hidden}.won-progress i{display:block;height:100%;background:#c0204b;border-radius:inherit;transition:width .4s var(--ease)}
 .won-head small{color:var(--muted);font-size:12px}
 .won-done{text-align:center;padding:34px 22px}
@@ -830,7 +829,6 @@ svg[stroke]{stroke-width:1.5;stroke-linecap:square;stroke-linejoin:miter}
 .won-item.late{border-color:#e9a3b2;background:#fffafb}
 .won-item.saved{opacity:.35;transform:scale(.98)}
 .won-item-info{display:grid;gap:2px;min-width:0}.won-item-info strong{font-size:15px}.won-item-info small{color:var(--muted);font-size:13px}
-.won-age{justify-self:start;margin-top:4px;padding:2px 9px;border-radius:999px;background:var(--bg);color:var(--muted);font-size:12px}.won-age.late{background:#fbe3e8;color:#a01238;font-weight:600}
 .won-field{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:0;border:1px solid var(--line);border-radius:12px;background:var(--paper);overflow:hidden}
 .won-field:focus-within{border-color:#c0204b;box-shadow:0 0 0 3px #c0204b26}
 .won-currency{padding:0 4px 0 14px;color:var(--muted);font-weight:600}
@@ -849,3 +847,4 @@ svg[stroke]{stroke-width:1.5;stroke-linecap:square;stroke-linejoin:miter}
 @media(prefers-reduced-motion:reduce){.won-progress i,.won-item{transition:none}}
 #won-team.bad strong{color:#c0204b}
 .won-inline input,.won-toolbar select{border:1px solid var(--line);border-radius:var(--r-md);padding:0 12px;background:var(--paper);color:var(--ink);font:inherit}
+.won-age{margin-top:4px;color:var(--muted);font-size:13px}.won-age.late{color:#a01238;font-weight:600}

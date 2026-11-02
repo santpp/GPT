@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.8.3. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.8.4. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -206,6 +206,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## 1.8.3 · alerta rediseñada y fecha de las ventas
 - **Alerta rediseñada:** hoja con una franja roja arriba (en el móvil sube desde abajo), etiqueta «Pendiente» o «Urgente», barra de progreso («0 de 2 completadas»), una tarjeta por venta con los días que lleva (en rojo si cumple la escalada), campo de monto con el símbolo de la moneda ($ o €) pegado al botón Guardar, Enter para guardar, el cursor ya en el primer monto, «Guardar N ventas» cuando hay varias rellenas y animación al completarse cada una.
 - **Fecha de las ventas ganadas:** la búsqueda de oportunidades de la cuenta acepta `date` y `endDate` («start date», «end date») sin decir si filtran por la fecha de creación o por la del cambio de estado; cada oportunidad sí trae `lastStatusChangeAt` (el «status changed on»). Ahora se pide desde 90 días antes del mes y se descartan las que no cambiaron a ganada dentro del mes según `lastStatusChangeAt`. Así una venta creada antes y ganada este mes cuenta este mes, en la lista, la alerta y también en el resumen del mes del tablero (ventas, comisiones, ganancia), sea cual sea la fecha a la que filtre la cuenta. Si el mes trae más ventas de las que se pueden leer de una vez, se avisa.
+
+## 1.8.4
+- Alerta de ventas sin monto: se quita la etiqueta «Pendiente»/«Urgente» y la «píldora» de los días; los días son texto (en rojo si cumplen la escalada). La urgencia se nota por el fondo rosado de la cabecera, el título y la franja roja fija.
 
 ## Siguiente (a decidir)
 - **Siguiente, ya acordado con el usuario (por orden):**

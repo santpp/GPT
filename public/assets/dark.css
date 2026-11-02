@@ -169,15 +169,13 @@ html[data-theme="dark"] .won-dialog{box-shadow:0 24px 60px #00000066}
 html[data-theme="dark"] .won-dialog::backdrop{background:#12151fcc}
 html[data-theme="dark"] .won-head{border-top:5px solid #c0204b}
 html[data-theme="dark"] .won-head p b{color:#e66a8c}
-html[data-theme="dark"] .won-tag{background:#4a1f28;color:#e9678a}
 html[data-theme="dark"] .won-sheet.urgent .won-head{background:#1f222f}
-html[data-theme="dark"] .won-sheet.urgent .won-tag{background:#c0204b;color:#fff}
 html[data-theme="dark"] .won-progress i{background:#c0204b}
 html[data-theme="dark"] .won-item.late{border-color:#54363c;background:#1e212c}
-html[data-theme="dark"] .won-age.late{background:#4a1f28;color:#e9678a}
 html[data-theme="dark"] .won-field:focus-within{border-color:#c0204b;box-shadow:0 0 0 3px #00000066}
 html[data-theme="dark"] .won-item-status{color:#e66a8c}
 html[data-theme="dark"] #won-team.bad strong{color:#e66a8c}
+html[data-theme="dark"] .won-age.late{color:#e9678a}
 /* ---- a mano: paleta base y piezas que el generador no puede adivinar ---- */
 html[data-theme="dark"]{color-scheme:dark;--ink:#e6e8f0;--muted:#9aa0b4;--line:#2f3445;--paper:#1b1f2c;--bg:#12151f;--green:#d13c63;--accent:#f5b84a}
 html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}
