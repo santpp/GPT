@@ -13,7 +13,8 @@ output=Path(sys.argv[1]) if len(sys.argv)>1 else Path('/tmp/agora-cyberpanel-php
 output.parent.mkdir(parents=True,exist_ok=True)
 update='--update' in sys.argv
 version=re.search(r"VERSION='([^']+)'",(root/'src/Installation.php').read_text()).group(1)
-assets=sorted(p for p in (root/'public/assets').rglob('*') if p.is_file())
+# El PDF del manual pesa casi la mitad del paquete: se sube aparte, una sola vez, a public_html/assets/manual-vendedores.pdf.
+assets=sorted(p for p in (root/'public/assets').rglob('*') if p.is_file() and p.name!='manual-vendedores.pdf')
 index=(root/'public/index.html').read_text()
 worker=(root/'public/sw.js').read_text()
 digest=hashlib.sha256(index.encode()+worker.encode())
@@ -30,7 +31,7 @@ for file in sorted((root/'public').rglob('*')):
     if file.is_file() and file.name not in ['index.html','sw.js']:
         rel=file.relative_to(root/'public').as_posix()
         # El manual (PDF y capturas) sólo va en la carpeta de la versión: help.js lo busca junto a sí mismo.
-        if rel.startswith('assets/manual'):continue
+        if rel.startswith('assets/manual'):continue  # (el PDF queda fuera del paquete; ver arriba)
         files.append((file,'public_html/'+rel,0o644))
 # Relative JS imports keep the same directory, so every module uses this build.
 for file in assets:

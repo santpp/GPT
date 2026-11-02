@@ -5,7 +5,8 @@ Manual de uso para vendedores, tutorial de primera vez y el logo como botón de 
 ## Pasos
 
 1. Extraer `agora-update-1.9.0.zip` sobre las carpetas existentes. No hay migraciones nuevas.
-2. Cerrar Ágora del todo y volver a abrirla. El pie debe decir **v1.9.0**.
+2. **Subir el PDF una sola vez:** `releases/manual-vendedores.pdf` (o `public/assets/manual-vendedores.pdf` del repositorio) a `public_html/assets/manual-vendedores.pdf`. No va dentro del ZIP para que pese menos (≈ 1 MB); las próximas versiones no lo tocan. Hasta que lo subas, el botón «Descargar el PDF» no funciona; el manual dentro de la app sí.
+3. Cerrar Ágora del todo y volver a abrirla. El pie debe decir **v1.9.0**.
 
 ## Qué cambia
 

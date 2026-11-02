@@ -2,7 +2,8 @@
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Las rutas siguen la carpeta de este módulo, así funcionan igual en desarrollo y en el paquete de cada versión.
 const BASE=new URL('./',import.meta.url).pathname;
-export const MANUAL_PDF=BASE+'manual-vendedores.pdf';
+// El PDF vive en una ruta fija (no dentro de la carpeta de cada versión): se sube una vez y las actualizaciones no lo tocan.
+export const MANUAL_PDF='/assets/manual-vendedores.pdf';
 let menu=null;
 
 function closeMenu(){if(menu){menu.remove();menu=null;document.removeEventListener('click',outside,true);document.removeEventListener('keydown',keys,true)}}
