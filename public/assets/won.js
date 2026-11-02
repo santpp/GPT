@@ -36,7 +36,7 @@ export async function renderWon(pane,active=()=>true){
   }
   function paint(){
     const t=data.totals;
-    $('#won-summary').innerHTML=`<div class="won-stats"><div><span>Ventas ganadas</span><strong>${number(t.count)}</strong></div><div><span>Monto vendido</span><strong>${esc(money(t.sum)||'—')}</strong></div><div class="${t.missing?'bad':''}"><span>Sin monto</span><strong>${number(t.missing)}</strong></div></div>${data.partial?'<p class="won-note">La cuenta tiene muchas oportunidades ganadas en estos meses y se revisaron las 500 más recientes por fecha de creación; alguna venta antigua podría no aparecer.</p>':''}`;
+    $('#won-summary').innerHTML=`<div class="won-stats"><div><span>Ventas ganadas</span><strong>${number(t.count)}</strong></div><div><span>Monto vendido</span><strong>${esc(money(t.sum)||'—')}</strong></div><div class="${t.missing?'bad':''}"><span>Sin monto</span><strong>${number(t.missing)}</strong></div></div>${data.partial?'<p class="won-note">Hay muchas ventas en estos meses, así que puede faltar alguna de las más antiguas.</p>':''}`;
     const box=$('#won-seller-box');
     if(data.canSeeAll&&data.bySeller.length){
       box.hidden=false;

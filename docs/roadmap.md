@@ -211,7 +211,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Alerta de ventas sin monto: se quita la etiqueta «Pendiente»/«Urgente» y la «píldora» de los días; los días son texto (en rojo si cumplen la escalada). La urgencia se nota por el fondo rosado de la cabecera, el título y la franja roja fija.
 
 ## 1.8.5 · Ganadas y resumen del equipo con la estética de la app
-- **Ganadas:** mes y vendedor en dos columnas sin desbordar; cifras con una línea separadora; cada venta sin la barra roja gruesa: nombre, «Sin monto» en rojo con el vendedor y la fecha, y el campo de monto con símbolo de moneda y Guardar integrado (igual que en la alerta); no se repite el contacto cuando se llama igual que la oportunidad; el aviso de «se revisaron las 500 más recientes» pasa a una nota discreta.
+- **Ganadas:** mes y vendedor en dos columnas sin desbordar; cifras con una línea separadora; cada venta sin la barra roja gruesa: nombre, «Sin monto» en rojo con el vendedor y la fecha, y el campo de monto con símbolo de moneda y Guardar integrado (igual que en la alerta); no se repite el contacto cuando se llama igual que la oportunidad; el aviso de que hay muchas ventas (se revisan las 500 más recientes) pasa a una línea breve y natural: «Hay muchas ventas en estos meses, así que puede faltar alguna de las más antiguas.»
 - **Tablero, resumen del equipo:** deja de ser una tarjeta más y pasa a una sección propia («Ventas ganadas sin monto»): el total, una lista de vendedores con su cuenta (una por línea) y «Ver y completar en Ganadas».
 
 ## Siguiente (a decidir)

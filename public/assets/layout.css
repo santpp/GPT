@@ -880,3 +880,4 @@ svg[stroke]{stroke-width:1.5;stroke-linecap:square;stroke-linejoin:miter}
 .board-block .won-team{padding:0}
 @media(max-width:600px){.won-toolbar{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.board-block .won-team{padding:0}}
 @media(max-width:600px){.won-toolbar{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)}.won-toolbar select{font-size:14px;padding-left:10px;padding-right:6px}}
+.won-note{margin:0 0 14px;padding:0;border:0;color:var(--muted);font-size:13px;line-height:1.5}
