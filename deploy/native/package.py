@@ -28,7 +28,10 @@ for folder in ['src','bin','database']:
             files.append((file,'agora-private/'+file.relative_to(root).as_posix(),0o644))
 for file in sorted((root/'public').rglob('*')):
     if file.is_file() and file.name not in ['index.html','sw.js']:
-        files.append((file,'public_html/'+file.relative_to(root/'public').as_posix(),0o644))
+        rel=file.relative_to(root/'public').as_posix()
+        # El manual (PDF y capturas) sólo va en la carpeta de la versión: help.js lo busca junto a sí mismo.
+        if rel.startswith('assets/manual'):continue
+        files.append((file,'public_html/'+rel,0o644))
 # Relative JS imports keep the same directory, so every module uses this build.
 for file in assets:
     files.append((file,'public_html/'+prefix+'/'+file.relative_to(root/'public/assets').as_posix(),0o644))

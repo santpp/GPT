@@ -37,7 +37,11 @@ def fresh(b,tour_done=True,w=390,h=844):
     ctx.add_init_script("try{localStorage.setItem('agora-welcome-later','1');"+("localStorage.setItem('agora-tour-done','1');" if tour_done else "")+"localStorage.setItem('agora-passkey-asked','1')}catch(e){}")
     page=ctx.new_page();page.route('**/api/**',api);errors=[];page.on('pageerror',lambda e:errors.append(str(e)));return page,errors
 def shot(page,name):
-    page.wait_for_timeout(700);page.screenshot(path=os.path.join(IMG,name),animations='disabled');print('captura',name)
+    page.wait_for_timeout(700);path=os.path.join(IMG,name);page.screenshot(path=path,animations='disabled')
+    # Paleta reducida y 780 px de ancho: se ven nítidas en el manual y el paquete pesa poco.
+    from PIL import Image
+    im=Image.open(path).convert('RGB');im=im.resize((780,round(im.height*780/im.width)),Image.LANCZOS)
+    im.quantize(colors=96,method=Image.MEDIANCUT,dither=Image.NONE).save(path,optimize=True);print('captura',name,os.path.getsize(path)//1024,'KB')
 with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.getenv('CHROMIUM_PATH','/usr/bin/chromium'),args=['--no-sandbox'])
     page,errs=fresh(b)
