@@ -4,7 +4,7 @@
 import {workspace,friendly} from './workspace.js';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let state=null,timer=null,popupPending=false,dialog=null,relaxed=false;
+let state=null,timer=null,popupPending=false,dialog=null,relaxed=false,gateFn=null;
 export const wonAlertState=()=>state;
 
 async function api(path,method='GET',body=null){
@@ -15,7 +15,7 @@ async function api(path,method='GET',body=null){
 }
 
 /** Tras entrar (o cambiar de subcuenta) se espera 4 segundos antes de consultar, y la primera vez se abre la ventana. */
-export function startWonAlert(){popupPending=true;relaxed=false;schedule(4000)}
+export function startWonAlert(gate=null){gateFn=gate;popupPending=true;relaxed=false;schedule(4000)}
 function schedule(ms){clearTimeout(timer);timer=setTimeout(check,ms)}
 window.addEventListener('agora:opportunity-edited',()=>schedule(1500));
 window.addEventListener('agora:logout',()=>{clearTimeout(timer);state=null;paintChrome();if(dialog?.open)dialog.close()});
@@ -29,9 +29,14 @@ async function check(){
     if(connection!==workspace.current())return;
     state={...alert,connection,total:state&&state.connection===connection&&state.total?state.total:alert.count};
     paintChrome();
-    if(alert.count>0&&(popupPending||dialog?.open))openDialog();
-    else if(alert.count===0&&dialog?.open)finish();
-    popupPending=false;
+    if(alert.count>0&&dialog?.open)openDialog();
+    else if(alert.count>0&&popupPending){
+      // La ventana espera su turno detrás del tutorial, la huella y las novedades; la urgente, sólo detrás del tutorial.
+      popupPending=false;
+      const urgent=!!alert.escalate;
+      Promise.resolve(gateFn?gateFn(urgent?'tutorial':'all'):null).then(()=>{if(state&&state.count>0&&state.connection===workspace.current())openDialog()});
+    }
+    else if(alert.count===0){popupPending=false;if(dialog?.open)finish()}
   }catch{/* la alerta nunca estorba: si no se puede consultar, no se muestra */}
 }
 

@@ -9,6 +9,8 @@ import {enable as enablePush,disable as disablePush,heal as healPush,state as pu
 import {renderBoard} from './board.js';
 import {windowMarkup} from './announce.js';
 import {startWonAlert} from './won-alert.js';
+import {runTour,tourDone} from './tour.js';
+import {initHelp,renderHelp} from './help.js';
 import {supported as passkeysSupported,platformReady,remembered as passkeyRemembered,remember as rememberPasskey,create as createPasskey,sign as signPasskey,trouble as passkeyTrouble} from './passkeys.js';
 
 const $=s=>document.querySelector(s);
@@ -20,6 +22,7 @@ const VIEWS={
   inbox:{path:'/bandeja',title:'Conversaciones',eyebrow:'BANDEJA',heading:'Cada conversación cuenta.',subtitle:'Todo el contexto, en un solo lugar.',render:renderLiveInbox,account:true},
   contacts:{path:'/contactos',title:'Contactos',eyebrow:'TU GENTE',heading:'Personas, no registros.',subtitle:'Tu siguiente conversación empieza aquí.',render:renderContacts,account:true},
   board:{path:'/oportunidades',title:'Oportunidades',eyebrow:'EMBUDO',heading:'De la conexión al cierre.',subtitle:'Cada oportunidad abierta, a la vista.',render:renderBoard,account:true},
+  help:{path:'/ayuda',title:'Ayuda',eyebrow:'MANUAL',heading:'Manual de uso.',subtitle:'Lo básico para trabajar en Ágora.',render:renderHelp,account:false},
   settings:{path:'/conexiones',title:'Conexiones',eyebrow:'ADMINISTRACIÓN',heading:'Tu espacio, a tu manera.',subtitle:'Gestiona las cuentas conectadas y el acceso del equipo.',render:renderIntegrations,account:false},
 };
 const byPath=path=>Object.keys(VIEWS).find(name=>VIEWS[name].path===path);
@@ -131,19 +134,23 @@ $('#push-toggle').onclick=async()=>{
 
 // ---- Novedades: lo que escribe el administrador, una vez al entrar ----------------------
 let announcing=false;
-async function announce(tries=0){
-  if(announcing||$("#app").hidden)return;
+/** Muestra las novedades pendientes, una tras otra; devuelve una promesa que se cumple cuando ya no queda ninguna en pantalla. */
+function announce(tries=0){
+  return new Promise(done=>announceNow(tries,done));
+}
+async function announceNow(tries,done){
+  if(announcing||$("#app").hidden)return done();
   const dialog=$('#action-dialog');
   // Si hay otra cosa en pantalla (bienvenida, huella, un formulario), se espera.
-  if(dialog.open||!$('#welcome').hidden){if(tries<8)setTimeout(()=>announce(tries+1),3000);return}
+  if(dialog.open||!$('#welcome').hidden){if(tries<8)setTimeout(()=>announceNow(tries+1,done),3000);else done();return}
   let items;
-  try{items=(await api('announcements')).items}catch{return}
-  if(!Array.isArray(items)||!items.length)return;
+  try{items=(await api('announcements')).items}catch{return done()}
+  if(!Array.isArray(items)||!items.length)return done();
   announcing=true;
   const csrf=workspace.me?.csrf||'';
   const showOne=index=>{
     const item=items[index];
-    if(!item){announcing=false;return}
+    if(!item){announcing=false;return done()}
     $('#dialog-content').innerHTML=windowMarkup(item);
     dialog.showModal();
     // Cerrada de la forma que sea (botón, ×, Esc), cuenta como vista.
@@ -203,6 +210,32 @@ function finishWelcome(){const done=welcomeDone;welcomeDone=null;if(done)done()}
 /** La bienvenida y, cuando termina, lo que venga detrás (la oferta de la huella). */
 function welcomeThen(next){welcomeDone=next;welcome()}
 
+// ---- Qué se muestra al entrar, y en qué orden ------------------------------------------
+// Una sola ventana a la vez: tutorial (sólo vendedores, una vez por dispositivo) o, si no, la invitación a instalar y
+// activar avisos; después la huella (al iniciar sesión), las novedades y, al final, la alerta de ventas sin monto.
+// La alerta urgente pasa justo detrás del tutorial. La alerta se consulta a los 4 segundos igualmente: sólo espera su turno.
+const defer=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve}};
+let gate={tutorial:defer(),all:defer()};
+const gateFor=which=>Promise.race([(which==='tutorial'?gate.tutorial:gate.all).promise,new Promise(r=>setTimeout(r,90000))]);
+const isSeller=me=>me?.user?.identity_type==='external'&&me?.user?.capabilities?.assignedDataOnly===true;
+const welcomeStep=()=>new Promise(done=>{welcomeDone=done;welcome()});
+async function runTutorial(force=false){
+  if(isNative())return false;
+  if(!force&&(tourDone()||!isSeller(workspace.me)))return false;
+  await new Promise(r=>setTimeout(r,300));
+  return runTour({pushState:()=>pushNow,activatePush:()=>$('#push-toggle').click()});
+}
+async function startup(fresh){
+  try{
+    const shown=await runTutorial();
+    gate.tutorial.resolve();
+    if(!shown)await welcomeStep();
+    if(fresh)await offerPasskey();
+    await announce();
+  }catch{/* un fallo de una ventana no impide las siguientes */}
+  finally{gate.tutorial.resolve();gate.all.resolve()}
+}
+
 function renderAccounts(){
   const select=$('#account'),box=$('.account-switch');
   const many=workspace.connections.length>1;
@@ -236,7 +269,8 @@ async function startSession(){
   // Los avisos del navegador pasan a ser de quien entra ahora, y se rehacen si se perdieron.
   checkPush();
   // Ventas ganadas sin monto: se consulta 4 segundos después de entrar.
-  startWonAlert();
+  gate={tutorial:defer(),all:defer()};
+  startWonAlert(gateFor);
   // Un aviso trae a su conversación: /conversations/{id}?c={subcuenta}.
   let deep=location.pathname.match(/^\/conversations\/([A-Za-z0-9_-]{1,80})$/);
   let wanted=deep?new URLSearchParams(location.search).get('c'):null;
@@ -267,7 +301,7 @@ function showSignin(){
 }
 
 $('#account').onchange=e=>{if(workspace.select(e.target.value))renderAccounts()};
-workspace.onChange(()=>{startWonAlert();renderAccounts();if(VIEWS[currentView].account)show(currentView,{push:false})});
+workspace.onChange(()=>{startWonAlert(gateFor);renderAccounts();if(VIEWS[currentView].account)show(currentView,{push:false})});
 document.querySelectorAll('button[data-view]').forEach(b=>b.onclick=()=>show(b.dataset.view));
 window.addEventListener('agora:goto',e=>{const d=e.detail||{};if(!VIEWS[d.view])return;workspace.pendingFilter=d.filter||null;show(d.view)});
 window.addEventListener('popstate',()=>{const name=requested();if(name)show(name,{push:false})});
@@ -327,6 +361,7 @@ async function offerPasskey(){
   if(!me||me.passkeys>0||!(await platformReady()))return;
   try{if(localStorage.getItem('agora-passkey-later')==='1')return}catch{}
   const dialog=$('#action-dialog');if(dialog.open)return;
+  const closedPromise=new Promise(r=>dialog.addEventListener('close',r,{once:true}));
   $('#dialog-content').innerHTML=`<h2>Entra con tu huella o tu cara</h2><p class="dialog-copy">La próxima vez no tendrás que escribir nada: Ágora te pedirá la huella, Face ID o el PIN de este dispositivo. Tu huella o tu cara nunca salen del teléfono.</p><div class="dialog-actions"><button id="offer-yes" class="primary">Activar</button><button id="offer-later" class="link-button">Ahora no</button></div><p id="offer-result" class="dialog-copy" role="status"></p>`;
   dialog.showModal();
   $('#offer-later').onclick=()=>{try{localStorage.setItem('agora-passkey-later','1')}catch{};dialog.close()};
@@ -335,6 +370,7 @@ async function offerPasskey(){
     try{await enrollPasskey();dialog.close();toast('Listo. La próxima vez entra con tu huella o tu cara.')}
     catch(error){$('#offer-result').textContent=error.status?error.message:passkeyTrouble(error);e.target.disabled=false}
   };
+  await closedPromise;
 }
 async function enrollPasskey(){
   const csrf=workspace.me?.csrf||'';
@@ -420,7 +456,7 @@ verifyForm.onsubmit=async e=>{
   try{
     const r=await fetch('/api/team-login/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
     const data=await r.json();
-    if(r.ok){await startSession();welcomeThen(offerPasskey);setTimeout(()=>announce(),2500)}else $('#team-verify-result').textContent=data.error||'No se ha podido acceder.';
+    if(r.ok){await startSession();startup(true)}else $('#team-verify-result').textContent=data.error||'No se ha podido acceder.';
   }catch{$('#team-verify-result').textContent='No se ha podido conectar con el servidor.'}
   finally{button.disabled=false}
 };
@@ -429,7 +465,7 @@ $('#login-form').onsubmit=async e=>{
   try{
     const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});
     const data=await r.json();
-    if(r.ok){await startSession();welcomeThen(offerPasskey);setTimeout(()=>announce(),2500)}else $('#login-result').textContent=data.error||'No se ha podido acceder.';
+    if(r.ok){await startSession();startup(true)}else $('#login-result').textContent=data.error||'No se ha podido acceder.';
   }catch{$('#login-result').textContent='No se ha podido conectar con el servidor.'}
   finally{button.disabled=false}
 };
@@ -515,5 +551,6 @@ if('serviceWorker' in navigator){
 }
 
 // A visit always starts from the real session: there is no sample workspace.
-startSession().then(()=>{if(!$('#app').hidden){welcome();setTimeout(()=>announce(),1500)}}).catch(showSignin);
+startSession().then(()=>{if(!$('#app').hidden)startup(false)}).catch(showSignin);
+initHelp({openManual:()=>show('help'),startTour:()=>runTutorial(true)});
 export {toast};

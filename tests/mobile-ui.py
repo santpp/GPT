@@ -92,8 +92,9 @@ with sync_playwright() as p:
 
     page.locator('[data-view="inbox"]').click()
     page.wait_for_selector('[data-live-id]')
-    account=page.locator('#account').bounding_box()
-    assert account['height']>=40, f'the account switch is only {account["height"]}px tall'
+    account=(page.locator('#account') if page.locator('#account').is_visible() else page.locator('.account-switch')).bounding_box()
+    # Con una sola subcuenta el selector es sólo su nombre (sin nada que tocar); el alto mínimo es para el selector real.
+    if page.locator('#account').is_visible():assert account['height']>=40, f'the account switch is only {account["height"]}px tall'
     assert account['x']+account['width']<=PHONE['width'], 'the account switch is cut off'
     print('PASS the account switch stays reachable and whole in the header')
     assert not errors,errors

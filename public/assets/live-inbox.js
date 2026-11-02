@@ -239,7 +239,7 @@ export async function renderLiveInbox(container){
     const title=off?` title="${esc(CHANNEL_REASONS[o.reason]||'No disponible para este contacto.')}"`:'';
     return `<button type="button" role="menuitemradio" aria-checked="${o.type===chatChannel&&!off}" data-channel="${esc(o.type)}" class="channel-${esc(o.type)}${o.type===chatChannel&&!off?' selected':''}${off?' unavailable':''}"${off?' disabled aria-disabled="true"':''} aria-pressed="${o.type===chatChannel&&!off}"${title}><span class="live-channel-mark" aria-hidden="true">${channelMarks[o.type]||''}</span><span class="live-channel-label">${esc(o.label)}</span>${off?`<small>${esc(CHANNEL_REASONS[o.reason]||'No disponible')}</small>`:''}</button>`;
    }).join('');
-   return `<div class="channel-menu"><button type="button" class="channel-current" aria-haspopup="menu" aria-expanded="false" aria-label="Canal de envío: ${esc(chosen?.label??'')}"><span class="live-channel-mark" aria-hidden="true">${channelMarks[chosen?.type]||''}</span><span class="live-channel-label">${esc(chosen?.label??'')}</span><span class="channel-chevron">${CHEVRON}</span></button><div class="channel-list" role="menu" hidden>${items}</div></div>`;
+   return `<div class="channel-menu"><button type="button" class="channel-current" data-ch="${esc(chosen?.type??'')}" aria-haspopup="menu" aria-expanded="false" aria-label="Canal de envío: ${esc(chosen?.label??'')}"><span class="live-channel-mark" aria-hidden="true">${channelMarks[chosen?.type]||''}</span><span class="live-channel-label">${esc(chosen?.label??'')}</span><span class="channel-chevron">${CHEVRON}</span></button><div class="channel-list" role="menu" hidden>${items}</div></div>`;
   };
   function composer(c,channels=null){
    const offered=channels??threadChannel(c);

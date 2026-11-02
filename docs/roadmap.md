@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 31 de octubre de 2026. Versión publicada: 1.8.8. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 2 de noviembre de 2026. Versión publicada: 1.9.0. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -234,3 +234,10 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
   - Descartado por el usuario: búsqueda global, vista de conversación con ficha fija en escritorio, avisos configurables por canal.
 - Plantillas de WhatsApp: en espera del WABA ID o de la salida de «Comprobar plantillas».
 - Motivos de pérdida de oportunidades: bloqueado, la cuenta no devuelve ninguno.
+
+## 1.9.0 · manual, tutorial y logo de ayuda
+- Manual de uso para vendedores (`/ayuda` y PDF descargable con capturas de datos inventados), solo vendedores, sin nombres de proveedor.
+- Tutorial de primera vez (omitible, una vez por dispositivo, repetible desde el logo); el logo abre el menú de ayuda.
+- Cola de ventanas al entrar: tutorial → clave de acceso → novedades → alerta de ventas (la urgente, justo tras el tutorial).
+- El canal elegido recupera su color; generador `tools/make-manual.py`.
+- Siguiente: 1.10 (prueba `announce-ui` inestable y revisión de seguridad completa), 1.11 (pantalla de mantenimiento), V2.1 (resumen diario/semanal).

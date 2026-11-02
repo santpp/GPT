@@ -179,6 +179,15 @@ html[data-theme="dark"] .won-miss{color:#e66a8c}
 html[data-theme="dark"] .won-team-head strong{color:#e66a8c}
 html[data-theme="dark"] .board-month-pick select:focus,html[data-theme="dark"] .won-toolbar select:focus,html[data-theme="dark"] .period-custom select:focus{box-shadow:0 0 0 3px #00000066}
 html[data-theme="dark"] .channel-list{box-shadow:0 16px 40px #00000066}
+html[data-theme="dark"] .help-menu{box-shadow:0 16px 40px #00000066}
+html[data-theme="dark"] .tour-dim{background:#12151fb8}
+html[data-theme="dark"] .tour-spot{box-shadow:0 0 0 9999px #00000066,0 0 0 2px #00000066}
+html[data-theme="dark"] .tour-card{box-shadow:0 20px 50px #00000066}
+html[data-theme="dark"] .manual figure img{box-shadow:0 8px 24px #00000066}
+@media print{html[data-theme="dark"] body{background:#1d1f2b!important}html[data-theme="dark"] main,html[data-theme="dark"] #view{background:#1d1f2b!important}}
+html[data-theme="dark"] .live-channels .channel-current[data-ch="WhatsApp"]{border-color:#1faf54;background:#222634;color:#69e899}
+html[data-theme="dark"] .live-channels .channel-current[data-ch="IG"]{border-color:#c13584;background:#222532;color:#db75af}
+html[data-theme="dark"] .live-channels .channel-current[data-ch="FB"]{border-color:#0866ff;background:#1b2b48;color:#679ae9}
 /* ---- a mano: paleta base y piezas que el generador no puede adivinar ---- */
 html[data-theme="dark"]{color-scheme:dark;--ink:#e6e8f0;--muted:#9aa0b4;--line:#2f3445;--paper:#1b1f2c;--bg:#12151f;--green:#d13c63;--accent:#f5b84a}
 html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}
