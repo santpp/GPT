@@ -188,6 +188,7 @@ html[data-theme="dark"] .manual figure img{box-shadow:0 8px 24px #00000066}
 html[data-theme="dark"] .live-channels .channel-current[data-ch="WhatsApp"]{border-color:#1faf54;background:#222634;color:#69e899}
 html[data-theme="dark"] .live-channels .channel-current[data-ch="IG"]{border-color:#c13584;background:#222532;color:#db75af}
 html[data-theme="dark"] .live-channels .channel-current[data-ch="FB"]{border-color:#0866ff;background:#1b2b48;color:#679ae9}
+html[data-theme="dark"] .maintenance-card{box-shadow:0 20px 50px #00000066}
 /* ---- a mano: paleta base y piezas que el generador no puede adivinar ---- */
 html[data-theme="dark"]{color-scheme:dark;--ink:#e6e8f0;--muted:#9aa0b4;--line:#2f3445;--paper:#1b1f2c;--bg:#12151f;--green:#d13c63;--accent:#f5b84a}
 html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}

@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 2 de noviembre de 2026. Versión publicada: 1.9.0. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 2 de noviembre de 2026. Versión publicada: 1.10.0. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -241,3 +241,10 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Cola de ventanas al entrar: tutorial → clave de acceso → novedades → alerta de ventas (la urgente, justo tras el tutorial).
 - El canal elegido recupera su color; generador `tools/make-manual.py`.
 - Siguiente: 1.10 (prueba `announce-ui` inestable y revisión de seguridad completa), 1.11 (pantalla de mantenimiento), V2.1 (resumen diario/semanal).
+
+## 1.10.0 · mantenimiento, texto grande y revisión
+- Pantalla de mantenimiento (servidor caído o pausa del propietario) con el texto acordado; interruptor del propietario en «Mi cuenta».
+- Modo «Texto grande» (letra +15 % y negrita) por dispositivo, en «Mi cuenta»; explicado en el manual y el tutorial.
+- Encabezado alineado; `/ayuda` en las reglas del servidor real; `native-delivery` usa el paquete más reciente.
+- Revisión de seguridad dirigida (SQL, HTML, cookies, CSRF, secretos). Pendiente: cabeceras `X-Frame-Options`/CSP en el servidor nativo.
+- Descartado: despliegue por etiqueta. Siguiente: V2.1 (resumen diario o semanal).

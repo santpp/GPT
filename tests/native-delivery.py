@@ -9,7 +9,12 @@ import threading
 import zipfile
 from playwright.sync_api import sync_playwright
 
-archive = Path(os.getenv('NATIVE_ARCHIVE', 'releases/agora-update-0.8.0.zip'))
+def newest_package():
+    import re
+    found = [(tuple(int(n) for n in re.findall(r'\d+', path.stem)), path) for path in Path('releases').glob('agora-update-*.zip')]
+    return max(found)[1]
+# Por defecto, el paquete más reciente: con uno antiguo la prueba no mide lo que se publica ahora.
+archive = Path(os.getenv('NATIVE_ARCHIVE') or newest_package())
 with tempfile.TemporaryDirectory() as directory:
     with zipfile.ZipFile(archive) as bundle:
         bundle.extractall(directory)

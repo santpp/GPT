@@ -43,7 +43,7 @@ try {
  check($code===200&&$recovered['ready']===true,'a pending database update is applied on its own, with no button to press');
  check(in_array('directory_cache',array_column(query('SHOW TABLES')->fetchAll(PDO::FETCH_NUM),0),true),'the missing table is back after that single request');
  [$code,$diagnostics]=request('admin/diagnostics');
- check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='1.9.0','administrator sees installation readiness and version');
+ check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='1.10.0','administrator sees installation readiness and version');
  check(!str_contains(json_encode($diagnostics),'APP_KEY_FILE')&&!str_contains(json_encode($diagnostics),'integration.key'),'diagnostics expose no configuration values or key paths');
  check(request('admin/installation/encryption','POST')[0]===403,'preparation requires CSRF');
  [$code,$profile]=request('me');check($code===200&&!array_key_exists('ghl_user_id',$profile['user'])&&$profile['user']['capabilities']['configureConnections'],'public profile exposes capabilities without provider-specific fields');
@@ -214,6 +214,17 @@ try {
  check($listed['items'][0]['id']===$made['id']&&$listed['items'][0]['seen']===1,'the administrator sees how many people have seen it');
  check(request('admin/announcements/'.$made['id'],'DELETE',null,$headers)[0]===200&&request('admin/announcements/'.$made['id'],'DELETE',null,$headers)[0]===404,'and can withdraw it');
  check(request('announcements/999999999/read','POST',null,$headers)[0]===404,'a novelty that does not exist cannot be marked');
+ // ---- pausa de mantenimiento -------------------------------------------------------
+ [$code,$paused]=request('admin/maintenance','POST',['on'=>true],$headers);
+ check($code===200&&$paused['on']===true,'the owner can pause Ágora for the team');
+ check(request('me')[0]===200,'and keeps working while the pause lasts');
+ query("UPDATE users SET role='supervisor' WHERE id=?",[$users[0]]);
+ [$code,$blocked]=request('me');
+ check($code===503&&($blocked['code']??'')==='maintenance','anyone else gets the maintenance answer');
+ check(request('admin/maintenance','POST',['on'=>false],$headers)[0]===403,'and cannot turn the pause off');
+ query("UPDATE users SET role='administrator' WHERE id=?",[$users[0]]);
+ [$code,$resumed]=request('admin/maintenance','POST',['on'=>false],$headers);
+ check($code===200&&$resumed['on']===false&&request('me')[0]===200,'the owner turns it off and everyone is back');
  request('login','POST',['email'=>$email,'password'=>$password]);
  echo "PASS $checks integration checks\n";
 } finally {

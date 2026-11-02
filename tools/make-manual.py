@@ -27,6 +27,7 @@ def api(route):
     elif path=='/api/workspace/board-month':d={'sales':{'closings':9,'total':5400,'counted':9,'partial':False},'mine':{'closings':4,'sold':1730.5},'profit':None}
     elif path=='/api/workspace/tags':d={'items':[{'name':'cliente'},{'name':'sábado'},{'name':'seguimiento'}]}
     elif path=='/api/workspace/contacts':d={'items':[{'id':f'k{i}','name':r[0],'email':'','phone':'','tags':[]} for i,r in enumerate(INBOX)],'total':len(INBOX),'limit':20}
+    elif path=='/api/security':d={'passkeys':[],'sessions':[{'id':1,'label':'Este teléfono','current':True,'mine':True,'lastUsedAt':'2026-11-02T10:00:00+00:00'}],'lockChoices':[5,15,30,60],'deviceRemembered':True,'lockMinutes':None,'team':None}
     elif path=='/api/workspace/won':d={'period':'2026-11','items':WON,'totals':{'count':4,'sum':1730.5,'missing':2},'canEdit':True,'sellers':[]}
     elif path=='/api/workspace/won-alert' and FLAGS['alert']:d={'month':'2026-11','count':2,'items':WON[:2],'oldestDays':3,'days':7,'escalate':False,'canEdit':True,'team':None}
     elif path=='/api/workspace/dashboard':d={'restricted':True,'conversations':{'total':9,'unread':6,'waiting':4},'contacts':None,'leads':{'today':3,'mine':None,'linked':True,'range':{}},'opportunities':{'count':7,'value':8200,'stages':[]},'readAt':'2026-11-02T10:00:00+00:00'}
@@ -61,6 +62,7 @@ with sync_playwright() as p:
     page.evaluate("document.querySelectorAll('dialog[open]').forEach(d=>d.close())")
     tab=page.locator('[data-board-tab="won"],#board-tab-won,button:has-text("Ganadas")').first;tab.click();page.wait_for_selector('.won-item,.won-row',timeout=8000);shot(page,'05-ganadas.png')
     page.goto(BASE+'/tablero');page.wait_for_timeout(900);shot(page,'07-tablero.png')
+    page.locator('#profile-top').click();page.wait_for_selector('#text-large');shot(page,'09-perfil.png')
     page.close()
     page,e2=fresh(b,tour_done=False)
     page.goto(BASE+'/bandeja');page.wait_for_selector('.tour-card h2',timeout=10000)

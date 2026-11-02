@@ -20,6 +20,7 @@ export function runTour(hooks){
       {target:()=>first('button.nav[data-view="board"]'),title:'Oportunidades',body:'Tus embudos y, en «Ganadas», tus ventas cerradas. Cada venta ganada necesita su monto: si falta alguno, Ágora te lo recuerda al entrar hasta que lo completes.'},
       {target:()=>first('button.nav[data-view="dashboard"]'),title:'Tablero',body:'Tus cifras: leads, conversaciones sin responder y tus ventas del mes. Cambia el periodo con el selector de arriba.'},
       {target:()=>first('#push-toggle'),title:'Avisos',dynamic:true},
+      {target:()=>first('#profile-top'),title:'Tu perfil',body:'Toca tu inicial para abrir «Mi cuenta»: cambia entre modo claro y oscuro, activa el «Texto grande» (letra más grande y en negrita) si te cuesta leer, entra con tu huella y cierra sesión.'},
       {target:()=>first('.sidebar .brand','.brand-help'),title:'¿Necesitas ayuda?',body:'Toca el logo de Ágora cuando quieras: ahí está el manual, este tutorial y el PDF para descargar.'},
     ].filter(step=>!step.target||step.target());
     // Un paso cuyo botón no se ve (por ejemplo, los avisos en la app nativa) se salta.

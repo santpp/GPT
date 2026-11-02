@@ -1,0 +1,327 @@
+/* Generado por tools/make-large.py: no editar a mano. */
+html[data-text="large"] body *{font-weight:700!important}
+html[data-text="large"] body{font-size:14.95px!important}
+html[data-text="large"] h2{font-size:16.1px!important}
+html[data-text="large"] .brand{font-size:36.8px!important}
+html[data-text="large"] .brand-sub{font-size:9.2px!important}
+html[data-text="large"] .workspace-label{font-size:10.35px!important}
+html[data-text="large"] .nav{font-size:13.8px!important}
+html[data-text="large"] .nav>span{font-size:21.85px!important}
+html[data-text="large"] .nav b{font-size:11.5px!important}
+html[data-text="large"] .connection{font-size:11.5px!important}
+html[data-text="large"] .profile{font-size:13.8px!important}
+html[data-text="large"] .profile small{font-size:11.5px!important}
+html[data-text="large"] .avatar{font-size:13.8px!important}
+html[data-text="large"] .avatar.small{font-size:11.5px!important}
+html[data-text="large"] .breadcrumbs{font-size:12.65px!important}
+html[data-text="large"] .network{font-size:11.5px!important}
+html[data-text="large"] .icon-btn{font-size:23px!important}
+html[data-text="large"] .eyebrow{font-size:9.2px!important}
+html[data-text="large"] .page-heading p{font-size:12.65px!important}
+html[data-text="large"] .heading-detail{font-size:12.65px!important}
+html[data-text="large"] .heading-detail small{font-size:10.35px!important}
+html[data-text="large"] .stats span{font-size:11.5px!important}
+html[data-text="large"] .stat-note .spark{font-size:36.8px!important}
+html[data-text="large"] .list-heading h2 span{font-size:11.5px!important}
+html[data-text="large"] .search input{font-size:11.5px!important}
+html[data-text="large"] .search span{font-size:23px!important}
+html[data-text="large"] .search kbd{font-size:9.2px!important}
+html[data-text="large"] .tabs button{font-size:11.5px!important}
+html[data-text="large"] .tabs span{font-size:9.2px!important}
+html[data-text="large"] .conversation-item .avatar{font-size:11.5px!important}
+html[data-text="large"] .conversation-info strong{font-size:12.65px!important}
+html[data-text="large"] .conversation-info time{font-size:9.2px!important}
+html[data-text="large"] .conversation-info p{font-size:11.5px!important}
+html[data-text="large"] .channel{font-size:9.2px!important}
+html[data-text="large"] .unread{font-size:9.2px!important}
+html[data-text="large"] .list-footer{font-size:10.35px!important}
+html[data-text="large"] .chat-person h2{font-size:13.8px!important}
+html[data-text="large"] .chat-person>span{font-size:10.35px!important}
+html[data-text="large"] .chat-header .icon-btn{font-size:20.7px!important}
+html[data-text="large"] .conversation-context{font-size:9.2px!important}
+html[data-text="large"] .conversation-context button{font-size:9.2px!important}
+html[data-text="large"] .day-label{font-size:9.2px!important}
+html[data-text="large"] .bubble{font-size:12.65px!important}
+html[data-text="large"] .bubble time{font-size:9.2px!important}
+html[data-text="large"] .composer-tabs{font-size:10.35px!important}
+html[data-text="large"] .composer-tabs strong{font-size:10.35px!important}
+html[data-text="large"] .composer-tabs button{font-size:10.35px!important}
+html[data-text="large"] .composer-tabs>span{font-size:9.2px!important}
+html[data-text="large"] .composer textarea{font-size:12.65px!important}
+html[data-text="large"] .composer-hint{font-size:9.2px!important}
+html[data-text="large"] .send,html[data-text="large"] .primary{font-size:11.5px!important}
+html[data-text="large"] .panel-heading h2{font-size:12.65px!important}
+html[data-text="large"] .panel-heading button{font-size:19.55px!important}
+html[data-text="large"] .contact-identity h3{font-size:17.25px!important}
+html[data-text="large"] .contact-identity p{font-size:10.35px!important}
+html[data-text="large"] .contact-links a,html[data-text="large"] .contact-links button{font-size:10.35px!important}
+html[data-text="large"] .section-label{font-size:9.2px!important}
+html[data-text="large"] .detail-row{font-size:10.35px!important}
+html[data-text="large"] .tag{font-size:9.2px!important}
+html[data-text="large"] .opportunity h3{font-size:11.5px!important}
+html[data-text="large"] .opportunity p{font-size:10.35px!important}
+html[data-text="large"] .quick-actions button{font-size:9.2px!important}
+html[data-text="large"] .task{font-size:11.5px!important}
+html[data-text="large"] .task small{font-size:9.2px!important}
+html[data-text="large"] .page-footer{font-size:9.2px!important}
+html[data-text="large"] .card h3{font-size:16.1px!important}
+html[data-text="large"] .card p{font-size:12.65px!important}
+html[data-text="large"] .dialog-copy{font-size:13.8px!important}
+html[data-text="large"] .dialog-form label{font-size:12.65px!important}
+html[data-text="large"] .integration-card footer button{font-size:12.65px!important}
+html[data-text="large"] .integration-status{font-size:11.5px!important}
+html[data-text="large"] .settings-notice{font-size:13.8px!important}
+html[data-text="large"] .access-panel h3{font-size:13.8px!important}
+html[data-text="large"] .access-panel label{font-size:12.65px!important}
+html[data-text="large"] .access-panel .access-state{font-size:12.65px!important}
+@media(max-width:850px){html[data-text="large"] .nav>span{font-size:26.45px!important}html[data-text="large"] h1{font-size:34.5px!important}html[data-text="large"] .page-footer{font-size:8.05px!important}}
+@media(max-width:600px){html[data-text="large"] .nav{font-size:9.2px!important}html[data-text="large"] .nav>span{font-size:23px!important}html[data-text="large"] .eyebrow{font-size:8.05px!important}html[data-text="large"] h1{font-size:33.35px!important}html[data-text="large"] .page-heading p{font-size:11.5px!important}html[data-text="large"] .stats>div>span{font-size:10.35px!important}html[data-text="large"] .stats strong{font-size:27.6px!important}html[data-text="large"] .stats strong small{font-size:9.2px!important}html[data-text="large"] .bubble{font-size:13.8px!important}html[data-text="large"] .composer textarea{font-size:16.1px!important}html[data-text="large"] .composer-hint{font-size:9.2px!important}html[data-text="large"] .conversation-info strong{font-size:13.8px!important}html[data-text="large"] .conversation-info p{font-size:12.65px!important}html[data-text="large"] .conversation-info time{font-size:10.35px!important}html[data-text="large"] .conversation-info .channel{font-size:10.35px!important}html[data-text="large"] .search input{font-size:13.8px!important}html[data-text="large"] .tabs button{font-size:12.65px!important}}
+@media(max-width:600px){html[data-text="large"] .nav>span{font-size:20.7px!important}html[data-text="large"] .integration-heading h2{font-size:14.95px!important}}
+html[data-text="large"] .live-toolbar label{font-size:12.65px!important}
+html[data-text="large"] .live-toolbar select{font-size:16.1px!important}
+html[data-text="large"] .live-feedback{font-size:12.65px!important}
+html[data-text="large"] #live-count{font-size:12.65px!important}
+html[data-text="large"] .live-search-hint{font-size:11.5px!important}
+html[data-text="large"] .live-conversation time{font-size:11.5px!important}
+html[data-text="large"] .live-chat-header p{font-size:12.65px!important}
+html[data-text="large"] .live-chat-header button{font-size:25.3px!important}
+html[data-text="large"] .live-history-actions{font-size:12.65px!important}
+html[data-text="large"] .live-message-log .bubble{font-size:14.95px!important}
+html[data-text="large"] .live-readonly{font-size:12.65px!important}
+@media(max-width:600px){html[data-text="large"] .live-conversation .conversation-info strong{font-size:16.1px!important}html[data-text="large"] .live-conversation .conversation-info p{font-size:14.95px!important}html[data-text="large"] .live-conversation .conversation-info .channel{font-size:12.65px!important}}
+html[data-text="large"] .live-composer label{font-size:12.65px!important}
+html[data-text="large"] .live-composer span,html[data-text="large"] .live-composer p{font-size:12.65px!important}
+@media(max-width:600px){html[data-text="large"] .live-composer textarea{font-size:18.4px!important}}
+html[data-text="large"] .live-auto-status{font-size:12.65px!important}
+html[data-text="large"] .live-profile-header h2{font-size:19.55px!important}
+html[data-text="large"] .live-profile-header button{font-size:25.3px!important}
+html[data-text="large"] .live-profile-actions a{font-size:12.65px!important}
+html[data-text="large"] .live-profile-details span,html[data-text="large"] .live-profile-fields span,html[data-text="large"] .live-profile-tags .muted{font-size:10.35px!important}
+html[data-text="large"] .live-profile-details strong,html[data-text="large"] .live-profile-fields strong{font-size:12.65px!important}
+html[data-text="large"] .live-profile-opportunities>.muted{font-size:11.5px!important}
+html[data-text="large"] .live-opportunity h3{font-size:12.65px!important}
+html[data-text="large"] .live-opportunity span{font-size:10.35px!important}
+html[data-text="large"] .live-opportunity strong{font-size:11.5px!important}
+html[data-text="large"] .live-opportunity-all summary{font-size:11.5px!important}
+html[data-text="large"] .live-tasks>.muted,html[data-text="large"] .live-notes>.muted,html[data-text="large"] .live-appointments>.muted{font-size:11.5px!important}
+html[data-text="large"] .live-task>button{font-size:17.25px!important}
+html[data-text="large"] .live-task strong{font-size:12.65px!important}
+html[data-text="large"] .live-task p{font-size:11.5px!important}
+html[data-text="large"] .live-task small{font-size:10.35px!important}
+html[data-text="large"] .live-note p{font-size:12.65px!important}
+html[data-text="large"] .live-appointment strong{font-size:12.65px!important}
+html[data-text="large"] .live-note small,html[data-text="large"] .live-appointment small{font-size:10.35px!important}
+html[data-text="large"] .live-quick-actions summary{font-size:11.5px!important}
+html[data-text="large"] .live-quick-actions input,html[data-text="large"] .live-quick-actions textarea{font-size:12.65px!important}
+html[data-text="large"] #live-activity-status{font-size:11.5px!important}
+html[data-text="large"] .signin-copy{font-size:13.8px!important}
+html[data-text="large"] .signin .admin-login summary{font-size:12.65px!important}
+html[data-text="large"] .account-switch{font-size:11.5px!important}
+html[data-text="large"] .account-switch select{font-size:12.65px!important}
+html[data-text="large"] .contact-card header h3{font-size:14.95px!important}
+html[data-text="large"] .board-column h2{font-size:13.8px!important}
+html[data-text="large"] .board-total{font-size:11.5px!important}
+html[data-text="large"] .board-card h3{font-size:13.8px!important}
+html[data-text="large"] .board-card p{font-size:11.5px!important}
+html[data-text="large"] .board-empty{font-size:11.5px!important}
+@media(max-width:700px){html[data-text="large"] .nav{font-size:11.5px!important}html[data-text="large"] .nav>span{font-size:25.3px!important}html[data-text="large"] .breadcrumbs{font-size:14.95px!important}html[data-text="large"] .breadcrumbs strong{font-size:17.25px!important}html[data-text="large"] .account-switch select{font-size:14.95px!important}html[data-text="large"] h1{font-size:27.6px!important}html[data-text="large"] .page-heading p{font-size:13.8px!important}html[data-text="large"] .live-conversation .conversation-info strong{font-size:17.25px!important}html[data-text="large"] .live-chat-header h2{font-size:18.4px!important}html[data-text="large"] .bubble{font-size:16.1px!important}html[data-text="large"] .live-composer textarea{font-size:18.4px!important}html[data-text="large"] .live-composer .primary{font-size:14.95px!important}html[data-text="large"] .live-history-actions button{font-size:14.95px!important}html[data-text="large"] .live-toolbar select{font-size:17.25px!important}html[data-text="large"] .live-feedback,html[data-text="large"] .live-auto-status{font-size:13.8px!important}html[data-text="large"] .search input{font-size:18.4px!important}html[data-text="large"] .tabs button{font-size:14.95px!important}html[data-text="large"] .live-profile-header h2{font-size:21.85px!important}html[data-text="large"] .live-profile-details strong,html[data-text="large"] .live-profile-fields strong{font-size:14.95px!important}html[data-text="large"] .live-profile-details span,html[data-text="large"] .live-profile-fields span{font-size:12.65px!important}html[data-text="large"] .live-profile-actions a{font-size:14.95px!important}html[data-text="large"] .live-task>button{font-size:23px!important}html[data-text="large"] .live-task strong{font-size:16.1px!important}html[data-text="large"] .live-quick-actions summary{font-size:14.95px!important}html[data-text="large"] .live-quick-actions input,html[data-text="large"] .live-quick-actions textarea{font-size:18.4px!important}html[data-text="large"] .contact-card header h3{font-size:17.25px!important}html[data-text="large"] .contact-card .detail-row{font-size:13.8px!important}html[data-text="large"] .contact-card .detail-row strong{font-size:14.95px!important}html[data-text="large"] .board-column h2{font-size:17.25px!important}html[data-text="large"] .board-card h3{font-size:16.1px!important}html[data-text="large"] .integration-card footer button{font-size:14.95px!important}html[data-text="large"] .access-panel select{font-size:18.4px!important}html[data-text="large"] .dialog-form input,html[data-text="large"] .dialog-form textarea,html[data-text="large"] .dialog-form select{font-size:18.4px!important}html[data-text="large"] .dialog-form .primary,html[data-text="large"] .signin .primary{font-size:16.1px!important}}
+html[data-text="large"] .live-channels button{font-size:12.65px!important}
+html[data-text="large"] .live-channels button span{font-size:14.95px!important}
+html[data-text="large"] .live-channel-single{font-size:11.5px!important}
+html[data-text="large"] .live-subject-field{font-size:12.65px!important}
+html[data-text="large"] #live-edit-contact{font-size:12.65px!important}
+html[data-text="large"] .live-contact-form label{font-size:12.65px!important}
+html[data-text="large"] .live-contact-form input{font-size:13.8px!important}
+html[data-text="large"] .live-contact-form .tag button{font-size:16.1px!important}
+html[data-text="large"] #live-add-tag{font-size:12.65px!important}
+html[data-text="large"] #live-contact-status{font-size:12.65px!important}
+@media(max-width:700px){html[data-text="large"] .live-channels button{font-size:14.95px!important}html[data-text="large"] .live-contact-form input{font-size:18.4px!important}html[data-text="large"] #live-edit-contact,html[data-text="large"] #live-add-tag,html[data-text="large"] #live-save-contact{font-size:14.95px!important}}
+html[data-text="large"] .live-contact-form select,html[data-text="large"] .live-contact-form textarea{font-size:13.8px!important}
+html[data-text="large"] .live-check{font-size:13.8px!important}
+html[data-text="large"] .live-field-name{font-size:12.65px!important}
+@media(max-width:700px){html[data-text="large"] .live-contact-form select,html[data-text="large"] .live-contact-form textarea{font-size:18.4px!important}}
+html[data-text="large"] #live-focus{font-size:19.55px!important}
+html[data-text="large"] .live-channel-filters button{font-size:11.5px!important}
+html[data-text="large"] .live-attachment{font-size:12.65px!important}
+html[data-text="large"] #nav-unread{font-size:11.5px!important}
+@media(max-width:700px){html[data-text="large"] .live-channel-filters button{font-size:13.8px!important}html[data-text="large"] #nav-unread{font-size:10.35px!important}}
+html[data-text="large"] .record-row strong{font-size:13.8px!important}
+html[data-text="large"] .record-row small{font-size:11.5px!important}
+html[data-text="large"] .record-header h2{font-size:19.55px!important}
+html[data-text="large"] .record-header p{font-size:12.65px!important}
+html[data-text="large"] .record-header .avatar{font-size:16.1px!important}
+html[data-text="large"] .record-flag{font-size:11.5px!important}
+html[data-text="large"] .board-tile span{font-size:11.5px!important}
+html[data-text="large"] .board-tile small{font-size:11.5px!important}
+@media(max-width:900px){html[data-text="large"] .records-layout.record-open .mobile-back{font-size:23px!important}}
+@media(max-width:600px){html[data-text="large"] .record-row strong{font-size:16.1px!important}html[data-text="large"] .record-row small{font-size:13.8px!important}html[data-text="large"] .live-profile-details strong,html[data-text="large"] .live-profile-fields strong{font-size:14.95px!important}}
+html[data-text="large"] .opportunity-form label{font-size:12.65px!important}
+html[data-text="large"] .opportunity-form input,html[data-text="large"] .opportunity-form select{font-size:13.8px!important}
+html[data-text="large"] .opportunity-form-actions [data-cancel]{font-size:12.65px!important}
+html[data-text="large"] .opportunity-form [data-status]{font-size:11.5px!important}
+html[data-text="large"] .live-opportunity-edit,html[data-text="large"] .live-opportunity-new{font-size:11.5px!important}
+@media(max-width:600px){html[data-text="large"] .opportunity-form input,html[data-text="large"] .opportunity-form select{font-size:18.4px!important}html[data-text="large"] .live-opportunity-edit,html[data-text="large"] .live-opportunity-new{font-size:13.8px!important}}
+html[data-text="large"] .live-more{font-size:12.65px!important}
+@media(max-width:600px){html[data-text="large"] .live-more{font-size:14.95px!important}}
+html[data-text="large"] .push-toggle{font-size:11.5px!important}
+html[data-text="large"] .push-toggle>span:first-child{font-size:17.25px!important}
+@media(max-width:600px){html[data-text="large"] .push-toggle>span:first-child{font-size:20.7px!important}}
+html[data-text="large"] .device-list h3{font-size:13.8px!important}
+html[data-text="large"] .live-toolbar label{font-size:11.5px!important}
+html[data-text="large"] .live-toolbar select{font-size:13.8px!important}
+html[data-text="large"] .push-toggle{font-size:11.5px!important}
+html[data-text="large"] .board-lead{font-size:12.65px!important}
+html[data-text="large"] .board-lead small{font-size:11.5px!important}
+html[data-text="large"] .board-month-pick{font-size:11.5px!important}
+html[data-text="large"] .board-month-pick input{font-size:12.65px!important}
+html[data-text="large"] #board-settings{font-size:12.65px!important}
+html[data-text="large"] .board-warning{font-size:11.5px!important}
+html[data-text="large"] .waterfall-value{font-size:11.5px!important}
+html[data-text="large"] .waterfall-label{font-size:10.35px!important}
+html[data-text="large"] .board-stage h3{font-size:13.8px!important}
+html[data-text="large"] .board-stage p{font-size:11.5px!important}
+html[data-text="large"] .board-goal-main span{font-size:11.5px!important}
+html[data-text="large"] .board-goal-main small{font-size:11.5px!important}
+html[data-text="large"] .board-state{font-size:10.35px!important}
+html[data-text="large"] .board-table{font-size:12.65px!important}
+html[data-text="large"] .board-table thead th{font-size:10.35px!important}
+html[data-text="large"] .board-table td b{font-size:11.5px!important}
+html[data-text="large"] .board-note{font-size:10.35px!important}
+@media(max-width:600px){html[data-text="large"] .board-lead strong{font-size:32.2px!important}html[data-text="large"] .board-goal-main strong{font-size:29.9px!important}html[data-text="large"] .waterfall-value{font-size:10.35px!important}}
+@media(max-width:600px){html[data-text="large"] .board-table th[scope="row"]{font-size:16.1px!important}html[data-text="large"] .board-table td{font-size:14.95px!important}html[data-text="large"] .board-table td::before{font-size:12.65px!important}html[data-text="large"] .board-table td b{font-size:13.8px!important}html[data-text="large"] .board-state{font-size:12.65px!important}}
+html[data-text="large"] .push-chain li{font-size:12.65px!important}
+@media(max-width:600px){html[data-text="large"] .push-chain li{font-size:13.8px!important}}
+html[data-text="large"] .board-source{font-size:11.5px!important}
+html[data-text="large"] .external-check h3{font-size:14.95px!important}
+html[data-text="large"] .external-check p,html[data-text="large"] .external-check li{font-size:12.65px!important}
+html[data-text="large"] .external-check button{font-size:12.65px!important}
+@media(max-width:600px){html[data-text="large"] .external-check-url input{font-size:13.8px!important}}
+html[data-text="large"] .att-media a{font-size:10.35px!important}
+html[data-text="large"] .att-file{font-size:12.65px!important}
+html[data-text="large"] .att-file b{font-size:11.5px!important}
+html[data-text="large"] .viewer-bar{font-size:13.8px!important}
+html[data-text="large"] .viewer-bar a{font-size:12.65px!important}
+html[data-text="large"] .viewer-close{font-size:29.9px!important}
+html[data-text="large"] .msg-why{font-size:11.5px!important}
+html[data-text="large"] .msg-retry{font-size:11.5px!important}
+@media(max-width:600px){html[data-text="large"] .msg-why{font-size:13.8px!important}html[data-text="large"] .msg-retry{font-size:13.8px!important}html[data-text="large"] .att-file{font-size:14.95px!important}}
+html[data-text="large"] .live-toolbar .live-feedback{font-size:12.65px!important}
+html[data-text="large"] .live-conversation .conversation-info header time{font-size:11.5px!important}
+html[data-text="large"] .passkey-button{font-size:16.1px!important}
+html[data-text="large"] .link-button{font-size:13.8px!important}
+html[data-text="large"] .profile-top .avatar{font-size:12.65px!important}
+html[data-text="large"] .security-block h3{font-size:14.95px!important}
+html[data-text="large"] .security-block h4{font-size:12.65px!important}
+html[data-text="large"] .security-lock{font-size:13.8px!important}
+html[data-text="large"] .security-lock select{font-size:14.95px!important}
+html[data-text="large"] .security-hint{font-size:12.65px!important}
+html[data-text="large"] .security-list b{font-size:13.8px!important}
+html[data-text="large"] .security-list small{font-size:12.65px!important}
+html[data-text="large"] .live-window-hint{font-size:13.8px!important}
+html[data-text="large"] .tpl-pick,html[data-text="large"] .tpl-var{font-size:13.8px!important}
+html[data-text="large"] .tpl-pick select,html[data-text="large"] .tpl-var input{font-size:16.1px!important}
+html[data-text="large"] .tpl-preview{font-size:14.95px!important}
+html[data-text="large"] .tpl-buttons span{font-size:13.8px!important}
+html[data-text="large"] .tpl-note{font-size:12.65px!important}
+html[data-text="large"] .live-channel-filters select{font-size:13.8px!important}
+@media(max-width:600px){html[data-text="large"] .live-channel-filters select{font-size:16.1px!important}}
+html[data-text="large"] .secondary{font-size:11.5px!important}
+@media(max-width:600px){html[data-text="large"] .record-actions button{font-size:14.95px!important}}
+@media(min-width:601px){html[data-text="large"] .live-channel-filters select{font-size:12.65px!important}}
+html[data-text="large"] .wa-diagnosis{font-size:13.8px!important}
+html[data-text="large"] .wa-diagnosis .muted{font-size:12.65px!important}
+html[data-text="large"] .wa-diagnosis summary{font-size:12.65px!important}
+html[data-text="large"] .external-check-label{font-size:12.65px!important}
+html[data-text="large"] .won-button{font-size:13.8px!important}
+html[data-text="large"] .welcome-text strong{font-size:16.1px!important}
+html[data-text="large"] .welcome-text p{font-size:13.8px!important}
+html[data-text="large"] .welcome-actions .primary{font-size:14.95px!important}
+html[data-text="large"] .sidebar-version{font-size:11.5px!important}
+html[data-text="large"] .account-version{font-size:12.65px!important}
+html[data-text="large"] .contact-group legend{font-size:12.65px!important}
+html[data-text="large"] .contact-switch small{font-size:12.65px!important}
+html[data-text="large"] .contact-save p{font-size:13.8px!important}
+html[data-text="large"] .contact-save .primary{font-size:14.95px!important}
+html[data-text="large"] .won-button{font-size:13.8px!important}
+html[data-text="large"] .won-button span[aria-hidden]{font-size:14.95px!important}
+html[data-text="large"] .board-origin{font-size:13.8px!important}
+html[data-text="large"] .announce-card h4{font-size:13.8px!important}
+html[data-text="large"] .announce-hint{font-size:12.65px!important}
+html[data-text="large"] .announce-title{font-size:23px!important}
+html[data-text="large"] .announce-body{font-size:16.1px!important}
+html[data-text="large"] .announce-link{font-size:14.95px!important}
+html[data-text="large"] .assign-button{font-size:13.8px!important}
+html[data-text="large"] .origin-note{font-size:14.95px!important}
+html[data-text="large"] .comment-tag{font-size:12.65px!important}
+html[data-text="large"] .updated-at{font-size:13.8px!important}
+html[data-text="large"] .section-label{font-size:17.25px!important}
+html[data-text="large"] .eyebrow{font-size:13.8px!important}
+html[data-text="large"] .board-table thead th{font-size:13.8px!important}
+html[data-text="large"] .contact-group legend{font-size:14.95px!important}
+html[data-text="large"] .board-tile span{font-size:13.8px!important}
+html[data-text="large"] .board-tile small{font-size:12.65px!important}
+html[data-text="large"] .folder-title{font-size:14.95px!important}
+html[data-text="large"] .tag-option{font-size:14.95px!important}
+html[data-text="large"] details.contact-group>summary{font-size:16.1px!important}
+html[data-text="large"] details.contact-group>summary small{font-size:13.8px!important}
+html[data-text="large"] .folder-samples{font-size:13.8px!important}
+html[data-text="large"] .account-switch.single>span{font-size:14.95px!important}
+html[data-text="large"] .reply-dm{font-size:14.95px!important}
+html[data-text="large"] .period-btn{font-size:16.1px!important}
+html[data-text="large"] .period-list button{font-size:16.1px!important}
+html[data-text="large"] .period-custom label{font-size:13.8px!important}
+html[data-text="large"] .origin-note,html[data-text="large"] .live-window-hint,html[data-text="large"] .board-warning,html[data-text="large"] .backup-notice.warn{font-size:14.95px!important}
+html[data-text="large"] .push-toggle{font-size:13.8px!important}
+html[data-text="large"] .push-banner{font-size:14.95px!important}
+html[data-text="large"] .push-banner .primary{font-size:14.95px!important}
+html[data-text="large"] .board-tile .link-button{font-size:13.8px!important}
+html[data-text="large"] .conversation-item .waiting{font-size:13.8px!important}
+html[data-text="large"] .opp-tabs button{font-size:16.1px!important}
+html[data-text="large"] .tab-badge,html[data-text="large"] .nav.has-alert::after{font-size:12.65px!important}
+html[data-text="large"] .won-toolbar label{font-size:13.8px!important}
+html[data-text="large"] .won-stats span{font-size:13.8px!important}
+html[data-text="large"] .won-row-info small{font-size:13.8px!important}
+html[data-text="large"] .won-amount{font-size:18.4px!important}
+html[data-text="large"] .won-flag{font-size:14.95px!important}
+html[data-text="large"] .won-inline-status{font-size:13.8px!important}
+@media(max-width:600px){html[data-text="large"] .won-stats strong{font-size:25.3px!important}}
+html[data-text="large"] .won-banner{font-size:16.1px!important}
+html[data-text="large"] .won-head h2{font-size:24.15px!important}
+html[data-text="large"] .won-head p{font-size:16.1px!important}
+html[data-text="large"] .won-head small{font-size:13.8px!important}
+html[data-text="large"] .won-item-info strong{font-size:17.25px!important}
+html[data-text="large"] .won-item-info small{font-size:14.95px!important}
+html[data-text="large"] .won-field input{font-size:20.7px!important}
+html[data-text="large"] .won-field .won-save{font-size:16.1px!important}
+html[data-text="large"] .won-item-status{font-size:13.8px!important}
+html[data-text="large"] .won-more{font-size:14.95px!important}
+html[data-text="large"] .won-age{font-size:14.95px!important}
+html[data-text="large"] .won-toolbar label{font-size:13.8px!important}
+html[data-text="large"] .won-toolbar select{font-size:17.25px!important}
+html[data-text="large"] .won-stats strong{font-size:27.6px!important}
+html[data-text="large"] .won-note{font-size:14.95px!important}
+html[data-text="large"] .won-row-info small{font-size:14.95px!important}
+html[data-text="large"] .won-amount{font-size:20.7px!important}
+html[data-text="large"] .won-team-head span{font-size:16.1px!important}
+html[data-text="large"] .won-by li{font-size:16.1px!important}
+@media(max-width:600px){html[data-text="large"] .won-toolbar select{font-size:16.1px!important}}
+html[data-text="large"] .won-note{font-size:14.95px!important}
+html[data-text="large"] .board-month-pick{font-size:13.8px!important}
+html[data-text="large"] .board-month-pick select,html[data-text="large"] .won-toolbar select,html[data-text="large"] .period-custom select{font-size:17.25px!important}
+html[data-text="large"] .live-channels .channel-current{font-size:16.1px!important}
+html[data-text="large"] .live-channels .channel-list button[data-channel]{font-size:16.1px!important}
+html[data-text="large"] .live-channels .channel-list button small{font-size:12.65px!important}
+html[data-text="large"] .help-menu>*{font-size:16.1px!important}
+html[data-text="large"] .tour-count{font-size:13.8px!important}
+html[data-text="large"] .tour-card h2{font-size:21.85px!important}
+html[data-text="large"] .tour-body{font-size:16.1px!important}
+html[data-text="large"] .manual{font-size:17.25px!important}
+html[data-text="large"] .manual h1{font-size:34.5px!important}
+html[data-text="large"] .manual h2{font-size:25.3px!important}
+html[data-text="large"] .manual h3{font-size:18.4px!important}
+html[data-text="large"] .manual figcaption{font-size:14.95px!important}
+html[data-text="large"] .manual .manual-meta{font-size:16.1px!important}
+html[data-text="large"] .manual .tip{font-size:16.1px!important}
+html[data-text="large"] .security-check small{font-size:13.8px!important}
+html[data-text="large"] .maintenance-card h1{font-size:29.9px!important}
+html[data-text="large"] .maintenance-card p{font-size:17.25px!important}

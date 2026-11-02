@@ -1,3 +1,4 @@
+import './maintenance.js';
 import {workspace} from './workspace.js';
 import {skeleton} from './skeleton.js';
 import {renderIntegrations} from './integrations.js';
@@ -402,6 +403,7 @@ async function openSecurity(){
   $('#dialog-content').innerHTML=`<h2>Mi cuenta</h2>
    <section class="security-block"><h3>Apariencia</h3>
     <label class="security-lock">Tema<select id="theme-choice"><option value="auto"${theme==='auto'?' selected':''}>Automático (como el dispositivo)</option><option value="light"${theme==='light'?' selected':''}>Claro</option><option value="dark"${theme==='dark'?' selected':''}>Oscuro</option></select></label>
+    <label class="security-check"><input type="checkbox" id="text-large"${globalThis.agoraText?.get?.()==='large'?' checked':''}><span><b>Texto grande</b><small>Letra más grande y en negrita, en este dispositivo.</small></span></label>
    </section>
    <section class="security-block"><h3>Este dispositivo</h3>
     ${canPasskey?(hasKey?'<p class="dialog-copy">Puedes entrar con tu huella, Face ID o el PIN del dispositivo.</p>':'<p class="dialog-copy">Entra sin escribir nada, con tu huella, Face ID o el PIN de este dispositivo.</p><button id="add-passkey" class="primary">Activar huella o Face ID</button>'):'<p class="dialog-copy">Este navegador no admite entrar con huella o cara.</p>'}
@@ -412,11 +414,19 @@ async function openSecurity(){
    ${hasKey?`<section class="security-block"><h3>Tus llaves de acceso</h3><ul class="security-list">${keys(data.passkeys)}</ul></section>`:''}
    <section class="security-block"><h3>Sesiones abiertas</h3><p class="dialog-copy">Cada dispositivo sigue dentro 60 días desde su último uso. Cierra la de un teléfono que ya no tengas.</p><ul class="security-list">${sessions(data.sessions)}</ul></section>
    ${others&&(others.sessions.length||others.keys.length)?`<section class="security-block"><h3>Equipo</h3>${others.sessions.length?`<ul class="security-list">${sessions(others.sessions)}</ul>`:''}${others.keys.length?`<h4>Llaves de acceso del equipo</h4><ul class="security-list">${keys(others.keys)}</ul>`:''}</section>`:''}
+   ${workspace.me?.user?.identity_type==='native'&&workspace.me?.user?.role==='administrator'?'<section class="security-block security-maintenance"><h3>Mantenimiento</h3><p class="dialog-copy">Mientras esté activo, tu equipo ve la pantalla de mantenimiento. Tú sigues entrando con normalidad.</p><label class="security-check"><input type="checkbox" id="maintenance-on" disabled><span><b>Poner Ágora en mantenimiento</b><small id="maintenance-state">Comprobando…</small></span></label></section>':''}
    <button id="signout" class="primary signout-button">Cerrar sesión en este dispositivo</button><small class="account-version">${esc(versionLabel())}</small>`;
   const csrf=workspace.me?.csrf||'';
   const result=$('#security-result');
   $('#signout').onclick=signOut;
   $('#theme-choice').onchange=e=>globalThis.agoraTheme?.set?.(e.target.value);
+  const maintenance=$('#maintenance-on');
+  if(maintenance){
+    const label=$('#maintenance-state'),paint=on=>{maintenance.checked=on;label.textContent=on?'Activo: tu equipo ve la pantalla de mantenimiento.':'Apagado: todo el equipo trabaja con normalidad.'};
+    api('admin/maintenance','GET',null,csrf).then(state=>{paint(!!state.on);maintenance.disabled=false}).catch(()=>{label.textContent='No se pudo consultar ahora.'});
+    maintenance.onchange=async()=>{const want=maintenance.checked;maintenance.disabled=true;try{const state=await api('admin/maintenance','POST',{on:want},csrf);paint(!!state.on)}catch(error){paint(!want);label.textContent=error.message}maintenance.disabled=false};
+  }
+  $('#text-large').onchange=e=>globalThis.agoraText?.set?.(e.target.checked?'large':'normal');
   const add=$('#add-passkey');
   if(add)add.onclick=async()=>{add.disabled=true;try{await enrollPasskey();await openSecurity();toast('Listo. La próxima vez entra con tu huella o tu cara.')}catch(error){result.textContent=error.status?error.message:passkeyTrouble(error);add.disabled=false}};
   $('#lock-minutes').onchange=async e=>{

@@ -16,6 +16,8 @@ header('X-Agora-Version: '.Installation::VERSION);
 try {
     $method = $_SERVER['REQUEST_METHOD'];
     if ($path === '/api/health' && $method === 'GET') { query('SELECT 1'); respond(['status'=>'ok']); }
+    // Lo único que la pantalla de mantenimiento pregunta: ¿está pausado Ágora? Sin sesión y sin datos de nadie.
+    if ($path === '/api/status' && $method === 'GET') { require_once $appRoot.'/src/Maintenance.php'; respond(['maintenance'=>Maintenance::on()]); }
     if ($path === '/api/webhooks/ghl' && $method === 'POST') {
         if (getenv('GHL_WEBHOOKS_ENABLED') !== '1') respond(['error'=>'Webhooks disabled'],404);
         require $appRoot.'/src/Webhook.php';
@@ -137,6 +139,15 @@ try {
     $u = Actor::fromSession($_SESSION);
     if (!$u) respond(['error'=>'Inicia sesión para continuar.'],401);
     $admin=$u['role']==='administrator';
+    require_once $appRoot.'/src/Maintenance.php';
+    // El propietario enciende o apaga la pausa; mientras dure, sólo él sigue trabajando.
+    if ($path === '/api/admin/maintenance') {
+        if (!Maintenance::passes($u)) respond(['error'=>'Acceso restringido'],403);
+        if ($method === 'POST') {$b=body();respond(Maintenance::set(($b['on']??false)===true));}
+        respond(Maintenance::state());
+    }
+    if ($path !== '/api/logout' && Maintenance::on() && !Maintenance::passes($u))
+        respond(['error'=>'Ágora está en mantenimiento.','code'=>'maintenance'],503);
     // Bloqueo por inactividad: mientras dure, sólo se puede desbloquear o salir.
     if (DeviceSession::locked($_SESSION) && !in_array($path,['/api/me','/api/logout','/api/passkey-unlock/options','/api/passkey-unlock'],true))
         respond(['error'=>'Ágora está bloqueada. Desbloquéala con tu huella o tu cara.','code'=>'locked'],423);
