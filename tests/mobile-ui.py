@@ -57,7 +57,7 @@ with sync_playwright() as p:
     assert box['height']>=200, f'the message log is only {box["height"]}px tall'
     composer=page.locator('.live-composer').bounding_box()
     assert composer['y']+composer['height']<=PHONE['height']+2, 'the composer falls below the fold'
-    assert page.evaluate("getComputedStyle(document.querySelector('.live-composer textarea')).fontSize")=='16px'
+    assert float(page.evaluate("getComputedStyle(document.querySelector('.live-composer textarea')).fontSize").replace('px',''))>=16
     print(f'PASS chat uses the screen: log {int(box["height"])}px, composer reachable, no zoom on focus')
 
     # Focus hides the menu and the list so the conversation owns the screen.

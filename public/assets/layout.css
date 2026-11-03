@@ -980,3 +980,11 @@ body.touring{overflow:hidden}
 .maintenance-card .primary{margin-top:10px;min-height:46px;padding:10px 26px}
 body.in-maintenance{overflow:hidden}
 .security-maintenance .security-check{margin-top:4px}
+/* 1.10.1 · canal de origen a la vista */
+.channel-chip{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--ink)}
+.channel-chip .live-channel-mark{width:18px;height:18px}
+.channel-chip .live-channel-mark svg{width:18px;height:18px}
+.channel-chip.ch-WhatsApp{color:#137a3a}
+.channel-chip.ch-IG{color:#a32a6e}
+.channel-chip.ch-FB{color:#0a57d0}
+.live-chat-header p{margin:2px 0 0}
