@@ -1,6 +1,6 @@
 -- 1.11.0 · lo que las pantallas nuevas guardan en Ágora: tareas, recordatorios de seguimiento,
--- el registro de auditoría (sólo se agrega), la foto diaria de la operación y los datos de
--- quien entra con correo y clave (nombre, activo y los cinco roles).
+-- el registro de auditoría (sólo se agrega), la foto diaria de la operación
+-- y la identidad del espacio (nombre y logo).
 CREATE TABLE IF NOT EXISTS workspace_tasks (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
  tenant_id BIGINT UNSIGNED NOT NULL,
@@ -79,6 +79,3 @@ CREATE TABLE IF NOT EXISTS workspace_branding (
  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
  FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 );
-ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(190) NULL;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE;
-ALTER TABLE users MODIFY COLUMN role ENUM('administrator','supervisor','seller','admin','viewer') NOT NULL;

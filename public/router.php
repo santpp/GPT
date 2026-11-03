@@ -114,7 +114,7 @@ try {
         if ((int)query('SELECT attempts FROM login_attempts WHERE key_hash=?',[$key])->fetchColumn() > 10) respond(['error'=>'Intenta más tarde'],429);
         $u = query('SELECT * FROM users WHERE email=?',[$email])->fetch();
         $dummy = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi';
-        if (!password_verify((string)($b['password'] ?? ''), $u['password_hash'] ?? $dummy) || !$u || (array_key_exists('active',$u) && !$u['active'])) respond(['error'=>'Credenciales incorrectas'],401);
+        if (!password_verify((string)($b['password'] ?? ''), $u['password_hash'] ?? $dummy) || !$u) respond(['error'=>'Credenciales incorrectas'],401);
         session_regenerate_id(true);
         $_SESSION = ['uid'=>$u['id'],'csrf'=>bin2hex(random_bytes(32)),'expires'=>time()+28800,'seen'=>time()];
         $_SESSION['device_id']=DeviceSession::start($_SESSION,$_SESSION['csrf'],$agent);
@@ -149,6 +149,14 @@ try {
         if (!Maintenance::passes($u)) respond(['error'=>'Acceso restringido'],403);
         if ($method === 'POST') {$b=body();$state=Maintenance::set(($b['on']??false)===true);require_once $appRoot.'/src/Audit.php';Audit::record($u,null,['action'=>'bloqueo','text'=>$state['on']?'Puso Ágora en mantenimiento':'Sacó a Ágora del mantenimiento','module'=>'ajuste','object'=>'Mantenimiento']);respond($state);}
         respond(Maintenance::state());
+    }
+    // Volver a dejar la subcuenta de demostración como estaba, antes de enseñarla a alguien.
+    if ($path === '/api/admin/demo/reset' && $method === 'POST') {
+        if (!Maintenance::passes($u)) respond(['error'=>'Acceso restringido'],403);
+        require_once $appRoot.'/src/DemoSpace.php';require_once $appRoot.'/src/Audit.php';
+        DemoSpace::reset();
+        Audit::record($u,null,['action'=>'edito','text'=>'Reinició la subcuenta de demostración','module'=>'ajuste','object'=>'Demostración']);
+        respond(['reset'=>true]);
     }
     if ($path !== '/api/logout' && Maintenance::on() && !Maintenance::passes($u))
         respond(['error'=>'Ágora está en mantenimiento.','code'=>'maintenance'],503);

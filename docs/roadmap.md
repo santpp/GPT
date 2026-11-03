@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 2 de noviembre de 2026. Versión publicada: 1.11.0. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 2 de noviembre de 2026. Versión publicada: 1.11.1. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -261,3 +261,6 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## 1.11.0 · rutas del servidor para las pantallas nuevas
 - Tareas, recordatorios de seguimiento (con su tarea y su cierre al enviar), auditoría (sólo se agrega), usuarios y roles (cinco), identidad del espacio, resumen, operación del día, eficacia de ventas, anuncios y leads por persona. Ver `docs/rutas-pantallas-nuevas.md`.
 - Pendiente: conectar los cobros, planes y egresos al Resumen; las pantallas de Contratos (otro servidor).
+
+## 1.11.1 · ajustes sobre las pantallas nuevas
+- Sin gestión de usuarios (se queda GoHighLevel); auditoría sólo de la propietaria, con borrado de lo de seis meses o más; logo SVG saneado; subcuenta de demostración con datos ficticios (`DemoSpace`); Contratos «Próximamente»; sin etiquetas verdes de estado.

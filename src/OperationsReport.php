@@ -14,8 +14,8 @@ final class OperationsReport
 {
     private const SLA_GOAL_SECONDS = 300;   // la meta: responder en menos de 5 minutos
     private const SLA_TOLERANCE = 3;
-    private const LEADS_TTL = 300;
-    private const ADS_TTL = 1200;
+    private const LEADS_TTL = 600;
+    private const ADS_TTL = 1800;
 
     public function __construct(private readonly GhlGateway $gateway = new GhlGateway()) {}
 

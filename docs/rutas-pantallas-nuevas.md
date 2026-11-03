@@ -1,10 +1,10 @@
-# Rutas del servidor para las pantallas nuevas (1.11.0)
+# Rutas del servidor para las pantallas nuevas (1.11.1)
 
-El paquete de pantallas (Agora Digital App) pide nueve rutas. Aquí está lo que hace cada una **de verdad** en el servidor
+El paquete de pantallas (Agora Digital App) pide estas rutas (las de usuarios y roles **no existen**: el equipo se maneja en GoHighLevel, como siempre). Aquí está lo que hace cada una **de verdad** en el servidor
 de Ágora y dónde se aparta de lo que decía `API.md`. Todas cuelgan de `/api/workspace/…`, llevan sesión y (las que
 escriben) `X-CSRF-Token`. El código está en `src/workspace-extra.php` (las de todo el espacio) y `src/live-inbox.php`
 (las de una subcuenta); la lógica, en `src/Audit.php`, `WorkspaceTasks.php`, `Reminders.php`, `OperationsReport.php`,
-`TeamDirectory.php`, `Branding.php`, `BusinessSummary.php` y `Roles.php`.
+`Branding.php`, `BusinessSummary.php` y `Roles.php`.
 
 | Ruta | Qué devuelve | De dónde sale |
 |---|---|---|
@@ -14,9 +14,9 @@ escriben) `X-CSRF-Token`. El código está en `src/workspace-extra.php` (las de 
 | `GET eficacia` | Tiempo de cierre, ticket, velocidad, por ejecutivo | Las ventas ganadas del mes (`WonSales`), con la fecha de creación y el embudo. |
 | `GET ads` | Inversión en anuncios | La cuenta publicitaria conectada (la misma lectura del tablero), guardada 20 minutos. Sin cuenta: `not_connected`; sin permiso: `permission`. |
 | `board-month` → `team[].leads` | Leads del mes por persona | Un conteo por persona, guardado 15 minutos. |
-| `GET auditoria` | Quién tocó qué | `audit_log`, que **sólo se agrega**. |
-| `GET/POST usuarios`, `usuarios/rol`, `usuarios/estado` | La lista única de personas | Cuentas con clave (se crean y cambian aquí) + personas de las subcuentas (se ven, no se editan). |
-| `GET/POST branding`, `GET branding/logo` | Nombre y logo del espacio | `workspace_branding` (el logo, en la base, como imagen validada). |
+| `GET auditoria` · `POST auditoria/depurar` | Quién tocó qué; y borrar lo de hace 6 meses o más | `audit_log`. **Sólo la persona propietaria.** Se agrega; lo único que se borra es lo de seis meses o más (la fecha de corte la pone el servidor). |
+| `GET/POST branding`, `GET branding/logo` | Nombre y logo del espacio | `workspace_branding`. El logo admite PNG, JPG, WebP y **SVG** (el SVG se reescribe sólo con lo que dibuja y se sirve en un contenedor sin permisos). |
+| `POST admin/demo/reset` | Reinicia la subcuenta de demostración | Sólo la persona propietaria. |
 | `GET resumen` | El pulso del negocio | Espacios y propietarios reales; **cobros, planes y egresos en cero** (viven en el sistema de contratos). |
 
 ## Dónde se aparta de `API.md`
@@ -32,20 +32,27 @@ escriben) `X-CSRF-Token`. El código está en `src/workspace-extra.php` (las de 
 - **Anuncios:** impresiones, clics y conversiones salen de la cuenta publicitaria si las informa; presupuesto, coste por lead,
   retorno y campañas van `null` / vacíos.
 - **Día:** se cuenta en la zona `APP_TIMEZONE` (por defecto `America/Caracas`), no en UTC.
-- **Roles:** cinco, con la matriz de la pantalla. Las cuentas con clave se guardan con su rol (`administrator`→SuperAdmin,
-  `admin`, `supervisor`, `seller`→Ejecutivo, `viewer`→Consulta). Quien entra con el correo de su subcuenta no trae rol guardado:
-  se **deduce** (administra la subcuenta → Administración; sólo ve lo suyo y responde → Ejecutivo; ve todo → Supervisión; no responde → Consulta).
-  Sólo la persona propietaria crea cuentas y cambia roles; siempre queda al menos una propietaria activa.
-- **Clave de una cuenta nueva:** 12 caracteres como mínimo (la regla de siempre en Ágora), no 10.
-- **Logo:** PNG, JPG o WebP de hasta 400 KB; **no SVG** (puede llevar código).
-- **Cuentas con clave que no son propietarias** siguen sin acceso al espacio de trabajo (como antes): el rol queda guardado, pero
-  hoy sólo la propietaria trabaja con esa clave; el resto del equipo entra con el correo de su subcuenta.
-
+- **Roles:** no se gestionan aquí. Quien entra con el correo de su subcuenta trae el rol que le da esa subcuenta; el servidor lo **deduce** (administra la subcuenta → Administración; sólo ve lo suyo y responde → Ejecutivo; ve todo → Supervisión; no responde → Consulta) y lo usa para las tareas.
+- **Logo:** hasta 400 KB. SVG como siempre, pero reescrito: se quitan scripts, controladores de eventos, enlaces de afuera y referencias externas.
 ## Auditoría: qué se anota
 
 Inicio y cierre de sesión (cuenta con clave y correo de subcuenta), mensajes enviados, edición de la ficha de un contacto (con lo que
-tenía y lo que quedó), oportunidades creadas y editadas, asignación de conversaciones, recordatorios, creación y cambios de cuentas,
-identidad del espacio y el modo de mantenimiento. Un fallo al anotar nunca estropea lo que la persona hacía.
+tenía y lo que quedó), oportunidades creadas y editadas, asignación de conversaciones, recordatorios, identidad del espacio, el modo de mantenimiento y el borrado de registros antiguos. Un fallo al anotar nunca estropea lo que la persona hacía.
+
+## Subcuenta de demostración
+
+«Demo · Academia Horizonte» se crea sola al aplicar las migraciones (una vez, en el primer espacio). Es una conexión marcada `is_demo`: la
+pasarela le da un cliente que **no sale a la red** (`src/DemoSpace.php`), con datos ficticios: 4 personas de equipo, 8 conversaciones por
+WhatsApp, Instagram, Facebook, SMS y correo, un embudo con 6 oportunidades abiertas, 5 ventas ganadas del mes (2 sin monto, para enseñar la
+alerta) y gasto de anuncios inventado. Lo que se haga en ella (mandar un mensaje, editar una ficha, cerrar una venta) se recuerda, y
+`POST admin/demo/reset` o `php bin/reset-demo.php` la dejan como al empezar. Sólo la ve la persona propietaria (el resto del equipo ve
+sólo las subcuentas a las que pertenece).
+
+## Cuánto consulta Ágora a la cuenta de origen (y por qué respeta sus límites)
+
+La cuenta de origen permite 100 peticiones cada 10 segundos y 200 000 al día por subcuenta. Ágora usa como tope propio 20 cada 10 s y 50 000 al día,
+y se detiene al leer sus cabeceras de cuota. Las pantallas nuevas casi no consultan: el día usa lo que ya está guardado; los contactos recientes
+se leen a lo sumo cada 10 minutos, los anuncios cada 30 y los leads por persona cada 15; las ventas del mes y los embudos ya tenían su caché.
 
 ## Lo que no existe en este servidor
 

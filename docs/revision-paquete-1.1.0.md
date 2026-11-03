@@ -56,3 +56,13 @@ Revisado: `public_html/` (index, hojas de estilo, módulos empaquetados, `sw.js`
   contador de la fila de conversación ya no se corta.
 - Queda abierto: los cobros, planes y egresos del **Resumen** (vienen en cero hasta conectar el sistema de contratos) y las pantallas de Contratos
   (otro servidor).
+
+## 7. 1.2.1 · ajustes pedidos
+
+- **Usuarios y roles:** quitado (pantalla, menú y rutas). El equipo sigue siendo el de GoHighLevel. Queda **Identidad** (nombre y logo).
+- **Etiquetas verdes de estado** («Activa», «Activo», «en curso», «Abierta», «Hecha»): quitadas. El botón del estado del espacio muestra sólo el candado (y «Bloqueada» si lo está). Se mantienen los colores que son datos (flechas ↑↓, semáforo del tiempo de respuesta).
+- **Contratos:** las tres pantallas dicen «Próximamente»; en el acceso, la tarjeta de Contratos también. Ya no se pregunta por una sesión de Contratos.
+- **Auditoría:** sólo la persona propietaria (menú, acceso directo y servidor). Botón «Borrar los de hace 6 meses o más».
+- **Logo:** vuelve el SVG (PNG, JPG, WebP o SVG); el servidor lo reescribe sin scripts ni referencias externas.
+- **Subcuenta de demostración:** «Demo · Academia Horizonte», con datos ficticios, la ve sólo la persona propietaria en el selector de cuenta.
+- Los arreglos están aplicados sobre los archivos ya empaquetados (`agora-app.js`, `prueba.html`); el `panel.js` original sigue sin venir en el paquete, así que `construccion/modulos-nuevos.js` conserva el código anterior de esas pantallas.

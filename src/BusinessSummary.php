@@ -14,8 +14,8 @@ final class BusinessSummary
         foreach (query('SELECT id,name,status FROM ghl_connections WHERE tenant_id=? ORDER BY id', [$tenant])->fetchAll() as $c)
             $spaces[] = ['id' => (int)$c['id'], 'nombre' => $c['name'], 'logo' => null, 'plan' => '', 'mrr' => 0, 'estado' => $c['status'] === 'connected' ? 'activo' : 'pausa'];
         $owners = [];
-        foreach (query("SELECT id,email,display_name FROM users WHERE tenant_id=? AND role='administrator' AND active=TRUE ORDER BY id", [$tenant])->fetchAll() as $u)
-            $owners[] = ['id' => (int)$u['id'], 'nombre' => trim((string)$u['display_name']) !== '' ? $u['display_name'] : $u['email'], 'correo' => $u['email']];
+        foreach (query("SELECT id,email FROM users WHERE tenant_id=? AND role='administrator' ORDER BY id", [$tenant])->fetchAll() as $u)
+            $owners[] = ['id' => (int)$u['id'], 'nombre' => $u['email'], 'correo' => $u['email']];
         $start = new DateTimeImmutable($period.'-01', new DateTimeZone('UTC'));
         $series = [];
         for ($i = 5; $i >= 0; $i--) $series[] = ['ym' => $start->modify("-$i months")->format('Y-m'), 'v' => 0];

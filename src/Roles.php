@@ -17,8 +17,7 @@ final class Roles
     private const MATRIX = [
         'resumen' => ['SUPERADMIN'],
         'branding' => ['SUPERADMIN'],
-        'usuarios' => ['SUPERADMIN', 'ADMIN'],
-        'auditoria' => ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'],
+                'auditoria' => ['SUPERADMIN'],
         'equipo' => ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'],
         'tareas' => ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'EJECUTIVO'],
     ];

@@ -15,7 +15,7 @@ final class Audit
     public static function actor(array $u, ?array $membership = null): array
     {
         $native = ($u['identity_type'] ?? 'native') === 'native';
-        $name = $native ? ((string)($u['display_name'] ?? '') !== '' ? (string)$u['display_name'] : (string)($u['email'] ?? 'Cuenta')) : ((string)($membership['display_name'] ?? '') !== '' ? (string)$membership['display_name'] : (string)($u['email'] ?? 'Persona'));
+        $name = $native ? (string)($u['email'] ?? 'Cuenta') : ((string)($membership['display_name'] ?? '') !== '' ? (string)$membership['display_name'] : (string)($u['email'] ?? 'Persona'));
         return ['id' => ($native ? 'n' : 'e').(string)($u['id'] ?? ''), 'name' => $name, 'role' => Roles::of($u, $membership)];
     }
 
@@ -88,5 +88,17 @@ final class Audit
             return $item;
         }, $rows);
         return ['items' => $items, 'resumen' => ['total' => count($items)]];
+    }
+
+    /**
+     * Borra los registros de hace seis meses o más (y sólo esos: la fecha de corte la fija el servidor, no quien pide).
+     * Es lo único que borra la auditoría; el borrado queda anotado y esa anotación tampoco puede borrarse hasta pasados seis meses.
+     * @return array{borrados:int,hasta:string}
+     */
+    public static function purgeOld(int $tenant): array
+    {
+        $cut = gmdate('Y-m-d H:i:s', (int)strtotime('-6 months'));
+        $stmt = query('DELETE FROM audit_log WHERE tenant_id=? AND at < ?', [$tenant, $cut]);
+        return ['borrados' => $stmt->rowCount(), 'hasta' => gmdate('c', (int)strtotime($cut.' UTC'))];
     }
 }

@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-// Las rutas nuevas del servidor (1.11.0): tareas, recordatorios, auditoría, usuarios, identidad y resumen,
+// Las rutas nuevas del servidor (1.11.0): tareas, recordatorios, auditoría, identidad y resumen,
 // contra el servidor de desarrollo y con la cuenta propietaria.
 require __DIR__.'/../src/bootstrap.php';
 $suffix=bin2hex(random_bytes(5));$tenant=null;$n=0;
@@ -19,7 +19,7 @@ function Branding_has(int $t):bool{return (bool)query('SELECT 1 FROM workspace_b
 try{
  query('INSERT INTO tenants(name,location_id) VALUES(?,?)',['Espacio '.$suffix,'wx-'.$suffix]);$tenant=(int)db()->lastInsertId();
  $email='owner-'.$suffix.'@example.test';$password=bin2hex(random_bytes(12));
- query("INSERT INTO users(tenant_id,email,password_hash,role,display_name,active) VALUES(?,?,?,'administrator',?,TRUE)",[$tenant,$email,password_hash($password,PASSWORD_DEFAULT),'Eduardo Prueba']);$owner=(int)db()->lastInsertId();
+ query("INSERT INTO users(tenant_id,email,password_hash,role) VALUES(?,?,?,'administrator')",[$tenant,$email,password_hash($password,PASSWORD_DEFAULT)]);$owner=(int)db()->lastInsertId();
  query("INSERT INTO ghl_connections(tenant_id,name,location_id,token_ciphertext,status) VALUES(?,?,?,?,'connected')",[$tenant,'Cuenta A','loc-wx-'.$suffix,'x']);$conn=(int)db()->lastInsertId();
  query('INSERT INTO conversation_index(connection_id,conversation_id,payload) VALUES(?,?,?)',[$conn,'cv1',json_encode(['id'=>'cv1','contactId'=>'ct1','contactName'=>'Mariana Pérez','locationId'=>'loc-wx-'.$suffix,'lastMessageDirection'=>'inbound'])]);
  ok(call('workspace/tareas')[0]===401,'tasks need a session');
@@ -27,7 +27,7 @@ try{
 
  // ---- tareas
  $month=gmdate('Y-m');$today=gmdate('Y-m-d');
- [$c,$task]=call('workspace/tareas','POST',['titulo'=>'Llamar a Mariana','detalle'=>'Pidió el convenio','vence'=>$today,'hora'=>'14:30','responsable'=>'Eduardo Prueba','origen'=>'manual']);
+ [$c,$task]=call('workspace/tareas','POST',['titulo'=>'Llamar a Mariana','detalle'=>'Pidió el convenio','vence'=>$today,'hora'=>'14:30','responsable'=>$email,'origen'=>'manual']);
  ok($c===201&&str_starts_with($task['id'],'tk_')&&$task['estado']==='pendiente'&&$task['hora']==='14:30','a task is created with its date and time');
  ok(call('workspace/tareas','POST',['titulo'=>'','vence'=>$today])[0]===422,'a task needs a title');
  ok(call('workspace/tareas','POST',['titulo'=>'x','vence'=>'31-12-2026'])[0]===422,'and a valid date');
@@ -59,38 +59,11 @@ try{
 
  // ---- alcance de quien supervisa una subcuenta
  query("INSERT INTO ghl_connections(tenant_id,name,location_id,token_ciphertext,status) VALUES(?,?,?,?,'connected')",[$tenant,'Cuenta B','loc-wx-b-'.$suffix,'x']);$connB=(int)db()->lastInsertId();
- require_once __DIR__.'/../src/WorkspaceTasks.php';require_once __DIR__.'/../src/TeamDirectory.php';
+ require_once __DIR__.'/../src/WorkspaceTasks.php';
  WorkspaceTasks::create($tenant,'n'.$owner,['titulo'=>'Tarea de la cuenta B','vence'=>gmdate('Y-m-d'),'responsable'=>'Alguien de B'],$connB);
  WorkspaceTasks::create($tenant,'n'.$owner,['titulo'=>'Tarea de la cuenta A','vence'=>gmdate('Y-m-d'),'responsable'=>'Alguien de A'],$conn);
  $seenBySupervisor=array_column(WorkspaceTasks::list($tenant,gmdate('Y-m'),'e77',['Supervisora A'],true,'',[$conn])['items'],'titulo');
  ok(in_array('Tarea de la cuenta A',$seenBySupervisor,true)&&!in_array('Tarea de la cuenta B',$seenBySupervisor,true),'someone who supervises one sub-account sees its tasks, not those of another company in the same space');
- query("INSERT INTO external_identities(tenant_id,email) VALUES(?,?)",[$tenant,'sup-'.$suffix.'@example.test']);$identity=(int)db()->lastInsertId();
- foreach([[$conn,'xa','Supervisora A'],[$connB,'xb','Persona de B']] as [$cx,$ext,$nm]){
-   query("INSERT INTO external_users(connection_id,external_user_id,email,display_name,permissions,scopes,active,assigned_data_only) VALUES(?,?,?,?,'{}','[]',1,0)",[$cx,$ext.$suffix,$ext.'-'.$suffix.'@example.test',$nm]);$row=(int)db()->lastInsertId();
-   if($cx===$conn)query('INSERT INTO external_identity_memberships(identity_id,external_user_row_id) VALUES(?,?)',[$identity,$row]);
- }
- $visible=array_column(TeamDirectory::list($tenant,'e'.$identity,[$conn])['items'],'nombre');
- ok(in_array('Supervisora A',$visible,true)&&!in_array('Persona de B',$visible,true)&&!in_array('Eduardo Prueba',$visible,true),'and the people list is limited to their own sub-account, without the accounts that sign in with a password');
- ok(in_array('Eduardo Prueba',array_column(TeamDirectory::list($tenant,'n'.$owner,null)['items'],'nombre'),true),'while the owner sees everyone');
-
- // ---- usuarios
- [$c,$people]=call('workspace/usuarios');
- ok($c===200&&$people['items'][0]['rol']==='SUPERADMIN'&&$people['items'][0]['yo']===true&&$people['items'][0]['origen']==='sistema','the list shows the owner, marked as «you»');
- ok(call('workspace/usuarios','POST',['nombre'=>'Ana Test','correo'=>'ana-'.$suffix.'@example.test','clave'=>'corta','rol'=>'EJECUTIVO'])[0]===422,'a short password is refused');
- ok(call('workspace/usuarios','POST',['nombre'=>'Ana Test','correo'=>'no-es-correo','clave'=>'una-clave-larga-1','rol'=>'EJECUTIVO'])[0]===422,'a bad email is refused');
- ok(call('workspace/usuarios','POST',['nombre'=>'Ana Test','correo'=>'ana-'.$suffix.'@example.test','clave'=>'una-clave-larga-1','rol'=>'JEFE'])[0]===422,'an unknown role is refused');
- [$c,$ana]=call('workspace/usuarios','POST',['nombre'=>'Ana Test','correo'=>'ana-'.$suffix.'@example.test','clave'=>'una-clave-larga-1','rol'=>'SUPERVISOR']);
- ok($c===201&&$ana['rol']==='SUPERVISOR','an account with a password is created with its role');
- ok(call('workspace/usuarios','POST',['nombre'=>'Otra','correo'=>'ana-'.$suffix.'@example.test','clave'=>'una-clave-larga-1','rol'=>'EJECUTIVO'])[0]===422,'the same email cannot be used twice');
- ok(call('workspace/usuarios/rol','POST',['id'=>$ana['id'],'rol'=>'CONSULTA'])[0]===200&&query('SELECT role FROM users WHERE id=?',[(int)substr($ana['id'],1)])->fetchColumn()==='viewer','its role changes');
- ok(call('workspace/usuarios/rol','POST',['id'=>'n'.$owner,'rol'=>'EJECUTIVO'])[0]===422,'the owner cannot change their own role');
- ok(call('workspace/usuarios/estado','POST',['id'=>'n'.$owner,'estado'=>'inactivo'])[0]===422,'nor deactivate themselves (someone must stay in charge)');
- ok(call('workspace/usuarios/rol','POST',['id'=>'e1','rol'=>'ADMIN'])[0]===422,'a person who comes from a sub-account is changed in that account, not here');
- ok(call('workspace/usuarios/estado','POST',['id'=>$ana['id'],'estado'=>'inactivo'])[0]===200,'an account is deactivated');
- $cookie2=tempnam(sys_get_temp_dir(),'agora-wx2-');
- $ch=curl_init('http://localhost:8080/api/login');curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,CURLOPT_COOKIEJAR=>$cookie2,CURLOPT_HTTPHEADER=>['Content-Type: application/json','Origin: http://localhost:8080'],CURLOPT_POSTFIELDS=>json_encode(['email'=>'ana-'.$suffix.'@example.test','password'=>'una-clave-larga-1'])]);curl_exec($ch);
- ok(curl_getinfo($ch,CURLINFO_RESPONSE_CODE)===401,'and a deactivated account can no longer sign in');curl_close($ch);unlink($cookie2);
- query("DELETE FROM login_attempts WHERE key_hash IN (?,?)",[hash('sha256','127.0.0.1|ana-'.$suffix.'@example.test'),hash('sha256','::1|ana-'.$suffix.'@example.test')]);
 
  // ---- identidad
  [$c,$brand]=call('workspace/branding');ok($c===200&&$brand['nombre']==='Espacio '.$suffix&&$brand['logo']===null&&$brand['bloqueado']===false,'the space starts with its own name and no logo');
@@ -99,7 +72,14 @@ try{
  ok($c===200&&$brand['nombre']==='ASOCIM'&&str_contains((string)$brand['logo'],'/api/workspace/branding/logo'),'the owner sets the name and logo');
  [$c,$headers,$bytes]=call('workspace/branding/logo','GET',null,true);
  ok($c===200&&stripos($headers,'Content-Type: image/png')!==false&&str_starts_with($bytes,"\x89PNG")&&stripos($headers,'nosniff')!==false,'the logo is served as an image, never as a page');
- ok(call('workspace/branding','POST',['nombre'=>'X','logo'=>'data:image/svg+xml;base64,PHN2Zy8+'])[0]===422,'an SVG logo is refused (it can carry scripts)');
+ $svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" onload="alert(1)"><script>alert(1)</script><a href="javascript:alert(1)"><rect width="4" height="4"/></a><circle cx="5" cy="5" r="3" fill="#ad103c" style="fill:url(http://evil.test/x)"/></svg>';
+ [$c,$brand]=call('workspace/branding','POST',['nombre'=>'ASOCIM','logo'=>'data:image/svg+xml;base64,'.base64_encode($svg)]);
+ ok($c===200&&$brand['logo']!==null,'an SVG logo is accepted, as it always was');
+ [$c,$headers,$bytes]=call('workspace/branding/logo','GET',null,true);
+ ok($c===200&&stripos($headers,'Content-Type: image/svg+xml')!==false&&stripos($headers,'sandbox')!==false&&stripos($headers,'nosniff')!==false,'and is served as an image, in a sandbox, never as a page');
+ ok(str_contains($bytes,'<circle')&&!preg_match('/script|onload|javascript:|evil\.test|<a\b/i',$bytes),'with the scripts, event handlers, outside links and external references taken out of it');
+ ok(call('workspace/branding','POST',['nombre'=>'X','logo'=>'data:image/svg+xml;base64,'.base64_encode('<!DOCTYPE svg [<!ENTITY a "b">]><svg xmlns="http://www.w3.org/2000/svg"/>')])[0]===422,'an SVG with a DOCTYPE or entities is refused');
+ ok(call('workspace/branding','POST',['nombre'=>'X','logo'=>'data:image/svg+xml;base64,'.base64_encode('<html><body/></html>')])[0]===422,'and so is a file that is not an SVG');
  ok(call('workspace/branding','POST',['nombre'=>'X','logo'=>'data:image/png;base64,'.base64_encode('no soy una imagen')])[0]===422,'a file that only claims to be an image is refused');
  ok(call('workspace/branding','POST',['nombre'=>'X','logo'=>'data:image/png;base64,'.base64_encode(str_repeat('a',410000))])[0]===422,'a logo over 400 KB is refused');
  ok(call('workspace/branding','POST',['nombre'=>'X','logo'=>'data:image/png;base64,'.base64_encode(str_repeat('a',900000))])[0]===413,'and a request far over that is cut off before it is read');
@@ -112,23 +92,35 @@ try{
 
  // ---- resumen
  [$c,$sum]=call('workspace/resumen?period='.$month);
- ok($c===200&&count($sum['serie'])===6&&$sum['serie'][5]['ym']===$month&&$sum['espacios'][0]['nombre']==='Cuenta A'&&$sum['superadmins'][0]['nombre']==='Eduardo Prueba','the business summary lists the spaces and owners, with six months of series');
+ ok($c===200&&count($sum['serie'])===6&&$sum['serie'][5]['ym']===$month&&$sum['espacios'][0]['nombre']==='Cuenta A'&&$sum['superadmins'][0]['nombre']===$email,'the business summary lists the spaces and owners, with six months of series');
  ok($sum['mrr']===0&&$sum['origenDeCobros']==='sin_conectar','and says the charges are not connected yet instead of inventing them');
 
  // ---- auditoría
  [$c,$audit]=call('workspace/auditoria?period='.$month);
  $texts=array_column($audit['items'],'accionTexto');
- ok($c===200&&in_array('Inició sesión',$texts,true)&&in_array('Creó la cuenta de Ana Test',$texts,true)&&in_array('Cambió la identidad del espacio',$texts,true)&&in_array('Puso un recordatorio de seguimiento',$texts,true),'the audit trail recorded the sign-in, the new account, the identity change and the reminder');
- $edit=array_values(array_filter($audit['items'],fn($i)=>$i['accionTexto']==='Cambió el rol de Ana Test'));
- ok(count($edit)===1&&$edit[0]['antes']['rol']==='SUPERVISOR'&&$edit[0]['despues']['rol']==='CONSULTA'&&$edit[0]['modulo']==='usuario'&&$edit[0]['actor']==='Eduardo Prueba'&&$edit[0]['rol']==='Propietario','a change keeps what it was before and after, who did it and their role');
+ ok($c===200&&in_array('Inició sesión',$texts,true)&&in_array('Cambió la identidad del espacio',$texts,true)&&in_array('Puso un recordatorio de seguimiento',$texts,true),'the audit trail recorded the sign-in, the identity change and the reminder');
+ $first=$audit['items'][0];ok($first['actor']===$email&&$first['rol']==='Propietario'&&isset($first['dispositivo']),'each entry says who, with what role and from what device');
  ok(in_array('Puso Ágora en mantenimiento',$texts,true),'putting the app in maintenance is recorded');
- [,$only]=call('workspace/auditoria?period='.$month.'&modulo=usuario');ok(count($only['items'])>=3&&count(array_filter($only['items'],fn($i)=>$i['modulo']!=='usuario'))===0,'the trail can be filtered by module');
+ [,$only]=call('workspace/auditoria?period='.$month.'&modulo=ajuste');ok(count($only['items'])>=2&&count(array_filter($only['items'],fn($i)=>$i['modulo']!=='ajuste'))===0,'the trail can be filtered by module');
  [,$contact]=call('workspace/auditoria?period='.$month.'&contacto=Mariana');ok(count($contact['items'])>=1&&$contact['items'][0]['contacto']==='Mariana Pérez','and by contact');
  [,$none]=call('workspace/auditoria?period=2020-01');ok($none['items']===[]&&$none['resumen']['total']===0,'a month with nothing is empty');
- $before=(int)query('SELECT COUNT(*) FROM audit_log WHERE tenant_id=?',[$tenant])->fetchColumn();
- ok(call('workspace/auditoria?period='.$month,'DELETE')[0]===405&&call('workspace/auditoria?period='.$month,'POST',['x'=>1])[0]===405&&(int)query('SELECT COUNT(*) FROM audit_log WHERE tenant_id=?',[$tenant])->fetchColumn()>=$before,'there is no way to edit or delete it through the API');
- $src=(string)file_get_contents(__DIR__.'/../src/Audit.php');
- ok(!preg_match('/\b(UPDATE|DELETE)\s+(FROM\s+)?audit_log\b/i',$src.(string)file_get_contents(__DIR__.'/../src/workspace-extra.php')),'and no code anywhere updates or deletes audit rows');
+ ok(call('workspace/auditoria?period='.$month,'DELETE')[0]===405&&call('workspace/auditoria?period='.$month,'POST',['x'=>1])[0]===405,'the trail itself cannot be edited or replaced through the API');
+ require_once __DIR__.'/../src/Roles.php';
+ ok(Roles::can('SUPERADMIN','auditoria')&&!Roles::can('ADMIN','auditoria')&&!Roles::can('SUPERVISOR','auditoria')&&!Roles::can('EJECUTIVO','auditoria')&&!Roles::can('CONSULTA','auditoria'),'only the owner can open the audit trail');
+
+ // ---- depurar: sólo lo de hace seis meses o más
+ $old=gmdate('Y-m-d H:i:s',strtotime('-7 months'));$edge=gmdate('Y-m-d H:i:s',strtotime('-5 months -20 days'));$fresh=gmdate('Y-m-d H:i:s',strtotime('-1 day'));
+ foreach([[$old,'Registro viejo A'],[$old,'Registro viejo B'],[$edge,'Registro de hace casi seis meses'],[$fresh,'Registro de ayer']] as [$at,$text])
+   query("INSERT INTO audit_log(tenant_id,at,actor_name,action,action_text,module) VALUES(?,?,?,'edito',?,'ajuste')",[$tenant,$at,'Alguien',$text]);
+ [$c,$purged]=call('workspace/auditoria/depurar','POST',[]);
+ ok($c===200&&$purged['borrados']===2,'purging deletes the entries from six months ago or more, and only those');
+ $left=array_column(query('SELECT action_text FROM audit_log WHERE tenant_id=?',[$tenant])->fetchAll(),'action_text');
+ ok(in_array('Registro de hace casi seis meses',$left,true)&&in_array('Registro de ayer',$left,true)&&!in_array('Registro viejo A',$left,true),'what is younger than six months stays, even by a few days');
+ ok(in_array('Borró 2 registros de hace seis meses o más',$left,true),'and the purge itself is recorded');
+ [,$again]=call('workspace/auditoria/depurar','POST',[]);ok($again['borrados']===0,'purging again deletes nothing');
+ ok(call('workspace/auditoria/depurar','POST',['hasta'=>'2099-01'])[0]===200&&(int)query('SELECT COUNT(*) FROM audit_log WHERE tenant_id=? AND at>?',[$tenant,gmdate('Y-m-d H:i:s',strtotime('-6 months'))])->fetchColumn()>=3,'asking for a later cut-off changes nothing: the server decides the date');
+ $src=(string)file_get_contents(__DIR__.'/../src/Audit.php').(string)file_get_contents(__DIR__.'/../src/workspace-extra.php');
+ ok(preg_match_all('/DELETE\s+FROM\s+audit_log/i',$src)===1&&preg_match('/DELETE FROM audit_log WHERE tenant_id=\? AND at < \?/',$src)===1&&!preg_match('/UPDATE\s+audit_log/i',$src),'the only delete in the code is that one, with its age limit; nothing updates an entry');
  call('logout','POST',[]);
  echo "$n workspace-extra checks\n";
 }finally{

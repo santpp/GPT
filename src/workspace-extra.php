@@ -8,7 +8,7 @@ require_once __DIR__.'/WorkspaceTasks.php';
 require_once __DIR__.'/Maintenance.php';
 
 $extra=null;
-foreach(['tareas'=>'~^/api/workspace/tareas(?:/(tk_\d+|\d+)/estado)?$~','auditoria'=>'~^/api/workspace/auditoria$~','usuarios'=>'~^/api/workspace/usuarios(?:/(rol|estado))?$~','branding'=>'~^/api/workspace/branding(/logo)?$~','resumen'=>'~^/api/workspace/resumen$~'] as $name=>$pattern)
+foreach(['tareas'=>'~^/api/workspace/tareas(?:/(tk_\d+|\d+)/estado)?$~','auditoria'=>'~^/api/workspace/auditoria(/depurar)?$~','branding'=>'~^/api/workspace/branding(/logo)?$~','resumen'=>'~^/api/workspace/resumen$~'] as $name=>$pattern)
     if(preg_match($pattern,$path,$extraMatch)){$extra=$name;break;}
 if($extra===null)return;
 // Quien entra con correo y clave sin ser propietario no tiene acceso aquí (como en el resto del espacio de trabajo).
@@ -59,39 +59,17 @@ if($extra==='tareas'){
     catch(InvalidArgumentException $e){respond(['error'=>$e->getMessage()],422);}
 }
 
-// ---- Auditoría ------------------------------------------------------------------------------------
+// ---- Auditoría (sólo la persona propietaria) ------------------------------------------------------
 if($extra==='auditoria'){
-    if($method!=='GET')respond(['error'=>'Método no permitido'],405);
-    if(!Roles::can($role,'auditoria'))respond(['error'=>'Tu rol no abre la auditoría.'],403);
-    respond(Audit::list($tenant,$period,$context['connections'],['modulo'=>(string)($_GET['modulo']??''),'usuario'=>(string)($_GET['usuario']??''),'contacto'=>(string)($_GET['contacto']??'')]));
-}
-
-// ---- Usuarios y roles -----------------------------------------------------------------------------
-if($extra==='usuarios'){
-    require_once __DIR__.'/TeamDirectory.php';
-    if(!Roles::can($role,'usuarios'))respond(['error'=>'Tu rol no administra usuarios.'],403);
-    if($method==='GET'&&($extraMatch[1]??'')==='')respond(TeamDirectory::list($tenant,$context['id'],$context['connections']));
-    if($method!=='POST')respond(['error'=>'Método no permitido'],405);
-    // Las cuentas con clave las crea y las cambia sólo quien es propietario.
-    if($role!=='SUPERADMIN')respond(['error'=>'Sólo la persona propietaria crea cuentas y cambia roles.'],403);
-    $input=body();
-    try{
-        if(($extraMatch[1]??'')==='rol'){
-            $done=TeamDirectory::setRole($tenant,(int)$u['id'],(string)($input['id']??''),(string)($input['rol']??''));
-            Audit::record($u,null,['action'=>'edito','text'=>'Cambió el rol de '.$done['nombre'],'module'=>'usuario','object'=>'Rol','before'=>['rol'=>$done['antes']],'after'=>['rol'=>$done['rol']]]);
-            respond(['id'=>$done['id'],'rol'=>$done['rol']]);
-        }
-        if(($extraMatch[1]??'')==='estado'){
-            $done=TeamDirectory::setState($tenant,(int)$u['id'],(string)($input['id']??''),(string)($input['estado']??''));
-            Audit::record($u,null,['action'=>'bloqueo','text'=>($done['estado']==='activo'?'Activó a ':'Desactivó a ').$done['nombre'],'module'=>'usuario','object'=>'Estado']);
-            respond(['id'=>$done['id'],'estado'=>$done['estado']]);
-        }
-        $made=TeamDirectory::create($tenant,$input);
-        Audit::record($u,null,['action'=>'creo','text'=>'Creó la cuenta de '.$made['nombre'],'module'=>'usuario','object'=>'Usuario','after'=>['rol'=>$made['rol']]]);
-        respond($made,201);
+    if(!Roles::can($role,'auditoria'))respond(['error'=>'La auditoría es sólo de la persona propietaria.'],403);
+    if(($extraMatch[1]??'')==='/depurar'){
+        if($method!=='POST')respond(['error'=>'Método no permitido'],405);
+        $purged=Audit::purgeOld($tenant);
+        Audit::record($u,null,['action'=>'elimino','text'=>'Borró '.$purged['borrados'].' registros de hace seis meses o más','module'=>'ajuste','object'=>'Auditoría']);
+        respond($purged);
     }
-    catch(InvalidArgumentException $e){respond(['error'=>$e->getMessage()],422);}
-    catch(OutOfBoundsException $e){respond(['error'=>$e->getMessage()],404);}
+    if($method!=='GET')respond(['error'=>'Método no permitido'],405);
+    respond(Audit::list($tenant,$period,null,['modulo'=>(string)($_GET['modulo']??''),'usuario'=>(string)($_GET['usuario']??''),'contacto'=>(string)($_GET['contacto']??'')]));
 }
 
 // ---- Identidad del espacio ------------------------------------------------------------------------
@@ -101,6 +79,8 @@ if($extra==='branding'){
         $logo=$method==='GET'?Branding::logo($tenant):null;
         if(!$logo)respond(['error'=>'Sin logo'],404);
         header_remove('Content-Type');header('Content-Type: '.$logo[0]);header('X-Content-Type-Options: nosniff');header('Cache-Control: private, max-age=3600');
+        // Aunque alguien abra la dirección del logo directamente, nada de lo que lleve puede ejecutarse.
+        header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox");
         http_response_code(200);echo $logo[1];exit;
     }
     if($method==='POST'){

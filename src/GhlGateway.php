@@ -18,6 +18,8 @@ final class GhlGateway {
     private const WINDOW=10;
     private const LOCK_WAIT=6;
     public function __construct(private readonly ?Closure $factory=null) {}
+    /** La subcuenta de demostración nunca sale a la red: su cliente responde con datos ficticios. */
+    private static function demoClient(string $location):GhlClient {require_once __DIR__.'/DemoSpace.php';return new GhlClient('demo',DemoSpace::transport($location));}
     public function execute(array $connection,Closure $operation,bool $disableOnForbidden=true):array {
         $id=(int)$connection['id'];$key='agora-api:'.$id;
         // Screens read several things at once; waiting our turn beats refusing.
@@ -34,7 +36,7 @@ final class GhlGateway {
             if($now-$windowStart>=self::WINDOW){$windowStart=$now;$windowCount=0;}
             if($windowCount>=self::BURST)throw new GhlCooldown(max(1,$windowStart+self::WINDOW-$now));
             query('UPDATE ghl_sync_state SET budget_day=?,requests_today=?,rate_window_start=?,rate_window_count=? WHERE connection_id=?',[$day,$used+1,$windowStart,$windowCount+1,$id]);
-            $client=$this->factory ? ($this->factory)($connection) : new GhlClient(TokenVault::fromEnvironment()->open($connection['token_ciphertext'],(int)$connection['tenant_id'],$connection['location_id']));
+            $client=$this->factory ? ($this->factory)($connection) : (!empty($connection['is_demo']) ? self::demoClient((string)$connection['location_id']) : new GhlClient(TokenVault::fromEnvironment()->open($connection['token_ciphertext'],(int)$connection['tenant_id'],$connection['location_id'])));
             try {
                 $result=$operation($client);
                 $quota=$this->quota($client);$pause=$this->quotaPause($quota,$now);

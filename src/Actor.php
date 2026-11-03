@@ -5,10 +5,7 @@ require_once __DIR__.'/PermissionPolicy.php';
 final class Actor {
     public static function fromSession(array $session):?array {
         if(isset($session['uid'])){
-            // Con la columna `active` (1.11.0); en una base que aún no migró, se lee como antes.
-            try {$user=query('SELECT id,tenant_id,email,role,ghl_user_id,display_name,active FROM users WHERE id=?',[$session['uid']])->fetch();}
-            catch(PDOException $e){$user=query('SELECT id,tenant_id,email,role,ghl_user_id FROM users WHERE id=?',[$session['uid']])->fetch();}
-            if($user&&array_key_exists('active',$user)&&!$user['active'])return null;
+            $user=query('SELECT id,tenant_id,email,role,ghl_user_id FROM users WHERE id=?',[$session['uid']])->fetch();
             return $user?($user+['identity_type'=>'native','capabilities'=>PermissionPolicy::capabilities($user+['identity_type'=>'native'])]):null;
         }
         if(!isset($session['external_identity_id']))return null;
