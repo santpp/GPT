@@ -102,6 +102,8 @@ try {
         session_regenerate_id(true);
         $_SESSION=['external_identity_id'=>$identity,'csrf'=>bin2hex(random_bytes(32)),'expires'=>time()+28800,'seen'=>time()];
         $_SESSION['device_id']=DeviceSession::start($_SESSION,$_SESSION['csrf'],$agent);
+        require_once $appRoot.'/src/Audit.php';require_once $appRoot.'/src/Actor.php';
+        if($entered=Actor::fromSession($_SESSION))Audit::record($entered,null,['action'=>'entro','text'=>'Inició sesión','module'=>'sesion']);
         respond(['csrf'=>$_SESSION['csrf']]);
     }
     if ($path === '/api/login' && $method === 'POST') {
@@ -112,10 +114,12 @@ try {
         if ((int)query('SELECT attempts FROM login_attempts WHERE key_hash=?',[$key])->fetchColumn() > 10) respond(['error'=>'Intenta más tarde'],429);
         $u = query('SELECT * FROM users WHERE email=?',[$email])->fetch();
         $dummy = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi';
-        if (!password_verify((string)($b['password'] ?? ''), $u['password_hash'] ?? $dummy) || !$u) respond(['error'=>'Credenciales incorrectas'],401);
+        if (!password_verify((string)($b['password'] ?? ''), $u['password_hash'] ?? $dummy) || !$u || (array_key_exists('active',$u) && !$u['active'])) respond(['error'=>'Credenciales incorrectas'],401);
         session_regenerate_id(true);
         $_SESSION = ['uid'=>$u['id'],'csrf'=>bin2hex(random_bytes(32)),'expires'=>time()+28800,'seen'=>time()];
         $_SESSION['device_id']=DeviceSession::start($_SESSION,$_SESSION['csrf'],$agent);
+        require_once $appRoot.'/src/Audit.php';
+        Audit::record($u+['identity_type'=>'native'],null,['action'=>'entro','text'=>'Inició sesión','module'=>'sesion']);
         respond(['csrf'=>$_SESSION['csrf']]);
     }
     // Entrar con huella o cara. El teléfono ofrece las llaves que tiene para
@@ -143,7 +147,7 @@ try {
     // El propietario enciende o apaga la pausa; mientras dure, sólo él sigue trabajando.
     if ($path === '/api/admin/maintenance') {
         if (!Maintenance::passes($u)) respond(['error'=>'Acceso restringido'],403);
-        if ($method === 'POST') {$b=body();respond(Maintenance::set(($b['on']??false)===true));}
+        if ($method === 'POST') {$b=body();$state=Maintenance::set(($b['on']??false)===true);require_once $appRoot.'/src/Audit.php';Audit::record($u,null,['action'=>'bloqueo','text'=>$state['on']?'Puso Ágora en mantenimiento':'Sacó a Ágora del mantenimiento','module'=>'ajuste','object'=>'Mantenimiento']);respond($state);}
         respond(Maintenance::state());
     }
     if ($path !== '/api/logout' && Maintenance::on() && !Maintenance::passes($u))
@@ -226,7 +230,7 @@ try {
         $checks=Installation::checks();
         respond(['version'=>Installation::VERSION,'ready'=>!in_array(false,array_column($checks,'ready'),true),'checks'=>$checks]);
     }
-    if (str_starts_with($path, '/api/workspace/') || str_starts_with($path, '/api/ghl/')) {session_write_close();require $appRoot.'/src/live-inbox.php';}
+    if (str_starts_with($path, '/api/workspace/') || str_starts_with($path, '/api/ghl/')) {session_write_close();require $appRoot.'/src/workspace-extra.php';require $appRoot.'/src/live-inbox.php';}
     if (str_starts_with($path, '/api/admin/integrations') || str_starts_with($path, '/api/admin/access-channel')) {
         if (getenv('APP_ENV') !== 'development' && parse_url(getenv('APP_ORIGIN') ?: '', PHP_URL_SCHEME) !== 'https') respond(['error'=>'HTTPS required'],503);
         require $appRoot.'/src/integrations.php';
@@ -332,7 +336,7 @@ try {
             [$u['tenant_id'],$type,$u['id'],$token,$platform,$p256dh,$auth,$label]);
         respond(['registered'=>true,'notifications'=>PushDelivery::configured()]);
     }
-    if ($path === '/api/logout' && $method === 'POST') { DeviceSession::end($_SESSION); $_SESSION=[]; session_destroy(); respond(['ok'=>true]); }
+    if ($path === '/api/logout' && $method === 'POST') { require_once $appRoot.'/src/Audit.php'; Audit::record($u,null,['action'=>'salio','text'=>'Cerró sesión','module'=>'sesion']); DeviceSession::end($_SESSION); $_SESSION=[]; session_destroy(); respond(['ok'=>true]); }
     if ($path === '/api/conversations' && $method === 'GET') {
         if(($u['identity_type']??'native')!=='native')respond(['error'=>'Utiliza la bandeja conectada para consultar tus conversaciones.'],403);
         $sql = 'SELECT ghl_id,payload,updated_at FROM resources WHERE tenant_id=? AND kind=?';

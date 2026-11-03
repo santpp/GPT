@@ -1,6 +1,6 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 2 de noviembre de 2026. Versión publicada: 1.10.1. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 2 de noviembre de 2026. Versión publicada: 1.11.0. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 ## Completado y desplegable
 
@@ -257,3 +257,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Letra +20 % y negra en toda la app (nada bajo 11,5 px); mensajes y cuadro de respuesta a 17 px; «Texto grande» a 20 px.
 - Canal de origen (WhatsApp, Instagram, Facebook, SMS, correo) con marca y color en la lista y en el chat.
 - El chat abre siempre en el último mensaje aunque el cuadro de respuesta cambie de alto.
+
+## 1.11.0 · rutas del servidor para las pantallas nuevas
+- Tareas, recordatorios de seguimiento (con su tarea y su cierre al enviar), auditoría (sólo se agrega), usuarios y roles (cinco), identidad del espacio, resumen, operación del día, eficacia de ventas, anuncios y leads por persona. Ver `docs/rutas-pantallas-nuevas.md`.
+- Pendiente: conectar los cobros, planes y egresos al Resumen; las pantallas de Contratos (otro servidor).

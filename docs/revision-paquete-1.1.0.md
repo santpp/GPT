@@ -30,7 +30,7 @@ Revisado: `public_html/` (index, hojas de estilo, módulos empaquetados, `sw.js`
 - **Ver de un vistazo si el lead llegó por Facebook, WhatsApp o Instagram** → la lista y el encabezado del chat muestran la marca y el nombre del canal en su color (verde, rosa, azul; SMS y correo en negro). Código en `construccion/agora/live-inbox.js` y en los dos empaquetados.
 - Error encontrado al agrandar el texto: las filas de la lista se encogían y se montaban unas sobre otras (`flex-shrink`), y el chat podía no quedar en el último mensaje. Ambos corregidos.
 
-## 4. Funcionamiento y despliegue (no se tocó; hay que decidirlo)
+## 4. Funcionamiento y despliegue (resuelto en la 1.2.0: ver el final)
 
 - **Las 9 pantallas nuevas no tienen servidor.** `API.md` pide `workspace/resumen`, `dia`, `ads`, `eficacia`, `tareas`, `reminders`, `auditoria`, `usuarios`, `branding`. Ninguna existe en el servidor de Ágora 1.10.x (comprobado). Sin ellas, esos módulos mostrarán error. Es trabajo de servidor, no de pantalla.
 - **Dos sistemas en uno.** El paquete asume además el servidor del panel de Contratos (`/api/yo`, `/api/contratos`, `/api/usuarios`, `/api/registro`, `/api/ghl/…`). No está en este repositorio.
@@ -46,3 +46,13 @@ Revisado: `public_html/` (index, hojas de estilo, módulos empaquetados, `sw.js`
 - Nuevos: `assets/identidad.css` (a mano), `assets/identidad-texto.css` (generado por `construccion/texto-grande.py`), `capturas-identidad/`, este informe.
 - Cambiados: `index.html` (enlaza las dos hojas al final), `assets/agora-modulos.js` y `prueba.html` (canal con color; el chat abre en el último mensaje), `construccion/agora/live-inbox.js`, `sw.js` (caché 1.1.1 y limpieza), `version.json`.
 - Sin cambios: `sistema.css`, `modulos.css`, `agora-app.js`.
+
+## 6. 1.2.0 · el servidor
+
+- Las nueve rutas existen ya en Ágora 1.11.0, con pruebas (56 + 28 comprobaciones) y una prueba de punta a punta de estas pantallas contra el
+  servidor real (`construccion/arnes/`): recordatorio → tarea → auditoría, crear cuentas, cambiar el logo, resumen.
+- Ajustes en las pantallas que salieron de esa prueba: el logo admite PNG, JPG o WebP de hasta 400 KB (el servidor no acepta SVG, que puede llevar
+  código); la clave temporal pide 12 caracteres (la regla de Ágora); la ventana «Agregar persona» ya no se sale de la tarjeta con letra grande; el
+  contador de la fila de conversación ya no se corta.
+- Queda abierto: los cobros, planes y egresos del **Resumen** (vienen en cero hasta conectar el sistema de contratos) y las pantallas de Contratos
+  (otro servidor).
