@@ -4,8 +4,9 @@ from urllib.parse import urlparse,parse_qs
 from playwright.sync_api import sync_playwright
 BASE=os.getenv('TEST_BASE_URL','http://127.0.0.1:8080')
 CONNS=[{'id':1,'name':'Clínica Sol','location_id':'locA','status':'connected'},{'id':2,'name':'Academia Luna','location_id':'locB','status':'connected'}]
-REPORT={'month':'2026-11','method':'POST','pages':1,'partial':False,'readAt':'2026-11-07T12:00:00Z','otros':[],'totales':{'gasto':16.5,'recargas':50},'locations':[
+REPORT={'month':'2026-11','method':'POST','pages':1,'partial':False,'readAt':'2026-11-07T12:00:00Z','subcuentas':2,'totales':{'gasto':16.5,'recargas':50},'locations':[
  {'locationId':'locA','locationName':'Clínica Sol','gasto':12.5,'recargas':50,'movimientos':9,'sinClasificar':0,'categorias':[{'tipo':'sms','monto':10},{'tipo':'whatsapp','monto':2.5}],'dias':[{'dia':'2026-11-02','monto':10},{'dia':'2026-11-03','monto':2.5}],'ultimos':[{'at':'2026-11-03T10:00:00Z','tipo':'whatsapp','descripcion':'','direccion':'gasto','monto':2.5}],'plan':{'plan':'Plan Pro','estado':'active','precio':{'monto':97,'moneda':'USD','cada':'month'},'errores':[]}},
+ {'locationId':'agencia','tipo':'agencia','locationName':'Agencia · movimientos propios','gasto':1,'recargas':0,'movimientos':1,'sinClasificar':0,'categorias':[{'tipo':'domainpurchase','monto':1}],'dias':[],'ultimos':[{'at':'2026-11-02T10:00:00Z','tipo':'domainPurchase','descripcion':'','direccion':'gasto','monto':1}],'plan':None},
  {'locationId':'locB','locationName':'Academia Luna','gasto':4,'recargas':0,'movimientos':1,'sinClasificar':0,'categorias':[],'dias':[],'ultimos':[],'plan':{'plan':None,'estado':None,'errores':['suscripción: HTTP 404']}}]}
 def make(owner,calls,state):
     def api(route):
@@ -41,7 +42,7 @@ with sync_playwright() as p:
     print('PASS the debugging buttons and the method selector are gone')
     pg.locator('#cons-sub').select_option('locA');pg.locator('#cons-run').click();pg.wait_for_selector('.cons-card')
     r=[c for c in calls if c[0]=='report'][-1][1];assert r['locationId']=='locA' and r['month'] and 'method' not in r
-    txt=pg.locator('#cons-out').inner_text();assert 'Plan Pro (active)' in txt and '16,50' in txt and 'Clínica Sol' in txt and 'Academia Luna' in txt and 'Sin plan de SaaS' in txt
+    txt=pg.locator('#cons-out').inner_text();assert 'Plan Pro (active)' in txt and '16,50' in txt and 'Clínica Sol' in txt and 'Academia Luna' in txt and 'Sin plan de SaaS' in txt and 'Cuenta de la agencia' in txt and 'Agencia · movimientos propios' in txt
     print('PASS the report lists each sub-account with its plan and spend; the selector travels to the server')
     pg.locator('.cons-open').first.click();pg.wait_for_selector('.cons-sheet')
     sheet=pg.locator('.cons-sheet').inner_text();assert 'Reporte de consumos' in sheet and 'Clínica Sol' in sheet and 'sms' in sheet and 'whatsapp' in sheet and 'Plan Pro' in sheet and pg.locator('.cons-split').count()==1 and pg.locator('.cons-days span').count()==2
