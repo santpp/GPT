@@ -1,6 +1,8 @@
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 2 de noviembre de 2026. Versión publicada: 1.11.1. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 7 de noviembre de 2026. **Versión activa (la que está subida): 1.10.1**, con el cambio de fuente (texto negro y más grande) y el canal de origen a la vista. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+
+El trabajo de la 1.11.0 y la 1.11.1 (rutas de servidor para el armazón nuevo de Agora Digital App: tareas, recordatorios, auditoría, identidad del espacio, resumen, subcuenta de demostración) **queda en pausa, sin subir**, hasta que el usuario retome ese desarrollo. El código y los paquetes siguen en el repositorio por si se retoma, pero no son la versión activa. El desarrollo sigue a partir de la 1.10.1.
 
 ## Completado y desplegable
 
@@ -258,9 +260,11 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Canal de origen (WhatsApp, Instagram, Facebook, SMS, correo) con marca y color en la lista y en el chat.
 - El chat abre siempre en el último mensaje aunque el cuadro de respuesta cambie de alto.
 
-## 1.11.0 · rutas del servidor para las pantallas nuevas
-- Tareas, recordatorios de seguimiento (con su tarea y su cierre al enviar), auditoría (sólo se agrega), usuarios y roles (cinco), identidad del espacio, resumen, operación del día, eficacia de ventas, anuncios y leads por persona. Ver `docs/rutas-pantallas-nuevas.md`.
-- Pendiente: conectar los cobros, planes y egresos al Resumen; las pantallas de Contratos (otro servidor).
+## 1.11.0 y 1.11.1 · rutas del servidor para el armazón nuevo — EN PAUSA, SIN SUBIR
+- Hechas pero no desplegadas: tareas, recordatorios de seguimiento, auditoría (sólo se agrega, con borrado de lo de seis meses o más y acceso sólo para la propietaria), identidad del espacio, resumen, operación del día, eficacia de ventas, anuncios, leads por persona, subcuenta de demostración con datos ficticios (`DemoSpace`). Ver `docs/rutas-pantallas-nuevas.md`.
+- Se detuvo junto con el cambio de armazón de Agora Digital App (abajo): no tiene sentido sin él. Se retoma cuando el usuario diga.
+- Pendiente si se retoma: conectar los cobros, planes y egresos al Resumen; las pantallas de Contratos (otro servidor).
 
-## 1.11.1 · ajustes sobre las pantallas nuevas
-- Sin gestión de usuarios (se queda GoHighLevel); auditoría sólo de la propietaria, con borrado de lo de seis meses o más; logo SVG saneado; subcuenta de demostración con datos ficticios (`DemoSpace`); Contratos «Próximamente»; sin etiquetas verdes de estado.
+## Armazón nuevo (Agora Digital App) — EN PAUSA, pendiente a futuro
+- El paquete de pantallas de terceros (Resumen, ARP Comercial, Tareas, Auditoría, Usuarios, Athena…) que reemplaza el armazón visual de Ágora por el del panel de Contratos, revisado y corregido en 1.1.1/1.2.0/1.2.1 (identidad de Ágora, canal de origen, sin usuarios, sin etiquetas verdes, Contratos «Próximamente», SVG).
+- El usuario pidió dejarlo en pausa: la versión activa sigue siendo la 1.10.1 con el armazón propio de Ágora. Se retoma sólo cuando el usuario lo pida explícitamente.
