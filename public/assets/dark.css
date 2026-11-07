@@ -207,6 +207,13 @@ html[data-theme="dark"] .cons-split td.bar i{background:#ad103c}
 html[data-theme="dark"] .cons-moves em{color:#d6d7da;border:1px solid #363a49}
 html[data-theme="dark"] .cons-sheet-f{color:#d6d7da;border-top:1px solid #363a49}
 @media print{html[data-theme="dark"] body.cons-printing main,html[data-theme="dark"] body.cons-printing #view{background:#1d1f2b!important}}
+html[data-theme="dark"] .board-chip,html[data-theme="dark"] .board-clear{border:1px solid var(--line,#363a49)}
+html[data-theme="dark"] .board-chip.on{background:var(--accent,#2f6fed);border-color:var(--accent,#2f6fed);color:#fff}
+html[data-theme="dark"] .board-chips button{border:1px solid var(--line,#363a49)}
+html[data-theme="dark"] .board-card2{border:1px solid var(--line,#363a49)}
+html[data-theme="dark"] .board-card2:focus-visible{outline:2px solid var(--accent,#2f6fed)}
+html[data-theme="dark"] .board-ic{border:1px solid var(--line,#363a49)}
+html[data-theme="dark"] .board-move{border:1px solid var(--line,#363a49)}
 /* ---- a mano: paleta base y piezas que el generador no puede adivinar ---- */
 html[data-theme="dark"]{color-scheme:dark;--ink:#e6e8f0;--muted:#9aa0b4;--line:#2f3445;--paper:#1b1f2c;--bg:#12151f;--green:#d13c63;--accent:#f5b84a}
 html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}

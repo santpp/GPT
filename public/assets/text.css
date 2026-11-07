@@ -345,6 +345,11 @@ details.contact-group>summary small{font-size:14.4px!important}
 .cons-moves em{font-size:14.4px!important}
 .cons-sheet-f{font-size:14.4px!important}
 @media(max-width:600px){.board-total{font-size:16.8px!important}}
+.board-card2-top h3{font-size:16.8px!important}
+.board-card2-top strong{font-size:15.6px!important}
+.board-card2-sub{font-size:14.4px!important}
+.board-ic{font-size:14.4px!important}
+.board-empty{font-size:14.4px!important}
 html[data-text="large"] body{font-size:18.2px!important}
 html[data-text="large"] h2{font-size:19.6px!important}
 html[data-text="large"] .brand{font-size:44.8px!important}
@@ -690,6 +695,11 @@ html[data-text="large"] .cons-sheet table{font-size:19.6px!important}
 html[data-text="large"] .cons-moves em{font-size:16.8px!important}
 html[data-text="large"] .cons-sheet-f{font-size:16.8px!important}
 @media(max-width:600px){html[data-text="large"] .board-total{font-size:19.6px!important}}
+html[data-text="large"] .board-card2-top h3{font-size:19.6px!important}
+html[data-text="large"] .board-card2-top strong{font-size:18.2px!important}
+html[data-text="large"] .board-card2-sub{font-size:16.8px!important}
+html[data-text="large"] .board-ic{font-size:16.8px!important}
+html[data-text="large"] .board-empty{font-size:16.8px!important}
 .workspace-label{color:var(--muted)!important}
 .nav{color:var(--muted)!important}
 .connection{color:var(--muted)!important}

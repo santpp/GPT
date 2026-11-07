@@ -50,11 +50,11 @@ with sync_playwright() as p:
         page.locator('#login-form button').click()
         page.wait_for_selector('#app:not([hidden])')
         page.locator('[data-view="board"]').click()
-        page.wait_for_selector('.board-card',state='attached')
+        page.wait_for_selector('.board-card2',state='attached')
         return page,errors,sent,context
 
     page,errors,sent,context=session({'width':1440,'height':900})
-    page.locator('[data-edit-opportunity="opp-1"]').click()
+    page.locator('[data-edit-opportunity="opp-1"]').click(position={'x':6,'y':6})
     page.wait_for_selector('.opportunity-form',state='attached')
     form=page.locator('.opportunity-form')
     assert form.locator('[name="name"]').input_value()=='Proyecto Andreina'
@@ -94,7 +94,7 @@ with sync_playwright() as p:
     context.close()
 
     page,errors,sent,context=session({'width':390,'height':844})
-    page.locator('[data-edit-opportunity="opp-1"]').click()
+    page.locator('[data-edit-opportunity="opp-1"]').click(position={'x':6,'y':6})
     page.wait_for_selector('.opportunity-form',state='attached')
     box=page.locator('.opportunity-form [data-save]').bounding_box()
     assert box['height']>=44, f'saving must be comfortable to tap: {box}'

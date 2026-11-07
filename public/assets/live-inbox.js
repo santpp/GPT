@@ -3,7 +3,7 @@ import {opportunityForm,readOpportunityForm,bindPipelineChoice} from './opportun
 import {attachmentsOf,attachmentMarkup,bindAttachments,statusMarkup,UI_ICONS} from './message-view.js';
 import {workspace,friendly} from './workspace.js';
 import {skeleton} from './skeleton.js';
-import {money as fmtMoney} from './format.js';
+import {money as fmtMoney,searchText} from './format.js';
 document.addEventListener('click',e=>{if(e.target.closest?.('.channel-menu'))return;document.querySelectorAll('.channel-list:not([hidden])').forEach(m=>{m.hidden=true;m.parentElement.querySelector('.channel-current')?.setAttribute('aria-expanded','false')})});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.channel-list:not([hidden])').forEach(m=>{m.hidden=true;m.parentElement.querySelector('.channel-current')?.setAttribute('aria-expanded','false')})});
 const calm=()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches}catch{return false}};
@@ -31,7 +31,7 @@ export async function renderLiveInbox(container){
  container.innerHTML=skeleton('list',7);
  try{
   const me=await request('me');const {items}=await request('workspace/connections');if(!active())return;
-  container.innerHTML=`<div class="live-toolbar"><p id="live-feedback" class="live-feedback" role="status"></p><label>Mostrar<select id="live-limit" aria-label="Cantidad de conversaciones"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label></div><p id="live-auto-status" class="live-auto-status" role="status" hidden></p><div class="live-inbox-layout"><section class="live-sidebar" aria-label="Lista de conversaciones"><label class="search"><span aria-hidden="true">⌕</span><input id="live-search" type="search" placeholder="Buscar nombre o mensaje" aria-label="Buscar en conversaciones cargadas"></label><div class="tabs"><button data-live-filter="all" class="active" aria-pressed="true">Todas</button><button data-live-filter="unread" aria-pressed="false">No leídas</button><button data-live-filter="waiting" aria-pressed="false" title="Conversaciones donde lo último lo escribió el cliente">Sin respuesta</button><button data-live-filter="mine" aria-pressed="false" id="live-filter-mine" hidden>Mías</button><span class="live-channel-filters" id="live-channel-filters"></span><span id="live-count"></span></div><div id="live-list"></div></section><section id="live-messages" aria-label="Conversación"><p class="empty">Selecciona una conversación para consultar su historial.</p></section><aside id="live-contact-panel" class="live-contact-panel" aria-label="Ficha del contacto"></aside></div>`;
+  container.innerHTML=`<div class="live-toolbar"><p id="live-feedback" class="live-feedback" role="status"></p><label>Mostrar<select id="live-limit" aria-label="Cantidad de conversaciones"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label></div><p id="live-auto-status" class="live-auto-status" role="status" hidden></p><div class="live-inbox-layout"><section class="live-sidebar" aria-label="Lista de conversaciones"><label class="search"><span aria-hidden="true">⌕</span><input id="live-search" type="search" placeholder="Buscar nombre, teléfono, correo o mensaje" aria-label="Buscar en conversaciones cargadas"></label><div class="tabs"><button data-live-filter="all" class="active" aria-pressed="true">Todas</button><button data-live-filter="unread" aria-pressed="false">No leídas</button><button data-live-filter="waiting" aria-pressed="false" title="Conversaciones donde lo último lo escribió el cliente">Sin respuesta</button><button data-live-filter="mine" aria-pressed="false" id="live-filter-mine" hidden>Mías</button><span class="live-channel-filters" id="live-channel-filters"></span><span id="live-count"></span></div><div id="live-list"></div></section><section id="live-messages" aria-label="Conversación"><p class="empty">Selecciona una conversación para consultar su historial.</p></section><aside id="live-contact-panel" class="live-contact-panel" aria-label="Ficha del contacto"></aside></div>`;
   const $=s=>container.querySelector(s), limit=$('#live-limit'),feedback=$('#live-feedback'),layout=$('.live-inbox-layout');
   const mineButton=$('#live-filter-mine');
   if(mineButton&&me?.user?.identity_type==='external')mineButton.hidden=false;
@@ -824,7 +824,7 @@ export async function renderLiveInbox(container){
   }
   $('#live-search').oninput=event=>{
    clearTimeout(searchTimer);
-   const value=event.target.value.trim();
+   const value=searchText(event.target.value);
    // The account answers the search, so it is asked once typing settles.
    searchTimer=setTimeout(()=>{if(value===searchTerm)return;searchTerm=value;load()},450);
   };

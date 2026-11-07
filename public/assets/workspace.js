@@ -10,6 +10,8 @@ export const workspace={
   get me(){return profile},
   /** Filtro de la bandeja que otra pantalla pide al abrirla (por ejemplo, «sin respuesta» desde el tablero). */
   pendingFilter:null,
+  /** Contacto cuya ficha debe abrirse al entrar en Contactos (por ejemplo, desde una oportunidad). */
+  pendingContact:null,
   get connections(){return connections},
   /** The account every screen must read. Empty while none is available. */
   current(){return current},

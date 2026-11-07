@@ -1062,3 +1062,29 @@ html,body{max-width:100%;overflow-x:hidden}
  .board-total{font-size:14px;margin-bottom:12px}
  .board-card h3{overflow-wrap:anywhere}
 }
+
+/* 1.10.6 · Embudos: etapas plegables, tarjetas compactas, filtros */
+.board-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.board-search{flex:1 1 220px;min-width:0}.board-search input{width:100%;min-width:0}
+.board-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0}
+.board-filters select{max-width:100%;min-width:0}
+.board-chip,.board-clear{min-height:40px;padding:0 12px;border:1px solid var(--line,#d8dde6);border-radius:999px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.board-chip.on{background:var(--accent,#2f6fed);border-color:var(--accent,#2f6fed);color:#fff}
+.board-chip b{margin-left:4px}.board-clear{border-style:dashed}
+.board-chips{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:thin}
+.board-chips button{flex:none;display:flex;gap:6px;align-items:center;min-height:36px;padding:0 12px;border:1px solid var(--line,#d8dde6);border-radius:999px;background:transparent;color:inherit;font:inherit;cursor:pointer;white-space:nowrap}
+.board-chips b{font-weight:600;opacity:.75}
+.board-stage-h{display:flex;width:100%;align-items:center;gap:8px;min-height:44px;padding:6px 8px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.board-stage-name{flex:1;min-width:0;font-weight:600;overflow-wrap:anywhere}.board-stage-meta{font-size:.85em;opacity:.75;white-space:nowrap}
+.board-stage-h svg{flex:none;transition:transform .15s}.board-column.collapsed .board-stage-h svg{transform:rotate(-90deg)}
+.board-column.collapsed .board-stage-body{display:none}
+.board-card2{position:relative;display:block;margin:6px 0;padding:10px;border:1px solid var(--line,#d8dde6);border-radius:10px;cursor:pointer;min-width:0}
+.board-card2:focus-visible{outline:2px solid var(--accent,#2f6fed);outline-offset:2px}
+.board-card2-top{display:flex;gap:8px;justify-content:space-between;align-items:baseline}
+.board-card2-top h3{margin:0;font-size:14px;overflow-wrap:anywhere;min-width:0}.board-card2-top strong{white-space:nowrap;font-size:13px}
+.board-card2-sub{margin:2px 0 0;font-size:12px;opacity:.75;overflow-wrap:anywhere}
+.board-card2-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.board-ic{display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 10px;border:1px solid var(--line,#d8dde6);border-radius:8px;background:transparent;color:inherit;font:inherit;font-size:12px;cursor:pointer}
+.board-move{display:flex;flex-direction:column;gap:4px;margin-top:8px;padding:6px;border:1px solid var(--line,#d8dde6);border-radius:8px}
+.board-move button{min-height:40px;text-align:left;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;padding:0 8px;overflow-wrap:anywhere}
+.board-empty{margin:6px 8px;font-size:12px;opacity:.7}

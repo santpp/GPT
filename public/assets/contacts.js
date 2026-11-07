@@ -1,3 +1,4 @@
+import {searchText} from './format.js';
 import {workspace,friendly} from './workspace.js';
 import {skeleton} from './skeleton.js';
 import {contactForm,readContactForm,bindTagEditor,groupByFolder,bindEditorExtras} from './contact-editor.js';
@@ -150,7 +151,8 @@ export async function renderContacts(container){
   }
 
   // The term is only sent once typing settles, so a search costs one read.
-  $('#contact-search').oninput=e=>{clearTimeout(timer);const value=e.target.value.trim();timer=setTimeout(()=>load(value),450)};
+  $('#contact-search').oninput=e=>{clearTimeout(timer);const value=searchText(e.target.value);timer=setTimeout(()=>load(value),450)};
   container.agoraLiveDispose=()=>{clearTimeout(timer);container.agoraViewInstance=null};
   await load();
+  if(workspace.pendingContact){const id=workspace.pendingContact;workspace.pendingContact=null;open(id)}
 }

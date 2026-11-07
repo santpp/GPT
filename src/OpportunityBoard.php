@@ -87,6 +87,8 @@ final class OpportunityBoard {
                 'name'=>self::text($opportunity['name']??null,190)??'Oportunidad sin nombre',
                 'contactId'=>self::identifier($opportunity['contactId']??null),
                 'contactName'=>self::text($opportunity['contact']['name']??null,190),
+                'contactEmail'=>self::text($opportunity['contact']['email']??null,190),
+                'contactPhone'=>self::text($opportunity['contact']['phone']??null,40),
                 'monetaryValue'=>is_int($value)||is_float($value)?(float)$value:(is_string($value)&&is_numeric($value)?(float)$value:null),
                 'pipelineId'=>self::identifier($opportunity['pipelineId']??null),
                 'pipelineStageId'=>self::identifier($opportunity['pipelineStageId']??null),

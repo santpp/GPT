@@ -1,4 +1,4 @@
-"""1.10.5: en el teléfono nada se sale del ancho: la fila de filtros, el selector de embudo, la barra de arriba y el menú de abajo (con siete pestañas)."""
+"""1.10.6: en el teléfono nada se sale del ancho: la fila de filtros, el selector de embudo, la barra de arriba y el menú de abajo (con siete pestañas)."""
 import json,os
 from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright
@@ -28,10 +28,10 @@ with sync_playwright() as p:
         boxes=pg.evaluate("[...document.querySelectorAll('.sidebar nav .nav')].filter(b=>!b.hidden).map(b=>{const r=b.getBoundingClientRect();return [r.left,r.right]})")
         for a,c in zip(boxes,boxes[1:]):assert c[0]>=a[1]-1,(w,'el menú de abajo se pisa',boxes)
         assert pg.evaluate("document.querySelector('.sidebar nav').scrollWidth>=document.querySelector('.sidebar nav').clientWidth")
-        pg.locator('button[data-view="board"]').first.click();pg.wait_for_selector('.board-card');pg.wait_for_timeout(300)
+        pg.locator('button[data-view="board"]').first.click();pg.wait_for_selector('.board-card2');pg.wait_for_timeout(300)
         sw,bad=over();assert sw<=w and not bad,(w,'oportunidades',sw,bad)
         e=pg.locator('#board-pipeline').bounding_box();assert e['width']>w*0.6,(w,'el selector de embudo es muy angosto',e)
-        assert pg.locator('.board-card p').count()==1,'el nombre del contacto sólo se repite si es distinto al de la oportunidad'
+        assert pg.locator('.board-card2-sub').count()==1,'el nombre del contacto sólo se repite si es distinto al de la oportunidad'
         assert not errs,errs
         print(f'PASS {w}px: filters, tabs, top bar, bottom menu and the funnel fit inside the screen')
     b.close()

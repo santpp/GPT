@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/TokenVault.php';
 final class Installation {
-    public const VERSION='1.10.5';
+    public const VERSION='1.10.6';
     public static function checks(bool $autoMigrate=true):array {
         $checks=[];
         $runtime=PHP_VERSION_ID>=80300;
