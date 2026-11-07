@@ -260,11 +260,16 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Canal de origen (WhatsApp, Instagram, Facebook, SMS, correo) con marca y color en la lista y en el chat.
 - El chat abre siempre en el último mensaje aunque el cuadro de respuesta cambie de alto.
 
-## 1.11.0 y 1.11.1 · rutas del servidor para el armazón nuevo — EN PAUSA, SIN SUBIR
+## 1.11.0 y 1.11.1 · rutas del servidor para el armazón nuevo — sin publicar (ligadas al armazón)
 - Hechas pero no desplegadas: tareas, recordatorios de seguimiento, auditoría (sólo se agrega, con borrado de lo de seis meses o más y acceso sólo para la propietaria), identidad del espacio, resumen, operación del día, eficacia de ventas, anuncios, leads por persona, subcuenta de demostración con datos ficticios (`DemoSpace`). Ver `docs/rutas-pantallas-nuevas.md`.
-- Se detuvo junto con el cambio de armazón de Agora Digital App (abajo): no tiene sentido sin él. Se retoma cuando el usuario diga.
+- Dependen del armazón de Agora Digital App (abajo): no se publican hasta que se retome.
 - Pendiente si se retoma: conectar los cobros, planes y egresos al Resumen; las pantallas de Contratos (otro servidor).
 
-## Armazón nuevo (Agora Digital App) — EN PAUSA, pendiente a futuro
-- El paquete de pantallas de terceros (Resumen, ARP Comercial, Tareas, Auditoría, Usuarios, Athena…) que reemplaza el armazón visual de Ágora por el del panel de Contratos, revisado y corregido en 1.1.1/1.2.0/1.2.1 (identidad de Ágora, canal de origen, sin usuarios, sin etiquetas verdes, Contratos «Próximamente», SVG).
-- El usuario pidió dejarlo en pausa: la versión activa sigue siendo la 1.10.1 con el armazón propio de Ágora. Se retoma sólo cuando el usuario lo pida explícitamente.
+## Armazón nuevo (Agora Digital App) — futuro lejano, sin versión
+- Paquete de pantallas de terceros que reemplaza el armazón visual (Resumen, ARP Comercial, Tareas, Auditoría, Athena…). Revisado y corregido en 1.1.1/1.2.x, sin publicar.
+- La versión activa sigue siendo la 1.10.1. Sólo se retoma cuando el usuario lo pida explícitamente.
+
+## Pendientes activos
+- **Gasto en GHL por subcuenta (sólo administrador/propietario):** pendiente de confirmar. La documentación local sólo tiene el wallet de cargos de la propia app (`GET /marketplace/billing/charges`), no el gasto general de la subcuenta. Falta la fuente exacta que indica que la API de agencia lo da; si se confirma el endpoint, se diseña la pestaña. Descartada la aproximación por conteo de mensajes.
+- Plantillas de WhatsApp: falta el ID de la cuenta de WhatsApp Business.
+- V2.1: resumen diario o semanal y cabeceras de seguridad del servidor nativo.
