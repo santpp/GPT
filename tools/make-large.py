@@ -70,7 +70,8 @@ def contrast(css):
 BASE = '''/* Generado por tools/make-large.py: no editar a mano. */
 html[data-text="large"] body *{font-weight:700!important}
 '''
-FINAL = '''/* Lo que más se lee: los mensajes y el cuadro de respuesta. */
+FINAL = '''@media(max-width:600px){.live-channel-filters select{font-size:15px!important}.live-sidebar .tabs button{font-size:14.5px!important}.board-total{font-size:14px!important}}
+/* Lo que más se lee: los mensajes y el cuadro de respuesta. */
 .breadcrumbs,.breadcrumbs strong{color:var(--ink)!important}
 ::placeholder{color:var(--muted)!important;opacity:.85!important}
 .bubble,.live-message-log .bubble,.bubble p{font-size:17px!important;line-height:1.55!important}

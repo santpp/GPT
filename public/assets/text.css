@@ -344,6 +344,7 @@ details.contact-group>summary small{font-size:14.4px!important}
 .cons-sheet table{font-size:16.8px!important}
 .cons-moves em{font-size:14.4px!important}
 .cons-sheet-f{font-size:14.4px!important}
+@media(max-width:600px){.board-total{font-size:16.8px!important}}
 html[data-text="large"] body{font-size:18.2px!important}
 html[data-text="large"] h2{font-size:19.6px!important}
 html[data-text="large"] .brand{font-size:44.8px!important}
@@ -688,6 +689,7 @@ html[data-text="large"] .cons-sheet h4{font-size:21px!important}
 html[data-text="large"] .cons-sheet table{font-size:19.6px!important}
 html[data-text="large"] .cons-moves em{font-size:16.8px!important}
 html[data-text="large"] .cons-sheet-f{font-size:16.8px!important}
+@media(max-width:600px){html[data-text="large"] .board-total{font-size:19.6px!important}}
 .workspace-label{color:var(--muted)!important}
 .nav{color:var(--muted)!important}
 .connection{color:var(--muted)!important}
@@ -732,6 +734,7 @@ h1>span{color:var(--muted)!important}
 .dialog-copy{color:var(--muted)!important}
 .integration-status{color:var(--muted)!important}
 .access-panel .access-state{color:var(--muted)!important}
+@media(max-width:600px){.live-channel-filters select{font-size:15px!important}.live-sidebar .tabs button{font-size:14.5px!important}.board-total{font-size:14px!important}}
 /* Lo que más se lee: los mensajes y el cuadro de respuesta. */
 .breadcrumbs,.breadcrumbs strong{color:var(--ink)!important}
 ::placeholder{color:var(--muted)!important;opacity:.85!important}

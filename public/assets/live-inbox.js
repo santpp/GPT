@@ -815,7 +815,7 @@ export async function renderLiveInbox(container){
     window.dispatchEvent(new CustomEvent('agora:unread',{detail:Number(data.unread)||0}));
     const scope=[filter==='unread'?'no leídas':filter==='mine'?'mías':filter==='waiting'?'sin respuesta':null,channelNames[channelFilter],searchTerm?`«${searchTerm}»`:null].filter(Boolean).join(' · ');
     feedback.textContent=data.items.length
-     ? `${data.items.length} de ${data.total} conversaciones${scope?' · '+scope:''}${data.partial?' · ventana parcial':''}`
+     ? `${data.items.length} de ${data.total} conversaciones${scope?' · '+scope:''}${data.partial?' · las más recientes':''}`
      : (scope?`Ninguna conversación con este filtro (${scope}).`:'Esta cuenta todavía no tiene conversaciones.');
     if(data.stale)feedback.textContent+=data.reason==='paused'?` · Mostrando la última lista, de ${date(data.syncedAt)}; la consulta está en espera.`:` · Mostrando la última lista, de ${date(data.syncedAt)}; no se pudo leer la cuenta ahora.`;
     if(unavailable)feedback.textContent=unavailable;

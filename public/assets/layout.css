@@ -1036,3 +1036,29 @@ body.in-maintenance{overflow:hidden}
  body.cons-printing .cons-sheet-sub{page-break-inside:avoid}
  @page{size:A4;margin:14mm}
 }
+/* 1.10.5 · nada se sale del ancho del teléfono */
+html,body{max-width:100%;overflow-x:hidden}
+@media(max-width:600px){
+ /* Las pestañas caben en una línea y el selector de canal baja a la suya, a todo el ancho */
+ .live-sidebar .tabs{flex-wrap:wrap;gap:0;padding:0 12px}
+ .live-sidebar .tabs button{white-space:nowrap;padding:12px 10px;min-height:44px}
+ .live-sidebar .tabs .live-channel-filters{display:block!important;flex:1 1 100%;margin:0;padding:8px 0 10px!important;order:9}
+ .live-sidebar .tabs .live-channel-filters select{width:100%;max-width:none;min-height:44px}
+ .live-toolbar{flex-wrap:wrap;align-items:center;gap:8px 12px}
+ .live-feedback{padding:0 14px 10px;line-height:1.4}
+ /* La barra de arriba: título, subcuenta, avisos y cuenta en una sola línea */
+ .topbar{flex-wrap:nowrap;gap:8px}
+ .breadcrumbs{flex:1 1 auto;min-width:0}
+ .breadcrumbs strong{max-width:none;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .top-actions{flex:0 1 auto;min-width:0;margin-left:0;gap:6px}
+ .account-switch select{max-width:30vw;text-overflow:ellipsis}
+ /* El menú de abajo: con más de cinco pestañas (la propietaria tiene siete) se desplaza de lado en vez de pisarse */
+ .sidebar nav{overflow-x:auto;scrollbar-width:none;justify-content:flex-start;scroll-snap-type:x proximity}
+ .sidebar nav::-webkit-scrollbar{display:none}
+ .sidebar nav .nav{flex:1 0 auto;min-width:78px;padding-left:6px;padding-right:6px;white-space:nowrap;scroll-snap-align:center}
+ /* Oportunidades: los títulos y totales de cada etapa se leen igual que las tarjetas */
+ .live-toolbar:has(#board-pipeline) label{flex:1 1 100%;max-width:none}
+ #board-pipeline{width:100%}
+ .board-total{font-size:14px;margin-bottom:12px}
+ .board-card h3{overflow-wrap:anywhere}
+}

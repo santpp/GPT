@@ -50,6 +50,7 @@ function show(name,{push=true}={}){
   const meta=VIEWS[target];
   if(push&&location.pathname!==meta.path)history.pushState(null,'',meta.path);
   document.querySelectorAll('button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===target));
+  document.querySelector('.sidebar nav .nav.active')?.scrollIntoView?.({inline:'center',block:'nearest'});
   $('#breadcrumb').textContent=meta.title;
   $('#page-title').innerHTML=esc(meta.heading).replace(/\.$/,'<span>.</span>');
   $('#page-subtitle').textContent=meta.subtitle;

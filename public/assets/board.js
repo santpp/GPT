@@ -17,6 +17,7 @@ async function request(path,method='GET',csrf='',body=null){
   return data;
 }
 
+const norm=t=>String(t??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
 async function renderFunnels(container){
   const instance=Symbol();container.agoraViewInstance=instance;
   const active=()=>container.agoraViewInstance===instance&&container.dataset.view==='board';
@@ -28,13 +29,13 @@ async function renderFunnels(container){
   try{csrf=(await request('me')).csrf||''}catch{}
 
   function card(item,canEdit){
-    return `<div class="card board-card"><h3>${esc(item.name)}</h3>${item.contactName?`<p>${esc(item.contactName)}</p>`:''}${amount(item.monetaryValue)?`<strong>${esc(amount(item.monetaryValue))}</strong>`:''}${item.assignedName?`<span class="tag">${esc(item.assignedName)}</span>`:''}${canEdit?`<button class="live-opportunity-edit" data-edit-opportunity="${esc(item.id)}">Editar</button>`:''}</div>`;
+    return `<div class="card board-card"><h3>${esc(item.name)}</h3>${item.contactName&&norm(item.contactName)!==norm(item.name)?`<p>${esc(item.contactName)}</p>`:''}${amount(item.monetaryValue)?`<strong>${esc(amount(item.monetaryValue))}</strong>`:''}${item.assignedName?`<span class="tag">${esc(item.assignedName)}</span>`:''}${canEdit?`<button class="live-opportunity-edit" data-edit-opportunity="${esc(item.id)}">Editar</button>`:''}</div>`;
   }
 
   function show(){
     const data=board;
     const note=data.total
-      ? `${data.total} oportunidad${data.total===1?'':'es'} abierta${data.total===1?'':'s'}${data.restricted?' asignadas a tu usuario':''}${data.partial?' · se muestran las más recientes':''}`
+      ? `${data.total} oportunidad${data.total===1?'':'es'} abierta${data.total===1?'':'s'}${data.restricted?' asignadas a tu usuario':''}${data.partial?' · las más recientes':''}`
       : (data.restricted?'No tienes oportunidades abiertas asignadas en este embudo.':'Este embudo no tiene oportunidades abiertas.');
     const canEdit=data.canEdit===true;
     const cards=asList(data.stages).flatMap(stage=>asList(stage.items));
