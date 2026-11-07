@@ -277,4 +277,4 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## 1.10.2 · Consumos
 - Pestaña «Consumos» sólo para la propietaria: token de agencia y Company ID escritos en la pestaña (cifrado, nunca se muestra completo), gasto y recargas del mes por subcuenta, plan activo, saldo, desglose, y botones de prueba y depuración (transacciones por POST y por GET, saldo y plan).
-- El código de la 1.11.x (armazón nuevo) quedó fuera del árbol: sigue en la etiqueta `shelved-1.11.1` del repositorio.
+- El código de la 1.11.x (armazón nuevo) quedó fuera del árbol: sigue en el historial del repositorio (último commit: `b98d8ae`, 1.11.1; el de las notas y paquetes, `19aa91d`).
