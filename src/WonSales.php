@@ -47,8 +47,6 @@ final class WonSales {
                         'assignedTo'=>is_string($o['assignedTo']??null)&&$o['assignedTo']!==''?$o['assignedTo']:null,
                         'value'=>is_numeric($value)?(float)$value:0.0,
                         'wonAt'=>is_string($when)&&strtotime($when)!==false?gmdate('c',strtotime($when)):null,
-                        'createdAt'=>is_string($o['createdAt']??($o['dateAdded']??null))&&strtotime((string)($o['createdAt']??$o['dateAdded']))!==false?gmdate('c',strtotime((string)($o['createdAt']??$o['dateAdded']))):null,
-                        'pipelineId'=>is_string($o['pipelineId']??null)?mb_substr($o['pipelineId'],0,80):null,
                     ];
                 }
                 if(count($items)<self::PAGE)return [array_values($out),false];

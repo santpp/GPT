@@ -5,7 +5,7 @@ $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 if (!str_starts_with($path, '/api/')) {
     $file = realpath(__DIR__.$path);
     if ($file && str_starts_with($file, __DIR__.DIRECTORY_SEPARATOR) && is_file($file) && pathinfo($file, PATHINFO_EXTENSION) !== 'php') return false;
-    if (in_array(rtrim($path,'/')?:'/',['/','/conexiones','/conexiones.html','/bandeja','/contactos','/oportunidades','/tablero','/ayuda'],true) || preg_match('~^/conversations/[A-Za-z0-9_-]+$~', $path)) { readfile(__DIR__.'/index.html'); return true; }
+    if (in_array(rtrim($path,'/')?:'/',['/','/conexiones','/conexiones.html','/bandeja','/contactos','/oportunidades','/tablero','/ayuda','/consumos'],true) || preg_match('~^/conversations/[A-Za-z0-9_-]+$~', $path)) { readfile(__DIR__.'/index.html'); return true; }
     http_response_code(404); exit;
 }
 require $appRoot.'/src/bootstrap.php';
@@ -102,8 +102,6 @@ try {
         session_regenerate_id(true);
         $_SESSION=['external_identity_id'=>$identity,'csrf'=>bin2hex(random_bytes(32)),'expires'=>time()+28800,'seen'=>time()];
         $_SESSION['device_id']=DeviceSession::start($_SESSION,$_SESSION['csrf'],$agent);
-        require_once $appRoot.'/src/Audit.php';require_once $appRoot.'/src/Actor.php';
-        if($entered=Actor::fromSession($_SESSION))Audit::record($entered,null,['action'=>'entro','text'=>'Inició sesión','module'=>'sesion']);
         respond(['csrf'=>$_SESSION['csrf']]);
     }
     if ($path === '/api/login' && $method === 'POST') {
@@ -118,8 +116,6 @@ try {
         session_regenerate_id(true);
         $_SESSION = ['uid'=>$u['id'],'csrf'=>bin2hex(random_bytes(32)),'expires'=>time()+28800,'seen'=>time()];
         $_SESSION['device_id']=DeviceSession::start($_SESSION,$_SESSION['csrf'],$agent);
-        require_once $appRoot.'/src/Audit.php';
-        Audit::record($u+['identity_type'=>'native'],null,['action'=>'entro','text'=>'Inició sesión','module'=>'sesion']);
         respond(['csrf'=>$_SESSION['csrf']]);
     }
     // Entrar con huella o cara. El teléfono ofrece las llaves que tiene para
@@ -147,17 +143,10 @@ try {
     // El propietario enciende o apaga la pausa; mientras dure, sólo él sigue trabajando.
     if ($path === '/api/admin/maintenance') {
         if (!Maintenance::passes($u)) respond(['error'=>'Acceso restringido'],403);
-        if ($method === 'POST') {$b=body();$state=Maintenance::set(($b['on']??false)===true);require_once $appRoot.'/src/Audit.php';Audit::record($u,null,['action'=>'bloqueo','text'=>$state['on']?'Puso Ágora en mantenimiento':'Sacó a Ágora del mantenimiento','module'=>'ajuste','object'=>'Mantenimiento']);respond($state);}
+        if ($method === 'POST') {$b=body();respond(Maintenance::set(($b['on']??false)===true));}
         respond(Maintenance::state());
     }
-    // Volver a dejar la subcuenta de demostración como estaba, antes de enseñarla a alguien.
-    if ($path === '/api/admin/demo/reset' && $method === 'POST') {
-        if (!Maintenance::passes($u)) respond(['error'=>'Acceso restringido'],403);
-        require_once $appRoot.'/src/DemoSpace.php';require_once $appRoot.'/src/Audit.php';
-        DemoSpace::reset();
-        Audit::record($u,null,['action'=>'edito','text'=>'Reinició la subcuenta de demostración','module'=>'ajuste','object'=>'Demostración']);
-        respond(['reset'=>true]);
-    }
+    if (str_starts_with($path,'/api/admin/consumption')) {require $appRoot.'/src/consumption-routes.php';}
     if ($path !== '/api/logout' && Maintenance::on() && !Maintenance::passes($u))
         respond(['error'=>'Ágora está en mantenimiento.','code'=>'maintenance'],503);
     // Bloqueo por inactividad: mientras dure, sólo se puede desbloquear o salir.
@@ -238,7 +227,7 @@ try {
         $checks=Installation::checks();
         respond(['version'=>Installation::VERSION,'ready'=>!in_array(false,array_column($checks,'ready'),true),'checks'=>$checks]);
     }
-    if (str_starts_with($path, '/api/workspace/') || str_starts_with($path, '/api/ghl/')) {session_write_close();require $appRoot.'/src/workspace-extra.php';require $appRoot.'/src/live-inbox.php';}
+    if (str_starts_with($path, '/api/workspace/') || str_starts_with($path, '/api/ghl/')) {session_write_close();require $appRoot.'/src/live-inbox.php';}
     if (str_starts_with($path, '/api/admin/integrations') || str_starts_with($path, '/api/admin/access-channel')) {
         if (getenv('APP_ENV') !== 'development' && parse_url(getenv('APP_ORIGIN') ?: '', PHP_URL_SCHEME) !== 'https') respond(['error'=>'HTTPS required'],503);
         require $appRoot.'/src/integrations.php';
@@ -344,7 +333,7 @@ try {
             [$u['tenant_id'],$type,$u['id'],$token,$platform,$p256dh,$auth,$label]);
         respond(['registered'=>true,'notifications'=>PushDelivery::configured()]);
     }
-    if ($path === '/api/logout' && $method === 'POST') { require_once $appRoot.'/src/Audit.php'; Audit::record($u,null,['action'=>'salio','text'=>'Cerró sesión','module'=>'sesion']); DeviceSession::end($_SESSION); $_SESSION=[]; session_destroy(); respond(['ok'=>true]); }
+    if ($path === '/api/logout' && $method === 'POST') { DeviceSession::end($_SESSION); $_SESSION=[]; session_destroy(); respond(['ok'=>true]); }
     if ($path === '/api/conversations' && $method === 'GET') {
         if(($u['identity_type']??'native')!=='native')respond(['error'=>'Utiliza la bandeja conectada para consultar tus conversaciones.'],403);
         $sql = 'SELECT ghl_id,payload,updated_at FROM resources WHERE tenant_id=? AND kind=?';

@@ -988,3 +988,32 @@ body.in-maintenance{overflow:hidden}
 .channel-chip.ch-IG{color:#a32a6e}
 .channel-chip.ch-FB{color:#0a57d0}
 .live-chat-header p{margin:2px 0 0}
+/* 1.10.2 · Consumos */
+.cons{display:grid;gap:18px;max-width:980px}
+.cons-block{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg,16px);padding:20px}
+.cons-block h3{margin:0 0 10px;font-size:18px}
+.cons-note{margin:6px 0;color:var(--muted);font-size:14px;line-height:1.5}.cons-note.warn{color:#a01238;font-weight:600}
+.cons-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin:12px 0}
+.cons-bar label,.cons-form label{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink)}
+.cons-bar select,.cons-form input{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:var(--r-md,10px);background:var(--paper);color:var(--ink);font:inherit}
+.cons-form{display:grid;gap:12px;max-width:520px}
+.cons-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}
+.cons-actions button{min-height:44px;padding:8px 16px;border-radius:var(--r-md,10px);border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+.cons-actions button.primary{background:var(--green);border-color:var(--green);color:#fff}
+.cons-state{font-size:14px;font-weight:600;color:var(--ink)}.cons-state.off{color:var(--muted)}
+.cons-totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:12px 0}
+.cons-totals div{border:1px solid var(--line);border-radius:12px;padding:12px}.cons-totals small{display:block;color:var(--muted);font-size:13px}.cons-totals strong{font-size:24px}
+.cons-list{display:grid;gap:12px}
+.cons-card{border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:10px}
+.cons-card header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.cons-card h4{margin:0;font-size:17px}
+.cons-plan{display:block;font-size:14px;color:var(--ink);margin-top:2px}.cons-plan.muted{color:var(--muted)}
+.cons-money{text-align:right}.cons-money strong{display:block;font-size:22px}.cons-money small{color:var(--muted)}
+.cons-card dl{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0}.cons-card dt{font-size:12px;color:var(--muted)}.cons-card dd{margin:0;font-weight:700}
+.cons-card details{border-top:1px solid var(--line);padding-top:8px}.cons-card summary{cursor:pointer;font-weight:600;min-height:32px}
+.cons table{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}.cons th,.cons td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}.cons .n{text-align:right;font-variant-numeric:tabular-nums}
+.cons-days{display:flex;align-items:flex-end;gap:3px;height:80px;margin-top:8px}.cons-days span{flex:1;min-width:4px;background:var(--green);border-radius:3px 3px 0 0}
+.dbg-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}.dbg-head code{font-size:13px;word-break:break-all}
+.dbg-status{padding:4px 10px;border-radius:8px;font-weight:700;font-size:14px;border:1px solid var(--line)}.dbg-status.bad{color:#a01238;border-color:#a01238}.dbg-status.ok{color:var(--ink);border-color:var(--ink)}
+.dbg-facts{margin:8px 0;padding-left:18px;font-size:14px;line-height:1.6}
+.dbg-body,.cons pre{max-height:420px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:12.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.cons-copy{float:right;min-height:32px;padding:2px 12px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);cursor:pointer}

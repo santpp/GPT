@@ -4,8 +4,6 @@ require_once __DIR__.'/InboxSync.php';
 require_once __DIR__.'/InboxFeed.php';
 require_once __DIR__.'/MessageHistory.php';
 require_once __DIR__.'/MessageFeed.php';
-require_once __DIR__.'/Audit.php';
-require_once __DIR__.'/Reminders.php';
 if(($u['identity_type']??'native')==='native'&&$u['role']!=='administrator')respond(['error'=>'Acceso restringido'],403);
 if(in_array($path,['/api/workspace/connections','/api/ghl/connections'],true) && $method==='GET') {
     if(($u['identity_type']??'native')==='native')$items=query('SELECT id,name,location_id,status,currency FROM ghl_connections WHERE tenant_id=? ORDER BY id',[$u['tenant_id']])->fetchAll();
@@ -140,17 +138,13 @@ if(preg_match('~^/api/workspace/opportunity/(new|edit|status)$~',$path,$opportun
             $owner=(new ContactProfile())->get($connection,$contactId);
             if(($membership['capabilities']['assignedDataOnly']??false)===true&&$owner['assignedTo']!==($membership['external_user_id']??null))
                 respond(['error'=>'Este contacto no está asignado a tu usuario.'],403);
-            $made=$actions->create($connection,$contactId,$membership,$input);
-            Audit::record($u,$membership,['action'=>'creo','text'=>'Creó una oportunidad','module'=>'oportunidad','object'=>'Oportunidad','contactId'=>$contactId,'connectionId'=>(int)$id]);
-            respond($made);
+            respond($actions->create($connection,$contactId,$membership,$input));
         }
         $opportunityId=$_GET['opportunityId']??'';
         if(!is_string($opportunityId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$opportunityId))respond(['error'=>'Oportunidad inválida'],422);
-        $done=$opportunityMatch[1]==='edit'
+        respond($opportunityMatch[1]==='edit'
             ?$actions->update($connection,$opportunityId,$membership,$input)
-            :$actions->status($connection,$opportunityId,$membership,$input);
-        Audit::record($u,$membership,['action'=>'edito','text'=>$opportunityMatch[1]==='edit'?'Editó una oportunidad':'Cambió el estado de una oportunidad','module'=>'oportunidad','object'=>'Oportunidad','connectionId'=>(int)$id,'after'=>array_intersect_key($input,array_flip(['status','stageId','monetaryValue','assignedTo']))]);
-        respond($done);
+            :$actions->status($connection,$opportunityId,$membership,$input));
     }
     catch(ActionProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
     catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La acción está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
@@ -189,16 +183,7 @@ if($path==='/api/workspace/board-month'&&in_array($method,['GET','POST'],true)){
         if(($u['identity_type']??'native')!=='native'||($u['role']??null)!=='administrator')respond(['error'=>'Sólo el administrador puede fijar las cifras del mes.'],403);
         respond(['settings'=>Board::save($id,$period,body()),'period'=>$period]);
     }
-    try{
-        $month=(new Board())->month($connection,$period,$membership)+['canEdit'=>($u['identity_type']??'native')==='native'&&($u['role']??null)==='administrator'];
-        // Los leads que le tocaron a cada quien en el mes: la conversión sale de dividir cierres entre esto.
-        if(!empty($month['team'])){
-            require_once __DIR__.'/OperationsReport.php';
-            $leads=[];try{$leads=(new OperationsReport())->leadsByMember($connection,$period,array_values(array_filter(array_column($month['team'],'id'))));}catch(Throwable $e){}
-            foreach($month['team'] as $i=>$row)$month['team'][$i]['leads']=$row['id']!==null?($leads[$row['id']]??null):null;
-        }
-        respond($month);
-    }
+    try{respond((new Board())->month($connection,$period,$membership)+['canEdit'=>($u['identity_type']??'native')==='native'&&($u['role']??null)==='administrator']);}
     catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'El resumen del mes está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
     catch(GhlApiException $e){respond(['error'=>'No se pudo leer lo cerrado del mes. Revisa el permiso de oportunidades.','code'=>'board_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'El resumen del mes recibido no tiene el formato esperado.','code'=>'board_invalid_response'],424);}
@@ -250,11 +235,7 @@ if($path==='/api/workspace/record'&&in_array($method,['GET','POST'],true)){
             $current=(new ContactProfile())->get($connection,$contactId);
             if(($membership['capabilities']['assignedDataOnly']??false)===true&&$current['assignedTo']!==($membership['external_user_id']??null))
                 respond(['error'=>'Este contacto no está asignado a tu usuario.'],403);
-            $edit=body();
-            $saved=(new ContactActions())->contact($connection,$contactId,$membership,$edit);
-            $changed=Audit::changes(is_array($current)?$current:[],$edit);
-            Audit::record($u,$membership,['action'=>'edito','text'=>'Editó la ficha','module'=>'contacto','object'=>'Ficha del contacto','contactId'=>$contactId,'contactName'=>is_string($current['name']??null)?$current['name']:null,'connectionId'=>(int)$id,'before'=>$changed['before'],'after'=>$changed['after']]);
-            respond($saved);
+            respond((new ContactActions())->contact($connection,$contactId,$membership,body()));
         }
         catch(ActionProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
         catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La ficha está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
@@ -372,8 +353,7 @@ if(in_array($path,['/api/workspace/inbox','/api/ghl/inbox'],true) && $method==='
     if($cursor!==null&&(!is_string($cursor)||!preg_match('/^[0-9]{1,16}$/D',$cursor)))respond(['error'=>'Referencia de página inválida'],422);
     try{
         $feed=(new InboxFeed())->load($connection,$limit,$filters,$membership,$cursor!==null?$cursor:null);
-        $reminders=[];try{$reminders=Reminders::forInbox((int)$id,Audit::actor($u,$membership)['id']);}catch(Throwable $e){}
-        respond($feed+['syncIntervalSeconds'=>max(60,(int)$connection['sync_interval_seconds']),'limit'=>$limit,'state'=>$state?:null,'reminders'=>$reminders?:new stdClass]);
+        respond($feed+['syncIntervalSeconds'=>max(60,(int)$connection['sync_interval_seconds']),'limit'=>$limit,'state'=>$state?:null]);
     }
     catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la bandeja. Revisa los permisos de lectura.','code'=>'inbox_upstream_'.$e->status],424);}
     catch(InvalidArgumentException $e){respond(['error'=>'Comprueba la conexión antes de consultar la bandeja.'],422);}
@@ -423,11 +403,7 @@ if($path==='/api/workspace/assign'&&$method==='POST'){
     $record=InboxFeed::known($id,$conversation);
     if(!$record||!Actor::filterConversations([$record],$membership))respond(['error'=>'Conversación no disponible en esta subcuenta'],404);
     require_once __DIR__.'/ConversationAssignment.php';
-    try{
-        $assigned=(new ConversationAssignment())->assign($connection,$record,$membership,$assignBody=body());
-        Audit::record($u,$membership,['action'=>'asigno','text'=>'Asignó una conversación','module'=>'conversacion','object'=>'Responsable','contactId'=>is_string($record['contactId']??null)?$record['contactId']:null,'contactName'=>is_string($record['contactName']??null)?$record['contactName']:null,'connectionId'=>(int)$id,'after'=>array_intersect_key($assignBody,['assignedTo'=>1])]);
-        respond($assigned);
-    }
+    try{respond((new ConversationAssignment())->assign($connection,$record,$membership,body()));}
     catch(ActionProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
 }
 // Una conversación concreta, para abrirla desde un aviso aunque no esté entre las últimas.
@@ -448,12 +424,7 @@ if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $met
         if(!($membership['capabilities']['sendMessages']??false))respond(['error'=>'Tu usuario tiene acceso de lectura, pero no permiso para responder.'],403);
         require_once __DIR__.'/MessageSender.php';
         $contact=$record;
-        try {
-            $sent=(new MessageSender())->send($connection,$contact,body());
-            Reminders::fulfil((int)$u['tenant_id'],(int)$id,$conversation);
-            Audit::record($u,$membership,['action'=>'envio','text'=>'Envió un mensaje','module'=>'conversacion','object'=>'Mensaje','contactId'=>is_string($contact['contactId']??null)?$contact['contactId']:null,'contactName'=>is_string($contact['contactName']??null)?$contact['contactName']:null,'connectionId'=>(int)$id]);
-            respond($sent);
-        }
+        try {respond((new MessageSender())->send($connection,$contact,body()));}
         catch(SendProblem $e){respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
     }
     try {$cursor=MessageHistory::cursor($_GET['lastMessageId']??null);}
@@ -473,49 +444,5 @@ if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $met
     catch(GhlApiException $e){respond(['error'=>'No se pudieron leer los mensajes. Código del canal: '.$e->status.'. Revisa los permisos de lectura.','code'=>'messages_upstream_'.$e->status],424);}
     catch(HistoryFormatException $e) {respond(['error'=>'El historial recibido no tiene el formato esperado. Código: messages_'.$e->reason.'.','code'=>'messages_'.$e->reason],424);}
     catch(Throwable $e) {respond(['error'=>'El historial recibido no tiene el formato esperado. Código: messages_invalid_response.','code'=>'messages_invalid_response'],424);}
-}
-// Recordatorios de seguimiento: se elige cuándo volver a escribirle a alguien; queda una tarea y la conversación sube a la primera fila.
-if($path==='/api/workspace/reminders'&&in_array($method,['POST','DELETE'],true)){
-    $conversation=$_GET['conversationId']??'';
-    if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);
-    $record=InboxFeed::known($id,$conversation);
-    if(!$record||!Actor::filterConversations([$record],$membership))respond(['error'=>'Conversación no disponible en esta subcuenta'],404);
-    if(!($membership['capabilities']['sendMessages']??false))respond(['error'=>'Tu usuario no puede dar seguimiento a esta conversación.'],403);
-    $who=Audit::actor($u,$membership);
-    $contactName=is_string($record['contactName']??null)?$record['contactName']:(is_string($record['fullName']??null)?$record['fullName']:null);
-    if($method==='DELETE'){
-        Reminders::remove((int)$u['tenant_id'],(int)$id,$conversation);
-        Audit::record($u,$membership,['action'=>'elimino','text'=>'Quitó un recordatorio de seguimiento','module'=>'conversacion','object'=>'Recordatorio','contactId'=>is_string($record['contactId']??null)?$record['contactId']:null,'contactName'=>$contactName,'connectionId'=>(int)$id]);
-        respond(['removed'=>true]);
-    }
-    $input=body();
-    $input['contactId']=is_string($record['contactId']??null)?$record['contactId']:($input['contactId']??null);
-    if($contactName!==null)$input['contactName']=$contactName;
-    try{$saved=Reminders::set((int)$u['tenant_id'],(int)$id,$conversation,$who['id'],$who['name'],$input);}
-    catch(InvalidArgumentException $e){respond(['error'=>$e->getMessage()],422);}
-    Audit::record($u,$membership,['action'=>'creo','text'=>'Puso un recordatorio de seguimiento','module'=>'conversacion','object'=>'Recordatorio','contactId'=>$input['contactId'],'contactName'=>$contactName,'connectionId'=>(int)$id,'after'=>['para'=>$saved['at']]]);
-    respond($saved);
-}
-// Operación del día, eficacia de ventas e inversión en anuncios.
-if(in_array($path,['/api/workspace/dia','/api/workspace/eficacia','/api/workspace/ads'],true)&&$method==='GET'){
-    require_once __DIR__.'/OperationsReport.php';
-    $report=new OperationsReport();
-    $day=OperationsReport::day($_GET['date']??null);
-    $period=Board::period($_GET['period']??null);
-    try{
-        if($path==='/api/workspace/dia')respond($report->operationDay($connection,$membership,$day));
-        if(!($membership['capabilities']['viewOpportunities']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar oportunidades.'],403);
-        if($path==='/api/workspace/eficacia'){
-            $pipeline=is_string($_GET['pipelineId']??null)&&preg_match('/^[A-Za-z0-9_-]{0,80}$/D',$_GET['pipelineId'])?$_GET['pipelineId']:'';
-            $person=is_string($_GET['userId']??null)&&preg_match('/^[A-Za-z0-9_-]{0,80}$/D',$_GET['userId'])?$_GET['userId']:'';
-            respond($report->efficiency($connection,$membership,$period,$pipeline,$person));
-        }
-        // Lo invertido es de la empresa: quien sólo ve lo suyo no lo recibe.
-        if(($membership['capabilities']['assignedDataOnly']??false)===true)respond(['estado'=>'permission']);
-        respond($report->ads($connection,$period,$day));
-    }
-    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La consulta está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
-    catch(GhlApiException $e){respond(['error'=>'No se pudo leer la cuenta. Revisa los permisos.','code'=>'report_upstream_'.$e->status],424);}
-    catch(Throwable $e){error_log('Report failure: '.get_class($e).' '.$e->getMessage());respond(['error'=>'La respuesta recibida no tiene el formato esperado.','code'=>'report_invalid_response'],424);}
 }
 respond(['error'=>'Not found'],404);

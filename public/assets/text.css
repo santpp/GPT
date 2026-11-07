@@ -325,6 +325,21 @@ details.contact-group>summary small{font-size:14.4px!important}
 .security-check small{font-size:14.4px!important}
 .maintenance-card h1{font-size:31.2px!important}
 .maintenance-card p{font-size:18px!important}
+.cons-block h3{font-size:21.6px!important}
+.cons-note{font-size:16.8px!important}
+.cons-bar label,.cons-form label{font-size:15.6px!important}
+.cons-state{font-size:16.8px!important}
+.cons-totals small{font-size:15.6px!important}
+.cons-totals strong{font-size:28.8px!important}
+.cons-card h4{font-size:20.4px!important}
+.cons-plan{font-size:16.8px!important}
+.cons-money strong{font-size:26.4px!important}
+.cons-card dt{font-size:14.4px!important}
+.cons table{font-size:16.8px!important}
+.dbg-head code{font-size:15.6px!important}
+.dbg-status{font-size:16.8px!important}
+.dbg-facts{font-size:16.8px!important}
+.dbg-body,.cons pre{font-size:15px!important}
 html[data-text="large"] body{font-size:18.2px!important}
 html[data-text="large"] h2{font-size:19.6px!important}
 html[data-text="large"] .brand{font-size:44.8px!important}
@@ -650,6 +665,21 @@ html[data-text="large"] .manual .tip{font-size:19.6px!important}
 html[data-text="large"] .security-check small{font-size:16.8px!important}
 html[data-text="large"] .maintenance-card h1{font-size:36.4px!important}
 html[data-text="large"] .maintenance-card p{font-size:21px!important}
+html[data-text="large"] .cons-block h3{font-size:25.2px!important}
+html[data-text="large"] .cons-note{font-size:19.6px!important}
+html[data-text="large"] .cons-bar label,html[data-text="large"] .cons-form label{font-size:18.2px!important}
+html[data-text="large"] .cons-state{font-size:19.6px!important}
+html[data-text="large"] .cons-totals small{font-size:18.2px!important}
+html[data-text="large"] .cons-totals strong{font-size:33.6px!important}
+html[data-text="large"] .cons-card h4{font-size:23.8px!important}
+html[data-text="large"] .cons-plan{font-size:19.6px!important}
+html[data-text="large"] .cons-money strong{font-size:30.8px!important}
+html[data-text="large"] .cons-card dt{font-size:16.8px!important}
+html[data-text="large"] .cons table{font-size:19.6px!important}
+html[data-text="large"] .dbg-head code{font-size:18.2px!important}
+html[data-text="large"] .dbg-status{font-size:19.6px!important}
+html[data-text="large"] .dbg-facts{font-size:19.6px!important}
+html[data-text="large"] .dbg-body,html[data-text="large"] .cons pre{font-size:17.5px!important}
 .workspace-label{color:var(--muted)!important}
 .nav{color:var(--muted)!important}
 .connection{color:var(--muted)!important}

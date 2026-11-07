@@ -31,9 +31,9 @@ function respondThen(array $body, callable $after): never {
     try {$after();} catch(Throwable $e) {error_log('After-response work failed: '.get_class($e));}
     exit;
 }
-function body(int $limit = 16384): array {
-    $raw = file_get_contents('php://input', false, null, 0, $limit + 1);
-    if (strlen($raw)>$limit) respond(['error'=>'Payload too large'],413);
+function body(): array {
+    $raw = file_get_contents('php://input', false, null, 0, 16385);
+    if (strlen($raw)>16384) respond(['error'=>'Payload too large'],413);
     $value = json_decode($raw, true, 32, JSON_THROW_ON_ERROR);
     if (!is_array($value) || array_is_list($value)) throw new InvalidArgumentException('Expected an object');
     return $value;

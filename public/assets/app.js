@@ -12,6 +12,7 @@ import {windowMarkup} from './announce.js';
 import {startWonAlert} from './won-alert.js';
 import {runTour,tourDone} from './tour.js';
 import {initHelp,renderHelp} from './help.js';
+import {renderConsumption} from './consumption.js';
 import {supported as passkeysSupported,platformReady,remembered as passkeyRemembered,remember as rememberPasskey,create as createPasskey,sign as signPasskey,trouble as passkeyTrouble} from './passkeys.js';
 
 const $=s=>document.querySelector(s);
@@ -24,6 +25,7 @@ const VIEWS={
   contacts:{path:'/contactos',title:'Contactos',eyebrow:'TU GENTE',heading:'Personas, no registros.',subtitle:'Tu siguiente conversación empieza aquí.',render:renderContacts,account:true},
   board:{path:'/oportunidades',title:'Oportunidades',eyebrow:'EMBUDO',heading:'De la conexión al cierre.',subtitle:'Cada oportunidad abierta, a la vista.',render:renderBoard,account:true},
   help:{path:'/ayuda',title:'Ayuda',eyebrow:'MANUAL',heading:'Manual de uso.',subtitle:'Lo básico para trabajar en Ágora.',render:renderHelp,account:false},
+  consumption:{path:'/consumos',title:'Consumos',eyebrow:'ADMINISTRACIÓN',heading:'Lo que gasta cada subcuenta.',subtitle:'El consumo del mes y el plan de cada subcuenta, desde la agencia.',render:renderConsumption,account:false},
   settings:{path:'/conexiones',title:'Conexiones',eyebrow:'ADMINISTRACIÓN',heading:'Tu espacio, a tu manera.',subtitle:'Gestiona las cuentas conectadas y el acceso del equipo.',render:renderIntegrations,account:false},
 };
 const byPath=path=>Object.keys(VIEWS).find(name=>VIEWS[name].path===path);
