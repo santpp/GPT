@@ -1,7 +1,7 @@
 - **Gasto en GHL por subcuenta (sólo propietario):** verificado en la documentación local (`apps/v3/saas-v3.json`): existe el saldo por subcuenta `GET /saas-api/public-api/companies/{companyId}/locations/{locationId}/wallet-balance` (devuelve `balance`, `complimentaryCredits`, `walletId`). NO aparece en la documentación local el listado de transacciones de billetera (`/saas/companies/{companyId}/wallet-transactions`) que se citó; falta confirmarlo con un token de agencia (PIT con `saas/company.read`). Sin ese listado sólo hay saldo, no gasto del mes. Pendiente: confirmar el endpoint de transacciones.
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 7 de noviembre de 2026. **Versión activa: 1.10.2 (1.10.1 + pestaña Consumos)**, con el cambio de fuente (texto negro y más grande) y el canal de origen a la vista. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 7 de noviembre de 2026. **Versión activa: 1.10.3 (1.10.1 + pestaña Consumos con reporte y exportación)**, con el cambio de fuente (texto negro y más grande) y el canal de origen a la vista. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 El trabajo de la 1.11.0 y la 1.11.1 (rutas de servidor para el armazón nuevo de Agora Digital App: tareas, recordatorios, auditoría, identidad del espacio, resumen, subcuenta de demostración) **queda en pausa, sin subir**, hasta que el usuario retome ese desarrollo. El código y los paquetes siguen en el repositorio por si se retoma, pero no son la versión activa. El desarrollo sigue a partir de la 1.10.1.
 
@@ -278,3 +278,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 ## 1.10.2 · Consumos
 - Pestaña «Consumos» sólo para la propietaria: token de agencia y Company ID escritos en la pestaña (cifrado, nunca se muestra completo), gasto y recargas del mes por subcuenta, plan activo, saldo, desglose, y botones de prueba y depuración (transacciones por POST y por GET, saldo y plan).
 - El código de la 1.11.x (armazón nuevo) quedó fuera del árbol: sigue en el historial del repositorio (último commit: `b98d8ae`, 1.11.1; el de las notas y paquetes, `19aa91d`).
+
+## 1.10.3 · Consumos sin depuración, con reporte y exportación
+- Se quita la depuración (GET y saldo daban 404; POST v3 es el que contesta). La cuenta responde 201 a varias consultas: cualquier 2xx cuenta como éxito.
+- Hoja de reporte por subcuenta y exportación a .txt o a PDF (por impresión), sólo para la propietaria.

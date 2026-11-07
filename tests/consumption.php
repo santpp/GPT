@@ -28,51 +28,44 @@ try{
  $w->save('COMP123456',null);ck($w->settings()['tokenSaved'],'saving only the company id keeps the token');
  foreach([['x y z',null],['ab',null],['COMP123456','corto'],['COMP123456',"con espacios aqui 0123456789"]] as [$c,$t]){$bad=false;try{$w->save($c,$t);}catch(InvalidArgumentException $e){$bad=true;}ck($bad,'an invalid company id or token is refused ('.json_encode([$c,$t],JSON_UNESCAPED_UNICODE).')');}
 
- // ---- POST y GET, con una cuenta de mentira
- $log=[];$mode='ok';$page1=[];
+ // ---- POST (la forma que contesta la cuenta), con una cuenta de mentira
+ $log=[];$mode='ok';$page1=[];$status=200;
  for($i=0;$i<1000;$i++)$page1[]=['locationId'=>'locA-'.$suffix,'amount'=>-0.01,'chargeType'=>'SMS','settlementTime'=>'2026-11-02T10:00:00Z'];
- $fake=function(string $m,string $url,array $h,?string $body)use(&$log,&$mode,&$page1,$suffix){
+ $fake=function(string $m,string $url,array $h,?string $body)use(&$log,&$mode,&$page1,&$status,$suffix){
    $log[]=compact('m','url','h','body');
-   if($mode==='post404'&&$m==='POST')return ['status'=>404,'headers'=>[],'body'=>'{"message":"Cannot POST"}'];
-   if($mode==='get404'&&$m==='GET')return ['status'=>404,'headers'=>[],'body'=>'{"message":"Cannot GET"}'];
+   if($mode==='deny')return ['status'=>403,'headers'=>[],'body'=>'{"message":"forbidden '.$GLOBALS['SECRET'].'"}'];
    if(str_contains($url,'wallet-transactions')){
-     $skip=$m==='POST'?(json_decode((string)$body,true)['skip']??0):(int)(parse_url($url,PHP_URL_QUERY)?(function($q){parse_str($q,$o);return $o['skip']??0;})(parse_url($url,PHP_URL_QUERY)):0);
-     if($skip===0)return ['status'=>200,'headers'=>['X-RateLimit-Remaining'=>'99','Set-Cookie'=>'x'],'body'=>json_encode(['transactions'=>$page1])];
-     return ['status'=>200,'headers'=>[],'body'=>json_encode(['transactions'=>[
+     $skip=json_decode((string)$body,true)['skip']??0;
+     if($skip===0)return ['status'=>$status,'headers'=>['X-RateLimit-Remaining'=>'99','Set-Cookie'=>'x'],'body'=>json_encode(['transactions'=>$page1])];
+     return ['status'=>$status,'headers'=>[],'body'=>json_encode(['transactions'=>[
        ['locationId'=>'locA-'.$suffix,'amount'=>-2.5,'chargeType'=>'WhatsApp conversation','settlementTime'=>'2026-11-03T10:00:00Z'],
        ['locationId'=>'locA-'.$suffix,'amount'=>50,'type'=>'Wallet recharge','settlementTime'=>'2026-11-04T10:00:00Z'],
        ['locationId'=>'locB-'.$suffix,'amount'=>-4,'description'=>'Conversation AI usage','settlementTime'=>'2026-11-05T10:00:00Z'],
        ['locationId'=>'loc-otra','amount'=>-9,'chargeType'=>'Email','settlementTime'=>'2026-11-05T10:00:00Z'],
        ['amount'=>-1,'chargeType'=>'domainPurchase'],['locationId'=>'locB-'.$suffix,'chargeType'=>'raro']]])];
    }
-   if(str_contains($url,'get-saas-subscription'))return ['status'=>200,'headers'=>[],'body'=>json_encode(['subscriptionStatus'=>'active','saasPlanId'=>'plan1'])];
-   if(str_contains($url,'saas-plan'))return ['status'=>200,'headers'=>[],'body'=>json_encode(['title'=>'Plan Pro','prices'=>[['amount'=>97,'currency'=>'USD','recurringInterval'=>'month']]])];
-   if(str_contains($url,'wallet-balance'))return ['status'=>200,'headers'=>[],'body'=>json_encode(['walletId'=>'w1','balance'=>12.5,'complimentaryCredits'=>3])];
+   if(str_contains($url,'get-saas-subscription'))return ['status'=>201,'headers'=>[],'body'=>json_encode(['subscriptionStatus'=>'active','saasPlanId'=>'plan1'])];
+   if(str_contains($url,'saas-plan'))return ['status'=>201,'headers'=>[],'body'=>json_encode(['title'=>'Plan Pro','prices'=>[['amount'=>97,'currency'=>'USD','recurringInterval'=>'month']]])];
    return ['status'=>404,'headers'=>[],'body'=>'{}'];
  };
  $w=new AgencyWallet($tenant,$fake);
- $r=$w->transactions('POST','2026-11','locA-'.$suffix,0,50);$body=json_decode($log[0]['body'],true);
+ $r=$w->transactions('2026-11','locA-'.$suffix,0,50);$body=json_decode($log[0]['body'],true);
  ck($log[0]['m']==='POST'&&str_ends_with($log[0]['url'],'/wallet-transactions')&&in_array('Version: v3',$log[0]['h'],true)&&$body['filters']['settlementTime']['from']==='2026-11-01T00:00:00.000Z'&&$body['filters']['settlementTime']['to']==='2026-11-30T23:59:59.999Z'&&$body['filters']['locationId']==='locA-'.$suffix&&$body['limit']===50&&$body['timezone']==='UTC','POST sends the month and the sub-account as a JSON body, with Version v3');
- ck(in_array('Authorization: Bearer '.$SECRET,$log[0]['h'],true)&&!str_contains($r['url'],$SECRET)&&str_contains($r['url'],'{companyId}')&&!isset($r['headers']['set-cookie']),'the token goes in the header, and the debug view shows neither it nor the company id nor cookies');
- $log=[];$w->transactions('GET','2026-11',null,1000,1000);parse_str((string)parse_url($log[0]['url'],PHP_URL_QUERY),$q);
- ck($log[0]['m']==='GET'&&$log[0]['body']===null&&$q['skip']==='1000'&&$q['limit']==='1000'&&$q['startDate']==='2026-11-01T00:00:00.000Z'&&!isset($q['locationId'])&&in_array('Version: 2021-07-28',$log[0]['h'],true),'GET sends the same as query parameters');
+ ck(in_array('Authorization: Bearer '.$SECRET,$log[0]['h'],true)&&!str_contains($r['url'],$SECRET)&&str_contains($r['url'],'{companyId}')&&!isset($r['headers']['set-cookie']),'the token goes in the header, and nothing shown keeps it, the company id or cookies');
  // paginación y suma
- $log=[];$all=$w->monthRows('POST','2026-11',null);
- ck($all['method']==='POST'&&$all['pages']===2&&count($all['rows'])===1006&&count($log)===2,'a month is read in pages of 1000 until a short page arrives');
+ $log=[];$all=$w->monthRows('2026-11',null);
+ ck($all['pages']===2&&count($all['rows'])===1006&&count($log)===2&&$log[1]['body']&&json_decode($log[1]['body'],true)['skip']===1000,'a month is read in pages of 1000 until a short page arrives');
+ $status=201;$log=[];$created=$w->monthRows('2026-11',null);ck($created['error']===null&&count($created['rows'])===1006,'a 201 answer counts as success (the account answers 200 or 201 depending on the endpoint)');$status=200;
  $sum=array_column(AgencyWallet::summarize($all['rows']),null,'locationId');
- ck(abs($sum['locA-'.$suffix]['gasto']-12.5)<1e-9&&$sum['locA-'.$suffix]['recargas']===50.0&&$sum['locA-'.$suffix]['movimientos']===1002,'spending and recharges are told apart and summed per sub-account (negative or usage = spend, recharge = top-up)');
+ ck(abs($sum['locA-'.$suffix]['gasto']-12.5)<1e-9&&$sum['locA-'.$suffix]['recargas']===50.0&&$sum['locA-'.$suffix]['movimientos']===1002,'spending and recharges are told apart and summed per sub-account');
  $cats=array_column($sum['locA-'.$suffix]['categorias'],'monto','tipo');ck($cats['sms']===10.0&&$cats['whatsapp conversation']===2.5,'with a breakdown by type, largest first');
+ ck(count($sum['locA-'.$suffix]['ultimos'])===50&&count(AgencyWallet::summarize($all['rows'],1000)[0]['ultimos'])===1000,'the movement list is the latest 50, or up to 1000 for one sub-account');
  ck($sum['locB-'.$suffix]['gasto']===4.0&&$sum['locB-'.$suffix]['sinClasificar']===1,'a movement it cannot read is counted apart instead of guessed');
  ck(isset($sum['agencia'])&&$sum['agencia']['gasto']===1.0,'and one with no sub-account goes to the agency itself');
- // el otro método si el primero no existe
- $mode='post404';$log=[];$f=$w->monthRows('POST','2026-11',null);ck($f['method']==='GET'&&count($f['rows'])>0&&$log[0]['m']==='POST'&&$log[1]['m']==='GET','if POST answers 404, it tries GET (and the other way round)');
- $mode='get404';$log=[];$f=$w->monthRows('GET','2026-11',null);ck($f['method']==='POST'&&count($f['rows'])>0,'and the reverse');
- $mode='both';$fakeAll=fn($m,$u,$h,$b)=>['status'=>403,'headers'=>[],'body'=>'{"message":"forbidden '.$GLOBALS['SECRET'].'"}'];$GLOBALS['SECRET']=$SECRET;
- $w2=new AgencyWallet($tenant,$fakeAll);$f=$w2->monthRows('POST','2026-11',null);
+ $mode='deny';$f=$w->monthRows('2026-11',null);$GLOBALS['SECRET']=$SECRET;$f=$w->monthRows('2026-11',null);
  ck($f['error']['status']===403&&!str_contains(json_encode($f),$SECRET),'a refusal is reported with its status, with the token blacked out of the message');
  $mode='ok';
- // plan y saldo
- $p=$w->planOf('locA-'.$suffix);ck($p['plan']==='Plan Pro'&&$p['estado']==='active'&&$p['precio']['monto']===97&&$p['saldo']===12.5&&$p['creditosDeCortesia']===3&&$p['errores']===[],'the active plan, its price and the wallet balance of a sub-account');
+ $p=$w->planOf('locA-'.$suffix);ck($p['plan']==='Plan Pro'&&$p['estado']==='active'&&$p['precio']['monto']===97&&$p['errores']===[]&&!array_key_exists('saldo',$p),'the active plan and its price, read from 201 answers');
  ck(str_contains($w->redact('hola '.$SECRET.' fin'),'••••'.substr($SECRET,-4))&&!str_contains($w->redact('hola '.$SECRET),$SECRET),'redact blacks out the token anywhere');
  $rows=AgencyWallet::rows(['data'=>['items'=>[['a'=>1]]]]);ck(count($rows)===1,'rows are found whatever box the response puts them in');
 
@@ -88,7 +81,7 @@ try{
  ck(!str_contains($raw,$SECRET),'the answer never contains the token');
  [,$raw]=hc('admin/consumption');ck(!str_contains($raw,$SECRET)&&str_contains($raw,'Clínica Sol')&&str_contains($raw,'Academia Luna'),'reading it back shows the connected sub-accounts and no token');
  [$c]=hc('admin/consumption/settings','POST',['companyId'=>'malo malo']);ck($c===422,'a bad company id is a 422');
- [$c,$raw]=hc('admin/consumption/test','POST',['target'=>'balance','method'=>'GET']);ck($c===422,'testing the balance asks for a sub-account');
+ ck(hc('admin/consumption/test','POST',['target'=>'transactions'])[0]===404,'the debugging route is gone');
  [$c,$raw]=hc('admin/consumption/report?month=2026-11');ck(in_array($c,[424,200],true)&&!str_contains($raw,$SECRET),'a report on a real (unreachable) account fails politely, without the token');
  [$c]=hc('admin/consumption/report?month=2026-11&locationId=otra-cuenta');ck($c===404||$c===424,'an unknown sub-account is refused');
  [$c,$raw]=hc('admin/consumption/token','DELETE');ck($c===200&&json_decode($raw,true)['tokenSaved']===false,'the token can be removed');

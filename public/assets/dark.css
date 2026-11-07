@@ -193,8 +193,20 @@ html[data-theme="dark"] .channel-chip.ch-WhatsApp{color:#69e899}
 html[data-theme="dark"] .channel-chip.ch-IG{color:#db75af}
 html[data-theme="dark"] .channel-chip.ch-FB{color:#679ae9}
 html[data-theme="dark"] .cons-note.warn{color:#e9678a}
+html[data-theme="dark"] .cons-bar .primary{color:#fff}
 html[data-theme="dark"] .cons-actions button.primary{color:#fff}
-html[data-theme="dark"] .dbg-status.bad{color:#e9678a;border-color:#a01238}
+html[data-theme="dark"] .cons-sheet{background:#1d1f2b;color:#e0e0e4}
+html[data-theme="dark"] .cons-sheet-h{border-bottom:2px solid #ad103c}
+html[data-theme="dark"] .cons-sheet-h p{color:#d6d7da}
+html[data-theme="dark"] .cons-kpis div{background:#1f222f}
+html[data-theme="dark"] .cons-kpis small{color:#d6d7da}
+html[data-theme="dark"] .cons-sheet-sub{border-top:1px solid #363a49}
+html[data-theme="dark"] .cons-sheet-title span{color:#d6d7da}
+html[data-theme="dark"] .cons-sheet th,html[data-theme="dark"] .cons-sheet td{border-bottom:1px solid #363a49}
+html[data-theme="dark"] .cons-split td.bar i{background:#ad103c}
+html[data-theme="dark"] .cons-moves em{color:#d6d7da;border:1px solid #363a49}
+html[data-theme="dark"] .cons-sheet-f{color:#d6d7da;border-top:1px solid #363a49}
+@media print{html[data-theme="dark"] body.cons-printing main,html[data-theme="dark"] body.cons-printing #view{background:#1d1f2b!important}}
 /* ---- a mano: paleta base y piezas que el generador no puede adivinar ---- */
 html[data-theme="dark"]{color-scheme:dark;--ink:#e6e8f0;--muted:#9aa0b4;--line:#2f3445;--paper:#1b1f2c;--bg:#12151f;--green:#d13c63;--accent:#f5b84a}
 html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}

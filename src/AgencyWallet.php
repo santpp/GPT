@@ -116,25 +116,18 @@ final class AgencyWallet
         return [$m, $start->format('Y-m-d\T00:00:00.000\Z'), $start->modify('last day of this month')->format('Y-m-d\T23:59:59.999\Z')];
     }
 
-    /** Una sola petición del listado de transacciones, por POST (cuerpo JSON) o por GET (parámetros). */
-    public function transactions(string $method, string $month, ?string $location, int $skip = 0, int $limit = 1000, ?string $version = null): array
+    /** Una sola petición del listado de transacciones: POST con cuerpo JSON y Version v3 (la que contesta tu cuenta). */
+    public function transactions(string $month, ?string $location, int $skip = 0, int $limit = 1000): array
     {
         [, $from, $to] = self::month($month);
         $path = '/saas/companies/'.rawurlencode($this->company()).'/wallet-transactions';
-        if ($method === 'POST') {
-            $filters = ['settlementTime' => ['from' => $from, 'to' => $to]];
-            if ($location) $filters['locationId'] = $location;
-            return $this->call('POST', $path, $version ?? 'v3', ['skip' => $skip, 'limit' => $limit, 'timezone' => 'UTC', 'filters' => $filters]);
-        }
-        $q = ['skip' => $skip, 'limit' => $limit, 'startDate' => $from, 'endDate' => $to];
-        if ($location) $q['locationId'] = $location;
-        return $this->call('GET', $path, $version ?? '2021-07-28', null, $q);
+        $filters = ['settlementTime' => ['from' => $from, 'to' => $to]];
+        if ($location) $filters['locationId'] = $location;
+        return $this->call('POST', $path, 'v3', ['skip' => $skip, 'limit' => $limit, 'timezone' => 'UTC', 'filters' => $filters]);
     }
 
-    public function balance(string $location, ?string $version = null): array
-    {
-        return $this->call('GET', '/saas-api/public-api/companies/'.rawurlencode($this->company()).'/locations/'.rawurlencode($location).'/wallet-balance', $version ?? 'v3');
-    }
+    /** La cuenta contesta 200 o 201 según el endpoint: cualquier 2xx es éxito. */
+    public static function ok(array $r): bool { return $r['status'] >= 200 && $r['status'] < 300; }
 
     public function subscription(string $location, ?string $version = null): array
     {
@@ -181,34 +174,26 @@ final class AgencyWallet
     }
 
     /**
-     * Todo el mes, con paginación (de 1000 en 1000). Si el método elegido responde 404, 405 o 422 y $fallback es verdadero,
-     * se intenta con el otro: la documentación y quien la cita no se ponen de acuerdo en cuál es.
-     * @return array{method:string,rows:list<array<string,mixed>>,pages:int,partial:bool,error:?array}
+     * Todo el mes, con paginación (de 1000 en 1000).
+     * @return array{rows:list<array<string,mixed>>,pages:int,partial:bool,error:?array}
      */
-    public function monthRows(string $method, string $month, ?string $location, bool $fallback = true): array
+    public function monthRows(string $month, ?string $location): array
     {
-        $order = $fallback ? [$method, $method === 'POST' ? 'GET' : 'POST'] : [$method];
-        $last = null;
-        foreach ($order as $m) {
-            $rows = []; $skip = 0; $pages = 0; $failed = null;
-            do {
-                $r = $this->transactions($m, $month, $location, $skip, self::PAGE);
-                $pages++;
-                if ($r['status'] !== 200) { $failed = $r; break; }
-                $data = json_decode($r['body'], true);
-                $got = is_array($data) ? self::rows($data) : [];
-                foreach ($got as $tx) $rows[] = self::normalize($tx);
-                $skip += self::PAGE;
-            } while (count($got) === self::PAGE && $pages < self::MAX_PAGES);
-            if (!$failed) return ['method' => $m, 'rows' => $rows, 'pages' => $pages, 'partial' => $pages >= self::MAX_PAGES, 'error' => null];
-            $last = $failed;
-            if (!in_array($failed['status'], [404, 405, 422], true)) break;
-        }
-        return ['method' => $method, 'rows' => [], 'pages' => 0, 'partial' => false, 'error' => ['status' => $last['status'] ?? 0, 'message' => $this->redact(mb_substr($last['body'] ?? '', 0, 300)) ?: ($last['error'] ?? 'Sin respuesta')]];
+        $rows = []; $skip = 0; $pages = 0;
+        do {
+            $r = $this->transactions($month, $location, $skip, self::PAGE);
+            $pages++;
+            if (!self::ok($r)) return ['rows' => [], 'pages' => 0, 'partial' => false, 'error' => ['status' => $r['status'], 'message' => $this->redact(mb_substr($r['body'], 0, 300)) ?: ($r['error'] ?? 'Sin respuesta')]];
+            $data = json_decode($r['body'], true);
+            $got = is_array($data) ? self::rows($data) : [];
+            foreach ($got as $tx) $rows[] = self::normalize($tx);
+            $skip += self::PAGE;
+        } while (count($got) === self::PAGE && $pages < self::MAX_PAGES);
+        return ['rows' => $rows, 'pages' => $pages, 'partial' => $pages >= self::MAX_PAGES, 'error' => null];
     }
 
     /** @param list<array<string,mixed>> $rows */
-    public static function summarize(array $rows): array
+    public static function summarize(array $rows, int $keep = 50): array
     {
         $by = [];
         foreach ($rows as $r) {
@@ -233,31 +218,30 @@ final class AgencyWallet
             $e['categorias'] = array_map(fn($k, $v) => ['tipo' => (string)$k, 'monto' => round($v, 4)], array_keys($e['categorias']), $e['categorias']);
             $e['dias'] = array_map(fn($k, $v) => ['dia' => (string)$k, 'monto' => round($v, 4)], array_keys($e['dias']), $e['dias']);
             usort($e['ultimos'], fn($a, $b) => strcmp((string)$b['at'], (string)$a['at']));
-            $e['ultimos'] = array_slice($e['ultimos'], 0, 50);
+            $e['ultimos'] = array_slice($e['ultimos'], 0, $keep);
         }
         unset($e);
         return array_values($by);
     }
 
-    /** El plan activo de una subcuenta y su saldo. Cada pieza falla por separado y dice por qué. */
+    /** El plan activo de una subcuenta. Cada pieza falla por separado y dice por qué. */
     public function planOf(string $location): array
     {
-        $out = ['plan' => null, 'estado' => null, 'precio' => null, 'saldo' => null, 'creditosDeCortesia' => null, 'errores' => []];
+        $out = ['plan' => null, 'estado' => null, 'precio' => null, 'errores' => []];
         $sub = $this->subscription($location);
-        if ($sub['status'] === 200 && is_array($d = json_decode($sub['body'], true))) {
+        if (self::ok($sub) && is_array($d = json_decode($sub['body'], true))) {
+            $d = isset($d['data']) && is_array($d['data']) ? $d['data'] : $d;
             $out['estado'] = $d['subscriptionStatus'] ?? null;
             if (!empty($d['saasPlanId'])) {
                 $p = $this->plan((string)$d['saasPlanId']);
-                if ($p['status'] === 200 && is_array($pd = json_decode($p['body'], true))) {
+                if (self::ok($p) && is_array($pd = json_decode($p['body'], true))) {
+                    $pd = isset($pd['data']) && is_array($pd['data']) ? $pd['data'] : $pd;
                     $out['plan'] = $pd['title'] ?? (string)$d['saasPlanId'];
                     $price = is_array($pd['prices'] ?? null) ? ($pd['prices'][0] ?? null) : null;
                     if (is_array($price)) $out['precio'] = ['monto' => $price['amount'] ?? null, 'moneda' => $price['currency'] ?? null, 'cada' => $price['recurringInterval'] ?? ($price['interval'] ?? null)];
                 } else $out['errores'][] = 'plan: HTTP '.$p['status'];
-            } else $out['plan'] = null;
+            }
         } else $out['errores'][] = 'suscripción: HTTP '.$sub['status'];
-        $b = $this->balance($location);
-        if ($b['status'] === 200 && is_array($bd = json_decode($b['body'], true))) { $out['saldo'] = $bd['balance'] ?? null; $out['creditosDeCortesia'] = $bd['complimentaryCredits'] ?? null; }
-        else $out['errores'][] = 'saldo: HTTP '.$b['status'];
         return $out;
     }
 }

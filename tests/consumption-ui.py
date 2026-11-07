@@ -5,7 +5,7 @@ from playwright.sync_api import sync_playwright
 BASE=os.getenv('TEST_BASE_URL','http://127.0.0.1:8080')
 CONNS=[{'id':1,'name':'Clínica Sol','location_id':'locA','status':'connected'},{'id':2,'name':'Academia Luna','location_id':'locB','status':'connected'}]
 REPORT={'month':'2026-11','method':'POST','pages':1,'partial':False,'readAt':'2026-11-07T12:00:00Z','otros':[],'totales':{'gasto':16.5,'recargas':50},'locations':[
- {'locationId':'locA','locationName':'Clínica Sol','gasto':12.5,'recargas':50,'movimientos':9,'sinClasificar':0,'categorias':[{'tipo':'sms','monto':10},{'tipo':'whatsapp','monto':2.5}],'dias':[{'dia':'2026-11-02','monto':10},{'dia':'2026-11-03','monto':2.5}],'ultimos':[{'at':'2026-11-03T10:00:00Z','tipo':'whatsapp','descripcion':'','direccion':'gasto','monto':2.5}],'plan':{'plan':'Plan Pro','estado':'active','precio':{'monto':97,'moneda':'USD','cada':'month'},'saldo':12.5,'creditosDeCortesia':3,'errores':[]}},
+ {'locationId':'locA','locationName':'Clínica Sol','gasto':12.5,'recargas':50,'movimientos':9,'sinClasificar':0,'categorias':[{'tipo':'sms','monto':10},{'tipo':'whatsapp','monto':2.5}],'dias':[{'dia':'2026-11-02','monto':10},{'dia':'2026-11-03','monto':2.5}],'ultimos':[{'at':'2026-11-03T10:00:00Z','tipo':'whatsapp','descripcion':'','direccion':'gasto','monto':2.5}],'plan':{'plan':'Plan Pro','estado':'active','precio':{'monto':97,'moneda':'USD','cada':'month'},'errores':[]}},
  {'locationId':'locB','locationName':'Academia Luna','gasto':4,'recargas':0,'movimientos':1,'sinClasificar':0,'categorias':[],'dias':[],'ultimos':[],'plan':{'plan':None,'estado':None,'errores':['suscripción: HTTP 404']}}]}
 def make(owner,calls,state):
     def api(route):
@@ -33,22 +33,30 @@ with sync_playwright() as p:
     assert pg.locator('button[data-view="consumption"]').first.is_visible()
     assert pg.locator('input[name=token]').input_value()=='' and pg.locator('input[name=token]').get_attribute('type')=='password'
     print('PASS the tab opens for the owner, with the token field empty and hidden')
-    pg.locator('input[name=companyId]').fill('COMP123456');pg.locator('input[name=token]').fill('pit-abc-1234567890-AB12');pg.locator('#cons-form .primary').click();pg.wait_for_selector('.cons-state:not(.off)')
+    pg.locator('input[name=companyId]').fill('COMP123456');pg.locator('input[name=token]').fill('pit-abc-1234567890-AB12');pg.locator('#cons-form .primary').click();pg.wait_for_function("document.querySelector('#cons-conn').innerText.includes('Conectada')")
     assert pg.locator('input[name=token]').input_value()=='' and 'AB12' in pg.locator('input[name=token]').get_attribute('placeholder') and 'pit-abc' not in pg.content()
     assert ('settings',{'companyId':'COMP123456','token':'pit-abc-1234567890-AB12'}) in calls
     print('PASS saving shows only the last four characters, never the token')
-    pg.locator('#cons-sub').select_option('locA');pg.locator('#cons-method').select_option('GET');pg.locator('#cons-run').click();pg.wait_for_selector('.cons-card')
-    r=[c for c in calls if c[0]=='report'][-1][1];assert r['locationId']=='locA' and r['method']=='GET' and r['month']
-    txt=pg.locator('#cons-out').inner_text();assert 'Plan Pro' in txt and '16,50' in txt and 'Clínica Sol' in txt and 'Academia Luna' in txt and 'Sin plan de SaaS' in txt
-    print('PASS the report lists each sub-account with its plan, spend and balance; the selector and the method travel to the server')
-    pg.locator('.cons-card details summary').first.click();assert 'sms' in pg.locator('.cons-card').first.inner_text()
-    print('PASS each one opens its breakdown')
-    pg.locator('[data-dbg="transactions:POST"]').click();pg.wait_for_selector('.dbg-status.ok');assert 'transactions' in pg.locator('#dbg-out').inner_text() and 'Filas: 2' in pg.locator('#dbg-out').inner_text().replace('\n',' ')
-    pg.locator('[data-dbg="transactions:GET"]').click();pg.wait_for_selector('.dbg-status.bad');assert 'HTTP 404' in pg.locator('#dbg-out').inner_text() and 'Cannot GET' in pg.locator('#dbg-out').inner_text()
-    t=[c for c in calls if c[0]=='test'];assert [x[1]['method'] for x in t]==['POST','GET']
-    print('PASS the POST and GET test buttons show the status, the fields and the raw answer')
-    pg.locator('[data-dbg="balance:GET"]').click();pg.wait_for_timeout(300);assert [c for c in calls if c[0]=='test'][-1][1]['target']=='balance'
-    print('PASS and so do the balance and plan tests')
+    assert pg.locator('[data-dbg]').count()==0 and pg.locator('#cons-method').count()==0
+    print('PASS the debugging buttons and the method selector are gone')
+    pg.locator('#cons-sub').select_option('locA');pg.locator('#cons-run').click();pg.wait_for_selector('.cons-card')
+    r=[c for c in calls if c[0]=='report'][-1][1];assert r['locationId']=='locA' and r['month'] and 'method' not in r
+    txt=pg.locator('#cons-out').inner_text();assert 'Plan Pro (active)' in txt and '16,50' in txt and 'Clínica Sol' in txt and 'Academia Luna' in txt and 'Sin plan de SaaS' in txt
+    print('PASS the report lists each sub-account with its plan and spend; the selector travels to the server')
+    pg.locator('.cons-open').first.click();pg.wait_for_selector('.cons-sheet')
+    sheet=pg.locator('.cons-sheet').inner_text();assert 'Reporte de consumos' in sheet and 'Clínica Sol' in sheet and 'sms' in sheet and 'whatsapp' in sheet and 'Plan Pro' in sheet and pg.locator('.cons-split').count()==1 and pg.locator('.cons-days span').count()==2
+    print('PASS each sub-account opens a report sheet with its plan, breakdown, daily chart and movements')
+    with pg.expect_download() as d:pg.locator('#cons-view [data-txt]').click()
+    dl=d.value;assert dl.suggested_filename=='Consumos-'+REPORT['month']+'-Clinica-Sol.txt' or dl.suggested_filename.startswith('Consumos-') and dl.suggested_filename.endswith('Clinica-Sol.txt'),dl.suggested_filename
+    body=open(dl.path(),encoding='utf-8-sig').read();assert 'REPORTE DE CONSUMOS' in body and 'Clínica Sol' in body and 'Plan Pro (active)' in body and 'whatsapp' in body and 'pit-abc' not in body
+    print('PASS it downloads as a .txt with the whole report')
+    pg.evaluate("window.print=()=>{window.__printed=document.body.classList.contains('cons-printing')&&document.querySelector('#cons-print .cons-sheet')!==null}");pg.locator('#cons-view [data-pdf]').click();pg.wait_for_function('window.__printed===true')
+    print('PASS and "Guardar como PDF" prepares the sheet for printing')
+    pg.locator('[data-back]').click();assert pg.locator('#cons-main').is_visible()
+    pg.locator('#cons-sub').select_option('');pg.locator('#cons-run').click();pg.wait_for_selector('.cons-card')
+    with pg.expect_download() as d2:pg.locator('#cons-out [data-txt]').click()
+    assert d2.value.suggested_filename=='Consumos-2026-11.txt' or d2.value.suggested_filename.startswith('Consumos-')
+    print('PASS everything can be exported too')
     assert not errs,errs
     pg2,calls2,e2=page(False,{'company':'','saved':False});pg2.goto(BASE+'/bandeja');pg2.wait_for_selector('#app:not([hidden])');pg2.wait_for_timeout(500)
     assert pg2.locator('button[data-view="consumption"]').first.is_hidden()

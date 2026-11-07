@@ -993,14 +993,15 @@ body.in-maintenance{overflow:hidden}
 .cons-block{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg,16px);padding:20px}
 .cons-block h3{margin:0 0 10px;font-size:18px}
 .cons-note{margin:6px 0;color:var(--muted);font-size:14px;line-height:1.5}.cons-note.warn{color:#a01238;font-weight:600}
+.cons details>summary{cursor:pointer;font-weight:600;min-height:36px;display:flex;align-items:center}
 .cons-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin:12px 0}
 .cons-bar label,.cons-form label{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink)}
 .cons-bar select,.cons-form input{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:var(--r-md,10px);background:var(--paper);color:var(--ink);font:inherit}
-.cons-form{display:grid;gap:12px;max-width:520px}
+.cons-bar .primary{min-height:44px;padding:8px 22px;border-radius:var(--r-md,10px);border:1px solid var(--green);background:var(--green);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.cons-form{display:grid;gap:12px;max-width:520px;margin-top:8px}
 .cons-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}
-.cons-actions button{min-height:44px;padding:8px 16px;border-radius:var(--r-md,10px);border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+.cons-actions button,.cons-open{min-height:44px;padding:8px 16px;border-radius:var(--r-md,10px);border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
 .cons-actions button.primary{background:var(--green);border-color:var(--green);color:#fff}
-.cons-state{font-size:14px;font-weight:600;color:var(--ink)}.cons-state.off{color:var(--muted)}
 .cons-totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:12px 0}
 .cons-totals div{border:1px solid var(--line);border-radius:12px;padding:12px}.cons-totals small{display:block;color:var(--muted);font-size:13px}.cons-totals strong{font-size:24px}
 .cons-list{display:grid;gap:12px}
@@ -1009,11 +1010,29 @@ body.in-maintenance{overflow:hidden}
 .cons-plan{display:block;font-size:14px;color:var(--ink);margin-top:2px}.cons-plan.muted{color:var(--muted)}
 .cons-money{text-align:right}.cons-money strong{display:block;font-size:22px}.cons-money small{color:var(--muted)}
 .cons-card dl{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0}.cons-card dt{font-size:12px;color:var(--muted)}.cons-card dd{margin:0;font-weight:700}
-.cons-card details{border-top:1px solid var(--line);padding-top:8px}.cons-card summary{cursor:pointer;font-weight:600;min-height:32px}
-.cons table{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}.cons th,.cons td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}.cons .n{text-align:right;font-variant-numeric:tabular-nums}
-.cons-days{display:flex;align-items:flex-end;gap:3px;height:80px;margin-top:8px}.cons-days span{flex:1;min-width:4px;background:var(--green);border-radius:3px 3px 0 0}
-.dbg-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}.dbg-head code{font-size:13px;word-break:break-all}
-.dbg-status{padding:4px 10px;border-radius:8px;font-weight:700;font-size:14px;border:1px solid var(--line)}.dbg-status.bad{color:#a01238;border-color:#a01238}.dbg-status.ok{color:var(--ink);border-color:var(--ink)}
-.dbg-facts{margin:8px 0;padding-left:18px;font-size:14px;line-height:1.6}
-.dbg-body,.cons pre{max-height:420px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:12.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
-.cons-copy{float:right;min-height:32px;padding:2px 12px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);cursor:pointer}
+.cons-mini{display:flex;flex-wrap:wrap;gap:8px}.cons-mini span{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+.cons-open{justify-self:start}
+.cons-days{display:flex;align-items:flex-end;gap:3px;height:90px;margin:8px 0;border-bottom:1px solid var(--line)}.cons-days span{flex:1;min-width:4px;max-width:34px;background:var(--green);border-radius:3px 3px 0 0}
+/* La hoja del reporte */
+.cons-sheet{background:#fff;color:#0b0b10;border:1px solid var(--line);border-radius:16px;padding:32px;display:grid;gap:18px}
+.cons-sheet-h{display:flex;align-items:center;gap:18px;border-bottom:2px solid #ad103c;padding-bottom:14px}.cons-sheet-h img{height:44px;width:auto}.cons-sheet-h h2{margin:0;font-size:24px}.cons-sheet-h p{margin:2px 0 0;color:#30343c}
+.cons-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.cons-kpis div{background:#f7f7fa;border-radius:12px;padding:12px 14px}.cons-kpis small{display:block;color:#30343c;font-size:13px}.cons-kpis strong{font-size:26px}.cons-kpis.small strong{font-size:19px}
+.cons-sheet-sub{display:grid;gap:10px;border-top:1px solid #e5e4e9;padding-top:16px;break-inside:avoid-page}
+.cons-sheet-title{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}.cons-sheet-title h3{margin:0;font-size:20px}.cons-sheet-title span{color:#30343c}
+.cons-sheet h4{margin:8px 0 0;font-size:15px}
+.cons-sheet table{width:100%;border-collapse:collapse;font-size:14px}.cons-sheet th,.cons-sheet td{text-align:left;padding:6px 8px;border-bottom:1px solid #e5e4e9}.cons-sheet .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cons-split td.bar{width:42%}.cons-split td.bar i{display:block;height:10px;background:#ad103c;border-radius:5px}
+.cons-moves em{color:#30343c;font-style:normal;font-size:12px;border:1px solid #d9d8de;border-radius:6px;padding:0 6px;margin-left:4px}
+.cons-sheet-f{color:#30343c;font-size:12px;text-align:center;border-top:1px solid #e5e4e9;padding-top:10px}
+#cons-print{display:none}
+@media(max-width:600px){.cons-kpis{grid-template-columns:1fr}.cons-sheet{padding:18px}}
+@media print{
+ body.cons-printing>*:not(#app){display:none!important}
+ body.cons-printing .sidebar,body.cons-printing .topbar,body.cons-printing .page-heading,body.cons-printing .page-footer,body.cons-printing #toast{display:none!important}
+ body.cons-printing .cons>*:not(#cons-print){display:none!important}
+ body.cons-printing #cons-print{display:block!important}
+ body.cons-printing main,body.cons-printing #view{padding:0!important;margin:0!important;background:#fff!important}
+ body.cons-printing .cons-sheet{border:0;padding:0;border-radius:0}
+ body.cons-printing .cons-sheet-sub{page-break-inside:avoid}
+ @page{size:A4;margin:14mm}
+}
