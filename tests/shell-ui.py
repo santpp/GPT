@@ -58,7 +58,7 @@ with sync_playwright() as p:
     assert page.url.endswith('/contactos')
     print('PASS contacts screen shows real account data')
     page.locator('[data-view="board"]').click()
-    page.wait_for_selector('.board-card',state='attached')
+    page.wait_for_selector('.board-card2',state='attached')
     board=page.locator('#view').inner_text()
     assert 'Pipeline comercial' in board and 'Proyecto X' in board and '2.400' in board
     assert page.url.endswith('/oportunidades')
