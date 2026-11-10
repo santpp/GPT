@@ -47,8 +47,8 @@ final class GhlClient {
     public function locationContacts(string $location,?string $query,int $limit=50):array {
         return $this->get('/contacts/?'.http_build_query(array_filter(['locationId'=>$location,'query'=>$query,'limit'=>$limit],fn($v)=>$v!==null&&$v!=='')),'2021-07-28');
     }
-    public function locationOpportunities(string $location,?string $pipeline,int $limit=100):array {
-        return $this->get('/opportunities/search?'.http_build_query(array_filter(['location_id'=>$location,'pipeline_id'=>$pipeline,'status'=>'open','limit'=>$limit],fn($v)=>$v!==null&&$v!=='')),'2021-07-28');
+    public function locationOpportunities(string $location,?string $pipeline,int $limit=100,?string $assignee=null):array {
+        return $this->get('/opportunities/search?'.http_build_query(array_filter(['location_id'=>$location,'pipeline_id'=>$pipeline,'status'=>'open','assigned_to'=>$assignee,'limit'=>$limit],fn($v)=>$v!==null&&$v!=='')),'2021-07-28');
     }
     public function opportunity(string $id):array {return $this->get('/opportunities/'.rawurlencode($id),'2021-07-28');}
     public function createOpportunity(array $payload):array {return $this->get('/opportunities/','2021-07-28',$payload);}
@@ -72,6 +72,10 @@ final class GhlClient {
         ]),'2021-07-28');
     }
     /** One page of contacts, used only to read the total the search reports. */
+    /** Búsqueda de contactos con filtros, página y orden (la que da el total real). */
+    public function searchContacts(string $location,array $filters,int $page,int $limit,?string $query=null,?array $sort=null):array {
+        return $this->get('/contacts/search','2021-07-28',['locationId'=>$location,'pageLimit'=>$limit,'page'=>$page]+($query!==null?['query'=>$query]:[])+($filters?['filters'=>$filters]:[])+($sort?['sort'=>$sort]:[]));
+    }
     public function countContacts(string $location,array $filters=[]):array {
         return $this->get('/contacts/search','2021-07-28',['locationId'=>$location,'pageLimit'=>1,'page'=>1]+($filters?['filters'=>$filters]:[]));
     }

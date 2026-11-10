@@ -10,11 +10,16 @@ require_once __DIR__.'/GhlGateway.php';
 final class ContactDirectory {
     private const TTL=60;
     private const LIMIT=50;
+    private const MAX_PAGE=40;
 
     public function __construct(private readonly GhlGateway $gateway=new GhlGateway()) {}
 
-    public function get(array $connection,?string $search,array $membership,bool $refresh=false):array {
+    public function get(array $connection,?string $search,array $membership,bool $refresh=false,int $page=1):array {
         $query=self::search($search);
+        $page=max(1,min(self::MAX_PAGE,$page));
+        $restricted=($membership['capabilities']['assignedDataOnly']??false)===true;
+        $assignee=$membership['external_user_id']??null;
+        if($restricted)return $this->mine($connection,$query,is_string($assignee)?$assignee:'',$page);
         $key='contacts:'.substr(hash('sha256',(string)$query),0,40);
         try {$records=$this->store($connection,$key,$this->fetch($connection,$query));}
         catch(GhlCooldown $e) {
@@ -22,22 +27,78 @@ final class ContactDirectory {
             $records=$this->cached($connection,$key,false);
             if($records===null)throw $e;
         }
-        $restricted=($membership['capabilities']['assignedDataOnly']??false)===true;
-        $assignee=$membership['external_user_id']??null;
-        $visible=$restricted?array_values(array_filter($records,fn(array $row):bool=>$row['assignedTo']!==null&&$row['assignedTo']===$assignee)):$records;
         return [
-            'items'=>array_map(fn(array $row):array=>$row+['assignedName'=>$this->member($connection,$row['assignedTo'])],$visible),
-            'total'=>count($visible),
+            'items'=>array_map(fn(array $row):array=>$row+['assignedName'=>$this->member($connection,$row['assignedTo'])],$records),
+            'total'=>count($records),
             'query'=>$query,
-            'restricted'=>$restricted,
+            'restricted'=>false,
             'partial'=>count($records)>=self::LIMIT,
+            'page'=>1,'hasMore'=>false,'exact'=>false,
         ];
+    }
+
+    /**
+     * Los contactos de quien sólo ve lo suyo, pedidos a la cuenta ya filtrados por
+     * su usuario: la lista son de verdad los suyos, con el total real y por páginas.
+     * La forma del filtro y del orden no está publicada, así que se prueban las
+     * variantes conocidas; una respuesta que trae contactos de otra persona se
+     * descarta (la cuenta ignoró el filtro). Si ninguna sirve, se cae a lo de
+     * antes (los suyos entre los más recientes de la cuenta) y la pantalla lo dice.
+     */
+    private function mine(array $connection,?string $query,string $assignee,int $page):array {
+        $base=['items'=>[],'total'=>0,'query'=>$query,'restricted'=>true,'partial'=>false,'page'=>$page,'hasMore'=>false,'exact'=>true];
+        if(!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$assignee))return $base;
+        $key='contacts-mine:'.substr(hash('sha256',$assignee.'|'.$query.'|'.$page),0,40);
+        $sort=[['field'=>'dateAdded','direction'=>'desc']];
+        $attempts=[
+            [[['field'=>'assignedTo','operator'=>'eq','value'=>$assignee]],$sort],
+            [[['field'=>'assignedTo','operator'=>'eq','value'=>$assignee]],null],
+            [[['field'=>'assignedTo','operator'=>'eq','value'=>[$assignee]]],null],
+        ];
+        try {
+            $found=$this->gateway->execute($connection,function(GhlClient $client)use($connection,$query,$assignee,$page,$attempts):array {
+                foreach($attempts as [$filters,$order]) {
+                    try {$data=$client->searchContacts($connection['location_id'],$filters,$page,self::LIMIT,$query,$order);}
+                    catch(GhlApiException $e){if(in_array($e->status,[400,422],true))continue;throw $e;}
+                    $contacts=$data['contacts']??null;
+                    if(!is_array($contacts)||!array_is_list($contacts))continue;
+                    $items=$this->normalize($connection,$contacts);
+                    foreach($items as $row)if($row['assignedTo']!==$assignee)continue 2;
+                    $total=$data['total']??($data['meta']['total']??null);
+                    return ['items'=>$items,'total'=>is_numeric($total)&&$total>=count($items)?(int)$total:null];
+                }
+                return ['unsupported'=>true];
+            },false);
+            if(isset($found['unsupported']))$found=null;else $this->store($connection,$key,$found);
+        } catch(GhlCooldown $e) {
+            $found=$this->cached($connection,$key,false);
+            if($found===null)throw $e;
+        }
+        if($found===null) {
+            // La cuenta no aceptó el filtro: los suyos entre los más recientes, como antes.
+            $records=$this->fetch($connection,$query);
+            $visible=array_values(array_filter($records,fn(array $row):bool=>$row['assignedTo']===$assignee));
+            return ['items'=>array_map(fn(array $row):array=>$row+['assignedName'=>$this->member($connection,$row['assignedTo'])],$visible),
+                'total'=>count($visible),'partial'=>count($records)>=self::LIMIT,'exact'=>false,'page'=>1,'hasMore'=>false]+$base;
+        }
+        $items=$found['items'];
+        $total=$found['total']??(($page-1)*self::LIMIT+count($items));
+        return [
+            'items'=>array_map(fn(array $row):array=>$row+['assignedName'=>$this->member($connection,$row['assignedTo'])],$items),
+            'total'=>$total,
+            'partial'=>$total>$page*self::LIMIT,
+            'hasMore'=>$page<self::MAX_PAGE&&($found['total']!==null?$total>$page*self::LIMIT:count($items)>=self::LIMIT),
+        ]+$base;
     }
 
     private function fetch(array $connection,?string $query):array {
         $data=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->locationContacts($connection['location_id'],$query,self::LIMIT),false);
         $contacts=$data['contacts']??null;
         if(!is_array($contacts)||!array_is_list($contacts))throw new RuntimeException('Invalid contacts response');
+        return $this->normalize($connection,$contacts);
+    }
+
+    private function normalize(array $connection,array $contacts):array {
         $items=[];
         foreach(array_slice($contacts,0,self::LIMIT) as $contact) {
             if(!is_array($contact))continue;

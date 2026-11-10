@@ -13,11 +13,19 @@ final class FakeListApi {
     public array $opportunities=[];
     public array $pipelines=[];
     public array $fail=[];
+    public string $searchMode='filter';
+    public int $searchTotal=0;
     public function __construct(public readonly string $location) {}
     public function gateway():GhlGateway {
         return new GhlGateway(fn():GhlClient=>new GhlClient('fake',function(string $path,string $version,string $method,?array $payload):array {
-            $this->calls[]=[$method,$path,$version];
+            $this->calls[]=[$method,$path,$version,$payload];
             foreach($this->fail as $m=>$status)if(str_starts_with($path,$m))throw new GhlApiException($status);
+            if($method==='POST'&&$path==='/contacts/search') {
+                if($this->searchMode==='reject')throw new GhlApiException(422);
+                $who=$payload['filters'][0]['value']??null;$who=is_array($who)?($who[0]??null):$who;
+                $items=$this->searchMode==='ignore'?$this->contacts:array_values(array_filter($this->contacts,fn($c)=>($c['assignedTo']??null)===$who));
+                return ['status'=>200,'body'=>json_encode(['contacts'=>$items,'total'=>$this->searchTotal?:count($items)])];
+            }
             if(str_starts_with($path,'/contacts/?'))return ['status'=>200,'body'=>json_encode(['contacts'=>$this->contacts,'count'=>count($this->contacts)])];
             if(str_starts_with($path,'/opportunities/pipelines'))return ['status'=>200,'body'=>json_encode(['pipelines'=>$this->pipelines])];
             if(str_starts_with($path,'/opportunities/search'))return ['status'=>200,'body'=>json_encode(['opportunities'=>$this->opportunities])];
@@ -81,8 +89,24 @@ try {
  freeBudget($connectionId);
 
  $api->reset();freeBudget($connectionId);
+ $api->searchTotal=312;
  $mine=$directory->get($connection,null,$restricted,true);
- dirCheck(array_column($mine['items'],'id')===['c1']&&$mine['restricted']===true,'an assigned-only member sees only their contacts, and the screen says so');
+ $ask=$api->calls[0][3]??[];
+ dirCheck($api->paths()===['/contacts/search']&&($ask['filters'][0]??null)===['field'=>'assignedTo','operator'=>'eq','value'=>'seller-1'],'an assigned-only member\'s contacts are asked to the account already filtered by their user');
+ dirCheck(array_column($mine['items'],'id')===['c1']&&$mine['restricted']===true&&$mine['exact']===true,'they see only their contacts, and the screen says so');
+ dirCheck($mine['total']===312&&$mine['hasMore']===true,'with their real total (not the ones that happened to be among the latest of the account), and more to load');
+ $api->reset();freeBudget($connectionId);
+ $next=$directory->get($connection,'andre',$restricted,true,2);
+ dirCheck(($api->calls[0][3]['page']??null)===2&&($api->calls[0][3]['query']??null)==='andre','«Ver más» and the search travel to the account');
+ $api->searchTotal=0;
+
+ $api->reset();freeBudget($connectionId);$api->searchMode='ignore';
+ $ignored=$directory->get($connection,null,$restricted,true);
+ dirCheck(array_column($ignored['items'],'id')===['c1']&&$ignored['exact']===false,'if the account ignores the filter, another person\'s contacts are never shown and the screen says the list is approximate');
+ $api->reset();freeBudget($connectionId);$api->searchMode='reject';
+ $rejected=$directory->get($connection,null,$restricted,true);
+ dirCheck(array_column($rejected['items'],'id')===['c1']&&$rejected['exact']===false&&in_array('/contacts/',$api->paths(),true),'if the account refuses the filter, it falls back to their contacts among the latest');
+ $api->searchMode='filter';
 
  // ---- opportunity board ------------------------------------------------------
  $api->reset();freeBudget($connectionId);
@@ -106,6 +130,7 @@ try {
 
  $api->reset();freeBudget($connectionId);
  $mineBoard=$board->get($connection,'pipe-1',$restricted,true);
+ dirCheck(str_contains(end($api->calls)[1],'assigned_to=seller-1'),'their board is asked to the account already filtered by their user');
  dirCheck(array_column($mineBoard['stages'][1]['items'],'id')===['o1']&&$mineBoard['stages'][0]['items']===[]&&$mineBoard['restricted']===true,'an assigned-only member sees only their own cards');
 
  // ---- failures ---------------------------------------------------------------

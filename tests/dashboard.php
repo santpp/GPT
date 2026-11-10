@@ -106,6 +106,7 @@ try {
  $api->reset();boardFree($connectionId);
  $mine=$board->get($connection,$restricted);
  boardCheck(str_contains($api->calls[0],'assignedTo=seller-1'),'a member restricted to their own data asks the account only for theirs');
+ boardCheck(count(array_filter($api->calls,fn($c)=>str_starts_with($c,'/opportunities/search')&&str_contains($c,'assigned_to=seller-1')))===1,'their open opportunities are asked already filtered, not picked out of the latest of the account');
  boardCheck($mine['opportunities']['count']===2&&$mine['restricted']===true,'their board counts only their own opportunities, and says so');
  boardCheck($mine['contacts']===null,'no contact figure is shown where the account cannot scope it to that member');
  $own=array_values(array_filter($api->payloads,fn($p)=>is_array($p)&&isset($p['filters'])));

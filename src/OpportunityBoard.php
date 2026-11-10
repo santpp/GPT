@@ -16,7 +16,9 @@ final class OpportunityBoard {
 
     public function get(array $connection,?string $pipelineId,array $membership,bool $refresh=false):array {
         $pipelineId=$pipelineId!==null&&preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$pipelineId)?$pipelineId:null;
-        [$names,$records]=$this->read($connection,$pipelineId,$refresh);
+        // Quien sólo ve lo suyo lo pide ya filtrado: si no, sus oportunidades se perderían entre las 100 más recientes de toda la cuenta.
+        $restrictedAsk=($membership['capabilities']['assignedDataOnly']??false)===true?($membership['external_user_id']??''):null;
+        [$names,$records]=$this->read($connection,$pipelineId,$refresh,$restrictedAsk);
         if($names===[])return ['pipelines'=>[],'pipelineId'=>null,'stages'=>[],'total'=>0,'restricted'=>false,'canEdit'=>false,'partial'=>false,'unavailable'=>'pipelines'];
         $selected=$pipelineId!==null&&isset($names[$pipelineId])?$pipelineId:array_key_first($names);
         $restricted=($membership['capabilities']['assignedDataOnly']??false)===true;
@@ -46,19 +48,19 @@ final class OpportunityBoard {
     }
 
     /** @return array{0:array<string,mixed>,1:list<array<string,mixed>>} */
-    private function read(array $connection,?string $pipelineId,bool $refresh):array {
+    private function read(array $connection,?string $pipelineId,bool $refresh,?string $assignee=null):array {
         $directory=$this->pipelines??new PipelineDirectory();
-        $key='board:'.substr(hash('sha256',(string)$pipelineId),0,40);
+        $key='board:'.substr(hash('sha256',$pipelineId.'|'.$assignee),0,40);
         $names=$directory->cached($connection);
         $records=null;
         try {
-        return $this->gateway->execute($connection,function(GhlClient $client)use($connection,$directory,$names,$records,$pipelineId,$key):array {
+        return $this->gateway->execute($connection,function(GhlClient $client)use($connection,$directory,$names,$records,$pipelineId,$key,$assignee):array {
             if($names===null) {
                 try {$names=$directory->fromClient($client,$connection);}
                 catch(Throwable $e){$names=[];}
             }
             if($records===null) {
-                $records=$this->fetch($client,$connection,$pipelineId);
+                $records=$this->fetch($client,$connection,$pipelineId,$assignee);
                 query('INSERT INTO directory_cache(connection_id,cache_key,payload) VALUES(?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload),fetched_at=CURRENT_TIMESTAMP',[$connection['id'],$key,json_encode($records,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE)]);
             }
             return [$names,$records];
@@ -71,8 +73,8 @@ final class OpportunityBoard {
         }
     }
 
-    private function fetch(GhlClient $client,array $connection,?string $pipelineId):array {
-        $data=$client->locationOpportunities($connection['location_id'],$pipelineId,self::LIMIT);
+    private function fetch(GhlClient $client,array $connection,?string $pipelineId,?string $assignee=null):array {
+        $data=$client->locationOpportunities($connection['location_id'],$pipelineId,self::LIMIT,$assignee!==''?$assignee:null);
         $opportunities=$data['opportunities']??null;
         if(!is_array($opportunities)||!array_is_list($opportunities))throw new RuntimeException('Invalid opportunities response');
         $items=[];

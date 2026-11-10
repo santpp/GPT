@@ -46,7 +46,7 @@ final class Dashboard {
                 $pending=self::total($client->conversations($connection['location_id'],1,$scope+['status'=>'unread']));
                 $waiting=self::total($client->conversations($connection['location_id'],1,$scope+['lastMessageDirection'=>'inbound']));
                 $people=$canSeeContacts?self::people($client,$connection['location_id']):null;
-                $deals=$canSeeOpportunities?$client->locationOpportunities($connection['location_id'],null,self::SAMPLE):null;
+                $deals=$canSeeOpportunities?$client->locationOpportunities($connection['location_id'],null,self::SAMPLE,$assignee):null;
                 if($names===null&&$canSeeOpportunities) {
                     try {$names=$directory->fromClient($client,$connection);}
                     catch(Throwable $e){$names=[];}

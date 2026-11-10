@@ -43,21 +43,36 @@ export async function renderContacts(container){
   }
 
   const loadTags=()=>request(`workspace/tags?connectionId=${encodeURIComponent(connection)}`).then(r=>asList(r.items));
-  async function load(search=''){
+  let shown=[],page=1;
+  const describe=(data,search)=>{
+    if(!data.total)return search?'Ningún contacto coincide con esa búsqueda.':(data.restricted?'Todavía no tienes contactos asignados.':'Esta cuenta todavía no tiene contactos.');
+    const n=data.total,word=`${n} contacto${n===1?'':'s'}`;
+    if(data.restricted&&data.exact)return `${word} asignado${n===1?'':'s'} a ti${search?' que coinciden':''}${shown.length<n?` · se muestran ${shown.length}, los más recientes primero`:''}`;
+    if(data.restricted)return `${word} tuyo${n===1?'':'s'} entre los más recientes de la cuenta`;
+    return `${word}${data.partial?' · se muestran los más recientes':''}`;
+  };
+  function paint(data,search){
+    $('#contact-feedback').textContent=describe(data,search);
+    $('#contact-results').innerHTML=rows(shown)+(data.hasMore?'<button type="button" class="live-more" id="contact-more">Ver más</button>':'');
+    bindRows();
+    const more=$('#contact-more');
+    if(more)more.onclick=()=>{more.disabled=true;more.textContent='Cargando…';load(search,page+1)};
+  }
+  async function load(search='',next=1){
     const version=++generation;
-    $('#contact-feedback').textContent='';if(!$('#contact-results').children.length||$('#contact-results .sk-wrap'))$('#contact-results').innerHTML=skeleton('list',7);
+    if(next===1){$('#contact-feedback').textContent='';if(!$('#contact-results').children.length||$('#contact-results .sk-wrap'))$('#contact-results').innerHTML=skeleton('list',7);}
     try{
-      const data=await request(`workspace/contacts?connectionId=${encodeURIComponent(connection)}${search?'&query='+encodeURIComponent(search):''}`);
+      const data=await request(`workspace/contacts?connectionId=${encodeURIComponent(connection)}${search?'&query='+encodeURIComponent(search):''}${next>1?'&page='+next:''}`);
       if(!active()||version!==generation)return;
-      $('#contact-feedback').textContent=data.total
-        ? `${data.total} contacto${data.total===1?'':'s'}${data.restricted?' asignados a tu usuario':''}${data.partial?' · se muestran los más recientes':''}`
-        : (search?'Ningún contacto coincide con esa búsqueda.':'Esta cuenta todavía no tiene contactos.');
-      $('#contact-results').innerHTML=rows(asList(data.items));
-      bindRows();
+      const items=asList(data.items);
+      if(next===1)shown=items;else{const seen=new Set(shown.map(c=>c.id));shown=shown.concat(items.filter(c=>!seen.has(c.id)))}
+      page=next;
+      paint(data,search);
     }catch(error){
       if(!active()||version!==generation)return;
       $('#contact-feedback').textContent=friendly(error);
-      $('#contact-results').innerHTML='';
+      if(next===1)$('#contact-results').innerHTML='';
+      else{const more=$('#contact-more');if(more){more.disabled=false;more.textContent='Ver más'}}
       if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
     }
   }
