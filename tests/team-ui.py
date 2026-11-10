@@ -17,7 +17,7 @@ with sync_playwright() as p:
   else:data={'items':[]}
   route.fulfill(status=200,content_type='application/json',body=json.dumps(data))
  page.route('**/api/**',api);page.goto('http://127.0.0.1:8080/')
- page.locator('button[data-view="settings"]').click();page.wait_for_selector('[data-users="1"]');page.locator('[data-users="1"]').click()
+ page.locator('#nav-more').click();page.locator('#more-sheet [data-more="settings"]').click();page.wait_for_selector('[data-users="1"]');page.locator('[data-users="1"]').click()
  page.wait_for_selector('#sync-team');body=page.locator('#dialog-content').inner_text()
  assert 'Ana Vendedora' in body and 'Sólo datos asignados' in body and 'Acceso aún no utilizado' in body
  assert 'configureConnections' not in body and 'viewConversations' in body

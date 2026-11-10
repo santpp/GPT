@@ -10,7 +10,7 @@ html[data-theme="dark"] .connection{color:#8f928d}
 html[data-theme="dark"] .connection i,html[data-theme="dark"] .live-dot{background:#fabd4b}
 html[data-theme="dark"] .profile{border-top:1px solid #363a49}
 html[data-theme="dark"] .profile small{color:#8f928e}
-html[data-theme="dark"] .avatar{background:#473f33;color:#d2cec9}
+html[data-theme="dark"] .avatar{background:#473f33;color:#d5d2cd}
 html[data-theme="dark"] .avatar.olive{background:#242736;color:#e9678c}
 html[data-theme="dark"] .breadcrumbs{color:#959894}
 html[data-theme="dark"] .breadcrumbs span{color:#a7aaa3}
@@ -207,15 +207,17 @@ html[data-theme="dark"] .cons-split td.bar i{background:#ad103c}
 html[data-theme="dark"] .cons-moves em{color:#d6d7da;border:1px solid #363a49}
 html[data-theme="dark"] .cons-sheet-f{color:#d6d7da;border-top:1px solid #363a49}
 @media print{html[data-theme="dark"] body.cons-printing main,html[data-theme="dark"] body.cons-printing #view{background:#1d1f2b!important}}
-html[data-theme="dark"] .board-chip,html[data-theme="dark"] .board-clear{border:1px solid var(--line,#363a49)}
-html[data-theme="dark"] .board-chip.on{background:var(--accent,#2f6fed);border-color:var(--accent,#2f6fed);color:#fff}
-html[data-theme="dark"] .board-chips button{border:1px solid var(--line,#363a49)}
+html[data-theme="dark"] .board-clear{border:1px solid var(--line,#363a49)}
 html[data-theme="dark"] .board-card2{border:1px solid var(--line,#363a49)}
-html[data-theme="dark"] .board-card2:focus-visible{outline:2px solid var(--accent,#2f6fed)}
+html[data-theme="dark"] .board-card2:focus-visible{outline:2px solid #ad103c}
 html[data-theme="dark"] .board-ic{border:1px solid var(--line,#363a49)}
 html[data-theme="dark"] .board-move{border:1px solid var(--line,#363a49)}
 html[data-theme="dark"] #view-as-bar{background:#3a2f12;color:#fff}
 html[data-theme="dark"] #view-as-bar button{color:#fff}
+html[data-theme="dark"] #more-sheet .more-panel{background:var(--paper,#1d1f2b)}
+html[data-theme="dark"] #more-sheet .more-grip{background:var(--line,#292d3e)}
+html[data-theme="dark"] #more-sheet .more-grid button{border:1px solid var(--line,#363a49)}
+html[data-theme="dark"] #more-sheet .more-grid button.active{border-color:#ad103c;color:#e9678c}
 /* ---- a mano: paleta base y piezas que el generador no puede adivinar ---- */
 html[data-theme="dark"]{color-scheme:dark;--ink:#e6e8f0;--muted:#9aa0b4;--line:#2f3445;--paper:#1b1f2c;--bg:#12151f;--green:#d13c63;--accent:#f5b84a}
 html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}

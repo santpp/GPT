@@ -59,9 +59,10 @@ with sync_playwright() as p:
     page,errors,sent,context=session({'width':1440,'height':900})
     cnt=lambda:page.locator('.board-card2').count()
     assert cnt()==3,'tres tarjetas'
-    assert page.locator('.board-chips button').count()==2
+    assert page.locator('#board-stage option').all_inner_texts()==['Todas las etapas · 3','Nuevo lead · 2','Propuesta enviada · 1'],page.locator('#board-stage option').all_inner_texts()
+    assert page.locator('#board-noamount').count()==0 and page.locator('.board-chips').count()==0,'sin «Sin monto» ni tira de etapas'
     assert page.locator('[data-edit-opportunity]').first.locator('text=Editar').count()==0,'sin botón Editar'
-    print('PASS tarjetas compactas y chips de etapa')
+    print('PASS tarjetas compactas; las etapas son un desplegable, sin «Sin monto»')
     s=page.locator('#board-search')
     s.fill('809 555-1234');page.wait_for_timeout(400)
     assert cnt()==1 and 'Web Tienda' in page.locator('.board-card2').inner_text(),'teléfono con otro formato'
@@ -69,11 +70,11 @@ with sync_playwright() as p:
     s.fill('andreína');page.wait_for_timeout(400);assert cnt()==1,'nombre sin importar acentos'
     s.fill('');page.wait_for_timeout(400);assert cnt()==3
     print('PASS búsqueda por nombre, teléfono y correo')
-    page.locator('#board-noamount').click();assert cnt()==1
-    page.locator('#board-clear').click();assert cnt()==3
+    page.locator('#board-stage').select_option('stage-2');assert cnt()==1 and page.locator('.board-column').count()==1,'sólo la etapa elegida'
+    page.locator('#board-clear').click();assert cnt()==3 and page.locator('.board-column').count()==2
     page.locator('#board-who').select_option('Luis Comercial');assert cnt()==1
     page.locator('#board-clear').click()
-    print('PASS filtros «sin monto» y responsable')
+    print('PASS desplegables de etapa y responsable')
     page.locator('[data-toggle="stage-1"]').click()
     assert page.locator('#stage-stage-1 .board-stage-body').is_hidden(),'etapa plegada'
     page.locator('[data-toggle="stage-1"]').click()

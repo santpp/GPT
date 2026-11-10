@@ -83,7 +83,10 @@ with sync_playwright() as p:
     page.locator('#live-profile-close').click()
 
     for view,ready in [('contacts','#contact-feedback'),('board','#view'),('settings','#view')]:
-        page.locator(f'[data-view="{view}"]').click()
+        if view=='settings':
+            # En el teléfono, Conexiones vive dentro de «Más».
+            page.locator('#nav-more').click();page.locator('#more-sheet [data-more="settings"]').click()
+        else:page.locator(f'[data-view="{view}"]').click()
         page.wait_for_selector(ready)
         page.wait_for_timeout(350)
         no_overflow(view)

@@ -29,7 +29,7 @@ async function renderFunnels(container){
   try{csrf=(await request('me')).csrf||''}catch{}
 
   // Filtros y búsqueda de esta pantalla (sólo en el navegador, sobre las oportunidades ya cargadas).
-  const ui={q:'',who:'',noAmount:false,collapsed:new Set(),move:null};
+  const ui={q:'',who:'',stage:'',collapsed:new Set(),move:null};
   const digits=t=>String(t??'').replace(/\D/g,'');
   /** Nombre, correo o teléfono: sin importar mayúsculas, acentos ni cómo esté escrito el número. */
   const matches=(item,q)=>{
@@ -37,7 +37,7 @@ async function renderFunnels(container){
     if(norm([item.name,item.contactName,item.contactEmail,item.assignedName].join(' ')).includes(text))return true;
     const d=digits(q);return d.length>=5&&digits(item.contactPhone).includes(d.replace(/^0+/,''));
   };
-  const visibleItems=stage=>asList(stage.items).filter(item=>matches(item,ui.q)&&(!ui.who||(ui.who==='none'?!item.assignedName:item.assignedName===ui.who))&&(!ui.noAmount||!(item.monetaryValue>0)));
+  const visibleItems=stage=>asList(stage.items).filter(item=>matches(item,ui.q)&&(!ui.who||(ui.who==='none'?!item.assignedName:item.assignedName===ui.who)));
   const ICONS={chat:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',person:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.4 7-5.4s6.2 1.8 7 5.4"/></svg>',move:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>',chevron:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>'};
   function card(item,canEdit,stages){
     const sub=[item.contactName&&norm(item.contactName)!==norm(item.name)?item.contactName:null,item.assignedName].filter(Boolean);
@@ -66,25 +66,27 @@ async function renderFunnels(container){
     const allItems=cards;
     const who=[...new Set(allItems.map(i=>i.assignedName).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
     const hasUnassigned=allItems.some(i=>!i.assignedName);
-    const noAmountCount=allItems.filter(i=>!(i.monetaryValue>0)).length;
-    const filtered=ui.q||ui.who||ui.noAmount;
-    const shown=data.stages.map(stage=>({stage,items:visibleItems(stage)}));
-    const shownTotal=shown.reduce((n,x)=>n+x.items.length,0);
-    container.innerHTML=`<div class="live-toolbar"><label>Embudo<select id="board-pipeline" aria-label="Embudo">${data.pipelines.map(p=>`<option value="${esc(p.id)}"${p.id===data.pipelineId?' selected':''}>${esc(p.name)}</option>`).join('')}</select></label></div>
+    const filtered=ui.q||ui.who;
+    const counted=data.stages.map(stage=>({stage,items:visibleItems(stage)}));
+    // «Etapa»: todas, o sólo la elegida.
+    if(ui.stage&&!counted.some(x=>String(x.stage.id??'none')===ui.stage))ui.stage='';
+    const shown=ui.stage?counted.filter(x=>String(x.stage.id??'none')===ui.stage):counted;
+    const shownTotal=counted.reduce((n,x)=>n+x.items.length,0);
+    const whoOptions=who.length+(hasUnassigned&&who.length?1:0)>1;
+    container.innerHTML=`<div class="live-toolbar board-selects"><label>Embudo<select id="board-pipeline">${data.pipelines.map(p=>`<option value="${esc(p.id)}"${p.id===data.pipelineId?' selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
+      ${whoOptions?`<label>Responsable<select id="board-who"><option value="">Todos</option>${who.map(n=>`<option value="${esc(n)}"${ui.who===n?' selected':''}>${esc(n)}</option>`).join('')}${hasUnassigned?`<option value="none"${ui.who==='none'?' selected':''}>Sin responsable</option>`:''}</select></label>`:''}
+      <label>Etapa<select id="board-stage"><option value="">Todas las etapas · ${shownTotal}</option>${counted.map(({stage,items})=>{const k=String(stage.id??'none');return `<option value="${esc(k)}"${ui.stage===k?' selected':''}>${esc(stage.name)} · ${items.length}</option>`}).join('')}</select></label></div>
      <div class="board-tools"><label class="search board-search"><span aria-hidden="true">⌕</span><input id="board-search" type="search" inputmode="search" autocomplete="off" placeholder="Buscar por nombre, teléfono o correo" value="${esc(ui.q)}" aria-label="Buscar oportunidades"></label>
-      <div class="board-filters">${who.length+(hasUnassigned&&who.length?1:0)>1?`<select id="board-who" aria-label="Responsable"><option value="">Todos los responsables</option>${who.map(n=>`<option value="${esc(n)}"${ui.who===n?' selected':''}>${esc(n)}</option>`).join('')}${hasUnassigned?`<option value="none"${ui.who==='none'?' selected':''}>Sin responsable</option>`:''}</select>`:''}
-       <button type="button" class="board-chip${ui.noAmount?' on':''}" id="board-noamount" aria-pressed="${ui.noAmount}">Sin monto <b>${noAmountCount}</b></button>${filtered?'<button type="button" class="board-clear" id="board-clear">Quitar filtros</button>':''}</div></div>
+      ${filtered||ui.stage?'<button type="button" class="board-clear" id="board-clear">Quitar filtros</button>':''}</div>
      <p class="live-feedback" role="status">${esc(filtered?`${shownTotal} de ${allItems.length} oportunidades`:note)}${notice?' · '+esc(notice):''}</p>${panel}
-     <nav class="board-chips" aria-label="Etapas">${shown.map(({stage,items})=>`<button type="button" data-jump="${esc(stage.id??'none')}"><span>${esc(stage.name)}</span><b>${items.length}</b></button>`).join('')}</nav>
-     <div class="kanban">${shown.map(({stage,items})=>{const key=String(stage.id??'none'),closed=ui.collapsed.has(key);return `<section class="board-column${closed?' collapsed':''}" id="stage-${esc(key)}"><button type="button" class="board-stage-h" data-toggle="${esc(key)}" aria-expanded="${!closed}"><span class="board-stage-name">${esc(stage.name)}</span><span class="board-stage-meta">${items.length}${filtered?'':` · ${esc(amount(stage.value)??'0')}`}</span>${ICONS.chevron}</button><div class="board-stage-body">${items.map(item=>card(item,canEdit,data.stages)).join('')||`<p class="board-empty">${filtered?'Nada coincide':'Sin oportunidades'}</p>`}</div></section>`}).join('')}</div>`;
+     <div class="kanban">${shown.map(({stage,items})=>{const key=String(stage.id??'none'),closed=ui.collapsed.has(key)&&!ui.stage;return `<section class="board-column${closed?' collapsed':''}" id="stage-${esc(key)}"><button type="button" class="board-stage-h" data-toggle="${esc(key)}" aria-expanded="${!closed}"><span class="board-stage-name">${esc(stage.name)}</span><span class="board-stage-meta">${items.length}${filtered?'':` · ${esc(amount(stage.value)??'0')}`}</span>${ICONS.chevron}</button><div class="board-stage-body">${items.map(item=>card(item,canEdit,data.stages)).join('')||`<p class="board-empty">${filtered?'Nada coincide':'Sin oportunidades'}</p>`}</div></section>`}).join('')}</div>`;
     const rerender=()=>{const at=container.querySelector('#board-search')===document.activeElement;show();if(at){const i=container.querySelector('#board-search');i.focus();i.setSelectionRange(i.value.length,i.value.length)}};
     let searchTimer=null;
     container.querySelector('#board-search').oninput=e=>{clearTimeout(searchTimer);const v=e.target.value;searchTimer=setTimeout(()=>{ui.q=v;rerender()},180)};
     const whoSelect=container.querySelector('#board-who');if(whoSelect)whoSelect.onchange=e=>{ui.who=e.target.value;show()};
-    container.querySelector('#board-noamount').onclick=()=>{ui.noAmount=!ui.noAmount;show()};
-    const clear=container.querySelector('#board-clear');if(clear)clear.onclick=()=>{ui.q='';ui.who='';ui.noAmount=false;show()};
+    container.querySelector('#board-stage').onchange=e=>{ui.stage=e.target.value;show()};
+    const clear=container.querySelector('#board-clear');if(clear)clear.onclick=()=>{ui.q='';ui.who='';ui.stage='';show()};
     container.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{const k=b.dataset.toggle;ui.collapsed.has(k)?ui.collapsed.delete(k):ui.collapsed.add(k);show()});
-    container.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>{const k=b.dataset.jump;ui.collapsed.delete(k);show();document.getElementById('stage-'+k)?.scrollIntoView({behavior:'smooth',block:'start'})});
     container.querySelectorAll('[data-edit-opportunity]').forEach(el=>{
       const open=()=>edit(el.dataset.editOpportunity);
       el.onclick=e=>{if(e.target.closest('button,a,.board-move'))return;open()};

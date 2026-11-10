@@ -36,6 +36,7 @@ with sync_playwright() as p:
     assert 'Viendo como' in bar and 'ASOCIM' in bar and 'sólo lectura' in bar
     over=page.evaluate('document.documentElement.scrollWidth-document.documentElement.clientWidth')
     assert over<=0,over
+    assert page.locator('#nav-more').is_hidden(),'a seller has no «Más»: only their tabs'
     assert not any(pth=='devices' for _,pth,_ in sent),'viewing as someone registers no device for notifications'
     print('PASS after choosing, the app reloads as that user with a read-only notice that fits the phone')
     page.locator('#view-as-stop').click();page.wait_for_selector('#app:not([hidden])')

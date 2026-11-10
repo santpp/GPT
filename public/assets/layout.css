@@ -1052,10 +1052,11 @@ html,body{max-width:100%;overflow-x:hidden}
  .breadcrumbs strong{max-width:none;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  .top-actions{flex:0 1 auto;min-width:0;margin-left:0;gap:6px}
  .account-switch select{max-width:30vw;text-overflow:ellipsis}
- /* El menú de abajo: con más de cinco pestañas (la propietaria tiene siete) se desplaza de lado en vez de pisarse */
- .sidebar nav{overflow-x:auto;scrollbar-width:none;justify-content:flex-start;scroll-snap-type:x proximity}
- .sidebar nav::-webkit-scrollbar{display:none}
- .sidebar nav .nav{flex:1 0 auto;min-width:78px;padding-left:6px;padding-right:6px;white-space:nowrap;scroll-snap-align:center}
+ /* El menú de abajo no se desliza nunca: cuatro pestañas y, para la propietaria, «Más» a la derecha */
+ .sidebar nav{overflow:visible;justify-content:space-around}
+ .sidebar nav .nav{flex:1 1 0;min-width:0;width:auto;padding-left:2px;padding-right:2px;white-space:nowrap}
+ .sidebar nav .nav[data-view="consumption"],.sidebar nav .nav[data-view="settings"]{display:none!important}
+ #nav-more:not([hidden]){display:flex}
  /* Oportunidades: los títulos y totales de cada etapa se leen igual que las tarjetas */
  .live-toolbar:has(#board-pipeline) label{flex:1 1 100%;max-width:none}
  #board-pipeline{width:100%}
@@ -1068,18 +1069,14 @@ html,body{max-width:100%;overflow-x:hidden}
 .board-search{flex:1 1 220px;min-width:0}.board-search input{width:100%;min-width:0}
 .board-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0}
 .board-filters select{max-width:100%;min-width:0}
-.board-chip,.board-clear{min-height:40px;padding:0 12px;border:1px solid var(--line,#d8dde6);border-radius:999px;background:transparent;color:inherit;font:inherit;cursor:pointer}
-.board-chip.on{background:var(--accent,#2f6fed);border-color:var(--accent,#2f6fed);color:#fff}
-.board-chip b{margin-left:4px}.board-clear{border-style:dashed}
-.board-chips{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:thin}
-.board-chips button{flex:none;display:flex;gap:6px;align-items:center;min-height:36px;padding:0 12px;border:1px solid var(--line,#d8dde6);border-radius:999px;background:transparent;color:inherit;font:inherit;cursor:pointer;white-space:nowrap}
-.board-chips b{font-weight:600;opacity:.75}
+.board-clear{min-height:40px;padding:0 12px;border:1px solid var(--line,#d8dde6);border-radius:999px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.board-clear{border-style:dashed}
 .board-stage-h{display:flex;width:100%;align-items:center;gap:8px;min-height:44px;padding:6px 8px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .board-stage-name{flex:1;min-width:0;font-weight:600;overflow-wrap:anywhere}.board-stage-meta{font-size:.85em;opacity:.75;white-space:nowrap}
 .board-stage-h svg{flex:none;transition:transform .15s}.board-column.collapsed .board-stage-h svg{transform:rotate(-90deg)}
 .board-column.collapsed .board-stage-body{display:none}
 .board-card2{position:relative;display:block;margin:6px 0;padding:10px;border:1px solid var(--line,#d8dde6);border-radius:10px;cursor:pointer;min-width:0}
-.board-card2:focus-visible{outline:2px solid var(--accent,#2f6fed);outline-offset:2px}
+.board-card2:focus-visible{outline:2px solid #ad103c;outline-offset:2px}
 .board-card2-top{display:flex;gap:8px;justify-content:space-between;align-items:baseline}
 .board-card2-top h3{margin:0;font-size:14px;overflow-wrap:anywhere;min-width:0}.board-card2-top strong{white-space:nowrap;font-size:13px}
 .board-card2-sub{margin:2px 0 0;font-size:12px;opacity:.75;overflow-wrap:anywhere}
@@ -1094,3 +1091,21 @@ html,body{max-width:100%;overflow-x:hidden}
 #view-as-bar span{min-width:0;overflow-wrap:anywhere}
 #view-as-bar button{min-height:36px;padding:0 12px;border:1px solid rgba(255,255,255,.6);border-radius:8px;background:transparent;color:#fff;font:inherit;cursor:pointer}
 .view-as-list li{align-items:center}
+
+/* 1.10.9 · Embudos: tres desplegables iguales (embudo, responsable, etapa) */
+.board-selects{flex-wrap:wrap;justify-content:flex-start}
+.board-selects label{flex:1 1 180px;max-width:none}
+.board-selects select{width:100%}
+@media(max-width:600px){.board-selects label{flex:1 1 100%}}
+
+/* 1.10.9 · Menú de abajo: botón «Más» y su panel */
+#nav-more{display:none}
+#more-sheet{position:fixed;inset:0;z-index:70;display:flex;align-items:flex-end;background:rgba(15,18,28,.45)}
+#more-sheet[hidden]{display:none}
+#more-sheet .more-panel{width:100%;background:var(--paper,#fff);color:var(--ink);border-radius:16px 16px 0 0;padding:12px 16px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -8px 24px rgba(0,0,0,.18)}
+#more-sheet .more-grip{width:40px;height:4px;border-radius:2px;background:var(--line,#d8dde6);margin:0 auto 12px}
+#more-sheet h2{font-size:16px;margin:0 0 12px}
+#more-sheet .more-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#more-sheet .more-grid button{display:flex;flex-direction:column;align-items:center;gap:6px;min-height:76px;padding:10px 4px;border:1px solid var(--line,#d8dde6);border-radius:12px;background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
+#more-sheet .more-grid button.active{border-color:#ad103c;color:#ad103c}
+#more-sheet .more-grid svg{width:24px;height:24px}

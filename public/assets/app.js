@@ -43,6 +43,46 @@ async function api(path,method='GET',body=null,csrf=''){
   return data;
 }
 
+// ---- Menú de abajo: «Más» --------------------------------------------------------
+// En el teléfono la barra muestra cuatro pestañas; lo demás (sólo la propietaria) va en un panel que sube desde abajo.
+const MORE_VIEWS=['consumption','settings','help'];
+const DOTS='<svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
+const HELP_ICON='<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.7"/><path d="M12 17h.01"/></svg>';
+function setupMore(){
+  const nav=document.querySelector('.sidebar nav');
+  if(!nav||document.getElementById('nav-more'))return;
+  const button=document.createElement('button');
+  button.type='button';button.id='nav-more';button.className='nav nav-more';button.hidden=true;button.dataset.adminOnly='';
+  button.setAttribute('aria-haspopup','dialog');button.setAttribute('aria-expanded','false');
+  button.innerHTML=`<span aria-hidden="true">${DOTS}</span> Más`;
+  nav.append(button);
+  const sheet=document.createElement('div');
+  sheet.id='more-sheet';sheet.hidden=true;
+  sheet.innerHTML='<div class="more-panel" role="dialog" aria-modal="true" aria-labelledby="more-title"><div class="more-grip" aria-hidden="true"></div><h2 id="more-title">Más</h2><div class="more-grid"></div></div>';
+  document.body.append(sheet);
+  button.onclick=()=>sheet.hidden?openMore():closeMore();
+  sheet.onclick=e=>{if(e.target===sheet)closeMore()};
+  sheet.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMore();button.focus()}});
+}
+function openMore(){
+  const sheet=document.getElementById('more-sheet');if(!sheet)return;
+  const items=MORE_VIEWS.map(view=>{
+    if(view==='help')return {view,label:'Ayuda',icon:HELP_ICON};
+    const source=document.querySelector(`.sidebar nav .nav[data-view="${view}"]`);
+    if(!source||source.hidden)return null;
+    return {view,label:source.textContent.trim(),icon:source.querySelector('span')?.innerHTML||''};
+  }).filter(Boolean);
+  sheet.querySelector('.more-grid').innerHTML=items.map(i=>`<button type="button" data-more="${i.view}" class="${i.view===currentView?'active':''}">${i.icon}<span>${esc(i.label)}</span></button>`).join('');
+  sheet.querySelectorAll('[data-more]').forEach(b=>b.onclick=()=>show(b.dataset.more));
+  sheet.hidden=false;
+  document.getElementById('nav-more')?.setAttribute('aria-expanded','true');
+  sheet.querySelector('[data-more]')?.focus();
+}
+function closeMore(){
+  const sheet=document.getElementById('more-sheet');
+  if(sheet&&!sheet.hidden){sheet.hidden=true;document.getElementById('nav-more')?.setAttribute('aria-expanded','false')}
+}
+
 function show(name,{push=true}={}){
   const target=VIEWS[name]?name:'inbox';
   view.agoraLiveDispose?.();
@@ -50,7 +90,8 @@ function show(name,{push=true}={}){
   const meta=VIEWS[target];
   if(push&&location.pathname!==meta.path)history.pushState(null,'',meta.path);
   document.querySelectorAll('button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===target));
-  document.querySelector('.sidebar nav .nav.active')?.scrollIntoView?.({inline:'center',block:'nearest'});
+  document.getElementById('nav-more')?.classList.toggle('active',MORE_VIEWS.includes(target));
+  closeMore();
   $('#breadcrumb').textContent=meta.title;
   $('#page-title').innerHTML=esc(meta.heading).replace(/\.$/,'<span>.</span>');
   $('#page-subtitle').textContent=meta.subtitle;
@@ -266,6 +307,7 @@ async function startSession(){
   $('#user-initials').textContent=(me.user.email||'··').slice(0,2).toUpperCase();
   $('#user-initials-top').textContent=(me.user.email||'··').slice(0,2).toUpperCase();
   $('#menu-version').textContent=versionLabel();
+  setupMore();
   document.querySelectorAll('[data-admin-only]').forEach(n=>n.hidden=me.user.role!=='administrator');
   try{const {items,reason}=await api('workspace/connections');workspace.setConnections(items,reason)}
   catch{workspace.setConnections([])}

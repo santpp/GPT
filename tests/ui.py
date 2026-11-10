@@ -52,7 +52,7 @@ with sync_playwright() as p:
         route.fulfill(status=200,content_type='application/json',body=json.dumps(response))
     admin.route('**/api/**',mock)
     admin.goto(os.getenv('TEST_BASE_URL', 'http://127.0.0.1:8080/'))
-    admin.locator('[data-view="settings"]').click()
+    admin.locator('#nav-more').click();admin.locator('#more-sheet [data-more="settings"]').click()
     assert admin.locator('#test-access-channel').is_disabled(), 'the access channel cannot be probed before one is selected'
     admin.locator('#add-integration').click()
     admin.locator('[name="name"]').fill('Subcuenta de prueba')
@@ -66,7 +66,7 @@ with sync_playwright() as p:
     assert 'pit-ui-test-not-a-real-token' not in admin.locator('body').inner_text()
     assert admin.locator('#access-channel-select option[value="1"][disabled]').count()==1, 'an unverified account cannot be chosen as access channel'
     items[0]['status']='connected'
-    admin.locator('[data-view="inbox"]').click();admin.locator('[data-view="settings"]').click()
+    admin.locator('[data-view="inbox"]').click();admin.locator('#nav-more').click();admin.locator('#more-sheet [data-more="settings"]').click()
     admin.wait_for_function("!document.querySelector('#access-channel-select option[value=\"1\"]')?.disabled")
     admin.locator('#access-channel-select').select_option('1')
     admin.wait_for_function("document.querySelector('#integration-feedback')?.textContent.includes('Canal de acceso guardado')")
