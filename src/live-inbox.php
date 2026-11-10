@@ -6,7 +6,8 @@ require_once __DIR__.'/MessageHistory.php';
 require_once __DIR__.'/MessageFeed.php';
 if(($u['identity_type']??'native')==='native'&&$u['role']!=='administrator')respond(['error'=>'Acceso restringido'],403);
 if(in_array($path,['/api/workspace/connections','/api/ghl/connections'],true) && $method==='GET') {
-    if(($u['identity_type']??'native')==='native')$items=query('SELECT id,name,location_id,status,currency FROM ghl_connections WHERE tenant_id=? ORDER BY id',[$u['tenant_id']])->fetchAll();
+    if(isset($u['view_as']))$items=query('SELECT id,name,location_id,status,currency FROM ghl_connections WHERE id=? AND tenant_id=?',[$u['view_as']['connection_id'],$u['tenant_id']])->fetchAll();
+    elseif(($u['identity_type']??'native')==='native')$items=query('SELECT id,name,location_id,status,currency FROM ghl_connections WHERE tenant_id=? ORDER BY id',[$u['tenant_id']])->fetchAll();
     else $items=query('SELECT DISTINCT c.id,c.name,c.location_id,c.status,c.currency FROM ghl_connections c JOIN external_users eu ON eu.connection_id=c.id AND eu.active=TRUE JOIN external_identity_memberships m ON m.external_user_row_id=eu.id WHERE c.tenant_id=? AND m.identity_id=? ORDER BY c.id',[$u['tenant_id'],$u['id']])->fetchAll();
     $total=count($items);
     $items=array_values(array_filter($items,fn(array $item)=>(Actor::connectionMembership($u,(int)$item['id'])['capabilities']['viewConversations']??false)===true));
@@ -268,7 +269,8 @@ if($path==='/api/workspace/contact-conversation'&&$method==='POST'){
     if(!($membership['capabilities']['viewConversations']??false)||!($membership['capabilities']['sendMessages']??false))respond(['error'=>'Tu usuario no tiene permiso para escribir a los contactos.'],403);
     $contactId=body()['contactId']??null;
     if(!is_string($contactId)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))respond(['error'=>'Contacto no válido.'],422);
-    try{$found=(new InboxFeed())->forContact($connection,$contactId);}
+    try{$found=(new InboxFeed())->forContact($connection,$contactId,$membership);}
+    catch(DomainException $e){respond(['error'=>'Este contacto está asignado a otra persona.','code'=>'conversation_not_assigned'],403);}
     catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La cuenta está en espera para respetar la cuota. Vuelve a intentarlo en unos segundos.','retryAfter'=>$e->retryAfter],429);}
     catch(GhlApiException $e){respond(['error'=>in_array($e->status,[401,403],true)?'La clave de la cuenta no permite abrir conversaciones nuevas.':'No se pudo abrir la conversación con este contacto.','code'=>'conversation_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'No se pudo abrir la conversación con este contacto.','code'=>'conversation_failed'],424);}

@@ -1,7 +1,7 @@
 - **Gasto en GHL por subcuenta (sólo propietario):** verificado en la documentación local (`apps/v3/saas-v3.json`): existe el saldo por subcuenta `GET /saas-api/public-api/companies/{companyId}/locations/{locationId}/wallet-balance` (devuelve `balance`, `complimentaryCredits`, `walletId`). NO aparece en la documentación local el listado de transacciones de billetera (`/saas/companies/{companyId}/wallet-transactions`) que se citó; falta confirmarlo con un token de agencia (PIT con `saas/company.read`). Sin ese listado sólo hay saldo, no gasto del mes. Pendiente: confirmar el endpoint de transacciones.
 # Roadmap de Ágora Workspace
 
-Estado actualizado: 7 de noviembre de 2026. **Versión activa: 1.10.6 (1.10.1 + Consumos + teléfono + Embudos nuevos y búsqueda)**, con el cambio de fuente (texto negro y más grande) y el canal de origen a la vista. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 10 de noviembre de 2026. **Versión activa: 1.10.7 (1.10.1 + Consumos + teléfono + Embudos y búsqueda + Entrar como)**, con el cambio de fuente (texto negro y más grande) y el canal de origen a la vista. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 El trabajo de la 1.11.0 y la 1.11.1 (rutas de servidor para el armazón nuevo de Agora Digital App: tareas, recordatorios, auditoría, identidad del espacio, resumen, subcuenta de demostración) **queda en pausa, sin subir**, hasta que el usuario retome ese desarrollo. El código y los paquetes siguen en el repositorio por si se retoma, pero no son la versión activa. El desarrollo sigue a partir de la 1.10.1.
 
@@ -285,6 +285,13 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## 1.10.4 · Consumos: movimientos de la agencia
 - Bloque «Agencia · movimientos propios», bloques para las subcuentas no conectadas, y selector «Sólo la agencia».
+
+## 1.10.7 · Entrar como y «Mis leads» por periodo
+La propietaria puede ver Ágora como cualquier usuario de una subcuenta, sólo para mirar y con registro. «Mis leads» cuenta el periodo elegido, no el total. Un vendedor ya no provoca que se cree una conversación de un contacto ajeno. Revisión de acceso: todas las pantallas filtran por lo asignado a quien no administra la subcuenta.
+
+**Pendiente de decidir (revisión de seguridad del 8 de noviembre):** cabeceras de seguridad en el servidor nativo, límite de intentos de contraseña por correo, Capacitor 6.2.3 en la app Android.
+
+**Futuro lejano, sin versión:** módulo de inventario para panaderías.
 
 ## 1.10.6 · Embudos nuevos y búsqueda
 Chips de etapa, etapas plegables, tarjetas compactas con atajos (conversación, ficha, «Mover a…»), filtros de responsable y «sin monto», y búsqueda por nombre, teléfono y correo en bandeja, contactos y oportunidades. Descartado: tiempo en etapa y aviso discreto.

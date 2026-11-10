@@ -219,7 +219,7 @@ export async function renderDashboard(container){
     const unlinked=isOwner?{html:'<button type="button" class="link-button" data-self>Elegir quién soy</button>'}:'Usa en Ágora el mismo correo que en la cuenta';
     const personal=[
       ...(leads?[tile(sel.kind==='today'?'Leads de hoy':sel.kind==='yesterday'?'Leads de ayer':'Leads nuevos',leads.today===null||leads.today===undefined?null:number(leads.today),leads.today===null||leads.today===undefined?'La cuenta no devolvió este dato':(['today','yesterday'].includes(sel.kind)?'':range.label))]:[]),
-      ...(leads?[tile('Leads asignados a mí',leads.mine===null||leads.mine===undefined?null:number(leads.mine),leads.linked?(leads.mine===null||leads.mine===undefined?'La cuenta no devolvió este dato':''):unlinked)]:[]),
+      ...(leads?[tile(sel.kind==='today'?'Mis leads de hoy':sel.kind==='yesterday'?'Mis leads de ayer':'Mis leads nuevos',leads.mine===null||leads.mine===undefined?null:number(leads.mine),leads.linked?(leads.mine===null||leads.mine===undefined?'La cuenta no devolvió este dato':(['today','yesterday'].includes(sel.kind)?'Asignados a ti':'Asignados a ti · '+range.label)):unlinked)]:[]),
       ...(sales&&!data.restricted?[tile('Ventas ganadas del mes',number(sales.closings??0),`${money(sales.total??0)} en total`)]:[]),
       ...(month&&!month.error?[tile('Mis ventas del mes',mine?number(mine.closings):null,mine?`${money(mine.sold)} ganados`:unlinked)]:[]),    ].join('');
     const stages=data.opportunities?asList(data.opportunities.stages):[];
@@ -314,7 +314,7 @@ export async function renderDashboard(container){
       const data=await request(`workspace/self?connectionId=${encodeURIComponent(connection)}`);
       const rows=Array.isArray(data.options)?data.options:[];
       content.innerHTML=`<h2>¿Quién eres en esta subcuenta?</h2>
-       <p class="dialog-copy">Con esto, «Leads asignados a mí» y «Mis ventas del mes» cuentan lo que tiene asignado ese usuario. Se guarda sólo para ti en esta subcuenta.</p>
+       <p class="dialog-copy">Con esto, «Mis leads» y «Mis ventas del mes» cuentan lo que tiene asignado ese usuario. Se guarda sólo para ti en esta subcuenta.</p>
        <form id="self-form" class="dialog-form"><label>Soy<select name="who"><option value="">Ninguno (no mostrar mis cifras)</option>${rows.map(r=>`<option value="${esc(r.id)}"${r.id===(data.linked||data.detected)?' selected':''}>${esc(r.name)}${r.email?` · ${esc(r.email)}`:''}</option>`).join('')}</select></label>
        <p id="self-result" role="status" class="dialog-copy"></p><div class="dialog-actions"><button class="primary">Guardar</button><button type="button" class="secondary" data-close-dialog>Cerrar</button></div></form>`;
       content.querySelector('[data-close-dialog]').onclick=()=>dialog.close();

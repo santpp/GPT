@@ -29,6 +29,8 @@ final class FakeInboxApi {
                 $items=array_slice($items,0,(int)($q['limit']??20));
                 return ['status'=>200,'body'=>json_encode(['conversations'=>$items,'total'=>$this->total?:count($items)])];
             }
+            if($method==='GET'&&preg_match('~^/contacts/([A-Za-z0-9_-]+)$~',$path,$m))return ['status'=>200,'body'=>json_encode(['contact'=>['id'=>$m[1],'locationId'=>$this->location,'firstName'=>'X','assignedTo'=>$m[1]==='mine'?'seller-1':'seller-2']])];
+            if($method==='POST'&&$path==='/conversations/')return ['status'=>201,'body'=>json_encode(['conversation'=>['id'=>'new-conv','contactId'=>$payload['contactId']??'','locationId'=>$this->location]])];
             if($method==='PUT'&&preg_match('~^/conversations/[^/]+$~',$path))return ['status'=>200,'body'=>json_encode(['conversation'=>['id'=>'c1']])];
             throw new GhlApiException(404);
         }));
@@ -163,6 +165,18 @@ try {
  feedCheck(InboxFeed::sortValue('2026-10-29T18:05:00Z')==='1793297100000','a date is turned into the same unit the account sorts by');
  feedCheck(InboxFeed::sortValue(null)===null&&InboxFeed::sortValue('mañana')===null&&InboxFeed::sortValue(0)===null,'anything unusable gives no position, so no continuation is offered');
 
+
+ // ---- abrir la conversación de un contacto: quien sólo ve lo suyo, sólo los suyos ----
+ $seller=['external_user_id'=>'seller-1','capabilities'=>['viewConversations'=>true,'assignedDataOnly'=>true]];
+ $api->reset();freeFeed($connectionId);$api->conversations=[];
+ $refused=null;try{$feed->forContact($connection,'theirs',$seller);}catch(DomainException $e){$refused=$e->getMessage();}
+ feedCheck($refused==='conversation_not_assigned','a seller cannot open the conversation of a contact assigned to someone else');
+ feedCheck(array_filter($api->calls,fn($c)=>$c[0]==='POST')===[],'and nothing is created in the account for that contact');
+ $api->reset();freeFeed($connectionId);
+ $opened=$feed->forContact($connection,'mine',$seller);
+ feedCheck(($opened['id']??null)==='new-conv','their own contact opens normally');
+ $api->reset();freeFeed($connectionId);
+ feedCheck(($feed->forContact($connection,'theirs',$open)['id']??null)==='new-conv','someone who sees everything can open any contact');
  echo 'PASS '.$checks.' inbox feed checks (simulated API client, real MariaDB)'.PHP_EOL;
 } finally {
  foreach($tenants as $id){query('DELETE FROM ghl_connections WHERE tenant_id=?',[$id]);query('DELETE FROM tenants WHERE id=?',[$id]);}

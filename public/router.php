@@ -139,6 +139,37 @@ try {
     $u = Actor::fromSession($_SESSION);
     if (!$u) respond(['error'=>'Inicia sesión para continuar.'],401);
     $admin=$u['role']==='administrator';
+    // «Entrar como»: la propietaria mira Ágora como un usuario de una subcuenta, sólo para ver.
+    require_once $appRoot.'/src/ViewAs.php';
+    $viewer=null;
+    if (isset($_SESSION['view_as'])) {
+        $state=$_SESSION['view_as'];
+        $viewer=ViewAs::allowed($u)&&($state['until']??0)>=time()?ViewAs::actor($u,$state):null;
+        if (!$viewer) {ViewAs::stop(is_array($state)?$state:[]);unset($_SESSION['view_as']);}
+    }
+    if ($path === '/api/view-as/stop' && $method === 'POST') {
+        if (isset($_SESSION['view_as'])) {ViewAs::stop($_SESSION['view_as']);unset($_SESSION['view_as']);}
+        respond(['stopped'=>true]);
+    }
+    if ($viewer) {
+        // Mientras se mira como otra persona no se escribe nada en su nombre ni se toca lo de la propietaria.
+        if ($method !== 'GET' && !in_array($path,['/api/logout','/api/passkey-unlock/options','/api/passkey-unlock'],true)) respond(['error'=>'Estás viendo Ágora como otra persona: sólo puedes mirar. Sal de esa vista para hacer cambios.','code'=>'view_as_readonly'],403);
+        if (str_starts_with($path,'/api/admin/')) respond(['error'=>'Sal de la vista como otra persona para usar esta parte.','code'=>'view_as_readonly'],403);
+        if ($path === '/api/announcements') respond(['items'=>[]]);
+    }
+    if ($path === '/api/admin/view-as') {
+        if (!ViewAs::allowed($u)) respond(['error'=>'Acceso restringido'],403);
+        if ($method === 'GET') respond(['connections'=>ViewAs::candidates($u)]);
+        if ($method === 'POST') {
+            $pick=body()['userId']??null;
+            if (!is_int($pick)) respond(['error'=>'Elige un usuario.'],422);
+            try {$state=ViewAs::start($u,$pick);}
+            catch(InvalidArgumentException $e) {respond(['error'=>'Ese usuario ya no está activo en la subcuenta.','code'=>'view_as_unknown'],404);}
+            $_SESSION['view_as']=$state+['until'=>time()+3600];
+            respond(['viewAs'=>ViewAs::describe(ViewAs::actor($u,$state))]);
+        }
+        respond(['error'=>'Not found'],404);
+    }
     require_once $appRoot.'/src/Maintenance.php';
     // El propietario enciende o apaga la pausa; mientras dure, sólo él sigue trabajando.
     if ($path === '/api/admin/maintenance') {
@@ -227,7 +258,7 @@ try {
         $checks=Installation::checks();
         respond(['version'=>Installation::VERSION,'ready'=>!in_array(false,array_column($checks,'ready'),true),'checks'=>$checks]);
     }
-    if (str_starts_with($path, '/api/workspace/') || str_starts_with($path, '/api/ghl/')) {session_write_close();require $appRoot.'/src/live-inbox.php';}
+    if (str_starts_with($path, '/api/workspace/') || str_starts_with($path, '/api/ghl/')) {session_write_close();if($viewer)$u=$viewer;require $appRoot.'/src/live-inbox.php';}
     if (str_starts_with($path, '/api/admin/integrations') || str_starts_with($path, '/api/admin/access-channel')) {
         if (getenv('APP_ENV') !== 'development' && parse_url(getenv('APP_ORIGIN') ?: '', PHP_URL_SCHEME) !== 'https') respond(['error'=>'HTTPS required'],503);
         require $appRoot.'/src/integrations.php';
@@ -294,7 +325,7 @@ try {
         try {respond(['results'=>(new PushDelivery())->test((int)$u['tenant_id'],$type,(int)$u['id'])]);}
         catch(Throwable $e){respond(['error'=>'No se pudo enviar el aviso de prueba.','code'=>'push_test_failed'],200);}
     }
-    if ($path === '/api/me' && $method === 'GET') respond(['user'=>array_intersect_key($u,array_flip(['id','email','role','identity_type','capabilities'])),'csrf'=>$_SESSION['csrf'],'locked'=>!empty($_SESSION['locked']),'passkeys'=>Passkeys::count($u),'lockMinutes'=>$_SESSION['lock_minutes']??null]);
+    if ($path === '/api/me' && $method === 'GET') respond(['viewAs'=>$viewer?ViewAs::describe($viewer):null,'canViewAs'=>ViewAs::allowed($u),'user'=>array_intersect_key($viewer??$u,array_flip(['id','email','role','identity_type','capabilities'])),'csrf'=>$_SESSION['csrf'],'locked'=>!empty($_SESSION['locked']),'passkeys'=>Passkeys::count($u),'lockMinutes'=>$_SESSION['lock_minutes']??null]);
     // A phone registers the token its own system gives it, so Ágora can notify
     // it. Nothing else about the device is stored, and the token belongs to the
     // signed-in person: signing out on that phone removes it.
@@ -335,6 +366,7 @@ try {
     }
     if ($path === '/api/logout' && $method === 'POST') { DeviceSession::end($_SESSION); $_SESSION=[]; session_destroy(); respond(['ok'=>true]); }
     if ($path === '/api/conversations' && $method === 'GET') {
+        if($viewer)respond(['items'=>[]]);
         if(($u['identity_type']??'native')!=='native')respond(['error'=>'Utiliza la bandeja conectada para consultar tus conversaciones.'],403);
         $sql = 'SELECT ghl_id,payload,updated_at FROM resources WHERE tenant_id=? AND kind=?';
         $args = [$u['tenant_id'],'conversation'];

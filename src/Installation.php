@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/TokenVault.php';
 final class Installation {
-    public const VERSION='1.10.6';
+    public const VERSION='1.10.7';
     public static function checks(bool $autoMigrate=true):array {
         $checks=[];
         $runtime=PHP_VERSION_ID>=80300;
@@ -55,6 +55,7 @@ final class Installation {
             query('SELECT unread_reminder_minutes FROM ghl_connections LIMIT 0');
             query('SELECT connection_id,conversation_id,channel FROM conversation_networks LIMIT 0');
             query('SELECT won_alert_days FROM ghl_connections LIMIT 0');
+            query('SELECT tenant_id,user_id,connection_id,external_user_id,started_at,ended_at FROM view_as_log LIMIT 0');
             query('SELECT connection_id,request_id,contact_id,action,request_hash,state,result_id,error_code FROM contact_action_attempts LIMIT 0');
             query('SELECT connection_id,request_id,subject_id,action,request_hash,state,result_id,error_code FROM opportunity_action_attempts LIMIT 0');
             $checks[]=['name'=>'schema','ready'=>true,'code'=>null];
@@ -68,7 +69,7 @@ final class Installation {
         if((int)query('SELECT GET_LOCK(?,0)',[$lock])->fetchColumn()!==1)throw new SetupException('database_unavailable');
         try {
             // Only additive, reviewed migrations; never import/reset core data.
-            foreach(['002-integrations.sql','003-api-sync.sql','004-messaging.sql','005-message-cache.sql','006-external-users.sql','007-external-auth.sql','008-contact-profile.sql','009-access-channel.sql','010-opportunity-context.sql','011-contact-activity.sql','012-rate-window.sql','013-directory-cache.sql','014-conversation-index.sql','015-opportunity-actions.sql','016-live-sync.sql','017-push.sql','018-web-push.sql','019-board.sql','020-push-diagnostics.sql','021-device-access.sql','022-whatsapp-templates.sql','023-whatsapp-account.sql','024-won-sales.sql','025-commission-announcements.sql','026-message-replies.sql','027-currency-owner-links.sql','028-push-kinds.sql','029-conversation-networks.sql','030-won-alert.sql'] as $migration) {
+            foreach(['002-integrations.sql','003-api-sync.sql','004-messaging.sql','005-message-cache.sql','006-external-users.sql','007-external-auth.sql','008-contact-profile.sql','009-access-channel.sql','010-opportunity-context.sql','011-contact-activity.sql','012-rate-window.sql','013-directory-cache.sql','014-conversation-index.sql','015-opportunity-actions.sql','016-live-sync.sql','017-push.sql','018-web-push.sql','019-board.sql','020-push-diagnostics.sql','021-device-access.sql','022-whatsapp-templates.sql','023-whatsapp-account.sql','024-won-sales.sql','025-commission-announcements.sql','026-message-replies.sql','027-currency-owner-links.sql','028-push-kinds.sql','029-conversation-networks.sql','030-won-alert.sql','031-view-as.sql'] as $migration) {
                 $sql=file_get_contents(dirname(__DIR__).'/database/'.$migration);
                 if($sql===false)throw new SetupException('schema_pending');
                 db()->exec($sql);

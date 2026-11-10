@@ -52,9 +52,8 @@ final class Dashboard {
                     catch(Throwable $e){$names=[];}
                 }
                 $today=$canSeeLeads?self::leadsToday($client,$connection['location_id'],$todayFilter,$assignee):null;
-                $mine=null;
-                if($canSeeLeads&&$self!==null)foreach([['field'=>'assignedTo','operator'=>'eq','value'=>$self],['field'=>'assignedTo','operator'=>'eq','value'=>[$self]]] as $variant)
-                    if(($mine=self::people($client,$connection['location_id'],[$variant],true))!==null)break;
+                // Los míos, en el mismo periodo que «Leads de hoy»: antes contaba todos los que tuviera asignados.
+                $mine=$canSeeLeads&&$self!==null?self::leadsToday($client,$connection['location_id'],[$todayFilter[0],['field'=>'assignedTo','operator'=>'eq','value'=>$self]],$self):null;
                 return [$all,$pending,$waiting,$people,$deals,$names??[],$today,$mine];
             },false);
 

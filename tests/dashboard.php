@@ -89,8 +89,8 @@ try {
  $api->reset();boardFree($connectionId);
  $api->contactAnswer=['total'=>3];
  $linked=$board->get($connection,$admin+['self_id'=>'owner-ghl'],'Europe/Madrid');
- $mineAsk=end($api->payloads)['filters'][0]??[];
- boardCheck(($linked['leads']['today']??null)===3&&($linked['leads']['mine']??null)===3&&$linked['leads']['linked']===true&&$mineAsk===['field'=>'assignedTo','operator'=>'eq','value'=>'owner-ghl'],'with a linked user, the leads assigned to that person are counted too');
+ $mineAsk=end($api->payloads)['filters']??[];
+ boardCheck(($linked['leads']['today']??null)===3&&($linked['leads']['mine']??null)===3&&$linked['leads']['linked']===true&&($mineAsk[0]['field']??null)==='dateAdded'&&($mineAsk[1]??null)===['field'=>'assignedTo','operator'=>'eq','value'=>'owner-ghl'],'with a linked user, the leads assigned to that person in the chosen period (not all time) are counted too');
  $madrid=(new DateTimeImmutable('today',new DateTimeZone('Europe/Madrid')))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z');
  $dated=array_values(array_filter($api->payloads,fn($p)=>is_array($p)&&(($p['filters'][0]['field']??null)==='dateAdded')));
  boardCheck(($dated[0]['filters'][0]['value']['gt']??null)===$madrid,'«today» starts at midnight where the person is, not at midnight UTC');
@@ -98,9 +98,9 @@ try {
 
  $api->reset();boardFree($connectionId);
  $api->filtersRejected=true;
- $api->listed=[['id'=>'a','dateAdded'=>gmdate('c')],['id'=>'b','dateAdded'=>gmdate('c',time()-3*86400)],['id'=>'c','dateAdded'=>gmdate('c',time()-60)]];
+ $api->listed=[['id'=>'a','dateAdded'=>gmdate('c')],['id'=>'b','dateAdded'=>gmdate('c',time()-3*86400)],['id'=>'c','dateAdded'=>gmdate('c',time()-60),'assignedTo'=>'owner-ghl']];
  $fallback=$board->get($connection,$admin+['self_id'=>'owner-ghl']);
- boardCheck($fallback['leads']['today']===2&&$fallback['leads']['mine']===null&&$fallback['contacts']===812,'if the account refuses the date filter, today\'s leads are counted in the contact list; a figure it cannot give stays empty');
+ boardCheck($fallback['leads']['today']===2&&$fallback['leads']['mine']===1&&$fallback['contacts']===812,'if the account refuses the date filter, today\'s leads (and mine) are counted in the contact list');
  $api->filtersRejected=false;
 
  $api->reset();boardFree($connectionId);

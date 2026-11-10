@@ -1088,3 +1088,9 @@ html,body{max-width:100%;overflow-x:hidden}
 .board-move{display:flex;flex-direction:column;gap:4px;margin-top:8px;padding:6px;border:1px solid var(--line,#d8dde6);border-radius:8px}
 .board-move button{min-height:40px;text-align:left;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;padding:0 8px;overflow-wrap:anywhere}
 .board-empty{margin:6px 8px;font-size:12px;opacity:.7}
+
+/* 1.10.7 · Entrar como: franja fija mientras se mira como otra persona */
+#view-as-bar{position:sticky;top:0;z-index:60;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:8px 16px;background:#3a2f12;color:#fff;font-size:14px}
+#view-as-bar span{min-width:0;overflow-wrap:anywhere}
+#view-as-bar button{min-height:36px;padding:0 12px;border:1px solid rgba(255,255,255,.6);border-radius:8px;background:transparent;color:#fff;font:inherit;cursor:pointer}
+.view-as-list li{align-items:center}

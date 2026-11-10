@@ -184,8 +184,14 @@ final class InboxFeed {
      * la que ya tiene; si no tiene ninguna, se abre una. Queda registrada para
      * que el chat pueda leerla y responder como a cualquier otra.
      */
-    public function forContact(array $connection,string $contact):array {
+    public function forContact(array $connection,string $contact,?array $membership=null):array {
         if(!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contact))throw new InvalidArgumentException('contact');
+        // Quien sólo ve lo suyo no abre (ni crea en la cuenta) la conversación de un contacto que no tiene asignado.
+        if(($membership['capabilities']['assignedDataOnly']??false)===true){
+            require_once __DIR__.'/ContactProfile.php';
+            $owner=(new ContactProfile($this->gateway))->get($connection,$contact,false)['assignedTo']??null;
+            if($owner===null||$owner!==($membership['external_user_id']??null))throw new DomainException('conversation_not_assigned');
+        }
         $data=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->conversations($connection['location_id'],5,['contactId'=>$contact]),false);
         $found=null;
         foreach((array)($data['conversations']??[]) as $item)

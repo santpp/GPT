@@ -51,7 +51,7 @@ with sync_playwright() as p:
         page.locator('[data-view="dashboard"]').click()
         page.wait_for_selector('.personal-tiles')
         tiles=page.locator('.personal-tiles').inner_text()
-        assert 'Leads de hoy' in tiles and '3' in tiles and 'Leads asignados a mí' in tiles and '27' in tiles and 'Mis ventas del mes' in tiles and '4' in tiles,tiles
+        assert 'Leads de hoy' in tiles and '3' in tiles and 'Mis leads de hoy' in tiles and '27' in tiles and 'Mis ventas del mes' in tiles and '4' in tiles,tiles
         print('PASS the board shows today\'s leads, my leads and my sales won this month')
         assert page.locator('#menu-version').inner_text().startswith('Ágora v') or width==390
         assert not errors,errors

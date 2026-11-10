@@ -18,6 +18,8 @@ final class Actor {
     }
 
     public static function connectionMembership(array $actor,int $connectionId):?array {
+        // «Entrar como»: sólo la subcuenta y los permisos del usuario que se está mirando.
+        if(isset($actor['view_as'])){require_once __DIR__.'/ViewAs.php';return ViewAs::membership($actor,$connectionId);}
         // Cambiar quién es responsable de un contacto, una conversación o una
         // oportunidad: sólo administradores de esa subcuenta (y el propietario de Ágora).
         if(($actor['identity_type']??'native')==='native')return $actor['role']==='administrator'?['external_user_id'=>null,'capabilities'=>PermissionPolicy::capabilities($actor),'assigned_data_only'=>false,'can_assign'=>true]:null;

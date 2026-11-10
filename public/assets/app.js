@@ -270,8 +270,10 @@ async function startSession(){
   try{const {items,reason}=await api('workspace/connections');workspace.setConnections(items,reason)}
   catch{workspace.setConnections([])}
   renderAccounts();
+  paintViewAs(me.viewAs);
   // Los avisos del navegador pasan a ser de quien entra ahora, y se rehacen si se perdieron.
-  checkPush();
+  // Mirando como otra persona no se registra nada: los avisos siguen siendo de la propietaria.
+  if(!me.viewAs)checkPush();
   // Ventas ganadas sin monto: se consulta 4 segundos después de entrar.
   gate={tutorial:defer(),all:defer()};
   startWonAlert(gateFor);
@@ -384,6 +386,36 @@ async function enrollPasskey(){
   if(workspace.me)workspace.me.passkeys=(workspace.me.passkeys||0)+1;
 }
 
+// ---- Entrar como ------------------------------------------------------------------
+/** Franja fija mientras la propietaria mira Ágora como otra persona. */
+function paintViewAs(viewAs){
+  let bar=document.getElementById('view-as-bar');
+  if(!viewAs){bar?.remove();document.body.classList.remove('viewing-as');return}
+  if(!bar){bar=document.createElement('div');bar.id='view-as-bar';bar.setAttribute('role','status');document.body.prepend(bar)}
+  bar.innerHTML=`<span>Viendo como <b>${esc(viewAs.name)}</b> · ${esc(viewAs.connection)} · sólo lectura</span><button type="button" id="view-as-stop">Volver a mi vista</button>`;
+  document.body.classList.add('viewing-as');
+  $('#view-as-stop').onclick=stopViewAs;
+}
+async function stopViewAs(){
+  try{await api('view-as/stop','POST',{},workspace.me?.csrf||'')}catch{}
+  location.reload();
+}
+async function openViewAs(){
+  const box=$('#dialog-content');
+  box.innerHTML='<h2>Entrar como</h2>'+skeleton('lines',4);
+  let data;
+  try{data=await api('admin/view-as')}catch(error){box.innerHTML=`<h2>Entrar como</h2><p class="dialog-copy">${esc(error.message)}</p>`;return}
+  const groups=data.connections||[];
+  box.innerHTML=`<h2>Entrar como</h2><p class="dialog-copy">Elige a quién. Verás lo mismo que esa persona en su subcuenta, durante una hora como máximo.</p>
+   ${groups.length?groups.map(g=>`<section class="security-block"><h3>${esc(g.name)}</h3><ul class="security-list view-as-list">${g.users.map(u=>`<li><span><b>${esc(u.name)}</b><small>${esc(u.email||'')}${u.admin?' · administra la subcuenta':' · ve sólo lo asignado'}</small></span><button type="button" class="link-button" data-view-as="${u.id}">Entrar</button></li>`).join('')}</ul></section>`).join(''):'<p class="dialog-copy">Todavía no hay usuarios sincronizados en ninguna subcuenta.</p>'}
+   <p id="view-as-result" class="dialog-copy" role="status"></p>`;
+  box.querySelectorAll('[data-view-as]').forEach(b=>b.onclick=async()=>{
+    b.disabled=true;
+    try{await api('admin/view-as','POST',{userId:Number(b.dataset.viewAs)},workspace.me?.csrf||'');location.reload()}
+    catch(error){$('#view-as-result').textContent=error.message;b.disabled=false}
+  });
+}
+
 // ---- Seguridad y sesión -------------------------------------------------------------
 const when=value=>{if(!value)return 'todavía no';const d=new Date(value);return Number.isNaN(d.getTime())?'':new Intl.DateTimeFormat('es',{dateStyle:'medium',timeStyle:'short'}).format(d)};
 async function openSecurity(){
@@ -418,10 +450,13 @@ async function openSecurity(){
    <section class="security-block"><h3>Sesiones abiertas</h3><p class="dialog-copy">Cada dispositivo sigue dentro 60 días desde su último uso. Cierra la de un teléfono que ya no tengas.</p><ul class="security-list">${sessions(data.sessions)}</ul></section>
    ${others&&(others.sessions.length||others.keys.length)?`<section class="security-block"><h3>Equipo</h3>${others.sessions.length?`<ul class="security-list">${sessions(others.sessions)}</ul>`:''}${others.keys.length?`<h4>Llaves de acceso del equipo</h4><ul class="security-list">${keys(others.keys)}</ul>`:''}</section>`:''}
    ${workspace.me?.user?.identity_type==='native'&&workspace.me?.user?.role==='administrator'?'<section class="security-block security-maintenance"><h3>Mantenimiento</h3><p class="dialog-copy">Mientras esté activo, tu equipo ve la pantalla de mantenimiento. Tú sigues entrando con normalidad.</p><label class="security-check"><input type="checkbox" id="maintenance-on" disabled><span><b>Poner Ágora en mantenimiento</b><small id="maintenance-state">Comprobando…</small></span></label></section>':''}
+   ${workspace.me?.viewAs?`<section class="security-block"><h3>Entrar como</h3><p class="dialog-copy">Ahora ves Ágora como ${esc(workspace.me.viewAs.name)}, en ${esc(workspace.me.viewAs.connection)}.</p><button id="view-as-stop-dialog" class="secondary" type="button">Volver a mi vista</button></section>`:workspace.me?.canViewAs?'<section class="security-block"><h3>Entrar como</h3><p class="dialog-copy">Mira Ágora como cualquier usuario de una subcuenta: sus pestañas, sus permisos y sólo lo que tiene asignado. Es sólo para mirar; no se puede enviar ni cambiar nada en su nombre, y queda anotado.</p><button id="view-as-open" class="secondary" type="button">Elegir usuario…</button></section>':''}
    <button id="signout" class="primary signout-button">Cerrar sesión en este dispositivo</button><small class="account-version">${esc(versionLabel())}</small>`;
   const csrf=workspace.me?.csrf||'';
   const result=$('#security-result');
   $('#signout').onclick=signOut;
+  const viewAsOpen=$('#view-as-open');if(viewAsOpen)viewAsOpen.onclick=openViewAs;
+  const viewAsStop=$('#view-as-stop-dialog');if(viewAsStop)viewAsStop.onclick=stopViewAs;
   $('#theme-choice').onchange=e=>globalThis.agoraTheme?.set?.(e.target.value);
   const maintenance=$('#maintenance-on');
   if(maintenance){
