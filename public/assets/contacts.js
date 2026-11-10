@@ -88,6 +88,7 @@ export async function renderContacts(container){
     selected=contactId;editing=false;record=null;
     layout.classList.add('record-open');
     container.querySelectorAll('[data-contact]').forEach(b=>b.classList.toggle('selected',b.dataset.contact===contactId));
+    const panel=$('#contact-record');panel.classList.remove('opening');void panel.offsetWidth;panel.classList.add('opening');
     $('#contact-record').innerHTML='<p class="empty">Abriendo la ficha…</p>';
     try{
       const data=await request(`workspace/record?connectionId=${encodeURIComponent(connection)}&contactId=${encodeURIComponent(contactId)}`);

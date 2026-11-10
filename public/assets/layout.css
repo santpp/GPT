@@ -1109,3 +1109,16 @@ html,body{max-width:100%;overflow-x:hidden}
 #more-sheet .more-grid button{display:flex;flex-direction:column;align-items:center;gap:6px;min-height:76px;padding:10px 4px;border:1px solid var(--line,#d8dde6);border-radius:12px;background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
 #more-sheet .more-grid button.active{border-color:#ad103c;color:#ad103c}
 #more-sheet .more-grid svg{width:24px;height:24px}
+
+/* 1.10.10 · Ficha de contacto: entra deslizándose, como la ficha y el chat de la bandeja (misma animación) */
+.records-record.opening{animation:slide-in-right .42s var(--ease) both}
+@media(min-width:601px){.records-record.opening{animation:fade-up .35s var(--ease) both}}
+/* Panel «Más»: el fondo se oscurece y el panel sube desde abajo; al cerrar, baja */
+@keyframes sheet-fade{from{opacity:0}to{opacity:1}}
+@keyframes sheet-up{from{transform:translateY(100%)}to{transform:none}}
+#more-sheet:not([hidden]){animation:sheet-fade .25s ease both}
+#more-sheet:not([hidden]) .more-panel{animation:sheet-up .38s var(--ease) both}
+#more-sheet.closing{animation:sheet-fade .2s ease reverse both}
+#more-sheet.closing .more-panel{animation:sheet-up .24s ease-in reverse both}
+#more-sheet:not([hidden]) .more-grid button{animation:sk-in .35s var(--ease) both;animation-delay:calc(80ms + var(--i,0)*50ms)}
+@media(prefers-reduced-motion:reduce){.records-record.opening,#more-sheet,#more-sheet .more-panel,#more-sheet .more-grid button{animation:none!important}}

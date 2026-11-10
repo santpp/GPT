@@ -34,6 +34,8 @@ with sync_playwright() as p:
             response={'user':{'role':'administrator'},'csrf':'test-csrf'}
         elif path=='admin/diagnostics':
             response={'ready':True,'version':'0.2.1','checks':[]}
+        elif path.startswith('announcements'):
+            response={'items':[]}
         elif path=='admin/access-channel/test':
             assert request.method=='POST' and request.headers['x-csrf-token']=='test-csrf';mail_tests.append(1);response={'sent':True}
         elif path=='admin/access-channel':

@@ -72,15 +72,23 @@ function openMore(){
     if(!source||source.hidden)return null;
     return {view,label:source.textContent.trim(),icon:source.querySelector('span')?.innerHTML||''};
   }).filter(Boolean);
-  sheet.querySelector('.more-grid').innerHTML=items.map(i=>`<button type="button" data-more="${i.view}" class="${i.view===currentView?'active':''}">${i.icon}<span>${esc(i.label)}</span></button>`).join('');
+  sheet.querySelector('.more-grid').innerHTML=items.map((i,n)=>`<button type="button" data-more="${i.view}" style="--i:${n}" class="${i.view===currentView?'active':''}">${i.icon}<span>${esc(i.label)}</span></button>`).join('');
   sheet.querySelectorAll('[data-more]').forEach(b=>b.onclick=()=>show(b.dataset.more));
-  sheet.hidden=false;
+  sheet.classList.remove('closing');sheet.hidden=false;
   document.getElementById('nav-more')?.setAttribute('aria-expanded','true');
   sheet.querySelector('[data-more]')?.focus();
 }
 function closeMore(){
   const sheet=document.getElementById('more-sheet');
-  if(sheet&&!sheet.hidden){sheet.hidden=true;document.getElementById('nav-more')?.setAttribute('aria-expanded','false')}
+  if(!sheet||sheet.hidden||sheet.classList.contains('closing'))return;
+  document.getElementById('nav-more')?.setAttribute('aria-expanded','false');
+  // Baja antes de esconderse; sin animación (movimiento reducido) se esconde al momento.
+  const done=()=>{sheet.classList.remove('closing');sheet.hidden=true};
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return done();
+  sheet.classList.add('closing');
+  const end=e=>{if(e.target!==sheet)return;sheet.removeEventListener('animationend',end);if(sheet.classList.contains('closing'))done()};
+  sheet.addEventListener('animationend',end);
+  setTimeout(()=>{if(sheet.classList.contains('closing'))done()},400);
 }
 
 function show(name,{push=true}={}){
