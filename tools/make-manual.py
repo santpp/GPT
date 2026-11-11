@@ -16,6 +16,11 @@ ITEMS=[conv(i,r) for i,r in enumerate(INBOX)]
 WON=[{'id':'o1','name':'Plan anual','contactName':'Pedro Navarro','assignedName':'Ana','days':3,'value':0,'missing':True,'wonAt':'2026-11-01T10:00:00Z'},{'id':'o2','name':'Curso intensivo','contactName':'María Vidal','assignedName':'Ana','days':1,'value':0,'missing':True,'wonAt':'2026-11-02T10:00:00Z'},{'id':'o3','name':'Asesoría mensual','contactName':'Raúl Prieto','assignedName':'Ana','days':5,'value':1250.5,'missing':False,'wonAt':'2026-11-01T09:00:00Z'},{'id':'o4','name':'Pack inicial','contactName':'Elena Cruz','assignedName':'Ana','days':6,'value':480,'missing':False,'wonAt':'2026-10-30T09:00:00Z'}]
 ME={'user':{'role':'team','email':'ana@example.test','name':'Ana','identity_type':'external','capabilities':{'viewConversations':True,'sendMessages':True,'viewContacts':True,'editContacts':True,'viewOpportunities':True,'editOpportunities':True,'assignedDataOnly':True}},'csrf':'t','passkeys':0}
 FLAGS={'alert':True}
+def opp(i,n,c,v,st):return {'id':f'o{i}','name':n,'contactId':f'k{i}','contactName':c,'monetaryValue':v,'pipelineId':'p1','pipelineStageId':st,'assignedName':'Ana'}
+BOARD={'pipelines':[{'id':'p1','name':'Embudo de ventas'}],'pipelineId':'p1','restricted':True,'canEdit':True,'partial':False,'total':5,'stages':[
+ {'id':'s1','name':'Lead nuevo','total':2,'value':650.0,'items':[opp(0,'Reserva sábado','Lucía Fernández',250,'s1'),opp(1,'Presupuesto web','Marcos Ortega',400,'s1')]},
+ {'id':'s2','name':'Propuesta enviada','total':2,'value':1200.0,'items':[opp(2,'Plan anual','Camila Reyes',900,'s2'),opp(3,'Curso intensivo','Pedro Navarro',300,'s2')]},
+ {'id':'s3','name':'Negociación','total':1,'value':1500.0,'items':[opp(4,'Paquete empresa','María Vidal',1500,'s3')]}]}
 def api(route):
     path=urlparse(route.request.url).path
     if path=='/api/me':d=ME
@@ -26,16 +31,18 @@ def api(route):
     elif path=='/api/workspace/record':d={'contact':{'id':'k0','name':'Lucía Fernández','firstName':'Lucía','lastName':'Fernández','email':'lucia@example.test','phone':'+34 600 000 000','companyName':'Estudio Sol','source':'Instagram','tags':['cliente','sábado'],'customFields':[]},'fields':[],'assignees':[],'canEdit':True,'notes':[{'id':'n1','body':'Prefiere que la llamen por la tarde.','dateAdded':'2026-11-01T10:00:00Z'}],'tasks':[],'activity':[]}
     elif path=='/api/workspace/board-month':d={'sales':{'closings':9,'total':5400,'counted':9,'partial':False},'mine':{'closings':4,'sold':1730.5},'profit':None}
     elif path=='/api/workspace/tags':d={'items':[{'name':'cliente'},{'name':'sábado'},{'name':'seguimiento'}]}
-    elif path=='/api/workspace/contacts':d={'items':[{'id':f'k{i}','name':r[0],'email':'','phone':'','tags':[]} for i,r in enumerate(INBOX)],'total':len(INBOX),'limit':20}
+    elif path=='/api/workspace/contacts':d={'items':[{'id':f'k{i}','name':r[0],'email':'','phone':'+34 600 00%d 0%d'%(i,i),'tags':[]} for i,r in enumerate(INBOX)],'total':120,'restricted':True,'exact':True,'partial':True,'page':1,'hasMore':True}
+    elif path=='/api/workspace/board':d=BOARD
+    elif path=='/api/workspace/pipelines':d={'pipelines':[{'id':'p1','name':'Embudo de ventas','stages':[{'id':'s1','name':'Lead nuevo'},{'id':'s2','name':'Propuesta enviada'},{'id':'s3','name':'Negociación'}]}],'assignees':[],'canEdit':True}
     elif path=='/api/security':d={'passkeys':[],'sessions':[{'id':1,'label':'Este teléfono','current':True,'mine':True,'lastUsedAt':'2026-11-02T10:00:00+00:00'}],'lockChoices':[5,15,30,60],'deviceRemembered':True,'lockMinutes':None,'team':None}
     elif path=='/api/workspace/won':d={'period':'2026-11','items':WON,'totals':{'count':4,'sum':1730.5,'missing':2},'canEdit':True,'sellers':[]}
     elif path=='/api/workspace/won-alert' and FLAGS['alert']:d={'month':'2026-11','count':2,'items':WON[:2],'oldestDays':3,'days':7,'escalate':False,'canEdit':True,'team':None}
-    elif path=='/api/workspace/dashboard':d={'restricted':True,'conversations':{'total':9,'unread':6,'waiting':4},'contacts':None,'leads':{'today':3,'mine':None,'linked':True,'range':{}},'opportunities':{'count':7,'value':8200,'stages':[]},'readAt':'2026-11-02T10:00:00+00:00'}
+    elif path=='/api/workspace/dashboard':d={'restricted':True,'conversations':{'total':9,'unread':6,'waiting':4},'contacts':None,'leads':{'today':3,'mine':2,'linked':True,'range':{}},'opportunities':{'count':7,'value':8200,'stages':[]},'readAt':'2026-11-02T10:00:00+00:00'}
     else:d={'items':[]}
     route.fulfill(status=200,content_type='application/json',body=json.dumps(d))
 def fresh(b,tour_done=True,w=390,h=844):
     ctx=b.new_context(viewport={'width':w,'height':h},device_scale_factor=2,service_workers='block',locale='es-ES')
-    ctx.add_init_script("try{localStorage.setItem('agora-welcome-later','1');"+("localStorage.setItem('agora-tour-done','1');" if tour_done else "")+"localStorage.setItem('agora-passkey-asked','1')}catch(e){}")
+    ctx.add_init_script("try{localStorage.setItem('agora-welcome-later','1');localStorage.setItem('agora-push-nudge',String(Date.now()));"+("localStorage.setItem('agora-tour-done','1');" if tour_done else "")+"localStorage.setItem('agora-passkey-asked','1')}catch(e){}")
     page=ctx.new_page();page.route('**/api/**',api);errors=[];page.on('pageerror',lambda e:errors.append(str(e)));return page,errors
 def shot(page,name):
     page.wait_for_timeout(700);path=os.path.join(IMG,name);page.screenshot(path=path,animations='disabled')
@@ -60,6 +67,7 @@ with sync_playwright() as p:
     page.locator('[data-contact-id],.contact-row,.record-row').first.evaluate('n=>n.click()');page.wait_for_timeout(900);shot(page,'04-ficha.png')
     page.goto(BASE+'/oportunidades');page.wait_for_timeout(500)
     page.evaluate("document.querySelectorAll('dialog[open]').forEach(d=>d.close())")
+    page.wait_for_selector('.board-card2');page.wait_for_timeout(600);shot(page,'10-embudos.png')
     tab=page.locator('[data-board-tab="won"],#board-tab-won,button:has-text("Ganadas")').first;tab.click();page.wait_for_selector('.won-item,.won-row',timeout=8000);shot(page,'05-ganadas.png')
     page.goto(BASE+'/tablero');page.wait_for_timeout(900);shot(page,'07-tablero.png')
     page.locator('#profile-top').click();page.wait_for_selector('#text-large');shot(page,'09-perfil.png')

@@ -146,8 +146,26 @@ async function paintPush(){
 // Si los avisos no están activos, se le dice a la persona, una vez al día como mucho.
 const NUDGE_KEY='agora-push-nudge';
 const nudgeSnoozed=()=>{try{return Date.now()-Math.max(Number(localStorage.getItem(NUDGE_KEY)||0),Number(localStorage.getItem('agora-welcome-later')||0))<864e5}catch{return false}};
+// En un teléfono sin la app instalada se insiste en cada visita: «Ahora no» sólo la calla hasta la próxima vez que se abra Ágora.
+const INSTALL_LATER='agora-install-later';
+const phone=()=>matchMedia('(pointer: coarse)').matches&&/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const wantsInstall=()=>{try{if(sessionStorage.getItem(INSTALL_LATER))return false}catch{}return phone()&&!installed()&&!isNative()&&!workspace.me?.viewAs};
+function paintInstall(bar){
+  const apple=isApple();
+  bar.innerHTML=`<p><b>Ágora no está instalada en este teléfono.</b> Instálala para abrirla con un toque y recibir un aviso cada vez que te escribe un cliente.</p>
+   <p class="install-steps" id="install-steps" hidden>${apple?'Toca <b>Compartir</b> (el cuadrado con la flecha), elige <b>«Añadir a pantalla de inicio»</b> y abre Ágora desde su icono.':'Abre el menú del navegador (⋮) y elige <b>«Instalar aplicación»</b> o <b>«Añadir a pantalla de inicio»</b>. Después abre Ágora desde su icono.'}</p>
+   <div class="push-banner-actions"><button type="button" class="primary" id="install-go">${installPrompt?'Instalar':'Cómo instalarla'}</button><button type="button" class="link-button" id="install-later">Ahora no</button></div>`;
+  bar.hidden=false;bar.classList.add('install-banner');
+  $('#install-go').onclick=async()=>{
+    if(installPrompt){try{await installPrompt.prompt();const choice=await installPrompt.userChoice;installPrompt=null;if(choice?.outcome==='accepted'){bar.hidden=true;return}}catch{}}
+    $('#install-steps').hidden=false;$('#install-go').hidden=true;
+  };
+  $('#install-later').onclick=()=>{try{sessionStorage.setItem(INSTALL_LATER,'1')}catch{}bar.hidden=true;bar.classList.remove('install-banner')};
+}
 function paintNudge(){
   const bar=$('#push-banner');if(!bar)return;
+  if(!$('#app').hidden&&!($('#welcome')&&!$('#welcome').hidden)&&wantsInstall())return paintInstall(bar);
+  bar.classList.remove('install-banner');
   const needs=['off','blocked','needs-install'].includes(pushNow);
   if(!needs||nudgeSnoozed()||$('#app').hidden||($('#welcome')&&!$('#welcome').hidden)){bar.hidden=true;return}
   const action=pushNow==='off'?'<button type="button" class="primary" id="push-nudge-go">Activar avisos</button>':'';
@@ -222,7 +240,7 @@ async function announceNow(tries,done){
 // avisos sola. Lo que sí se hace es pedirlo en cuanto entra, sin ir a buscarlo.
 let installPrompt=null;
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;if(!$('#app').hidden)welcome()});
-window.addEventListener('appinstalled',()=>{installPrompt=null;welcome()});
+window.addEventListener('appinstalled',()=>{installPrompt=null;paintNudge();welcome()});
 const LATER='agora-welcome-later';
 const resting=()=>{try{return Date.now()-Number(localStorage.getItem(LATER)||0)<3*86400000}catch{return false}};
 let welcomeDone=null;
@@ -321,6 +339,7 @@ async function startSession(){
   catch{workspace.setConnections([])}
   renderAccounts();
   paintViewAs(me.viewAs);
+  paintNudge();
   // Los avisos del navegador pasan a ser de quien entra ahora, y se rehacen si se perdieron.
   // Mirando como otra persona no se registra nada: los avisos siguen siendo de la propietaria.
   if(!me.viewAs)checkPush();

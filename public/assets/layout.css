@@ -1122,3 +1122,32 @@ html,body{max-width:100%;overflow-x:hidden}
 #more-sheet.closing .more-panel{animation:sheet-up .24s ease-in reverse both}
 #more-sheet:not([hidden]) .more-grid button{animation:sk-in .35s var(--ease) both;animation-delay:calc(80ms + var(--i,0)*50ms)}
 @media(prefers-reduced-motion:reduce){.records-record.opening,#more-sheet,#more-sheet .more-panel,#more-sheet .more-grid button{animation:none!important}}
+
+/* 1.10.11 · Sistema de diseño: valores con nombre para lo que más se toca y se ve.
+   Esquinas: --r-sm (botones y campos), --r-md (tarjetas), --r-lg (paneles), --r-pill (píldoras).
+   Toque mínimo: --tap (44 px, lo que pide Apple; WCAG 2.2 pide 24). Marca: --green (rojo Ágora; en oscuro, su tono claro). */
+:root{--r-sm:8px;--r-md:12px;--r-lg:16px;--r-pill:999px;--tap:44px}
+.board-card2{border-radius:var(--r-md);box-shadow:none;padding:14px}
+.board-card2-top strong{color:var(--green)}
+.board-card2-acts{gap:8px}
+.board-ic{min-height:var(--tap);border-radius:var(--r-sm);padding:0 12px}
+.board-move{border-radius:var(--r-sm)}
+.board-move button{min-height:var(--tap)}
+.board-stage-h{min-height:48px}
+.board-clear{min-height:var(--tap);border-radius:var(--r-pill)}
+.live-toolbar select,.account-switch select{border-radius:var(--r-sm);min-height:var(--tap)}
+.search{border-radius:var(--r-sm)}
+.profile-top{min-width:var(--tap);min-height:var(--tap)!important;place-items:center}
+.profile-top .avatar{width:var(--tap);height:var(--tap)}
+.icon-btn{min-width:var(--tap);min-height:var(--tap)}
+.tabs button{min-height:var(--tap)}
+#more-sheet .more-panel{border-radius:var(--r-lg) var(--r-lg) 0 0}
+#more-sheet .more-grid button{border-radius:var(--r-md)}
+#view-as-bar button{min-height:var(--tap);border-radius:var(--r-sm)}
+/* 1.10.11 · Franja para instalar la app: más visible que la de los avisos */
+.push-banner.install-banner{border-left:0;border-radius:var(--r-md);padding:12px 14px;background:#f7e9ee;flex-direction:column;align-items:stretch}
+.push-banner.install-banner p{flex:none}
+.push-banner.install-banner .install-steps{padding:10px 12px;border-radius:var(--r-sm);background:var(--paper,#fff)}
+.push-banner.install-banner .primary{min-height:var(--tap)}
+/* Con un chat o una ficha abiertos en el teléfono, la franja de avisos o de instalar se aparta: si no, empuja el cuadro de respuesta bajo la barra de abajo. */
+@media(max-width:600px){body:has(.live-inbox-layout.chat-open) .push-banner,body:has(.live-inbox-layout.contact-open) .push-banner{display:none!important}}
