@@ -132,7 +132,7 @@ final class OpportunityActions {
         if(!is_array($record)||!is_string($record['id']??null)||$record['id']!==$opportunityId)throw new ActionProblem('invalid_opportunity_response',424,'La oportunidad recibida no tiene el formato esperado.');
         if(isset($record['locationId'])&&$record['locationId']!==$connection['location_id'])throw new ActionProblem('unknown_opportunity',404,'Esa oportunidad no está disponible en esta cuenta.');
         if(($membership['capabilities']['assignedDataOnly']??false)===true&&($record['assignedTo']??null)!==($membership['external_user_id']??null))
-            throw new ActionProblem('opportunity_not_assigned',403,'Esa oportunidad no está asignada a tu usuario.');
+            throw new ActionProblem('opportunity_not_assigned',403,'Esa oportunidad no está asignada a ti.');
         return $record;
     }
 

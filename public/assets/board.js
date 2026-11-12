@@ -54,7 +54,7 @@ async function renderFunnels(container){
   function show(){
     const data=board;
     const note=data.total
-      ? `${data.total} oportunidad${data.total===1?'':'es'} abierta${data.total===1?'':'s'}${data.restricted?' asignadas a tu usuario':''}${data.partial?' · las más recientes':''}`
+      ? `${data.total} oportunidad${data.total===1?'':'es'} abierta${data.total===1?'':'s'}${data.restricted?' asignadas a ti':''}${data.partial?' · las más recientes':''}`
       : (data.restricted?'No tienes oportunidades abiertas asignadas en este embudo.':'Este embudo no tiene oportunidades abiertas.');
     const canEdit=data.canEdit===true;
     const cards=asList(data.stages).flatMap(stage=>asList(stage.items));

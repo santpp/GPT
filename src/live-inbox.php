@@ -138,7 +138,7 @@ if(preg_match('~^/api/workspace/opportunity/(new|edit|status)$~',$path,$opportun
             require_once __DIR__.'/ContactProfile.php';
             $owner=(new ContactProfile())->get($connection,$contactId);
             if(($membership['capabilities']['assignedDataOnly']??false)===true&&$owner['assignedTo']!==($membership['external_user_id']??null))
-                respond(['error'=>'Este contacto no está asignado a tu usuario.'],403);
+                respond(['error'=>'Este contacto no está asignado a ti.'],403);
             respond($actions->create($connection,$contactId,$membership,$input));
         }
         $opportunityId=$_GET['opportunityId']??'';
@@ -235,7 +235,7 @@ if($path==='/api/workspace/record'&&in_array($method,['GET','POST'],true)){
             // nor a contact that is not this member's to edit.
             $current=(new ContactProfile())->get($connection,$contactId);
             if(($membership['capabilities']['assignedDataOnly']??false)===true&&$current['assignedTo']!==($membership['external_user_id']??null))
-                respond(['error'=>'Este contacto no está asignado a tu usuario.'],403);
+                respond(['error'=>'Este contacto no está asignado a ti.'],403);
             respond((new ContactActions())->contact($connection,$contactId,$membership,body()));
         }
         catch(ActionProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
@@ -247,7 +247,7 @@ if($path==='/api/workspace/record'&&in_array($method,['GET','POST'],true)){
         $profile=(new ContactProfile())->get($connection,$contactId,($_GET['refresh']??'')==='1');
         // A member restricted to assigned data only opens their own contacts.
         if(($membership['capabilities']['assignedDataOnly']??false)===true&&$profile['assignedTo']!==($membership['external_user_id']??null))
-            respond(['error'=>'Este contacto no está asignado a tu usuario.'],403);
+            respond(['error'=>'Este contacto no está asignado a ti.'],403);
         $canEdit=($membership['capabilities']['editContacts']??false)===true;
         $directory=new ContactFieldDirectory();
         $fields=$directory->cached($connection);

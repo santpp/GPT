@@ -275,7 +275,7 @@ Usa siempre la palabra de la izquierda. Si un texto usa otra, se corrige.
 | **Ganada** / **venta ganada** | Oportunidad cerrada con éxito | «Cerrada», «won» |
 | **Monto** | Lo que vale una venta | «Valor», «importe» (salvo en tablas de Consumos) |
 | **Responsable** | La persona del equipo a quien está asignado algo | «Dueño», «owner», «agente» |
-| **Asignado a ti** | Lo que es tuyo | «Asignado a tu usuario» (aún aparece en Embudos y en el panel de la conversación: corregir) |
+| **Asignado a ti** | Lo que es tuyo | «Asignado a tu usuario» (corregido en 1.10.13) |
 | **Ficha** | La pantalla con los datos de un contacto | «Perfil» (el perfil es «Mi cuenta») |
 | **Mi cuenta** | Ajustes personales (tema, texto grande, huella, sesiones) | «Perfil», «Ajustes» |
 | **Avisos** | Notificaciones al teléfono | «Notificaciones push» |
@@ -283,7 +283,9 @@ Usa siempre la palabra de la izquierda. Si un texto usa otra, se corrige.
 | **Propietaria** / **quien administra** | La administradora de Ágora | «Admin», «superusuario» |
 | **Vendedor** / **equipo** | Las personas que usan Ágora para vender | «Agente», «usuario final» |
 
-Nota: el subtítulo de Contactos usa «Personas, no registros.» y el manual dice «tus personas». Es un uso expresivo aceptado solo ahí; en botones, estados y listas se dice siempre «contacto».
+Nota: el manual dice «tus personas» en la introducción de Contactos. Es un uso expresivo aceptado solo ahí; en botones, estados y listas se dice siempre «contacto».
+
+Las cabeceras de pantalla de `public/index.html` (rótulo, frase y subtítulo, `#page-title`) **están ocultas siempre** (`layout.css`: `.page-heading{display:none!important}`); el título visible es el de la barra de arriba.
 
 ## 14. Textos de referencia
 

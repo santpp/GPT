@@ -530,7 +530,7 @@ export async function renderLiveInbox(container){
     +(editor.notice?`<span class="muted">${esc(editor.notice)}</span>`:'');
    const add=canEdit?'<button class="live-opportunity-new" data-new-opportunity>+ Nueva oportunidad</button>':'';
    const notice=editor.notice?`<span class="muted">${esc(editor.notice)}</span>`:'';
-   if(!items.length||!opportunities.active)return `<span class="muted">${opportunities.restricted?'Sin oportunidades asignadas a tu usuario.':'Este contacto no tiene oportunidades.'}</span>${add}${notice}`;
+   if(!items.length||!opportunities.active)return `<span class="muted">${opportunities.restricted?'Sin oportunidades asignadas a ti.':'Este contacto no tiene oportunidades.'}</span>${add}${notice}`;
    const others=items.filter(item=>item.id!==opportunities.active.id);
    return opportunityCard(opportunities.active,canEdit)
     +(others.length?`<details class="live-opportunity-all"><summary>Ver todas las oportunidades (${items.length})</summary>${others.map(item=>opportunityCard(item,canEdit)).join('')}</details>`:'')
