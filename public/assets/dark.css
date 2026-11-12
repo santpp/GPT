@@ -220,6 +220,8 @@ html[data-theme="dark"] #more-sheet .more-grid button{border:1px solid var(--lin
 html[data-theme="dark"] #more-sheet .more-grid button.active{border-color:#ad103c;color:#e9678c}
 html[data-theme="dark"] .push-banner.install-banner{background:#232634}
 html[data-theme="dark"] .push-banner.install-banner .install-steps{background:var(--paper,#1d1f2b)}
+html[data-theme="dark"] .live-assignee{color:#cacbce}
+html[data-theme="dark"] .live-assignee.none{color:#e9678c}
 /* ---- a mano: paleta base y piezas que el generador no puede adivinar ---- */
 html[data-theme="dark"]{color-scheme:dark;--ink:#e6e8f0;--muted:#9aa0b4;--line:#2f3445;--paper:#1b1f2c;--bg:#12151f;--green:#d13c63;--accent:#f5b84a}
 html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}

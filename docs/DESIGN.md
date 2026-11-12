@@ -310,6 +310,7 @@ Reutiliza estos textos tal cual. Si necesitas uno nuevo, sigue el mismo tono y a
 | Sin permiso | «Tu usuario no tiene permiso para *consultar oportunidades*.» |
 | Asignado a otra persona | «Este contacto está asignado a otra persona.» |
 | Solo lectura («Entrar como») | «Estás viendo Ágora como otra persona: sólo puedes mirar.» |
+| Responsable en la bandeja (solo quien ve toda la subcuenta) | «Responsable: Ana Ventas» · «Sin asignar» (rojo) · «Responsable: otra persona del equipo» |
 | Hora de actualización | «Actualizado a las 10:00» (vendedor) · «Cifras de la cuenta · actualizado a las 10:00» (propietaria) |
 | Instalar la app | «**Ágora no está instalada en este teléfono.** Instálala para abrirla con un toque y recibir un aviso cada vez que te escribe un cliente.» |
 

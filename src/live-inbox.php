@@ -356,7 +356,9 @@ if(in_array($path,['/api/workspace/inbox','/api/ghl/inbox'],true) && $method==='
     if($cursor!==null&&(!is_string($cursor)||!preg_match('/^[0-9]{1,16}$/D',$cursor)))respond(['error'=>'Referencia de página inválida'],422);
     try{
         $feed=(new InboxFeed())->load($connection,$limit,$filters,$membership,$cursor!==null?$cursor:null);
-        respond($feed+['syncIntervalSeconds'=>max(60,(int)$connection['sync_interval_seconds']),'limit'=>$limit,'state'=>$state?:null]);
+        // Quien ve toda la subcuenta ve también de quién es cada conversación: se envían los nombres del equipo.
+        $team=($membership['capabilities']['assignedDataOnly']??false)===true?null:query('SELECT external_user_id AS id,display_name AS name FROM external_users WHERE connection_id=? AND active=TRUE',[$id])->fetchAll(PDO::FETCH_KEY_PAIR);
+        respond($feed+['syncIntervalSeconds'=>max(60,(int)$connection['sync_interval_seconds']),'limit'=>$limit,'state'=>$state?:null,'team'=>$team]);
     }
     catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la bandeja. Revisa los permisos de lectura.','code'=>'inbox_upstream_'.$e->status],424);}
     catch(InvalidArgumentException $e){respond(['error'=>'Comprueba la conexión antes de consultar la bandeja.'],422);}

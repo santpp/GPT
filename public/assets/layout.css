@@ -1151,3 +1151,6 @@ html,body{max-width:100%;overflow-x:hidden}
 .push-banner.install-banner .primary{min-height:var(--tap)}
 /* Con un chat o una ficha abiertos en el teléfono, la franja de avisos o de instalar se aparta: si no, empuja el cuadro de respuesta bajo la barra de abajo. */
 @media(max-width:600px){body:has(.live-inbox-layout.chat-open) .push-banner,body:has(.live-inbox-layout.contact-open) .push-banner{display:none!important}}
+/* 1.10.14 · Bandeja: quien ve toda la subcuenta ve el responsable de cada conversación */
+.live-assignee{display:block;margin-top:4px;font-size:11px;color:#5d6370;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.live-assignee.none{color:#ad103c;font-weight:600}
