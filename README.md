@@ -16,6 +16,7 @@ La integración usa el **Private Integration Token de cada subcuenta**, configur
 - [Usuarios y permisos importados](docs/external-users.md)
 - [API GHL revisada](docs/ghl-api-review.md)
 - [Identidad del manual](docs/brand.md)
+- [Guía de diseño de la interfaz (empieza aquí si vas a tocar pantallas)](docs/DESIGN.md)
 - [Despliegue actual: CyberPanel nativo, sin Docker](deploy/native/README.md)
 - [Alternativa Docker anterior](deploy/README.md)
 

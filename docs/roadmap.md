@@ -254,7 +254,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## V2.1 · planificada
 - Resumen diario o semanal.
-- Cabeceras de seguridad del servidor nativo (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`; `Content-Security-Policy` aparte y con cuidado), preparadas como archivo para probarlas con copia del `.htaccess` y, si funcionan, incluidas en el paquete.
+- Cabeceras de seguridad del servidor nativo (decidido el 12 de noviembre de 2026): `X-Frame-Options`/`frame-ancestors`, `Strict-Transport-Security` (empezando con duración corta), `Referrer-Policy`, `Permissions-Policy` y `Content-Security-Policy` estricta (sólo el propio dominio; estilos en línea permitidos; imágenes y audio de adjuntos por `https:`), primero en modo informe. Enviadas desde PHP para no depender del panel. Ágora no usa scripts en línea ni de terceros.
 
 ## 1.10.1 · legibilidad y canal de origen
 - Letra +20 % y negra en toda la app (nada bajo 11,5 px); mensajes y cuadro de respuesta a 17 px; «Texto grande» a 20 px.
@@ -285,6 +285,12 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## 1.10.4 · Consumos: movimientos de la agencia
 - Bloque «Agencia · movimientos propios», bloques para las subcuentas no conectadas, y selector «Sólo la agencia».
+
+## Decisiones del 12 de noviembre de 2026
+- **Filtro por responsable confirmado** con la cuenta real (1.10.8): las listas de cada vendedor llegan ya filtradas.
+- **Cabeceras de seguridad** → V2.1.
+- **Sistema de diseño completo** (colores a ~18 con nombre, escala de letra, 3 sombras): propuesto con imagen de antes y después, pendiente de aprobar.
+- Nueva guía de diseño para personas e IA: `docs/DESIGN.md`.
 
 ## 1.10.11 · diseño ordenado, instalar la app y manual al día
 Valores de diseño con nombre y toques de 44 px; franja para instalar la app en cada visita (teléfono sin instalarla); manual de vendedores y PDF actualizados.
