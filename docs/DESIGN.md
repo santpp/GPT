@@ -229,7 +229,7 @@ El repositorio no se toca hasta que se aprueba.
 - [ ] 360 y 412 px sin nada fuera del ancho (`tests/phone-fit-ui.py`).
 - [ ] Toques ≥ 44 px, foco visible, movimiento reducido.
 - [ ] Vendedor, administrador y propietaria revisados (o «Entrar como»).
-- [ ] Textos en español, sin nombres técnicos ni de la plataforma.
+- [ ] Textos en español, sin nombres técnicos ni de la plataforma; palabras del glosario (§13) y textos de referencia (§14).
 - [ ] Si se ve en el manual: capturas y PDF regenerados.
 - [ ] Versión, nota de actualización y roadmap.
 
@@ -256,3 +256,152 @@ El repositorio no se toca hasta que se aprueba.
 - `docs/brand.md` — identidad de marca.
 - `docs/architecture.md` — arquitectura (servidor PHP, base de datos, sincronización).
 - `deploy/native/UPDATE-*.md` — qué cambió en cada versión.
+
+---
+
+## 13. Glosario: una palabra para cada cosa
+
+Usa siempre la palabra de la izquierda. Si un texto usa otra, se corrige.
+
+| Palabra | Qué es | No digas |
+|---|---|---|
+| **Cuenta** / **subcuenta** | Cada negocio conectado (ASOCIM, UBA Line…). En pantalla, «subcuenta» cuando hay que distinguirla de la agencia | El nombre de la plataforma de origen, «location», «ubicación» |
+| **Contacto** | La persona del cliente en la lista y la ficha | «Lead» (salvo en las cifras de leads), «registro», «cliente» como nombre de pantalla |
+| **Lead** | Contacto **nuevo** en un periodo («Leads de hoy», «Mis leads de hoy») | Usarlo para cualquier contacto |
+| **Conversación** | El hilo de mensajes con un contacto | «Chat» en textos (sí en el código) |
+| **Oportunidad** | Una posible venta abierta | «Deal», «negocio» |
+| **Embudo** | El recorrido de ventas con sus etapas | «Pipeline» |
+| **Etapa** | Cada paso del embudo | «Fase», «columna», «stage» |
+| **Ganada** / **venta ganada** | Oportunidad cerrada con éxito | «Cerrada», «won» |
+| **Monto** | Lo que vale una venta | «Valor», «importe» (salvo en tablas de Consumos) |
+| **Responsable** | La persona del equipo a quien está asignado algo | «Dueño», «owner», «agente» |
+| **Asignado a ti** | Lo que es tuyo | «Asignado a tu usuario» (aún aparece en Embudos y en el panel de la conversación: corregir) |
+| **Ficha** | La pantalla con los datos de un contacto | «Perfil» (el perfil es «Mi cuenta») |
+| **Mi cuenta** | Ajustes personales (tema, texto grande, huella, sesiones) | «Perfil», «Ajustes» |
+| **Avisos** | Notificaciones al teléfono | «Notificaciones push» |
+| **Novedades** | Mensajes de la propietaria a todo el equipo | «Anuncios», «noticias» |
+| **Propietaria** / **quien administra** | La administradora de Ágora | «Admin», «superusuario» |
+| **Vendedor** / **equipo** | Las personas que usan Ágora para vender | «Agente», «usuario final» |
+
+Nota: el subtítulo de Contactos usa «Personas, no registros.» y el manual dice «tus personas». Es un uso expresivo aceptado solo ahí; en botones, estados y listas se dice siempre «contacto».
+
+## 14. Textos de referencia
+
+Reutiliza estos textos tal cual. Si necesitas uno nuevo, sigue el mismo tono y añádelo aquí.
+
+| Situación | Texto |
+|---|---|
+| Acción principal de enviar | **Enviar** · **Enviar mensaje** · **Enviar plantilla** |
+| Editar | **Editar ficha** (contacto) · tocar la tarjeta (oportunidad) |
+| Mover de etapa | **Mover a…** → «*Nombre* pasó a «*Etapa*».» |
+| Cargar más | **Ver más** → mientras carga, «Cargando…» |
+| Quitar filtros | **Quitar filtros** |
+| Aplazar un aviso | **Ahora no** |
+| Volver | **Volver a mi vista** («Entrar como») · flecha ← (atrás) |
+| Cargando | «Cargando…» · «Cargando mensajes anteriores…» · «Moviendo…» · «Abriendo la ficha…» |
+| Lista vacía (no hay nada) | «Todavía no tienes contactos asignados.» · «Esta cuenta todavía no tiene conversaciones.» |
+| Lista vacía (no coincide) | «Ningún contacto coincide con esa búsqueda.» · «Nada coincide» (dentro de una etapa) |
+| Total de una lista | «120 contactos asignados a ti · se muestran 50, los más recientes primero» |
+| Dato que la cuenta no dio | «La cuenta no devolvió este dato» |
+| Sin cambios al guardar | «No has cambiado nada todavía.» |
+| Pausa por cuota | «*La lista* está en espera para respetar la cuota.» + reintentar solo |
+| Sin permiso | «Tu usuario no tiene permiso para *consultar oportunidades*.» |
+| Asignado a otra persona | «Este contacto está asignado a otra persona.» |
+| Solo lectura («Entrar como») | «Estás viendo Ágora como otra persona: sólo puedes mirar.» |
+| Hora de actualización | «Actualizado a las 10:00» (vendedor) · «Cifras de la cuenta · actualizado a las 10:00» (propietaria) |
+| Instalar la app | «**Ágora no está instalada en este teléfono.** Instálala para abrirla con un toque y recibir un aviso cada vez que te escribe un cliente.» |
+
+Botones: verbo en infinitivo y sin punto. Mensajes de estado: frase completa con punto.
+
+## 15. Qué no hacer (y por qué)
+
+| No | Por qué | Se hace así |
+|---|---|---|
+| Tiras de chips o barras que se deslizan de lado | Lo que no se ve no existe; en el teléfono se pierde | Desplegable con etiqueta (Etapa) o panel «Más» |
+| `<select>` suelto, sin etiqueta ni estilo | Parece roto y distinto al resto | `<label>Nombre<select>` dentro de `.live-toolbar` |
+| Barra de abajo con más de 5 botones o deslizable | Etiquetas pisadas, se pierde la pestaña activa | 4 pestañas + «Más» (solo propietaria) |
+| Filtros que no sirven para la tarea de esa pantalla | Distraen | Ej.: «Sin monto» va en Ganadas, no en Embudos |
+| Emojis como iconos | Cambian según el teléfono y abaratan | SVG de línea (§16) |
+| Colores nuevos «parecidos» | Así se llegó a 154 | La paleta (§3); `tests/design-tokens.py` lo impide |
+| Oro (`#fabd4b`) para texto o contornos | 1,7:1 sobre blanco, no se lee | Oro solo de fondo; texto en `--gold-ink` |
+| Un 0 cuando falta el dato | Parece real y engaña | «La cuenta no devolvió este dato» |
+| Contar «lo tuyo» filtrando entre los últimos de la cuenta | Salen menos de los que hay | Pedir a la cuenta ya filtrado por responsable |
+| Nombres técnicos o de la plataforma en pantalla | Rompe la marca y confunde | Glosario (§13) |
+| Mostrar códigos de acceso, tokens o claves a otra persona | Seguridad: permitiría entrar como otro | «Entrar como» en solo lectura |
+| Animaciones sin versión «movimiento reducido» | Marean a algunas personas | `@media(prefers-reduced-motion:reduce)` |
+| Muelles, grano, texturas, asimetrías decorativas | Herramienta de trabajo: prima leer rápido | Descartado expresamente |
+| Pantallas en blanco mientras carga | Parece colgado | Esqueleto (`skeleton()`) |
+
+## 16. Iconos existentes
+
+Todos: SVG en línea, 24 × 24, trazo `currentColor` de 1,7–1,9, extremos redondeados, `aria-hidden="true"`. Copia el que exista antes de dibujar otro.
+
+| Icono | Para qué | Dónde está |
+|---|---|---|
+| Tablero, Conversaciones, Contactos, Oportunidades, Consumos, Conexiones | Navegación | `public/index.html` (barra lateral) |
+| Tres puntos (`DOTS`) | «Más» | `app.js` |
+| Ayuda (`HELP_ICON`) | Ayuda en «Más» | `app.js` |
+| Campana / campana tachada (`BELL`, `BELL_OFF`) | Avisos activos o no | `app.js` |
+| Conversación, persona, flecha, chevron (`ICONS.chat/person/move/chevron`) | Acciones de tarjeta y plegar etapa | `board.js` |
+| Calendario, flecha abajo | Selector de periodo | `dashboard.js` |
+| WhatsApp, Instagram, Facebook, SMS, correo | Canal de cada conversación | `live-inbox.js` (`channelMarks`) |
+| Chevron (`CHEVRON`) | Menú de canal | `live-inbox.js` |
+| Atrás, ampliar, reducir, contacto (`UI_ICONS`) | Cabecera del chat | `message-view.js` |
+| PDF, archivo (`ICONS`) | Adjuntos | `message-view.js` |
+| Logo y marca | Cabecera, iconos de app | `public/assets/agora-logo.*`, `agora-mark.*`, `icon.svg`, `icons/` |
+
+Pendiente: reunirlos en un solo archivo (`icons.js`) para no duplicarlos.
+
+## 17. Capturas de referencia: así debe verse
+
+Se regeneran con `python3 tools/make-manual.py` en cada versión que cambie algo visible (teléfono de 390 px, datos inventados). Si una pantalla tuya no se parece a esto, algo se ha roto.
+
+| Pantalla | Captura |
+|---|---|
+| Conversaciones | `public/assets/manual/img/01-conversaciones.png` |
+| Menú de canal | `public/assets/manual/img/02-canal.png` |
+| Sin respuesta | `public/assets/manual/img/03-sin-respuesta.png` |
+| Ficha de contacto | `public/assets/manual/img/04-ficha.png` |
+| Ganadas | `public/assets/manual/img/05-ganadas.png` |
+| Ventas sin monto (alerta) | `public/assets/manual/img/06-alerta.png` |
+| Tablero | `public/assets/manual/img/07-tablero.png` |
+| Tutorial (logo = ayuda) | `public/assets/manual/img/08-ayuda.png` |
+| Mi cuenta | `public/assets/manual/img/09-perfil.png` |
+| Embudos | `public/assets/manual/img/10-embudos.png` |
+
+Faltan (no salen en el manual de vendedores): Consumos, Conexiones, «Más», «Entrar como» y modo oscuro.
+
+## 18. Plantilla para proponer un cambio de interfaz
+
+Copia esto en la conversación, la tarea o el PR:
+
+```
+### Problema
+Qué falla o molesta, con captura si es posible. Quién lo sufre (vendedor / administrador / propietaria).
+
+### Propuesta
+Qué cambia, en una o dos frases. Qué se quita.
+
+### Imagen
+«Hoy» y «Propuesta» lado a lado (§9 septies). En claro y, si cambian colores, en oscuro.
+
+### Impacto
+- Roles: qué ve cada uno después del cambio.
+- Teléfono 360–412 px: ¿cabe?
+- Oscuro y texto grande: ¿revisado?
+- Accesibilidad: contraste, toque de 44 px, movimiento reducido.
+- Textos: ¿siguen el glosario (§13) y los textos de referencia (§14)?
+- Manual: ¿hay que cambiar texto o capturas?
+- Pruebas: cuáles cambian y cuál nueva lo vigila.
+
+### Fuera de alcance
+Lo que se deja para otro momento.
+```
+
+## 19. Datos de prueba
+
+- **Nunca datos reales** de clientes en capturas, manual, pruebas ni imágenes de propuesta.
+- Datos inventados para capturas y manual: `tools/make-manual.py` (personas, conversaciones, oportunidades, ventas, tablero). Reutilízalos para imágenes de antes y después.
+- Pruebas de pantalla: cada `tests/*-ui.py` simula la cuenta con `page.route('**/api/**', …)`; no llaman a la plataforma de origen.
+- Pruebas del servidor: `tests/*.php` contra una base MariaDB de pruebas, con la cuenta simulada (`GhlClient` con transporte falso). Crean y borran sus propios datos.
+- Los correos de prueba terminan en `@example.test`; los teléfonos son de ejemplo.
