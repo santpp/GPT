@@ -3,10 +3,10 @@ html[data-text="large"] body *{font-weight:700!important}
 body{font-size:15.6px!important}
 h2{font-size:16.8px!important}
 .brand{font-size:38.4px!important}
-.brand-sub{font-size:11.5px!important}
-.workspace-label{font-size:11.5px!important}
+.brand-sub{font-size:12px!important}
+.workspace-label{font-size:12px!important}
 .nav{font-size:14.4px!important}
-.nav>span{font-size:22.8px!important}
+.nav>span{font-size:21.6px!important}
 .nav b{font-size:12px!important}
 .connection{font-size:12px!important}
 .profile{font-size:14.4px!important}
@@ -15,55 +15,55 @@ h2{font-size:16.8px!important}
 .avatar.small{font-size:12px!important}
 .breadcrumbs{font-size:13.2px!important}
 .network{font-size:12px!important}
-.icon-btn{font-size:24px!important}
-.eyebrow{font-size:11.5px!important}
+.icon-btn{font-size:26.4px!important}
+.eyebrow{font-size:12px!important}
 .page-heading p{font-size:13.2px!important}
 .heading-detail{font-size:13.2px!important}
-.heading-detail small{font-size:11.5px!important}
+.heading-detail small{font-size:12px!important}
 .stats span{font-size:12px!important}
 .stat-note .spark{font-size:38.4px!important}
 .list-heading h2 span{font-size:12px!important}
 .search input{font-size:12px!important}
-.search span{font-size:24px!important}
-.search kbd{font-size:11.5px!important}
+.search span{font-size:26.4px!important}
+.search kbd{font-size:12px!important}
 .tabs button{font-size:12px!important}
-.tabs span{font-size:11.5px!important}
+.tabs span{font-size:12px!important}
 .conversation-item .avatar{font-size:12px!important}
 .conversation-info strong{font-size:13.2px!important}
-.conversation-info time{font-size:11.5px!important}
+.conversation-info time{font-size:12px!important}
 .conversation-info p{font-size:12px!important}
-.channel{font-size:11.5px!important}
-.unread{font-size:11.5px!important}
-.list-footer{font-size:11.5px!important}
+.channel{font-size:12px!important}
+.unread{font-size:12px!important}
+.list-footer{font-size:12px!important}
 .chat-person h2{font-size:14.4px!important}
-.chat-person>span{font-size:11.5px!important}
+.chat-person>span{font-size:12px!important}
 .chat-header .icon-btn{font-size:21.6px!important}
-.conversation-context{font-size:11.5px!important}
-.conversation-context button{font-size:11.5px!important}
-.day-label{font-size:11.5px!important}
+.conversation-context{font-size:12px!important}
+.conversation-context button{font-size:12px!important}
+.day-label{font-size:12px!important}
 .bubble{font-size:13.2px!important}
-.bubble time{font-size:11.5px!important}
-.composer-tabs{font-size:11.5px!important}
-.composer-tabs strong{font-size:11.5px!important}
-.composer-tabs button{font-size:11.5px!important}
-.composer-tabs>span{font-size:11.5px!important}
+.bubble time{font-size:12px!important}
+.composer-tabs{font-size:12px!important}
+.composer-tabs strong{font-size:12px!important}
+.composer-tabs button{font-size:12px!important}
+.composer-tabs>span{font-size:12px!important}
 .composer textarea{font-size:13.2px!important}
-.composer-hint{font-size:11.5px!important}
+.composer-hint{font-size:12px!important}
 .send,.primary{font-size:12px!important}
 .panel-heading h2{font-size:13.2px!important}
-.panel-heading button{font-size:20.4px!important}
-.contact-identity h3{font-size:18px!important}
-.contact-identity p{font-size:11.5px!important}
-.contact-links a,.contact-links button{font-size:11.5px!important}
-.section-label{font-size:11.5px!important}
-.detail-row{font-size:11.5px!important}
-.tag{font-size:11.5px!important}
+.panel-heading button{font-size:21.6px!important}
+.contact-identity h3{font-size:19.2px!important}
+.contact-identity p{font-size:12px!important}
+.contact-links a,.contact-links button{font-size:12px!important}
+.section-label{font-size:12px!important}
+.detail-row{font-size:12px!important}
+.tag{font-size:12px!important}
 .opportunity h3{font-size:12px!important}
-.opportunity p{font-size:11.5px!important}
-.quick-actions button{font-size:11.5px!important}
+.opportunity p{font-size:12px!important}
+.quick-actions button{font-size:12px!important}
 .task{font-size:12px!important}
-.task small{font-size:11.5px!important}
-.page-footer{font-size:11.5px!important}
+.task small{font-size:12px!important}
+.page-footer{font-size:12px!important}
 .card h3{font-size:16.8px!important}
 .card p{font-size:13.2px!important}
 .dialog-copy{font-size:14.4px!important}
@@ -74,8 +74,8 @@ h2{font-size:16.8px!important}
 .access-panel h3{font-size:14.4px!important}
 .access-panel label{font-size:13.2px!important}
 .access-panel .access-state{font-size:13.2px!important}
-@media(max-width:850px){.nav>span{font-size:27.6px!important}h1{font-size:36px!important}.page-footer{font-size:11.5px!important}}
-@media(max-width:600px){.nav{font-size:11.5px!important}.nav>span{font-size:24px!important}.eyebrow{font-size:11.5px!important}h1{font-size:34.8px!important}.page-heading p{font-size:12px!important}.stats>div>span{font-size:11.5px!important}.stats strong{font-size:28.8px!important}.stats strong small{font-size:11.5px!important}.bubble{font-size:14.4px!important}.composer textarea{font-size:16.8px!important}.composer-hint{font-size:11.5px!important}.conversation-info strong{font-size:14.4px!important}.conversation-info p{font-size:13.2px!important}.conversation-info time{font-size:11.5px!important}.conversation-info .channel{font-size:11.5px!important}.search input{font-size:14.4px!important}.tabs button{font-size:13.2px!important}}
+@media(max-width:850px){.nav>span{font-size:26.4px!important}h1{font-size:38.4px!important}.page-footer{font-size:12px!important}}
+@media(max-width:600px){.nav{font-size:12px!important}.nav>span{font-size:26.4px!important}.eyebrow{font-size:12px!important}h1{font-size:38.4px!important}.page-heading p{font-size:12px!important}.stats>div>span{font-size:12px!important}.stats strong{font-size:31.2px!important}.stats strong small{font-size:12px!important}.bubble{font-size:14.4px!important}.composer textarea{font-size:16.8px!important}.composer-hint{font-size:12px!important}.conversation-info strong{font-size:14.4px!important}.conversation-info p{font-size:13.2px!important}.conversation-info time{font-size:12px!important}.conversation-info .channel{font-size:12px!important}.search input{font-size:14.4px!important}.tabs button{font-size:13.2px!important}}
 @media(max-width:600px){.nav>span{font-size:21.6px!important}.integration-heading h2{font-size:15.6px!important}}
 .live-toolbar label{font-size:13.2px!important}
 .live-toolbar select{font-size:16.8px!important}
@@ -93,24 +93,24 @@ h2{font-size:16.8px!important}
 .live-composer span,.live-composer p{font-size:13.2px!important}
 @media(max-width:600px){.live-composer textarea{font-size:19.2px!important}}
 .live-auto-status{font-size:13.2px!important}
-.live-profile-header h2{font-size:20.4px!important}
+.live-profile-header h2{font-size:21.6px!important}
 .live-profile-header button{font-size:26.4px!important}
 .live-profile-actions a{font-size:13.2px!important}
-.live-profile-details span,.live-profile-fields span,.live-profile-tags .muted{font-size:11.5px!important}
+.live-profile-details span,.live-profile-fields span,.live-profile-tags .muted{font-size:12px!important}
 .live-profile-details strong,.live-profile-fields strong{font-size:13.2px!important}
 .live-profile-opportunities>.muted{font-size:12px!important}
 .live-opportunity h3{font-size:13.2px!important}
-.live-opportunity span{font-size:11.5px!important}
+.live-opportunity span{font-size:12px!important}
 .live-opportunity strong{font-size:12px!important}
 .live-opportunity-all summary{font-size:12px!important}
 .live-tasks>.muted,.live-notes>.muted,.live-appointments>.muted{font-size:12px!important}
-.live-task>button{font-size:18px!important}
+.live-task>button{font-size:19.2px!important}
 .live-task strong{font-size:13.2px!important}
 .live-task p{font-size:12px!important}
-.live-task small{font-size:11.5px!important}
+.live-task small{font-size:12px!important}
 .live-note p{font-size:13.2px!important}
 .live-appointment strong{font-size:13.2px!important}
-.live-note small,.live-appointment small{font-size:11.5px!important}
+.live-note small,.live-appointment small{font-size:12px!important}
 .live-quick-actions summary{font-size:12px!important}
 .live-quick-actions input,.live-quick-actions textarea{font-size:13.2px!important}
 #live-activity-status{font-size:12px!important}
@@ -124,7 +124,7 @@ h2{font-size:16.8px!important}
 .board-card h3{font-size:14.4px!important}
 .board-card p{font-size:12px!important}
 .board-empty{font-size:12px!important}
-@media(max-width:700px){.nav{font-size:12px!important}.nav>span{font-size:26.4px!important}.breadcrumbs{font-size:15.6px!important}.breadcrumbs strong{font-size:18px!important}.account-switch select{font-size:15.6px!important}h1{font-size:28.8px!important}.page-heading p{font-size:14.4px!important}.live-conversation .conversation-info strong{font-size:18px!important}.live-chat-header h2{font-size:19.2px!important}.bubble{font-size:16.8px!important}.live-composer textarea{font-size:19.2px!important}.live-composer .primary{font-size:15.6px!important}.live-history-actions button{font-size:15.6px!important}.live-toolbar select{font-size:18px!important}.live-feedback,.live-auto-status{font-size:14.4px!important}.search input{font-size:19.2px!important}.tabs button{font-size:15.6px!important}.live-profile-header h2{font-size:22.8px!important}.live-profile-details strong,.live-profile-fields strong{font-size:15.6px!important}.live-profile-details span,.live-profile-fields span{font-size:13.2px!important}.live-profile-actions a{font-size:15.6px!important}.live-task>button{font-size:24px!important}.live-task strong{font-size:16.8px!important}.live-quick-actions summary{font-size:15.6px!important}.live-quick-actions input,.live-quick-actions textarea{font-size:19.2px!important}.contact-card header h3{font-size:18px!important}.contact-card .detail-row{font-size:14.4px!important}.contact-card .detail-row strong{font-size:15.6px!important}.board-column h2{font-size:18px!important}.board-card h3{font-size:16.8px!important}.integration-card footer button{font-size:15.6px!important}.access-panel select{font-size:19.2px!important}.dialog-form input,.dialog-form textarea,.dialog-form select{font-size:19.2px!important}.dialog-form .primary,.signin .primary{font-size:16.8px!important}}
+@media(max-width:700px){.nav{font-size:12px!important}.nav>span{font-size:26.4px!important}.breadcrumbs{font-size:15.6px!important}.breadcrumbs strong{font-size:19.2px!important}.account-switch select{font-size:15.6px!important}h1{font-size:31.2px!important}.page-heading p{font-size:14.4px!important}.live-conversation .conversation-info strong{font-size:19.2px!important}.live-chat-header h2{font-size:19.2px!important}.bubble{font-size:16.8px!important}.live-composer textarea{font-size:19.2px!important}.live-composer .primary{font-size:15.6px!important}.live-history-actions button{font-size:15.6px!important}.live-toolbar select{font-size:19.2px!important}.live-feedback,.live-auto-status{font-size:14.4px!important}.search input{font-size:19.2px!important}.tabs button{font-size:15.6px!important}.live-profile-header h2{font-size:21.6px!important}.live-profile-details strong,.live-profile-fields strong{font-size:15.6px!important}.live-profile-details span,.live-profile-fields span{font-size:13.2px!important}.live-profile-actions a{font-size:15.6px!important}.live-task>button{font-size:26.4px!important}.live-task strong{font-size:16.8px!important}.live-quick-actions summary{font-size:15.6px!important}.live-quick-actions input,.live-quick-actions textarea{font-size:19.2px!important}.contact-card header h3{font-size:19.2px!important}.contact-card .detail-row{font-size:14.4px!important}.contact-card .detail-row strong{font-size:15.6px!important}.board-column h2{font-size:19.2px!important}.board-card h3{font-size:16.8px!important}.integration-card footer button{font-size:15.6px!important}.access-panel select{font-size:19.2px!important}.dialog-form input,.dialog-form textarea,.dialog-form select{font-size:19.2px!important}.dialog-form .primary,.signin .primary{font-size:16.8px!important}}
 .live-channels button{font-size:13.2px!important}
 .live-channels button span{font-size:15.6px!important}
 .live-channel-single{font-size:12px!important}
@@ -140,20 +140,20 @@ h2{font-size:16.8px!important}
 .live-check{font-size:14.4px!important}
 .live-field-name{font-size:13.2px!important}
 @media(max-width:700px){.live-contact-form select,.live-contact-form textarea{font-size:19.2px!important}}
-#live-focus{font-size:20.4px!important}
+#live-focus{font-size:21.6px!important}
 .live-channel-filters button{font-size:12px!important}
 .live-attachment{font-size:13.2px!important}
 #nav-unread{font-size:12px!important}
-@media(max-width:700px){.live-channel-filters button{font-size:14.4px!important}#nav-unread{font-size:11.5px!important}}
+@media(max-width:700px){.live-channel-filters button{font-size:14.4px!important}#nav-unread{font-size:12px!important}}
 .record-row strong{font-size:14.4px!important}
 .record-row small{font-size:12px!important}
-.record-header h2{font-size:20.4px!important}
+.record-header h2{font-size:21.6px!important}
 .record-header p{font-size:13.2px!important}
 .record-header .avatar{font-size:16.8px!important}
 .record-flag{font-size:12px!important}
 .board-tile span{font-size:12px!important}
 .board-tile small{font-size:12px!important}
-@media(max-width:900px){.records-layout.record-open .mobile-back{font-size:24px!important}}
+@media(max-width:900px){.records-layout.record-open .mobile-back{font-size:26.4px!important}}
 @media(max-width:600px){.record-row strong{font-size:16.8px!important}.record-row small{font-size:14.4px!important}.live-profile-details strong,.live-profile-fields strong{font-size:15.6px!important}}
 .opportunity-form label{font-size:13.2px!important}
 .opportunity-form input,.opportunity-form select{font-size:14.4px!important}
@@ -164,7 +164,7 @@ h2{font-size:16.8px!important}
 .live-more{font-size:13.2px!important}
 @media(max-width:600px){.live-more{font-size:15.6px!important}}
 .push-toggle{font-size:12px!important}
-.push-toggle>span:first-child{font-size:18px!important}
+.push-toggle>span:first-child{font-size:19.2px!important}
 @media(max-width:600px){.push-toggle>span:first-child{font-size:21.6px!important}}
 .device-list h3{font-size:14.4px!important}
 .live-toolbar label{font-size:12px!important}
@@ -177,17 +177,17 @@ h2{font-size:16.8px!important}
 #board-settings{font-size:13.2px!important}
 .board-warning{font-size:12px!important}
 .waterfall-value{font-size:12px!important}
-.waterfall-label{font-size:11.5px!important}
+.waterfall-label{font-size:12px!important}
 .board-stage h3{font-size:14.4px!important}
 .board-stage p{font-size:12px!important}
 .board-goal-main span{font-size:12px!important}
 .board-goal-main small{font-size:12px!important}
-.board-state{font-size:11.5px!important}
+.board-state{font-size:12px!important}
 .board-table{font-size:13.2px!important}
-.board-table thead th{font-size:11.5px!important}
+.board-table thead th{font-size:12px!important}
 .board-table td b{font-size:12px!important}
-.board-note{font-size:11.5px!important}
-@media(max-width:600px){.board-lead strong{font-size:33.6px!important}.board-goal-main strong{font-size:31.2px!important}.waterfall-value{font-size:11.5px!important}}
+.board-note{font-size:12px!important}
+@media(max-width:600px){.board-lead strong{font-size:31.2px!important}.board-goal-main strong{font-size:31.2px!important}.waterfall-value{font-size:12px!important}}
 @media(max-width:600px){.board-table th[scope="row"]{font-size:16.8px!important}.board-table td{font-size:15.6px!important}.board-table td::before{font-size:13.2px!important}.board-table td b{font-size:14.4px!important}.board-state{font-size:13.2px!important}}
 .push-chain li{font-size:13.2px!important}
 @media(max-width:600px){.push-chain li{font-size:14.4px!important}}
@@ -196,7 +196,7 @@ h2{font-size:16.8px!important}
 .external-check p,.external-check li{font-size:13.2px!important}
 .external-check button{font-size:13.2px!important}
 @media(max-width:600px){.external-check-url input{font-size:14.4px!important}}
-.att-media a{font-size:11.5px!important}
+.att-media a{font-size:12px!important}
 .att-file{font-size:13.2px!important}
 .att-file b{font-size:12px!important}
 .viewer-bar{font-size:14.4px!important}
@@ -247,14 +247,14 @@ h2{font-size:16.8px!important}
 .board-origin{font-size:14.4px!important}
 .announce-card h4{font-size:14.4px!important}
 .announce-hint{font-size:13.2px!important}
-.announce-title{font-size:24px!important}
+.announce-title{font-size:26.4px!important}
 .announce-body{font-size:16.8px!important}
 .announce-link{font-size:15.6px!important}
 .assign-button{font-size:14.4px!important}
 .origin-note{font-size:15.6px!important}
 .comment-tag{font-size:13.2px!important}
 .updated-at{font-size:14.4px!important}
-.section-label{font-size:18px!important}
+.section-label{font-size:19.2px!important}
 .eyebrow{font-size:14.4px!important}
 .board-table thead th{font-size:14.4px!important}
 .contact-group legend{font-size:15.6px!important}
@@ -286,10 +286,10 @@ details.contact-group>summary small{font-size:14.4px!important}
 .won-inline-status{font-size:14.4px!important}
 @media(max-width:600px){.won-stats strong{font-size:26.4px!important}}
 .won-banner{font-size:16.8px!important}
-.won-head h2{font-size:25.2px!important}
+.won-head h2{font-size:26.4px!important}
 .won-head p{font-size:16.8px!important}
 .won-head small{font-size:14.4px!important}
-.won-item-info strong{font-size:18px!important}
+.won-item-info strong{font-size:19.2px!important}
 .won-item-info small{font-size:15.6px!important}
 .won-field input{font-size:21.6px!important}
 .won-field .won-save{font-size:16.8px!important}
@@ -297,8 +297,8 @@ details.contact-group>summary small{font-size:14.4px!important}
 .won-more{font-size:15.6px!important}
 .won-age{font-size:15.6px!important}
 .won-toolbar label{font-size:14.4px!important}
-.won-toolbar select{font-size:18px!important}
-.won-stats strong{font-size:28.8px!important}
+.won-toolbar select{font-size:19.2px!important}
+.won-stats strong{font-size:31.2px!important}
 .won-note{font-size:15.6px!important}
 .won-row-info small{font-size:15.6px!important}
 .won-amount{font-size:21.6px!important}
@@ -307,16 +307,16 @@ details.contact-group>summary small{font-size:14.4px!important}
 @media(max-width:600px){.won-toolbar select{font-size:16.8px!important}}
 .won-note{font-size:15.6px!important}
 .board-month-pick{font-size:14.4px!important}
-.board-month-pick select,.won-toolbar select,.period-custom select{font-size:18px!important}
+.board-month-pick select,.won-toolbar select,.period-custom select{font-size:19.2px!important}
 .live-channels .channel-current{font-size:16.8px!important}
 .live-channels .channel-list button[data-channel]{font-size:16.8px!important}
 .live-channels .channel-list button small{font-size:13.2px!important}
 .help-menu>*{font-size:16.8px!important}
 .tour-count{font-size:14.4px!important}
-.tour-card h2{font-size:22.8px!important}
+.tour-card h2{font-size:21.6px!important}
 .tour-body{font-size:16.8px!important}
-.manual{font-size:18px!important}
-.manual h1{font-size:36px!important}
+.manual{font-size:19.2px!important}
+.manual h1{font-size:38.4px!important}
 .manual h2{font-size:26.4px!important}
 .manual h3{font-size:19.2px!important}
 .manual figcaption{font-size:15.6px!important}
@@ -324,23 +324,23 @@ details.contact-group>summary small{font-size:14.4px!important}
 .manual .tip{font-size:16.8px!important}
 .security-check small{font-size:14.4px!important}
 .maintenance-card h1{font-size:31.2px!important}
-.maintenance-card p{font-size:18px!important}
+.maintenance-card p{font-size:19.2px!important}
 .cons-block h3{font-size:21.6px!important}
 .cons-note{font-size:16.8px!important}
 .cons-bar label,.cons-form label{font-size:15.6px!important}
 .cons-totals small{font-size:15.6px!important}
-.cons-totals strong{font-size:28.8px!important}
-.cons-card h4{font-size:20.4px!important}
+.cons-totals strong{font-size:31.2px!important}
+.cons-card h4{font-size:21.6px!important}
 .cons-plan{font-size:16.8px!important}
 .cons-money strong{font-size:26.4px!important}
 .cons-card dt{font-size:14.4px!important}
 .cons-mini span{font-size:15.6px!important}
-.cons-sheet-h h2{font-size:28.8px!important}
+.cons-sheet-h h2{font-size:31.2px!important}
 .cons-kpis small{font-size:15.6px!important}
 .cons-kpis strong{font-size:31.2px!important}
-.cons-kpis.small strong{font-size:22.8px!important}
-.cons-sheet-title h3{font-size:24px!important}
-.cons-sheet h4{font-size:18px!important}
+.cons-kpis.small strong{font-size:21.6px!important}
+.cons-sheet-title h3{font-size:26.4px!important}
+.cons-sheet h4{font-size:19.2px!important}
 .cons-sheet table{font-size:16.8px!important}
 .cons-moves em{font-size:14.4px!important}
 .cons-sheet-f{font-size:14.4px!important}
@@ -356,10 +356,10 @@ details.contact-group>summary small{font-size:14.4px!important}
 html[data-text="large"] body{font-size:18.2px!important}
 html[data-text="large"] h2{font-size:19.6px!important}
 html[data-text="large"] .brand{font-size:44.8px!important}
-html[data-text="large"] .brand-sub{font-size:13px!important}
-html[data-text="large"] .workspace-label{font-size:13px!important}
+html[data-text="large"] .brand-sub{font-size:14px!important}
+html[data-text="large"] .workspace-label{font-size:14px!important}
 html[data-text="large"] .nav{font-size:16.8px!important}
-html[data-text="large"] .nav>span{font-size:26.6px!important}
+html[data-text="large"] .nav>span{font-size:25.2px!important}
 html[data-text="large"] .nav b{font-size:14px!important}
 html[data-text="large"] .connection{font-size:14px!important}
 html[data-text="large"] .profile{font-size:16.8px!important}
@@ -368,55 +368,55 @@ html[data-text="large"] .avatar{font-size:16.8px!important}
 html[data-text="large"] .avatar.small{font-size:14px!important}
 html[data-text="large"] .breadcrumbs{font-size:15.4px!important}
 html[data-text="large"] .network{font-size:14px!important}
-html[data-text="large"] .icon-btn{font-size:28px!important}
-html[data-text="large"] .eyebrow{font-size:13px!important}
+html[data-text="large"] .icon-btn{font-size:30.8px!important}
+html[data-text="large"] .eyebrow{font-size:14px!important}
 html[data-text="large"] .page-heading p{font-size:15.4px!important}
 html[data-text="large"] .heading-detail{font-size:15.4px!important}
-html[data-text="large"] .heading-detail small{font-size:13px!important}
+html[data-text="large"] .heading-detail small{font-size:14px!important}
 html[data-text="large"] .stats span{font-size:14px!important}
 html[data-text="large"] .stat-note .spark{font-size:44.8px!important}
 html[data-text="large"] .list-heading h2 span{font-size:14px!important}
 html[data-text="large"] .search input{font-size:14px!important}
-html[data-text="large"] .search span{font-size:28px!important}
-html[data-text="large"] .search kbd{font-size:13px!important}
+html[data-text="large"] .search span{font-size:30.8px!important}
+html[data-text="large"] .search kbd{font-size:14px!important}
 html[data-text="large"] .tabs button{font-size:14px!important}
-html[data-text="large"] .tabs span{font-size:13px!important}
+html[data-text="large"] .tabs span{font-size:14px!important}
 html[data-text="large"] .conversation-item .avatar{font-size:14px!important}
 html[data-text="large"] .conversation-info strong{font-size:15.4px!important}
-html[data-text="large"] .conversation-info time{font-size:13px!important}
+html[data-text="large"] .conversation-info time{font-size:14px!important}
 html[data-text="large"] .conversation-info p{font-size:14px!important}
-html[data-text="large"] .channel{font-size:13px!important}
-html[data-text="large"] .unread{font-size:13px!important}
-html[data-text="large"] .list-footer{font-size:13px!important}
+html[data-text="large"] .channel{font-size:14px!important}
+html[data-text="large"] .unread{font-size:14px!important}
+html[data-text="large"] .list-footer{font-size:14px!important}
 html[data-text="large"] .chat-person h2{font-size:16.8px!important}
-html[data-text="large"] .chat-person>span{font-size:13px!important}
+html[data-text="large"] .chat-person>span{font-size:14px!important}
 html[data-text="large"] .chat-header .icon-btn{font-size:25.2px!important}
-html[data-text="large"] .conversation-context{font-size:13px!important}
-html[data-text="large"] .conversation-context button{font-size:13px!important}
-html[data-text="large"] .day-label{font-size:13px!important}
+html[data-text="large"] .conversation-context{font-size:14px!important}
+html[data-text="large"] .conversation-context button{font-size:14px!important}
+html[data-text="large"] .day-label{font-size:14px!important}
 html[data-text="large"] .bubble{font-size:15.4px!important}
-html[data-text="large"] .bubble time{font-size:13px!important}
-html[data-text="large"] .composer-tabs{font-size:13px!important}
-html[data-text="large"] .composer-tabs strong{font-size:13px!important}
-html[data-text="large"] .composer-tabs button{font-size:13px!important}
-html[data-text="large"] .composer-tabs>span{font-size:13px!important}
+html[data-text="large"] .bubble time{font-size:14px!important}
+html[data-text="large"] .composer-tabs{font-size:14px!important}
+html[data-text="large"] .composer-tabs strong{font-size:14px!important}
+html[data-text="large"] .composer-tabs button{font-size:14px!important}
+html[data-text="large"] .composer-tabs>span{font-size:14px!important}
 html[data-text="large"] .composer textarea{font-size:15.4px!important}
-html[data-text="large"] .composer-hint{font-size:13px!important}
+html[data-text="large"] .composer-hint{font-size:14px!important}
 html[data-text="large"] .send,html[data-text="large"] .primary{font-size:14px!important}
 html[data-text="large"] .panel-heading h2{font-size:15.4px!important}
-html[data-text="large"] .panel-heading button{font-size:23.8px!important}
-html[data-text="large"] .contact-identity h3{font-size:21px!important}
-html[data-text="large"] .contact-identity p{font-size:13px!important}
-html[data-text="large"] .contact-links a,html[data-text="large"] .contact-links button{font-size:13px!important}
-html[data-text="large"] .section-label{font-size:13px!important}
-html[data-text="large"] .detail-row{font-size:13px!important}
-html[data-text="large"] .tag{font-size:13px!important}
+html[data-text="large"] .panel-heading button{font-size:25.2px!important}
+html[data-text="large"] .contact-identity h3{font-size:22.4px!important}
+html[data-text="large"] .contact-identity p{font-size:14px!important}
+html[data-text="large"] .contact-links a,html[data-text="large"] .contact-links button{font-size:14px!important}
+html[data-text="large"] .section-label{font-size:14px!important}
+html[data-text="large"] .detail-row{font-size:14px!important}
+html[data-text="large"] .tag{font-size:14px!important}
 html[data-text="large"] .opportunity h3{font-size:14px!important}
-html[data-text="large"] .opportunity p{font-size:13px!important}
-html[data-text="large"] .quick-actions button{font-size:13px!important}
+html[data-text="large"] .opportunity p{font-size:14px!important}
+html[data-text="large"] .quick-actions button{font-size:14px!important}
 html[data-text="large"] .task{font-size:14px!important}
-html[data-text="large"] .task small{font-size:13px!important}
-html[data-text="large"] .page-footer{font-size:13px!important}
+html[data-text="large"] .task small{font-size:14px!important}
+html[data-text="large"] .page-footer{font-size:14px!important}
 html[data-text="large"] .card h3{font-size:19.6px!important}
 html[data-text="large"] .card p{font-size:15.4px!important}
 html[data-text="large"] .dialog-copy{font-size:16.8px!important}
@@ -427,8 +427,8 @@ html[data-text="large"] .settings-notice{font-size:16.8px!important}
 html[data-text="large"] .access-panel h3{font-size:16.8px!important}
 html[data-text="large"] .access-panel label{font-size:15.4px!important}
 html[data-text="large"] .access-panel .access-state{font-size:15.4px!important}
-@media(max-width:850px){html[data-text="large"] .nav>span{font-size:32.2px!important}html[data-text="large"] h1{font-size:42px!important}html[data-text="large"] .page-footer{font-size:13px!important}}
-@media(max-width:600px){html[data-text="large"] .nav{font-size:13px!important}html[data-text="large"] .nav>span{font-size:28px!important}html[data-text="large"] .eyebrow{font-size:13px!important}html[data-text="large"] h1{font-size:40.6px!important}html[data-text="large"] .page-heading p{font-size:14px!important}html[data-text="large"] .stats>div>span{font-size:13px!important}html[data-text="large"] .stats strong{font-size:33.6px!important}html[data-text="large"] .stats strong small{font-size:13px!important}html[data-text="large"] .bubble{font-size:16.8px!important}html[data-text="large"] .composer textarea{font-size:19.6px!important}html[data-text="large"] .composer-hint{font-size:13px!important}html[data-text="large"] .conversation-info strong{font-size:16.8px!important}html[data-text="large"] .conversation-info p{font-size:15.4px!important}html[data-text="large"] .conversation-info time{font-size:13px!important}html[data-text="large"] .conversation-info .channel{font-size:13px!important}html[data-text="large"] .search input{font-size:16.8px!important}html[data-text="large"] .tabs button{font-size:15.4px!important}}
+@media(max-width:850px){html[data-text="large"] .nav>span{font-size:30.8px!important}html[data-text="large"] h1{font-size:44.8px!important}html[data-text="large"] .page-footer{font-size:14px!important}}
+@media(max-width:600px){html[data-text="large"] .nav{font-size:14px!important}html[data-text="large"] .nav>span{font-size:30.8px!important}html[data-text="large"] .eyebrow{font-size:14px!important}html[data-text="large"] h1{font-size:44.8px!important}html[data-text="large"] .page-heading p{font-size:14px!important}html[data-text="large"] .stats>div>span{font-size:14px!important}html[data-text="large"] .stats strong{font-size:36.4px!important}html[data-text="large"] .stats strong small{font-size:14px!important}html[data-text="large"] .bubble{font-size:16.8px!important}html[data-text="large"] .composer textarea{font-size:19.6px!important}html[data-text="large"] .composer-hint{font-size:14px!important}html[data-text="large"] .conversation-info strong{font-size:16.8px!important}html[data-text="large"] .conversation-info p{font-size:15.4px!important}html[data-text="large"] .conversation-info time{font-size:14px!important}html[data-text="large"] .conversation-info .channel{font-size:14px!important}html[data-text="large"] .search input{font-size:16.8px!important}html[data-text="large"] .tabs button{font-size:15.4px!important}}
 @media(max-width:600px){html[data-text="large"] .nav>span{font-size:25.2px!important}html[data-text="large"] .integration-heading h2{font-size:18.2px!important}}
 html[data-text="large"] .live-toolbar label{font-size:15.4px!important}
 html[data-text="large"] .live-toolbar select{font-size:19.6px!important}
@@ -446,24 +446,24 @@ html[data-text="large"] .live-composer label{font-size:15.4px!important}
 html[data-text="large"] .live-composer span,html[data-text="large"] .live-composer p{font-size:15.4px!important}
 @media(max-width:600px){html[data-text="large"] .live-composer textarea{font-size:22.4px!important}}
 html[data-text="large"] .live-auto-status{font-size:15.4px!important}
-html[data-text="large"] .live-profile-header h2{font-size:23.8px!important}
+html[data-text="large"] .live-profile-header h2{font-size:25.2px!important}
 html[data-text="large"] .live-profile-header button{font-size:30.8px!important}
 html[data-text="large"] .live-profile-actions a{font-size:15.4px!important}
-html[data-text="large"] .live-profile-details span,html[data-text="large"] .live-profile-fields span,html[data-text="large"] .live-profile-tags .muted{font-size:13px!important}
+html[data-text="large"] .live-profile-details span,html[data-text="large"] .live-profile-fields span,html[data-text="large"] .live-profile-tags .muted{font-size:14px!important}
 html[data-text="large"] .live-profile-details strong,html[data-text="large"] .live-profile-fields strong{font-size:15.4px!important}
 html[data-text="large"] .live-profile-opportunities>.muted{font-size:14px!important}
 html[data-text="large"] .live-opportunity h3{font-size:15.4px!important}
-html[data-text="large"] .live-opportunity span{font-size:13px!important}
+html[data-text="large"] .live-opportunity span{font-size:14px!important}
 html[data-text="large"] .live-opportunity strong{font-size:14px!important}
 html[data-text="large"] .live-opportunity-all summary{font-size:14px!important}
 html[data-text="large"] .live-tasks>.muted,html[data-text="large"] .live-notes>.muted,html[data-text="large"] .live-appointments>.muted{font-size:14px!important}
-html[data-text="large"] .live-task>button{font-size:21px!important}
+html[data-text="large"] .live-task>button{font-size:22.4px!important}
 html[data-text="large"] .live-task strong{font-size:15.4px!important}
 html[data-text="large"] .live-task p{font-size:14px!important}
-html[data-text="large"] .live-task small{font-size:13px!important}
+html[data-text="large"] .live-task small{font-size:14px!important}
 html[data-text="large"] .live-note p{font-size:15.4px!important}
 html[data-text="large"] .live-appointment strong{font-size:15.4px!important}
-html[data-text="large"] .live-note small,html[data-text="large"] .live-appointment small{font-size:13px!important}
+html[data-text="large"] .live-note small,html[data-text="large"] .live-appointment small{font-size:14px!important}
 html[data-text="large"] .live-quick-actions summary{font-size:14px!important}
 html[data-text="large"] .live-quick-actions input,html[data-text="large"] .live-quick-actions textarea{font-size:15.4px!important}
 html[data-text="large"] #live-activity-status{font-size:14px!important}
@@ -477,7 +477,7 @@ html[data-text="large"] .board-total{font-size:14px!important}
 html[data-text="large"] .board-card h3{font-size:16.8px!important}
 html[data-text="large"] .board-card p{font-size:14px!important}
 html[data-text="large"] .board-empty{font-size:14px!important}
-@media(max-width:700px){html[data-text="large"] .nav{font-size:14px!important}html[data-text="large"] .nav>span{font-size:30.8px!important}html[data-text="large"] .breadcrumbs{font-size:18.2px!important}html[data-text="large"] .breadcrumbs strong{font-size:21px!important}html[data-text="large"] .account-switch select{font-size:18.2px!important}html[data-text="large"] h1{font-size:33.6px!important}html[data-text="large"] .page-heading p{font-size:16.8px!important}html[data-text="large"] .live-conversation .conversation-info strong{font-size:21px!important}html[data-text="large"] .live-chat-header h2{font-size:22.4px!important}html[data-text="large"] .bubble{font-size:19.6px!important}html[data-text="large"] .live-composer textarea{font-size:22.4px!important}html[data-text="large"] .live-composer .primary{font-size:18.2px!important}html[data-text="large"] .live-history-actions button{font-size:18.2px!important}html[data-text="large"] .live-toolbar select{font-size:21px!important}html[data-text="large"] .live-feedback,html[data-text="large"] .live-auto-status{font-size:16.8px!important}html[data-text="large"] .search input{font-size:22.4px!important}html[data-text="large"] .tabs button{font-size:18.2px!important}html[data-text="large"] .live-profile-header h2{font-size:26.6px!important}html[data-text="large"] .live-profile-details strong,html[data-text="large"] .live-profile-fields strong{font-size:18.2px!important}html[data-text="large"] .live-profile-details span,html[data-text="large"] .live-profile-fields span{font-size:15.4px!important}html[data-text="large"] .live-profile-actions a{font-size:18.2px!important}html[data-text="large"] .live-task>button{font-size:28px!important}html[data-text="large"] .live-task strong{font-size:19.6px!important}html[data-text="large"] .live-quick-actions summary{font-size:18.2px!important}html[data-text="large"] .live-quick-actions input,html[data-text="large"] .live-quick-actions textarea{font-size:22.4px!important}html[data-text="large"] .contact-card header h3{font-size:21px!important}html[data-text="large"] .contact-card .detail-row{font-size:16.8px!important}html[data-text="large"] .contact-card .detail-row strong{font-size:18.2px!important}html[data-text="large"] .board-column h2{font-size:21px!important}html[data-text="large"] .board-card h3{font-size:19.6px!important}html[data-text="large"] .integration-card footer button{font-size:18.2px!important}html[data-text="large"] .access-panel select{font-size:22.4px!important}html[data-text="large"] .dialog-form input,html[data-text="large"] .dialog-form textarea,html[data-text="large"] .dialog-form select{font-size:22.4px!important}html[data-text="large"] .dialog-form .primary,html[data-text="large"] .signin .primary{font-size:19.6px!important}}
+@media(max-width:700px){html[data-text="large"] .nav{font-size:14px!important}html[data-text="large"] .nav>span{font-size:30.8px!important}html[data-text="large"] .breadcrumbs{font-size:18.2px!important}html[data-text="large"] .breadcrumbs strong{font-size:22.4px!important}html[data-text="large"] .account-switch select{font-size:18.2px!important}html[data-text="large"] h1{font-size:36.4px!important}html[data-text="large"] .page-heading p{font-size:16.8px!important}html[data-text="large"] .live-conversation .conversation-info strong{font-size:22.4px!important}html[data-text="large"] .live-chat-header h2{font-size:22.4px!important}html[data-text="large"] .bubble{font-size:19.6px!important}html[data-text="large"] .live-composer textarea{font-size:22.4px!important}html[data-text="large"] .live-composer .primary{font-size:18.2px!important}html[data-text="large"] .live-history-actions button{font-size:18.2px!important}html[data-text="large"] .live-toolbar select{font-size:22.4px!important}html[data-text="large"] .live-feedback,html[data-text="large"] .live-auto-status{font-size:16.8px!important}html[data-text="large"] .search input{font-size:22.4px!important}html[data-text="large"] .tabs button{font-size:18.2px!important}html[data-text="large"] .live-profile-header h2{font-size:25.2px!important}html[data-text="large"] .live-profile-details strong,html[data-text="large"] .live-profile-fields strong{font-size:18.2px!important}html[data-text="large"] .live-profile-details span,html[data-text="large"] .live-profile-fields span{font-size:15.4px!important}html[data-text="large"] .live-profile-actions a{font-size:18.2px!important}html[data-text="large"] .live-task>button{font-size:30.8px!important}html[data-text="large"] .live-task strong{font-size:19.6px!important}html[data-text="large"] .live-quick-actions summary{font-size:18.2px!important}html[data-text="large"] .live-quick-actions input,html[data-text="large"] .live-quick-actions textarea{font-size:22.4px!important}html[data-text="large"] .contact-card header h3{font-size:22.4px!important}html[data-text="large"] .contact-card .detail-row{font-size:16.8px!important}html[data-text="large"] .contact-card .detail-row strong{font-size:18.2px!important}html[data-text="large"] .board-column h2{font-size:22.4px!important}html[data-text="large"] .board-card h3{font-size:19.6px!important}html[data-text="large"] .integration-card footer button{font-size:18.2px!important}html[data-text="large"] .access-panel select{font-size:22.4px!important}html[data-text="large"] .dialog-form input,html[data-text="large"] .dialog-form textarea,html[data-text="large"] .dialog-form select{font-size:22.4px!important}html[data-text="large"] .dialog-form .primary,html[data-text="large"] .signin .primary{font-size:19.6px!important}}
 html[data-text="large"] .live-channels button{font-size:15.4px!important}
 html[data-text="large"] .live-channels button span{font-size:18.2px!important}
 html[data-text="large"] .live-channel-single{font-size:14px!important}
@@ -493,20 +493,20 @@ html[data-text="large"] .live-contact-form select,html[data-text="large"] .live-
 html[data-text="large"] .live-check{font-size:16.8px!important}
 html[data-text="large"] .live-field-name{font-size:15.4px!important}
 @media(max-width:700px){html[data-text="large"] .live-contact-form select,html[data-text="large"] .live-contact-form textarea{font-size:22.4px!important}}
-html[data-text="large"] #live-focus{font-size:23.8px!important}
+html[data-text="large"] #live-focus{font-size:25.2px!important}
 html[data-text="large"] .live-channel-filters button{font-size:14px!important}
 html[data-text="large"] .live-attachment{font-size:15.4px!important}
 html[data-text="large"] #nav-unread{font-size:14px!important}
-@media(max-width:700px){html[data-text="large"] .live-channel-filters button{font-size:16.8px!important}html[data-text="large"] #nav-unread{font-size:13px!important}}
+@media(max-width:700px){html[data-text="large"] .live-channel-filters button{font-size:16.8px!important}html[data-text="large"] #nav-unread{font-size:14px!important}}
 html[data-text="large"] .record-row strong{font-size:16.8px!important}
 html[data-text="large"] .record-row small{font-size:14px!important}
-html[data-text="large"] .record-header h2{font-size:23.8px!important}
+html[data-text="large"] .record-header h2{font-size:25.2px!important}
 html[data-text="large"] .record-header p{font-size:15.4px!important}
 html[data-text="large"] .record-header .avatar{font-size:19.6px!important}
 html[data-text="large"] .record-flag{font-size:14px!important}
 html[data-text="large"] .board-tile span{font-size:14px!important}
 html[data-text="large"] .board-tile small{font-size:14px!important}
-@media(max-width:900px){html[data-text="large"] .records-layout.record-open .mobile-back{font-size:28px!important}}
+@media(max-width:900px){html[data-text="large"] .records-layout.record-open .mobile-back{font-size:30.8px!important}}
 @media(max-width:600px){html[data-text="large"] .record-row strong{font-size:19.6px!important}html[data-text="large"] .record-row small{font-size:16.8px!important}html[data-text="large"] .live-profile-details strong,html[data-text="large"] .live-profile-fields strong{font-size:18.2px!important}}
 html[data-text="large"] .opportunity-form label{font-size:15.4px!important}
 html[data-text="large"] .opportunity-form input,html[data-text="large"] .opportunity-form select{font-size:16.8px!important}
@@ -517,7 +517,7 @@ html[data-text="large"] .live-opportunity-edit,html[data-text="large"] .live-opp
 html[data-text="large"] .live-more{font-size:15.4px!important}
 @media(max-width:600px){html[data-text="large"] .live-more{font-size:18.2px!important}}
 html[data-text="large"] .push-toggle{font-size:14px!important}
-html[data-text="large"] .push-toggle>span:first-child{font-size:21px!important}
+html[data-text="large"] .push-toggle>span:first-child{font-size:22.4px!important}
 @media(max-width:600px){html[data-text="large"] .push-toggle>span:first-child{font-size:25.2px!important}}
 html[data-text="large"] .device-list h3{font-size:16.8px!important}
 html[data-text="large"] .live-toolbar label{font-size:14px!important}
@@ -530,17 +530,17 @@ html[data-text="large"] .board-month-pick input{font-size:15.4px!important}
 html[data-text="large"] #board-settings{font-size:15.4px!important}
 html[data-text="large"] .board-warning{font-size:14px!important}
 html[data-text="large"] .waterfall-value{font-size:14px!important}
-html[data-text="large"] .waterfall-label{font-size:13px!important}
+html[data-text="large"] .waterfall-label{font-size:14px!important}
 html[data-text="large"] .board-stage h3{font-size:16.8px!important}
 html[data-text="large"] .board-stage p{font-size:14px!important}
 html[data-text="large"] .board-goal-main span{font-size:14px!important}
 html[data-text="large"] .board-goal-main small{font-size:14px!important}
-html[data-text="large"] .board-state{font-size:13px!important}
+html[data-text="large"] .board-state{font-size:14px!important}
 html[data-text="large"] .board-table{font-size:15.4px!important}
-html[data-text="large"] .board-table thead th{font-size:13px!important}
+html[data-text="large"] .board-table thead th{font-size:14px!important}
 html[data-text="large"] .board-table td b{font-size:14px!important}
-html[data-text="large"] .board-note{font-size:13px!important}
-@media(max-width:600px){html[data-text="large"] .board-lead strong{font-size:39.2px!important}html[data-text="large"] .board-goal-main strong{font-size:36.4px!important}html[data-text="large"] .waterfall-value{font-size:13px!important}}
+html[data-text="large"] .board-note{font-size:14px!important}
+@media(max-width:600px){html[data-text="large"] .board-lead strong{font-size:36.4px!important}html[data-text="large"] .board-goal-main strong{font-size:36.4px!important}html[data-text="large"] .waterfall-value{font-size:14px!important}}
 @media(max-width:600px){html[data-text="large"] .board-table th[scope="row"]{font-size:19.6px!important}html[data-text="large"] .board-table td{font-size:18.2px!important}html[data-text="large"] .board-table td::before{font-size:15.4px!important}html[data-text="large"] .board-table td b{font-size:16.8px!important}html[data-text="large"] .board-state{font-size:15.4px!important}}
 html[data-text="large"] .push-chain li{font-size:15.4px!important}
 @media(max-width:600px){html[data-text="large"] .push-chain li{font-size:16.8px!important}}
@@ -549,7 +549,7 @@ html[data-text="large"] .external-check h3{font-size:18.2px!important}
 html[data-text="large"] .external-check p,html[data-text="large"] .external-check li{font-size:15.4px!important}
 html[data-text="large"] .external-check button{font-size:15.4px!important}
 @media(max-width:600px){html[data-text="large"] .external-check-url input{font-size:16.8px!important}}
-html[data-text="large"] .att-media a{font-size:13px!important}
+html[data-text="large"] .att-media a{font-size:14px!important}
 html[data-text="large"] .att-file{font-size:15.4px!important}
 html[data-text="large"] .att-file b{font-size:14px!important}
 html[data-text="large"] .viewer-bar{font-size:16.8px!important}
@@ -600,14 +600,14 @@ html[data-text="large"] .won-button span[aria-hidden]{font-size:18.2px!important
 html[data-text="large"] .board-origin{font-size:16.8px!important}
 html[data-text="large"] .announce-card h4{font-size:16.8px!important}
 html[data-text="large"] .announce-hint{font-size:15.4px!important}
-html[data-text="large"] .announce-title{font-size:28px!important}
+html[data-text="large"] .announce-title{font-size:30.8px!important}
 html[data-text="large"] .announce-body{font-size:19.6px!important}
 html[data-text="large"] .announce-link{font-size:18.2px!important}
 html[data-text="large"] .assign-button{font-size:16.8px!important}
 html[data-text="large"] .origin-note{font-size:18.2px!important}
 html[data-text="large"] .comment-tag{font-size:15.4px!important}
 html[data-text="large"] .updated-at{font-size:16.8px!important}
-html[data-text="large"] .section-label{font-size:21px!important}
+html[data-text="large"] .section-label{font-size:22.4px!important}
 html[data-text="large"] .eyebrow{font-size:16.8px!important}
 html[data-text="large"] .board-table thead th{font-size:16.8px!important}
 html[data-text="large"] .contact-group legend{font-size:18.2px!important}
@@ -639,10 +639,10 @@ html[data-text="large"] .won-flag{font-size:18.2px!important}
 html[data-text="large"] .won-inline-status{font-size:16.8px!important}
 @media(max-width:600px){html[data-text="large"] .won-stats strong{font-size:30.8px!important}}
 html[data-text="large"] .won-banner{font-size:19.6px!important}
-html[data-text="large"] .won-head h2{font-size:29.4px!important}
+html[data-text="large"] .won-head h2{font-size:30.8px!important}
 html[data-text="large"] .won-head p{font-size:19.6px!important}
 html[data-text="large"] .won-head small{font-size:16.8px!important}
-html[data-text="large"] .won-item-info strong{font-size:21px!important}
+html[data-text="large"] .won-item-info strong{font-size:22.4px!important}
 html[data-text="large"] .won-item-info small{font-size:18.2px!important}
 html[data-text="large"] .won-field input{font-size:25.2px!important}
 html[data-text="large"] .won-field .won-save{font-size:19.6px!important}
@@ -650,8 +650,8 @@ html[data-text="large"] .won-item-status{font-size:16.8px!important}
 html[data-text="large"] .won-more{font-size:18.2px!important}
 html[data-text="large"] .won-age{font-size:18.2px!important}
 html[data-text="large"] .won-toolbar label{font-size:16.8px!important}
-html[data-text="large"] .won-toolbar select{font-size:21px!important}
-html[data-text="large"] .won-stats strong{font-size:33.6px!important}
+html[data-text="large"] .won-toolbar select{font-size:22.4px!important}
+html[data-text="large"] .won-stats strong{font-size:36.4px!important}
 html[data-text="large"] .won-note{font-size:18.2px!important}
 html[data-text="large"] .won-row-info small{font-size:18.2px!important}
 html[data-text="large"] .won-amount{font-size:25.2px!important}
@@ -660,16 +660,16 @@ html[data-text="large"] .won-by li{font-size:19.6px!important}
 @media(max-width:600px){html[data-text="large"] .won-toolbar select{font-size:19.6px!important}}
 html[data-text="large"] .won-note{font-size:18.2px!important}
 html[data-text="large"] .board-month-pick{font-size:16.8px!important}
-html[data-text="large"] .board-month-pick select,html[data-text="large"] .won-toolbar select,html[data-text="large"] .period-custom select{font-size:21px!important}
+html[data-text="large"] .board-month-pick select,html[data-text="large"] .won-toolbar select,html[data-text="large"] .period-custom select{font-size:22.4px!important}
 html[data-text="large"] .live-channels .channel-current{font-size:19.6px!important}
 html[data-text="large"] .live-channels .channel-list button[data-channel]{font-size:19.6px!important}
 html[data-text="large"] .live-channels .channel-list button small{font-size:15.4px!important}
 html[data-text="large"] .help-menu>*{font-size:19.6px!important}
 html[data-text="large"] .tour-count{font-size:16.8px!important}
-html[data-text="large"] .tour-card h2{font-size:26.6px!important}
+html[data-text="large"] .tour-card h2{font-size:25.2px!important}
 html[data-text="large"] .tour-body{font-size:19.6px!important}
-html[data-text="large"] .manual{font-size:21px!important}
-html[data-text="large"] .manual h1{font-size:42px!important}
+html[data-text="large"] .manual{font-size:22.4px!important}
+html[data-text="large"] .manual h1{font-size:44.8px!important}
 html[data-text="large"] .manual h2{font-size:30.8px!important}
 html[data-text="large"] .manual h3{font-size:22.4px!important}
 html[data-text="large"] .manual figcaption{font-size:18.2px!important}
@@ -677,23 +677,23 @@ html[data-text="large"] .manual .manual-meta{font-size:19.6px!important}
 html[data-text="large"] .manual .tip{font-size:19.6px!important}
 html[data-text="large"] .security-check small{font-size:16.8px!important}
 html[data-text="large"] .maintenance-card h1{font-size:36.4px!important}
-html[data-text="large"] .maintenance-card p{font-size:21px!important}
+html[data-text="large"] .maintenance-card p{font-size:22.4px!important}
 html[data-text="large"] .cons-block h3{font-size:25.2px!important}
 html[data-text="large"] .cons-note{font-size:19.6px!important}
 html[data-text="large"] .cons-bar label,html[data-text="large"] .cons-form label{font-size:18.2px!important}
 html[data-text="large"] .cons-totals small{font-size:18.2px!important}
-html[data-text="large"] .cons-totals strong{font-size:33.6px!important}
-html[data-text="large"] .cons-card h4{font-size:23.8px!important}
+html[data-text="large"] .cons-totals strong{font-size:36.4px!important}
+html[data-text="large"] .cons-card h4{font-size:25.2px!important}
 html[data-text="large"] .cons-plan{font-size:19.6px!important}
 html[data-text="large"] .cons-money strong{font-size:30.8px!important}
 html[data-text="large"] .cons-card dt{font-size:16.8px!important}
 html[data-text="large"] .cons-mini span{font-size:18.2px!important}
-html[data-text="large"] .cons-sheet-h h2{font-size:33.6px!important}
+html[data-text="large"] .cons-sheet-h h2{font-size:36.4px!important}
 html[data-text="large"] .cons-kpis small{font-size:18.2px!important}
 html[data-text="large"] .cons-kpis strong{font-size:36.4px!important}
-html[data-text="large"] .cons-kpis.small strong{font-size:26.6px!important}
-html[data-text="large"] .cons-sheet-title h3{font-size:28px!important}
-html[data-text="large"] .cons-sheet h4{font-size:21px!important}
+html[data-text="large"] .cons-kpis.small strong{font-size:25.2px!important}
+html[data-text="large"] .cons-sheet-title h3{font-size:30.8px!important}
+html[data-text="large"] .cons-sheet h4{font-size:22.4px!important}
 html[data-text="large"] .cons-sheet table{font-size:19.6px!important}
 html[data-text="large"] .cons-moves em{font-size:16.8px!important}
 html[data-text="large"] .cons-sheet-f{font-size:16.8px!important}
@@ -710,18 +710,16 @@ html[data-text="large"] #more-sheet .more-grid button{font-size:18.2px!important
 .nav{color:var(--muted)!important}
 .connection{color:var(--muted)!important}
 .profile small{color:var(--muted)!important}
+.avatar{color:var(--muted)!important}
 .breadcrumbs{color:var(--muted)!important}
-.breadcrumbs span{color:var(--muted)!important}
+.breadcrumbs strong{color:var(--muted)!important}
 .network{color:var(--muted)!important}
-h1>span{color:var(--muted)!important}
 .page-heading p{color:var(--muted)!important}
 .heading-detail small{color:var(--muted)!important}
 .stats span{color:var(--muted)!important}
 .stats strong small{color:var(--muted)!important}
-.stat-note p{color:var(--muted)!important}
 .list-heading h2 span{color:var(--muted)!important}
 .search span{color:var(--muted)!important}
-.search kbd{color:var(--muted)!important}
 .tabs button{color:var(--muted)!important}
 .conversation-info time{color:var(--muted)!important}
 .conversation-info p{color:var(--muted)!important}
@@ -730,26 +728,18 @@ h1>span{color:var(--muted)!important}
 .chat-person>span{color:var(--muted)!important}
 .chat-header .icon-btn{color:var(--muted)!important}
 .conversation-context{color:var(--muted)!important}
-.conversation-context button{color:var(--muted)!important}
 .day-label{color:var(--muted)!important}
 .bubble time{color:var(--muted)!important}
 .composer-tabs{color:var(--muted)!important}
-.composer-tabs button{color:var(--muted)!important}
 .composer-hint{color:var(--muted)!important}
 .panel-heading button{color:var(--muted)!important}
-.contact-identity p{color:var(--muted)!important}
-.contact-links a,.contact-links button{color:var(--muted)!important}
 .section-label{color:var(--muted)!important}
-.detail-row>span{color:var(--muted)!important}
-.opportunity p{color:var(--muted)!important}
-.task{color:var(--muted)!important}
-.task small{color:var(--muted)!important}
 .page-footer{color:var(--muted)!important}
 .card p{color:var(--muted)!important}
-.empty{color:var(--muted)!important}
 .dialog-copy{color:var(--muted)!important}
 .integration-status{color:var(--muted)!important}
 .access-panel .access-state{color:var(--muted)!important}
+.tpl-preview small{color:var(--muted)!important}
 @media(max-width:600px){.live-channel-filters select{font-size:15px!important}.live-sidebar .tabs button{font-size:14.5px!important}.board-total{font-size:14px!important}}
 /* Lo que más se lee: los mensajes y el cuadro de respuesta. */
 .breadcrumbs,.breadcrumbs strong{color:var(--ink)!important}

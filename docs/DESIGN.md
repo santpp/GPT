@@ -2,7 +2,7 @@
 
 Punto de partida para cualquier persona o IA que vaya a tocar la interfaz. Explica **dónde está cada cosa**, **qué reglas hay que respetar** y **cómo comprobar** que un cambio no rompe nada. Si algo de aquí choca con el código, manda el código; actualiza esta guía en el mismo cambio.
 
-Estado: versión 1.10.11 (noviembre de 2026).
+Estado: versión 1.10.12 (noviembre de 2026). El sistema de diseño completo está aplicado y lo vigila `tests/design-tokens.py`.
 
 ---
 
@@ -38,27 +38,48 @@ Estado: versión 1.10.11 (noviembre de 2026).
 
 Colores oficiales (`docs/brand.md`): vino `#AD103C`, azul profundo `#282E49`, oro `#FABD4B`, blanco de marca `#EFEFEF`, negro.
 
-Variables en `app.css` (`:root`) — **úsalas en vez de escribir colores**:
+### Paleta (1.10.12)
 
-| Variable | Valor claro | Uso |
-|---|---|---|
-| `--ink` | `#0b0b10` | Texto principal |
-| `--muted` | `#30343c` | Texto secundario (contraste 12,5:1) |
-| `--green` | `#ad103c` | **Rojo de marca** (el nombre es histórico). Acción principal, activo, montos. En oscuro se vuelve `#d13c63` |
-| `--accent` | `#fabd4b` | Oro: **solo fondos o detalles**, nunca texto ni contornos (1,7:1 sobre blanco) |
-| `--line` | `#e5e4e9` | Bordes y separadores |
-| `--paper` | `#fff` | Superficie de tarjetas |
-| `--bg` | `#f7f7fa` | Fondo de página |
+Todo color sólido de `app.css` y `layout.css` es uno de estos 18 (más los tres de canal). `tests/design-tokens.py` falla si aparece otro. Las variables están en `:root` de `app.css`.
+
+| Grupo | Variable | Claro | Oscuro (automático) | Uso |
+|---|---|---|---|---|
+| Texto | `--ink` | `#0b0b10` | `#e6e8f0` | Texto principal |
+| | `--muted` | `#30343c` | `#9aa0b4` | Texto secundario (12,5:1) |
+| | `--subtle` | `#5d6370` | convertido | Texto terciario, iconos, metadatos (6:1 sobre blanco) |
+| Marca | `--green` | `#ad103c` | `#d13c63` | **Rojo de marca** (nombre histórico). Acción principal, activo, montos, foco |
+| | `--brand-soft` | `#f7e9ee` | convertido | Fondos suaves de marca (avatares, franja de instalar) |
+| | `--navy` | `#282e49` | — | Azul profundo de marca (barra del sistema, detalles) |
+| | `--accent` | `#fabd4b` | — | Oro: **solo fondos o detalles**, nunca texto ni contornos (1,7:1) |
+| | `--gold-soft` | `#fff4d5` | convertido | Fondo de avisos |
+| | `--gold-ink` | `#7a5c18` | convertido | Texto sobre fondo dorado o de aviso |
+| Estado | `--success` | `#2f7a52` | convertido | Hecho, enviado, conectado |
+| | `--success-soft` | `#eaf7ef` | convertido | Fondo de éxito |
+| | `--info` | `#0a57d0` | convertido | Información, enlaces neutros |
+| | `--info-soft` | `#e9f1ff` | convertido | Fondo de información |
+| Superficie | `--paper` | `#fff` | `#1b1f2c` | Tarjetas y paneles |
+| | `--bg` | `#f7f7fa` | `#12151f` | Fondo de página |
+| | `--surface` | `#f1f1f5` | convertido | Campos de búsqueda, zonas hundidas |
+| | `--line` | `#e5e4e9` | `#2f3445` | Bordes y separadores |
+| | `--line-strong` | `#d8dde6` | convertido | Bordes de botones y campos |
+| Canales | — | `#1faf54`, `#c13584`, `#0866ff` | — | WhatsApp, Instagram, Facebook (colores de esas marcas) |
+
+Las transparencias (`#rrggbbaa`) se permiten para sombras, fondos oscurecidos y anillos de foco.
+
+«Convertido»: `tools/make-dark.py` genera el tono oscuro de cada color que aparece en una regla. Las variables principales tienen además un valor oscuro fijo.
 
 Reglas:
+- **Error = rojo de marca.** No hay un rojo de error aparte.
 - Rojo de marca = acción o estado activo. No lo uses para decorar.
-- Los colores de WhatsApp, Instagram y Facebook en las etiquetas de canal son de esas marcas: no se sustituyen.
-- Modo oscuro: nunca negro puro (fondo `#12151f`, superficie `#1b1f2c`).
-- **Deuda conocida**: hay ~150 colores escritos a mano. Propuesta pendiente: reducirlos a ~18 con nombre (ver §10).
+- El texto solo usa colores de texto (`--ink`, `--muted`, `--subtle`, marca o estado), nunca de línea ni de fondo.
+- Modo oscuro: nunca negro puro.
+- Un color nuevo solo con motivo: se añade a esta tabla, a `:root` y a `tests/design-tokens.py` en el mismo cambio.
 
 ## 4. Tipografía
 
 - Familia: `var(--sans)` = Author Variable → letra del sistema.
+- **Escala** (lo escrito en CSS → lo que se ve, ×1,2 con mínimo 11,5): 10→12 · 11→13,2 · 12→14,4 · 13→15,6 · 14→16,8 · 16→19,2 · 18→21,6 · 22→26,4 · 26→31,2 · 32→38,4 px. No se usan otros tamaños (lo vigila `tests/design-tokens.py`).
+- Pesos: 400 normal, 600 títulos de tarjeta y etiquetas, 700 cifras y títulos de pantalla. «Texto grande» pone todo en 700.
 - **Los tamaños en `layout.css` no son los que se ven**: `make-large.py` los multiplica por **1,2** (mínimo 11,5 px) y, con «Texto grande», por 1,4 en negrita. Si quieres que algo se vea a 16 px, escribe ~13,4 px.
 - Mensajes del chat y cuadro de respuesta: 17 px fijos (bloque `FINAL` de `make-large.py`).
 - En el teléfono, los `input` y `textarea` deben medir ≥16 px reales para que iOS no haga zoom.
@@ -75,6 +96,11 @@ Valores con nombre (bloque «1.10.11 · Sistema de diseño» en `layout.css`):
 | `--r-pill` | 999 px | Píldoras, chips |
 | `--tap` | 44 px | **Toque mínimo** de todo lo que se pulsa (Apple 44, WCAG 2.2 pide 24) |
 | `--ease` | `cubic-bezier(.22,.61,.36,1)` | Curva de todas las animaciones |
+| `--shadow-sm` | `0 1px 3px #12151f1f` | Elementos pegados al fondo (chips, tarjetas elevadas) |
+| `--shadow-md` | `0 8px 24px #12151f1f` | Menús desplegables, tarjetas flotantes |
+| `--shadow-lg` | `0 16px 40px #12151f26` | Diálogos y paneles («Más») |
+
+Las tarjetas normales no llevan sombra: borde `--line` y esquina `--r-md`.
 
 Puntos de corte: **600 px** (teléfono: barra inferior, una columna), 850 px (barra lateral estrecha), 1200 px (paneles laterales). Se prueba a **360, 372, 390 y 412 px**.
 
@@ -133,10 +159,85 @@ Duraciones: 0,25–0,45 s con `var(--ease)`. **Toda animación nueva debe apagar
 - Movimiento reducido respetado.
 - Nada se sale del ancho de 360 px.
 
+## 9 bis. Estados de interacción
+
+| Estado | Cómo se ve | Regla |
+|---|---|---|
+| Reposo | Borde `--line-strong`, texto `--ink` | — |
+| Encima (ratón) | Borde o texto en rojo de marca | Solo como ayuda: en el teléfono no existe |
+| Pulsado | Se encoge al 97 % (`button:active`) | Se apaga con movimiento reducido |
+| Foco (teclado) | Contorno de 2 px en rojo de marca, separado 2 px | Nunca quitar `outline` sin poner otro |
+| Desactivado | Opacidad 50 % y cursor de espera | Los botones que envían algo se desactivan mientras esperan y vuelven si falla |
+| Cargando | Esqueleto (`skeleton()`) o el texto del botón cambia («Cargando…», «Moviendo…») | Nunca una pantalla en blanco |
+| Activo / elegido | Rojo de marca (texto o línea inferior de la pestaña) | Uno solo por grupo |
+
+## 9 ter. Formularios y acciones
+
+- Cada campo tiene una etiqueta visible encima. El texto de ejemplo no sustituye a la etiqueta.
+- El tipo de campo ayuda al teclado del teléfono: `type="search"`, `type="email"`, `inputmode="numeric"` para montos.
+- Las acciones que escriben en la cuenta llevan un identificador de petición (`requestId`): si se pulsa dos veces, solo se hace una vez. Mientras tanto, el botón se desactiva.
+- Confirmar solo lo que no se puede deshacer o lo que descarta trabajo («Salir sin guardar»). Nunca preguntar «¿Seguro?» en acciones normales.
+- Después de una acción, una confirmación breve: aviso flotante (`agora:toast`) o la línea de estado de la pantalla («Reserva sábado pasó a «Propuesta enviada»»).
+
+## 9 quater. Listas, totales y vacíos
+
+- La línea de estado bajo los filtros dice **cuántos hay y qué se muestra**: «120 contactos asignados a ti · se muestran 50, los más recientes primero».
+- Si la lista está cortada, se dice («las más recientes») y se ofrece **Ver más** cuando se puede.
+- Quien solo ve lo suyo lo lee en la propia línea («asignados a ti»), sin avisos aparte.
+- Los vacíos distinguen entre «no hay nada» («Todavía no tienes contactos asignados.») y «no coincide» («Ningún contacto coincide con esa búsqueda.»).
+- Un dato que la cuenta no dio se dice («La cuenta no devolvió este dato»). Nunca se muestra un 0 que parezca real.
+
+## 9 quinquies. Roles: quién ve qué
+
+| | Vendedor | Administrador de subcuenta | Propietaria |
+|---|---|---|---|
+| Pantallas | Tablero, Conversaciones, Contactos, Oportunidades | Igual | Igual + Consumos, Conexiones (en «Más» en el teléfono) |
+| Datos | Solo lo asignado | Toda la subcuenta | Todas las subcuentas |
+| Asignar, «Entrar como», mantenimiento | No | Asignar | Todo |
+
+Al diseñar una pantalla, comprueba las tres vistas. «Entrar como» (Mi cuenta) muestra la de cualquier usuario en solo lectura.
+
+## 9 sexies. Pantallas y rutas
+
+| Ruta | Pantalla | Archivo |
+|---|---|---|
+| `/tablero` | Tablero | `dashboard.js` |
+| `/bandeja` | Conversaciones | `live-inbox.js` |
+| `/contactos` | Contactos | `contacts.js` |
+| `/oportunidades` | Oportunidades (Embudos · Ganadas) | `board.js`, `won.js` |
+| `/ayuda` | Manual | `help.js` |
+| `/consumos` | Consumos (propietaria) | `consumption.js` |
+| `/conexiones` | Conexiones (propietaria) | `integrations.js` |
+| `/conversations/<id>` | Abre una conversación (desde avisos) | `live-inbox.js` |
+
+Las novedades pueden enlazar a cualquiera de las siete primeras.
+
+## 9 septies. Imagen de antes y después
+
+Antes de un cambio visual grande se muestra una imagen. El método usado hasta ahora:
+- Playwright a 390 × 844 con datos inventados (los mismos de `tools/make-manual.py`).
+- El cambio se aplica solo en la captura, sirviendo un CSS modificado con `page.route('**/assets/<archivo>.css', …)` o inyectando estilos con `page.add_style_tag`.
+- La imagen pone «Hoy» y «Propuesta» lado a lado, en claro y en oscuro.
+
+El repositorio no se toca hasta que se aprueba.
+
+## 9 octies. Lista de comprobación antes de entregar
+
+- [ ] `make-dark.py` y `make-large.py` ejecutados.
+- [ ] `tests/design-tokens.py` en verde (paleta, escala y sombras).
+- [ ] Claro, oscuro y «Texto grande» revisados.
+- [ ] 360 y 412 px sin nada fuera del ancho (`tests/phone-fit-ui.py`).
+- [ ] Toques ≥ 44 px, foco visible, movimiento reducido.
+- [ ] Vendedor, administrador y propietaria revisados (o «Entrar como»).
+- [ ] Textos en español, sin nombres técnicos ni de la plataforma.
+- [ ] Si se ve en el manual: capturas y PDF regenerados.
+- [ ] Versión, nota de actualización y roadmap.
+
 ## 10. Decisiones y pendientes
 
 - **Hecho (1.10.11)**: esquinas y toque con nombre; monto en rojo de marca.
-- **Propuesto, pendiente de aprobar**: sistema completo — colores a ~18 tokens con nombre (texto: ink/muted/subtle; marca: brand/brand-soft/navy/gold/gold-soft/gold-ink; estado: success/success-soft/info/info-soft; superficies: paper/bg/surface/line/line-strong), letra a una escala (10·11·12·13·14·16·18·22·26·32 antes del ×1,2) y sombras a 3 niveles (sm/md/lg). Se aplica por partes comparando capturas.
+- **Hecho (1.10.12)**: sistema completo. 154 colores pasan a 18 de paleta (más los de canal), 28 tamaños de letra a una escala de 10 y 20 sombras a 3 niveles. Lo vigila `tests/design-tokens.py`.
+- **Pendiente técnico**: las reglas usan los valores de la paleta escritos tal cual, no `var(--…)`, porque `make-dark.py` convierte colores literales. Pasar a `var()` exige que el modo oscuro defina cada variable; se puede hacer más adelante sin cambio visible.
 - **Descartado**: animación «física» con muelles, grano/textura, asimetría decorativa, tira de chips de etapas, filtro «Sin monto» en Embudos.
 - **Cabeceras de seguridad** (CSP, HSTS, frame-ancestors…): previstas en V2.1; la app no usa scripts en línea ni de terceros, así que la CSP puede ser estricta (permitiendo `style` en línea).
 
@@ -144,9 +245,10 @@ Duraciones: 0,25–0,45 s con `var(--ease)`. **Toda animación nueva debe apagar
 
 1. `python3 tools/make-dark.py && python3 tools/make-large.py`
 2. Servidor y base de pruebas: `bash /tmp/mdb/up.sh` y `. /tmp/mdb/env.sh` (entorno de desarrollo).
-3. Pruebas de pantalla (Playwright, con datos simulados): `CHROMIUM_PATH=/opt/pw-browsers/chromium python3 tests/<nombre>-ui.py`. Imprescindibles tras tocar estilos: `phone-fit-ui.py` (ancho del teléfono y barra inferior), `mobile-ui.py`, `readability-ui.py`, `open-motion-ui.py`, `embudos-ui.py`.
-4. Si cambia algo que sale en el manual: `python3 tools/make-manual.py` y revisar las capturas.
-5. Versión nueva: `src/Installation.php` (VERSION), pie en `public/index.html`, `tests/integration.php`, nota en `deploy/native/UPDATE-x.y.z.md` y `docs/roadmap.md`.
+3. `python3 tests/design-tokens.py` (paleta, escala de letra y sombras).
+4. Pruebas de pantalla (Playwright, con datos simulados): `CHROMIUM_PATH=/opt/pw-browsers/chromium python3 tests/<nombre>-ui.py`. Imprescindibles tras tocar estilos: `phone-fit-ui.py` (ancho del teléfono y barra inferior), `mobile-ui.py`, `readability-ui.py`, `open-motion-ui.py`, `embudos-ui.py`.
+5. Si cambia algo que sale en el manual: `python3 tools/make-manual.py` y revisar las capturas.
+6. Versión nueva: `src/Installation.php` (VERSION), pie en `public/index.html`, `tests/integration.php`, nota en `deploy/native/UPDATE-x.y.z.md` y `docs/roadmap.md`.
 
 ## 12. Otros documentos
 

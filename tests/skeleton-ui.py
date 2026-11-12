@@ -26,7 +26,7 @@ with sync_playwright() as p:
         page.locator('[data-view="dashboard"]').click();page.wait_for_selector('.sk-tiles',timeout=5000)
         page.screenshot(path=f'/tmp/sk-board-{scheme}.png')
         page.wait_for_selector('.updated-at:not([hidden])',timeout=8000)
-        assert 'actualizado a las' in page.locator('.updated-at').inner_text() and page.locator('.sk-wrap').count()==0
+        assert 'actualizado a las' in page.locator('.updated-at').inner_text().lower() and page.locator('.sk-wrap').count()==0
         page.screenshot(path=f'/tmp/sk-board-done-{scheme}.png')
         assert not errors,errors
     print('PASS skeletons appear while loading, in light and dark, and give way to the content')

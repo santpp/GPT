@@ -203,7 +203,7 @@ export async function renderDashboard(container){
 
   function paint(data,month){
     const read=data.readAt?new Date(data.readAt).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):'';
-    const feedback=$('#dashboard-feedback');feedback.hidden=false;feedback.innerHTML=`<span>${data.restricted?'Tus cifras':'Cifras de la cuenta'}${read?` · actualizado a las ${read}`:''}</span>`;
+    const feedback=$('#dashboard-feedback');feedback.hidden=false;feedback.innerHTML=`<span>${data.restricted?(read?`Actualizado a las ${read}`:''):`Cifras de la cuenta${read?` · actualizado a las ${read}`:''}`}</span>`;feedback.hidden=data.restricted&&!read;
     const unread=data.conversations?.unread??0;
     const tiles=[
       tile('Conversaciones',number(data.conversations?.total??0)),
