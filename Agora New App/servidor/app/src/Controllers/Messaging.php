@@ -17,7 +17,7 @@ final class Messaging {
   $this->a->write();
   if($p==='workspace/read'&&$m==='POST'){$conv['unreadCount']=0;unset($conv['version']);$this->r->save('conversation',$cid,$conv,$conv['contactName']??'');return ['ok'=>true];}
   if($p==='workspace/send'&&$m==='POST'){
-   if(!isset($this->a->config['ghl']['tenants'][$this->a->tenant]))Http::fail('No hay canal de mensajería conectado.',503);
+   if(!(new \Agora\Services\GhlConnection($this->db,$this->a->config))->status((int)$this->a->tenant)['configurada'])Http::fail('Esta subcuenta todavía no está conectada con su cuenta. Agencia → Datos de la empresa → Conexión.',503);
    $text=Http::text(['body'=>$b['body']??$b['message']??''],'body',10000);$type=$b['type']??$b['channel']??'';$types=['TYPE_SMS'=>'SMS','TYPE_EMAIL'=>'Email','TYPE_WHATSAPP'=>'WhatsApp','TYPE_INSTAGRAM'=>'IG','TYPE_FACEBOOK'=>'FB'];$type=$types[$type]??$type;if(!in_array($type,['SMS','Email','WhatsApp','IG','FB'],true))Http::fail('Canal no válido.');
    $subject=$type==='Email'?Http::text($b,'subject',190):'';
    $id=bin2hex(random_bytes(12));$msg=['id'=>$id,'body'=>$text,'direction'=>'outbound','dateAdded'=>gmdate('c'),'type'=>$type,'status'=>'queued','conversationId'=>$cid,'contactId'=>$contact];$this->r->save('message',$id,$msg,'Mensaje en cola',$cid);

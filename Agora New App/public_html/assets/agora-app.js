@@ -295,9 +295,9 @@ function table(cols, rows, {sortKey, sortDir, rowHref, empty, foot} = {}) {
 function sortRows(rows, st) { if (!st.sk) return rows; const k = st.sk, d = st.sd; return [...rows].sort((a, b) => { const x = a[k] ?? '', y = b[k] ?? ''; return (typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), 'es')) * d; }); }
 function pager(st, total, per) { const pages = Math.max(1, Math.ceil(total / per)); st.p = Math.min(st.p, pages - 1); return pages < 2 ? `<div class="pager"><span>${int(total)} registro${total === 1 ? '' : 's'}</span></div>` : `<div class="pager"><span>${int(total)} registros · página ${st.p + 1} de ${pages}</span><div><button class="btn btn-sm" data-page="-1" ${st.p ? '' : 'disabled'}>Anterior</button><button class="btn btn-sm" data-page="1" ${st.p >= pages - 1 ? 'disabled' : ''}>Siguiente</button></div></div>`; }
 const searchFld = (val, ph, key = 'q') => `<label class="fld grow">Buscar<span class="search-in">${icon('search')}<input type="search" data-f="${key}" value="${esc(val)}" placeholder="${esc(ph)}" autocomplete="off" enterkeyhint="search"></span></label>`;
-const loading = (title = '') => `${title ? head(title, '<span class="sk w40" style="height:30px"></span>') : ''}<div class="grid g4">${'<div class="micro"><span class="sk w60"></span><span class="sk big"></span></div>'.repeat(4)}</div><div class="panel mt"><span class="sk w40"></span><span class="sk w80"></span><span class="sk w60"></span><span class="sk w80"></span></div>`;
-const failed = (msg) => `<div class="panel"><p class="empty"><b>No se pudo cargar</b>${esc(msg)}<br><button class="btn btn-sm" type="button" data-retry>Intentar de nuevo</button></p></div>`;
-const noAccess = () => `<section class="panel"><p class="empty"><b>${esc(MODS[R.mod]?.name || 'Módulo')} · Acceso restringido</b>Esta opción permanece visible. Tu rol no tiene permiso para abrirla en ${esc(ws?.name() || 'esta subcuenta')}. Consulta al administrador.<br><a class="btn btn-cta" href="${href(homePath())}">${icon('home')}Volver al inicio</a><button class="btn" type="button" data-open-modules>${icon('sidebar')}Ver todos los módulos</button></p></section>`;
+const loading = (title = '') => `<span data-placeholder hidden></span>${title ? head(title, '<span class="sk w40" style="height:30px"></span>') : ''}<div class="grid g4">${'<div class="micro"><span class="sk w60"></span><span class="sk big"></span></div>'.repeat(4)}</div><div class="panel mt"><span class="sk w40"></span><span class="sk w80"></span><span class="sk w60"></span><span class="sk w80"></span></div>`;
+const failed = (msg) => `<span data-placeholder hidden></span><div class="panel"><p class="empty"><b>No se pudo cargar</b>${esc(msg)}<br><button class="btn btn-sm" type="button" data-retry>Intentar de nuevo</button></p></div>`;
+const noAccess = () => `<span data-placeholder hidden></span><section class="panel"><p class="empty"><b>${esc(MODS[R.mod]?.name || 'Módulo')} · Acceso restringido</b>Esta opción permanece visible. Tu rol no tiene permiso para abrirla en ${esc(ws?.name() || 'esta subcuenta')}. Consulta al administrador.<br><a class="btn btn-cta" href="${href(homePath())}">${icon('home')}Volver al inicio</a><button class="btn" type="button" data-open-modules>${icon('sidebar')}Ver todos los módulos</button></p></section>`;
 const kv = pairs => `<dl class="kv">${pairs.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
 
 /* =====================================================================================
@@ -351,7 +351,8 @@ function paint(html, enter) {
   const per = MODS[R.mod]?.periodo ? `<div class="per-m">${periodBar()}</div>` : '';
   app.innerHTML = `${per}<div class="${enter ? 'view-enter' : ''}">${html}</div>`;
   placeThumbs(document);
-  V[R.view]?.mounted?.(app);
+  // Agora New App: sobre «cargando», «error» o «sin acceso» no se ejecuta el código del módulo (antes, Ajustes se quedaba cargando).
+  if (!app.querySelector('[data-placeholder]')) V[R.view]?.mounted?.(app);
   applyUiTexts();
   aplicarPaleta(); arpVigilar();
   syncAgencyRail();
@@ -1970,6 +1971,7 @@ function barras(items) {
    ===================================================================================== */
 const cargarResumen = async (forzar) => {
   if (!forzar && DATOS.resumen && DATOS.resumen.period === PERIODO) return DATOS.resumen;
+  if (!esSuperAdmin()) return null; // Agora New App: el resumen solo lo ven dueña y superadmin (el servidor responde 403 al resto)
   const d = await agoraApi(`workspace/resumen?period=${encodeURIComponent(PERIODO)}`);
   DATOS.resumen = {...d, period: PERIODO};
   return DATOS.resumen;
@@ -2339,6 +2341,16 @@ async function agenciaModal() {
   s.querySelectorAll('[data-agency-edit]').forEach(b => b.onclick = () => agenciaCuentaEditar(accounts.find(a => String(a.id)===String(b.dataset.agencyEdit))));
   s.querySelectorAll('[data-agency-users]').forEach(b => b.onclick = () => agenciaUsuarios(b.dataset.agencyUsers, accounts));
 }
+/* Agora New App · estado de la conexión con la cuenta (sin token). */
+function conexionEstadoHtml(c) {
+  if (!c || c.estado === 'sin_conexion') return `<p class="conexion-estado is-none">${icon('info')}Sin conexión: escribe el Location ID y el token para enlazar esta subcuenta con su cuenta.</p>`;
+  if (c.origen === 'config') return `<p class="conexion-estado is-legacy">${icon('info')}Conectada desde el archivo del servidor (config.php). Escribe aquí el token para guardarlo cifrado en la subcuenta.</p>`;
+  const cuando = c.probada ? ` · probada ${esc(String(c.probada).slice(0, 16).replace('T', ' '))} UTC` : '';
+  if (c.estado === 'conectada') return `<p class="conexion-estado is-ok">${icon('check')}Conectada${c.ubicacion ? ' con «' + esc(c.ubicacion) + '»' : ''}${cuando}. Token ${esc(c.token || '')}.</p>`;
+  if (c.estado === 'error') return `<p class="conexion-estado is-error">${icon('warn')}${esc(c.error || 'La última prueba falló.')}${cuando}</p>`;
+  return `<p class="conexion-estado">${icon('clock')}Guardada, sin probar. Token ${esc(c.token || '')}.</p>`;
+}
+const htmlNodo = html => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; };
 function agenciaCuentaEditar(a) {
   if (!esSuperAdmin()) return;
   const rubros=['Educación','Telecomunicaciones / ISP','Servicios profesionales','Comercio','Salud','Inmobiliario','Otro'];
@@ -2395,11 +2407,33 @@ function agenciaCuentaEditar(a) {
       </fieldset>
       ${perfilBx(a?.perfil, true)}
       ${paletaBx(a?.paleta)}
+      <fieldset class="bx bx-wide" id="bx-conexion">
+        <legend>${icon('sync')}Conexión con la cuenta</legend>
+        ${conexionEstadoHtml(a?.conexion)}
+        <div class="bx-row">
+          <label class="fld"><span class="fld-l">Location ID</span>
+            <input name="ghlLocation" maxlength="64" autocomplete="off" spellcheck="false" class="ghl-in" placeholder="Ej: a1B2c3D4e5F6g7H8i9J0" value="${esc(a?.conexion?.origen === 'subcuenta' ? (a.conexion.locationId || '') : '')}">
+            <span class="fld-hint">En la cuenta: Ajustes → Perfil del negocio.</span></label>
+          <label class="fld"><span class="fld-l">Company ID <small>(opcional)</small></span>
+            <input name="ghlCompany" maxlength="64" autocomplete="off" spellcheck="false" class="ghl-in" placeholder="Para consumos" value="${esc(a?.conexion?.companyId || '')}"></label>
+        </div>
+        <label class="fld"><span class="fld-l">Token de la integración privada</span>
+          <input name="ghlToken" type="password" maxlength="4000" autocomplete="new-password" spellcheck="false" class="ghl-in" placeholder="${a?.conexion?.origen === 'subcuenta' ? 'Guardado: ' + esc(a.conexion.token || '') : 'pit-…'}">
+          <span class="fld-hint">${a?.conexion?.origen === 'subcuenta' ? 'Déjalo vacío para conservar el guardado. ' : ''}Se guarda cifrado y nadie puede volver a verlo: solo sus 4 últimos caracteres. En la cuenta: Ajustes → Integraciones privadas.</span></label>
+        ${a?.conexion?.origen === 'subcuenta' ? `<div class="bx-row" style="align-items:center"><button class="btn btn-sm" type="button" id="ghl-probar">${icon('refresh')}Probar conexión</button><label class="bx-check"><input type="checkbox" name="ghlQuitar"> Quitar la conexión</label></div><p class="bx-help" id="ghl-probar-out" role="status"></p>` : '<p class="bx-help">Después de guardar podrás probar la conexión desde aquí.</p>'}
+      </fieldset>
      </div>
      <p class="fld-err" id="agency-form-global-err" role="alert"></p>
      <div class="bx-foot"><p class="bx-help">El tipo de cuenta arma el tablero inicial. La subcuenta puede ajustarlo después en Personalizar.</p><div class="acts"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="submit">${a ? 'Guardar cambios' : 'Crear subcuenta'}</button></div></div></form>`);
 
   const f = s.querySelector('#agency-identity-form');
+  const probar = f.querySelector('#ghl-probar');
+  if (probar) probar.onclick = async () => {
+    const out = f.querySelector('#ghl-probar-out'); busy(probar, true, 'Probando…');
+    try { const r = await agoraApi('agency/accounts/conexion/probar', {method: 'POST', body: {id: a.id, requestId: 'ghl' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)}}); f.querySelector('.conexion-estado')?.replaceWith(htmlNodo(conexionEstadoHtml(r))); if (r.estado === 'conectada' && Array.isArray(r.datos)) { const txt = {disponible: 'se puede leer', sin_permiso: 'sin permiso en el token', no_disponible: 'no disponible (o no conectado en la cuenta)', sin_red: 'sin respuesta'}; out.innerHTML = `<b>Conexión correcta.</b> Qué puede leer este token:<ul class="conexion-datos">${r.datos.map(d => `<li class="is-${esc(d.estado)}">${esc(d.nombre)}: ${esc(txt[d.estado] || d.estado)}</li>`).join('')}</ul>`; } else out.textContent = r.estado === 'conectada' ? 'Conexión correcta.' : (r.error || 'No se pudo conectar.'); }
+    catch (x) { out.textContent = x.message; }
+    finally { busy(probar, false); }
+  };
   paletaConectar(f);
   perfilConectar(f);
   const globalErr = f.querySelector('#agency-form-global-err');
@@ -2568,6 +2602,10 @@ function agenciaCuentaEditar(a) {
         paleta,
         perfil: perfilR.perfil
       };
+      // Agora New App: conexión con la cuenta. Token vacío = se conserva el guardado.
+      const ghlLoc = f.ghlLocation.value.trim(), ghlTok = f.ghlToken.value.trim(), ghlCom = f.ghlCompany.value.trim();
+      if (f.ghlQuitar?.checked) payload.conexion = {quitar: true};
+      else if (ghlLoc || ghlTok || ghlCom) payload.conexion = {locationId: ghlLoc, token: ghlTok, companyId: ghlCom};
       await agoraApi('agency/accounts', { method: a ? 'PUT' : 'POST', body: payload });
       closeModal();
       await cargarAgencia();
@@ -2905,7 +2943,7 @@ async function cargarTablero() {
 TB_MODS.forEach(id => {
   const inicio = id === 'resumen';
   V[tbVista(id)] = {
-    need: () => inicio ? Promise.all([cargarTablero(), cargarResumen()]) : cargarTablero(),
+    need: () => inicio ? Promise.all([cargarTablero(), cargarResumen().catch(() => null)]) : cargarTablero(), // Agora New App: el resumen es solo de la dueña; sin él, el módulo abre igual
     render() {
       if (TB.estado === 'sin-datos') return head('Gestión comercial', esc(MODS[R.mod]?.name || 'Reporte'))+'<section class="panel"><p class="empty"><b>Esta subcuenta todavía no tiene reportes</b>Administración puede importar un reporte JSON desde Ajustes.</p><a class="btn" href="'+href('/ajustes')+'">Abrir Ajustes</a></section>';
       if (TB.estado === 'error') return failed(TB.error);
@@ -4239,7 +4277,7 @@ const logAntes = l => l.anterior ?? l.antes ?? '—';
 const logDespues = l => l.nuevo ?? l.despues ?? '—';
 /* Acciones del registro en palabras sencillas (el servidor guarda códigos como "rol.cambiado"). */
 const ACCION_LEGIBLE = {
-  'rol.cambiado': 'Cambió un rol', 'subcuenta.estado': 'Cambió el estado de una subcuenta', 'subcuenta.creada': 'Creó una subcuenta',
+  'rol.cambiado': 'Cambió un rol', 'subcuenta.estado': 'Cambió el estado de una subcuenta', 'subcuenta.creada': 'Creó una subcuenta', 'subcuenta.conexion': 'Cambió la conexión con la cuenta', 'subcuenta.conexion.probada': 'Probó la conexión con la cuenta',
   'subcuenta.actualizada': 'Editó una subcuenta', 'subcuenta.cobros': 'Actualizó los cobros de una subcuenta', 'subcuenta.tipo': 'Cambió el tipo de cuenta de una subcuenta', 'productos.actualizados': 'Actualizó los productos y rubros', 'personalizacion.actualizada': 'Personalizó el tablero y los módulos', 'etiquetas.actualizadas': 'Actualizó las etiquetas del CRM', 'usuario.creado': 'Agregó a una persona',
   'usuario.editado': 'Editó a una persona', 'usuario.actualizado': 'Editó a una persona', 'usuario.revocado': 'Quitó el acceso a una persona',
   'clave.cambiada': 'Cambió una clave', 'permisos.actualizados': 'Cambió permisos', 'estado.actualizado': 'Cambió un estado',
@@ -4953,7 +4991,7 @@ async function logoPng(file) {
     const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('No se pudo leer la imagen.')); i.src = url; });
     let w = img.naturalWidth, h = img.naturalHeight;
     if (!w || !h) throw new Error('No se pudo leer el tamaño de la imagen.');
-    if (w > 4096 || h > 4096) throw new Error(`La imagen mide ${w} × ${h} px. El máximo es 4096 px por lado.`);
+    if (w > 8000 || h > 8000 || w * h > 20000000) throw new Error(`La imagen mide ${w} × ${h} px. El máximo es 8000 px por lado.`);
     // Recorte de bordes transparentes (y de un fondo blanco liso no, para no comernos el diseño).
     const c0 = document.createElement('canvas'); c0.width = w; c0.height = h;
     const x0 = c0.getContext('2d', {willReadFrequently: true}); x0.drawImage(img, 0, 0);

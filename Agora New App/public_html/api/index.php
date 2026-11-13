@@ -21,6 +21,8 @@ try{
  try{$db=new \Agora\Core\DB($config['db']);}catch(\PDOException $e){error_log('Agora '.$requestId.' DB '.$e->getMessage());$setup('db','No se pudo conectar a la base de datos MySQL/MariaDB.','Revisa host (localhost), nombre, usuario y clave en servidor/config/config.php, tal como los creaste en CyberPanel → Databases.');}
  if($pruebas){try{\Agora\Core\Pruebas::preparar($db,$config);}catch(\Throwable $e){error_log('Agora '.$requestId.' pruebas '.$e->getMessage());$setup('pruebas','Modo pruebas: no se pudo preparar la base SQLite.','Revisa el log de PHP del sitio (referencia '.$requestId.'). Para empezar de cero, borra servidor/storage/agora-pruebas.sqlite.');}}
  if($probe&&$method==='GET'&&$path==='status'&&$pruebas){header('Content-Type: application/json; charset=utf-8');header('Cache-Control: no-store');echo json_encode(['maintenance'=>false,'modo'=>'pruebas','usuario'=>'admin','clave'=>\Agora\Core\Pruebas::CLAVE],JSON_UNESCAPED_UNICODE);exit;}
+ // Agora New App: las migraciones nuevas se aplican solas (idempotentes, con bloqueo y checksum) si la base ya está instalada.
+ if(!$pruebas){try{if(!$db->one('SELECT 1 ok FROM agora_schema WHERE version=?',['004_ghl_conexion.sql']))\Agora\Core\Installer::migrate($db);}catch(\PDOException $e){}}
  if($probe){try{$db->one('SELECT 1 FROM agora_tenants LIMIT 1');}catch(\PDOException $e){$setup('migraciones','La base de datos está vacía o incompleta.','Abre /install.php (primera vez) o ejecuta: php servidor/bin/migrate.php');}}
  $api=new \Agora\Controllers\Api($db,$config);
  if(!in_array($method,['GET','POST','PUT','DELETE'],true))\Agora\Core\Http::fail('Método no permitido.',405);

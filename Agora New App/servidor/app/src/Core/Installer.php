@@ -6,6 +6,8 @@ final class Installer {
   if($db->sqlite()){ // Modo pruebas: un solo esquema SQLite equivalente a todas las migraciones MySQL.
    $f=dirname(__DIR__,2).'/database/sqlite/esquema.sql';$sql=(string)file_get_contents($f);
    $hecho=false;try{$hecho=(bool)$db->one('SELECT 1 ok FROM agora_schema WHERE version=?',[Pruebas::ESQUEMA]);}catch(\PDOException){}
+   // Agora New App: tablas añadidas después del esquema inicial (idempotentes).
+   foreach(glob(dirname(__DIR__,2).'/database/sqlite/0*.sql') as $extra)$db->pdo->exec((string)file_get_contents($extra));
    if($hecho)return [];
    $db->pdo->exec($sql);$db->run('INSERT INTO agora_schema(version,checksum) VALUES(?,?)',[Pruebas::ESQUEMA,hash('sha256',$sql)]);return [Pruebas::ESQUEMA];
   }

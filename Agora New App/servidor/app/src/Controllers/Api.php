@@ -6,7 +6,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.1.19'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.2.0'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -22,6 +22,7 @@ final class Api {
   if($p==='workspace/active'&&$m==='POST'){$id=Http::integer($b['connectionId']??0,1,PHP_INT_MAX);$this->a->authorizeTenant($id);$this->db->run('UPDATE agora_sessions SET active_tenant_id=? WHERE token_hash=?',[$id,$this->a->session['token_hash']]);return ['ok'=>true,'accountId'=>$id];}
   if($p==='agency/accounts'&&in_array($m,['GET','POST','PUT']))return $this->ag->accounts($m,$b);
   if($p==='agency/billing'&&$m==='PUT')return $this->ag->billing($b);
+  if($p==='agency/accounts/conexion/probar'&&$m==='POST')return $this->ag->ghlTest($b);
   if($p==='agency/team'&&in_array($m,['GET','POST','PUT']))return $m==='GET'?$this->u->listing(true):$this->u->save($b,true,$m==='PUT');
   if($p==='agency/activity'&&$m==='GET')return $this->ag->audit(true);
   // 2.1.17 · gestión unificada de usuarios (Master y Superadmin editan a cualquiera a su alcance)
@@ -106,10 +107,10 @@ final class Api {
   if($m==='GET'&&$p==='workspace/contact-fields')return ['items'=>[],'folders'=>[]];
   if($m==='GET'&&$p==='workspace/templates')return ['configured'=>false,'items'=>[],'error'=>'Plantillas externas no configuradas.'];
   if($p==='workspace/sync')Http::fail('La sincronización externa no está habilitada. Importa los datos desde Ajustes.',503);
-  if($m==='GET'&&$p==='admin/diagnostics'){$this->a->manage();return ['ready'=>true,'database'=>'connected','ghlConfigured'=>isset($this->config['ghl']['tenants'][$this->a->tenant])];}
+  if($m==='GET'&&$p==='admin/diagnostics'){$this->a->manage();return ['ready'=>true,'database'=>'connected','ghlConfigured'=>(new \Agora\Services\GhlConnection($this->db,$this->config))->status((int)$this->a->tenant)['configurada']];}
   // 2.1.19 · Ajustes → Cuentas conectadas: preferencias que se guardan y mensajes claros donde falta la conexión externa
   if(preg_match('~^admin/(integrations/\d+(/.*)?|integrations|access-channel(/test)?|cron-url|installation/encryption)$~D',$p)&&!($m==='GET'&&$p==='admin/integrations'))return (new Integraciones($this->db,$this->a,$this->config))->route($p,$m,$b);
-  if($m==='GET'&&$p==='admin/integrations'){$this->a->manage();return ['items'=>[['id'=>$this->a->tenant,'name'=>$this->ag->branding('GET',[])['nombre'],'status'=>isset($this->config['ghl']['tenants'][$this->a->tenant])?'configured':'not_connected','currency_code'=>(string)($this->db->one('SELECT currency FROM agora_tenants WHERE id=?',[$this->a->tenant])['currency']??'USD'),'currency'=>(string)($this->db->one('SELECT currency FROM agora_tenants WHERE id=?',[$this->a->tenant])['currency']??'USD'),'sync_interval_seconds'=>300]+Integraciones::extra($this->db,(int)$this->a->tenant)],'settings'=>[]];}
+  if($m==='GET'&&$p==='admin/integrations'){$this->a->manage();return ['items'=>[['id'=>$this->a->tenant,'name'=>$this->ag->branding('GET',[])['nombre'],'status'=>(new \Agora\Services\GhlConnection($this->db,$this->config))->status((int)$this->a->tenant)['configurada']?'configured':'not_connected','currency_code'=>(string)($this->db->one('SELECT currency FROM agora_tenants WHERE id=?',[$this->a->tenant])['currency']??'USD'),'currency'=>(string)($this->db->one('SELECT currency FROM agora_tenants WHERE id=?',[$this->a->tenant])['currency']??'USD'),'sync_interval_seconds'=>300]+Integraciones::extra($this->db,(int)$this->a->tenant)],'settings'=>[]];}
   if(preg_match('~^admin/integrations/\d+/commission$~D',$p)&&$m==='GET'){$this->a->manage();return ['current'=>null,'history'=>[]];}
   if($p==='admin/announcements'){$this->a->manage();if($m==='GET')return $this->r->page('announcement');if($m==='POST'){$id=bin2hex(random_bytes(12));$d=['id'=>$id,'title'=>Http::text($b,'title',190),'body'=>Http::text($b,'body',4000,false),'at'=>gmdate('c'),'seen'=>0];$this->r->save('announcement',$id,$d,$d['title']);return ['id'=>$id];}}
   if(preg_match('~^admin/announcements/([a-z0-9]+)$~D',$p,$x)&&$m==='DELETE'){$this->a->manage();$this->r->delete('announcement',$x[1]);return ['ok'=>true];}

@@ -18,7 +18,10 @@ final class Users {
   if(!is_string($value)||strlen($value)>2900000||!preg_match('~^data:image/png;base64,([A-Za-z0-9+/=]+)$~D',$value,$m))Http::fail('El logo debe ser un archivo PNG de hasta 2 MB.');
   $raw=base64_decode($m[1],true);if(!$raw||substr($raw,0,8)!=="\x89PNG\r\n\x1a\n")Http::fail('El archivo no es un PNG válido.');
   $info=@getimagesizefromstring($raw);if(!$info||($info[2]??0)!==IMAGETYPE_PNG)Http::fail('El archivo no es un PNG válido.');
-  [$w,$h]=$info;if($w>4096||$h>4096)Http::fail('El logo no puede pasar de 4096 px por lado.');
+  [$w,$h]=$info;
+  // Agora New App: un logo grande (p. ej. 5950 × 2467 px) se reduce a 1024 px en vez de rechazarse. Límite por memoria: 8000 px por lado y 20 Mpx.
+  if($w>8000||$h>8000||$w*$h>20000000)Http::fail('El logo es demasiado grande. Usa uno de hasta 8000 px por lado.');
+  if(($w>4096||$h>4096)&&!function_exists('imagecreatefromstring'))Http::fail('El logo no puede pasar de 4096 px por lado.');
   if(max($w,$h)<256||min($w,$h)<64)Http::fail('El logo es muy pequeño y se vería pixelado. Usa al menos 256 px en el lado más largo.');
   $p=$w/$h;if($p>6||$p<1/3)Http::fail('La proporción del logo debe estar entre 1:3 y 6:1.');
   if(max($w,$h)<=1024||!function_exists('imagecreatefromstring'))return 'data:image/png;base64,'.base64_encode($raw);

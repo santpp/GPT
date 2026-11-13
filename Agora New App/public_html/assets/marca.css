@@ -1,8 +1,7 @@
 /* Identidad oficial: manual Ágora, páginas 5–6. Fuentes locales. */
 @font-face{font-family:Author;src:url("fonts/Author-Variable.woff2") format("woff2");font-weight:200 700;font-style:normal;font-display:swap}
 @font-face{font-family:Author;src:url("fonts/Author-VariableItalic.woff2") format("woff2");font-weight:200 700;font-style:italic;font-display:swap}
-@font-face{font-family:Inter;src:url("fonts/Inter-Variable.ttf") format("truetype");font-weight:100 900;font-style:normal;font-display:swap}
-:root{--font-text:Author,Inter,system-ui,sans-serif;--font-display:Author,Inter,system-ui,sans-serif;--font-rounded:Author,Inter,system-ui,sans-serif;--deep:#282E49;--gold:#FABD4B;--cream:#EFEFEF}
+:root{--font-text:Author,system-ui,sans-serif;--font-display:Author,system-ui,sans-serif;--font-rounded:Author,system-ui,sans-serif;--deep:#282E49;--gold:#FABD4B;--cream:#EFEFEF}
 :root[data-theme="light"]{--bg:#EFEFEF;--ink:#282E49;--ink-2:#282E49}
 .launch-rail{background:var(--deep)}
 .launch-brand-logo{padding:12px 16px 24px;--iso:#EFEFEF}

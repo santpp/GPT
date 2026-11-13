@@ -24,7 +24,8 @@ try{
   $job=$db->transaction(function()use($db){$r=$db->one("SELECT * FROM agora_jobs WHERE status='queued' AND available_at<=UTC_TIMESTAMP() ORDER BY id LIMIT 1 FOR UPDATE");if($r)$db->run("UPDATE agora_jobs SET status='running',attempts=attempts+1,locked_at=UTC_TIMESTAMP() WHERE id=?",[$r['id']]);return $r;});if(!$job)break;
   $sent=false;$status='failed';$error=null;$payload=json_decode($job['payload'],true);
   try{
-   $c=$config['ghl']['tenants'][$job['tenant_id']]??null;if(!$c||empty($c['token'])||empty($c['location_id']))throw new RuntimeException('Integración sin configurar.');
+   // Agora New App: credenciales de la ficha de la subcuenta (cifradas); si no hay, las de config.php.
+   $c=(new Agora\Services\GhlConnection($db,$config))->credentials((int)$job['tenant_id']);if(!$c)throw new RuntimeException('Integración sin configurar.');
    if($job['kind']!=='ghl.send')throw new RuntimeException('Tipo de trabajo no soportado.');
    $contact=ghl($c,'GET','/contacts/'.rawurlencode($payload['contactId']));
    if(($contact['contact']['locationId']??null)!==$c['location_id'])throw new RuntimeException('Contacto fuera de la ubicación configurada.');

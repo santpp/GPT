@@ -5,8 +5,8 @@
    del armazón, que ahora son los de esta versión. Los avisos (push) y la apertura
    de la conversación al tocarlos siguen exactamente igual.
    ===================================================================================== */
-const CACHE="agora-digital-app-2.1.19-20261113";
-const SHELL=["/", "/manifest.webmanifest", "/assets/backend-client.js", "/assets/marca.css", "/assets/diseno.css", "/assets/ecosistema.css", "/assets/athena/athena-saludo.webp", "/assets/fonts/Author-Variable.woff2", "/assets/fonts/Author-VariableItalic.woff2", "/assets/fonts/Inter-Variable.ttf", "/assets/sistema.css", "/assets/modulos.css", "/assets/config.js", "/assets/agora-modulos.js", "/assets/agora-app.js", "/assets/agora-logo.png", "/assets/agora-mark.png", "/assets/favicon.ico", "/assets/icons/icon-192.png", "/assets/icons/icon-512.png", "/assets/icons/badge-96.png", "/assets/icons/apple-touch-icon.png"];
+const CACHE="agora-digital-app-2.2.0-20261113";
+const SHELL=["/", "/manifest.webmanifest", "/assets/backend-client.js", "/assets/marca.css", "/assets/diseno.css", "/assets/ecosistema.css", "/assets/agora-new.css", "/assets/athena/athena-saludo.webp", "/assets/fonts/Author-Variable.woff2", "/assets/fonts/Author-VariableItalic.woff2", "/assets/sistema.css", "/assets/modulos.css", "/assets/config.js", "/assets/agora-modulos.js", "/assets/agora-app.js", "/assets/agora-logo.png", "/assets/agora-mark.png", "/assets/favicon.ico", "/assets/icons/icon-192.png", "/assets/icons/icon-512.png", "/assets/icons/badge-96.png", "/assets/icons/apple-touch-icon.png"];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL.map(url=>new Request(url,{cache:'reload'}))))));
 self.addEventListener('message',e=>{
  if(e.data?.type==='ACTIVATE')self.skipWaiting();

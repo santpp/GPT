@@ -1,0 +1,29 @@
+/* Agora New App · arreglos propios sobre el ERP 2.1.19. Se carga el último.
+   Fuente única: Author (la de la marca). Antes diseno.css volvía a poner la letra del sistema
+   por encima de marca.css, y había una segunda fuente (Inter) que ya no se usa. */
+:root{
+  --font-text:Author,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-display:Author,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-rounded:Author,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+html,body,button,input,select,textarea{font-family:var(--font-text)}
+
+/* Listas (Contactos, Bandeja): las filas no se encogen. Antes, en una columna con altura limitada,
+   cada fila se aplastaba a 34 px y el nombre, el correo y las etiquetas se pisaban. */
+#view.ag .record-row,#view.ag .conversation-item,#view.ag .live-conversation{flex-shrink:0}
+
+/* Logo de la subcuenta junto al de Ágora y en la cabecera de Inicio. */
+.esp-logo{display:inline-block;max-height:28px;max-width:120px;width:auto;height:auto;object-fit:contain;vertical-align:middle}
+.tb .esp-logo{margin-left:8px}
+.inicio-logo-sub{display:block;max-height:56px;max-width:220px;object-fit:contain;margin-bottom:8px}
+.sub-card-logo{width:44px;height:44px;border-radius:12px;object-fit:contain;background:#fff;border:1px solid var(--line,#e5e4e9)}
+
+/* Conexión con la cuenta (ficha de la subcuenta en Agencia) */
+.conexion-estado{display:flex;gap:8px;align-items:flex-start;margin:0 0 10px;padding:10px 12px;border-radius:10px;background:var(--fill-3,#f1f1f5);font-size:13px;line-height:1.45}
+.conexion-estado svg{flex:none;width:18px;height:18px;margin-top:1px}
+.conexion-estado.is-ok{background:#eaf7ef;color:#2f7a52}
+.conexion-estado.is-error{background:#f7e9ee;color:#ad103c}
+.conexion-estado.is-legacy,.conexion-estado.is-none{color:var(--muted,#30343c)}
+#bx-conexion .ghl-in{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;text-transform:none;letter-spacing:0}
+.conexion-datos{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.6}
+.conexion-datos .is-disponible{color:#2f7a52}.conexion-datos .is-sin_permiso{color:#ad103c}.conexion-datos .is-no_disponible,.conexion-datos .is-sin_red{color:var(--muted,#5d6370)}
