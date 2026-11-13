@@ -1,88 +1,171 @@
-# Ágora Digital 2.1.19 · Instalación en AlmaLinux 9 con CyberPanel
+# Agora New App · instalación paso a paso
 
-> **Novedades 2.2.0 (Agora New App):**
-> - **Conexión con la cuenta en la ficha de cada subcuenta** (Agencia → Editar datos → «Conexión con la cuenta»): Location ID, Company ID (opcional) y token de la integración privada. El token se guarda **cifrado** (necesita la extensión PHP `sodium`, incluida en PHP 8.3) y nunca vuelve a mostrarse: solo sus 4 últimos caracteres. «Probar conexión» comprueba el token y dice qué datos puede leer (contactos, conversaciones, oportunidades, equipo, calendarios, facturas, productos, Social Planner, anuncios). El envío de mensajes usa esa conexión; `ghl.tenants` de `config.php` sigue valiendo como respaldo.
-> - **Migración `004_ghl_conexion.sql`, automática**: se aplica sola la primera vez que se abre la app tras subir los archivos (también puedes ejecutar `servidor/bin/migrate.php`).
-> - La clave del cifrado se deriva de `app_key`. Si quieres separarla, añade a `config.php` `'vault_key'=>'…64 hexadecimales…'` **antes** de guardar tokens. Cambiar `app_key` o `vault_key` obliga a volver a escribir los tokens.
-> - Una sola tipografía, **Author** (se quitó Inter). Contactos en el teléfono ya no se pisan. Ajustes ya no se queda cargando. Gestión Comercial abre para administradores. Los logos grandes (hasta 8000 px) se reducen en vez de rechazarse.
-> - **Producción sin modo pruebas**: el paquete `agora-new-app-2.2.0.zip` no trae datos sintéticos, demos ni el acceso admin / 123456789. Si falta `config.php`, la app avisa en vez de abrir una base de pruebas. El paquete de demostración sigue aparte: `agora-cyberpanel-2.1.19-demo.zip`.
-> - Reemplaza `public_html/` y `servidor/` conservando `servidor/config/config.php`. Reinicia OpenLiteSpeed si cambió el `.htaccess` (no cambió en esta versión). No se usa Docker.
+Guía para instalar Agora New App en un servidor **AlmaLinux 9 con CyberPanel** (OpenLiteSpeed, PHP 8.3 y MySQL o MariaDB). **No se usa Docker.**
 
-> **Novedades 2.1.19:** columnas editables en todas las tablas (nombre, orden, ocultar, agregar y quitar columnas), botón «Agregar manual» con formulario armado con esas columnas, y Excel de cada tabla (descarga, plantilla y carga masiva) que sigue las columnas editadas. Se corrigieron los menús «Columnas» y «Excel» que no abrían. **No hay migraciones nuevas**: todo vive en `agora_settings` y `agora_records`. Reemplaza `public_html/` y `servidor/` conservando `servidor/config/config.php` y `servidor/storage/`. No se usa Docker.
->
-> **Novedades 2.1.18:** se quitó de todas las subcuentas la franja «Cohorte académica · Año de corte · Responsable de gestión» del encabezado del reporte, junto con sus campos en Configuración mensual. Era una personalización de un cliente que ya no se usa. **No hay migraciones nuevas** y no hace falta tocar la base de datos: si una subcuenta tenía esos datos guardados, simplemente ya no se muestran.
->
-> **Novedades 2.1.17:** Personalizar con embudos y parámetros de KPI, formulario de venta ganada integrado, Excel y Migración de datos en cada módulo, tablas dinámicas, Catálogo dentro de Productos y servicios y edición de todos los usuarios por el superadmin. **Tampoco hay migraciones nuevas** (todo en `agora_settings` y `agora_records`). Reemplaza `public_html/` y `servidor/` conservando `servidor/config/config.php` y `servidor/storage/`. El `.htaccess` trae las rutas nuevas (`/migracion`, `/productos`, `/personalizar`): súbelo también. No se usa Docker.
->
-> **Novedades 2.1.16:** tipo de cuenta por subcuenta, módulo Productos y servicios (rubros y productos con cobro recurrente, pago único o venta única) y módulo Personalizar (tablero del Inicio, ARP Comercial, CRM y módulos visibles). **No hay migraciones nuevas**: todo se guarda en `agora_settings`. Basta con reemplazar `public_html/` y `servidor/` (conservando `servidor/config/config.php` y `servidor/storage/`). En modo pruebas, si quieres ver el catálogo de ejemplo, borra `servidor/storage/agora-pruebas.sqlite` para que se vuelva a crear.
+Cada paso dice **dónde hacer clic** o **qué escribir**. Los comandos están listos para copiar y pegar; solo cambia lo que va en MAYÚSCULAS (por ejemplo `TU-DOMINIO`).
 
-> **Novedades 2.1.15:** módulo ARP con el mismo diseño de la agencia, paleta de colores por cuenta y logos solo en PNG. No hay migraciones nuevas: basta con reemplazar `public_html/` y `servidor/` (conservando `servidor/config/config.php` y `servidor/storage/`). La extensión `gd` (paquete `lsphp83-gd`) es necesaria para reducir logos grandes.
+Novedades de cada versión: `NOVEDADES.md`.
 
-> **No se usa Docker.** Ágora se instala directamente en el servidor: AlmaLinux 9, CyberPanel (servidor web OpenLiteSpeed), PHP 8.3 (lsphp83) y MariaDB. El paquete ya no trae `Dockerfile`, `docker-compose.yml`, `docker/` ni `.env.example`, y la configuración se lee solo de `servidor/config/config.php`.
+---
 
-Entrega preparada para una **instalación nueva** o para actualizar una existente. Hay dos formas de usarla:
+## Antes de empezar: qué necesitas
 
-- **Pruebas (lo de ahora):** no creas base de datos ni `config.php`. Ágora usa SQLite y entra con **admin / 123456789**, con todos los datos sintéticos cargados. Sigue solo el **punto 0**.
-- **Producción:** MySQL/MariaDB, `config.php` y dueño propio (puntos 1 a 9).
+| Qué | Para qué |
+|---|---|
+| Acceso a **CyberPanel** como administrador | Crear el sitio, la base de datos y el cron |
+| Acceso a la **terminal** del servidor (la de CyberPanel o SSH como `root`) | Unos pocos comandos: extensiones, permisos, base de datos y cuenta de dueño |
+| El paquete **`agora-new-app-X.Y.Z.zip`** | Los archivos de la app |
+| El dominio apuntando al servidor | Por ejemplo `app.tudominio.com` |
 
-## 0. Ambiente de pruebas rápido (sin base de datos)
+### Cómo abrir la terminal
 
-1. Crea el sitio en CyberPanel con **PHP 8.3** y SSL (punto 1, primer párrafo).
-2. Verifica que PHP tenga SQLite. Por SSH como root:
+- **Opción fácil:** CyberPanel → menú de la izquierda **Server** → **Terminal**. Se abre una ventana negra donde escribes los comandos. Ya entras como `root`.
+- **Opción SSH** (desde tu ordenador): `ssh root@IP-DEL-SERVIDOR` y escribe la contraseña de root.
+
+Para **pegar** en la terminal: clic derecho → Pegar, o `Ctrl+Shift+V`. Pulsa **Enter** para ejecutar. Si un comando no muestra nada, normalmente es que fue bien.
+
+En todo el documento, el PHP del sitio es `/usr/local/lsws/lsphp83/bin/php` (el de CyberPanel). Para no repetirlo, al abrir la terminal pega primero esta línea, que crea un atajo `php83` válido mientras la ventana siga abierta:
 
 ```bash
-dnf install -y lsphp83-pdo lsphp83-sqlite3 lsphp83-mbstring
-systemctl restart lsws
-/usr/local/lsws/lsphp83/bin/php -m | grep -Ei 'pdo_sqlite|mbstring'
+alias php83=/usr/local/lsws/lsphp83/bin/php
 ```
 
-3. Sube `public_html/` y `servidor/` como indica el punto 2 (pasos 1 a 4, con el `chown` al usuario del sitio). **No crees `servidor/config/config.php`.** PHP debe poder escribir en `servidor/storage/`.
-4. Abre `https://TU-DOMINIO`. El primer arranque tarda un par de segundos: crea `servidor/storage/agora-pruebas.sqlite`, el usuario y los datos.
-5. Entra con usuario **admin** y clave **123456789** (dueño de la agencia). Las subcuentas tienen sus propios usuarios con la misma clave: `admin.asocim`, `supervisor.asocim`, `ejecutivo1.asocim`… y lo mismo con `.streamingnet`.
-6. Cron (punto 6) es opcional en pruebas; si lo pones, que corra como el usuario del sitio.
+---
 
-**Empezar de cero:** borra `servidor/storage/agora-pruebas.sqlite*` (o ejecuta `/usr/local/lsws/lsphp83/bin/php servidor/bin/sembrar-sinteticos.php --reiniciar-pruebas` como el usuario del sitio). Al abrir el sitio se crea todo otra vez.
+## Paso 1 · Crear el sitio con SSL
 
-**Pasar a producción:** crea `config.php` con MySQL (puntos 1 a 4). En cuanto existe ese archivo el modo pruebas se apaga, y la base SQLite deja de usarse; puedes borrarla.
+1. CyberPanel → **Websites** → **Create Website**.
+2. Elige el paquete y el dueño, escribe tu dominio (`app.tudominio.com`), un correo y en **PHP** elige **PHP 8.3**. Pulsa **Create Website**.
+3. CyberPanel → **Websites** → **List Websites** → tu dominio → **Manage** → **SSL** → **Issue SSL**. Espera el mensaje de éxito.
 
-> La clave 123456789 es débil a propósito. No dejes un servidor de pruebas público con datos reales: úsalo solo con los datos sintéticos.
+El sitio vive en `/home/TU-DOMINIO/`. Dentro está `public_html/`.
 
-## 1. Requisitos
+## Paso 2 · Extensiones de PHP
 
-- AlmaLinux 9 con CyberPanel y OpenLiteSpeed. El sitio se crea en CyberPanel → Websites → Create Website, con **PHP 8.3**, y lleva SSL activo (Websites → Manage → Issue SSL). Instala en la raíz del dominio, no en una subcarpeta.
-- PHP 8.3 (lsphp83) con PDO, `pdo_mysql` (paquete `mysqlnd`), `mbstring`, `curl`, `gd`, `iconv`, JSON y OpenSSL, con OPcache activo. Por SSH como root:
+En la terminal, pega esto **una sola vez**:
 
 ```bash
-dnf install -y lsphp83 lsphp83-common lsphp83-mysqlnd lsphp83-mbstring lsphp83-gd lsphp83-opcache lsphp83-process lsphp83-intl
+dnf install -y lsphp83 lsphp83-common lsphp83-mysqlnd lsphp83-mbstring lsphp83-gd lsphp83-opcache lsphp83-process lsphp83-intl lsphp83-sodium
 systemctl restart lsws
-/usr/local/lsws/lsphp83/bin/php -m | grep -Ei 'pdo_mysql|mbstring|gd|openssl|curl'
+/usr/local/lsws/lsphp83/bin/php -m | grep -Ei 'pdo_mysql|mbstring|gd|openssl|curl|sodium'
 ```
 
-  También puedes hacerlo desde CyberPanel → Server → PHP → Install Extensions (elige PHP 8.3).
-- MariaDB 10.11+ (la que instala CyberPanel) o MySQL 8, con InnoDB y `utf8mb4`. Una base vacía y un usuario con permisos sobre ella (CyberPanel → Databases → Create Database). Nunca uses el usuario root de MySQL.
-- Una tarea cron cada minuto (punto 6).
+La última línea debe mostrar `curl`, `gd`, `mbstring`, `openssl`, `pdo_mysql` y `sodium`. Si `dnf` dice que `lsphp83-sodium` no existe, no pasa nada: en muchas instalaciones `sodium` ya viene incluido (compruébalo en la lista).
 
-## 2. Subir los archivos
+## Paso 3 · Crear la base de datos
 
-El ZIP `agora-cyberpanel-2.1.19.zip` trae dos carpetas: `public_html/` y `servidor/`. En CyberPanel cada sitio vive en `/home/TU-DOMINIO/`:
+1. CyberPanel → **Databases** → **Create Database**.
+2. Elige tu sitio, escribe un **nombre** (por ejemplo `agora`), un **usuario** (por ejemplo `agora`) y una **contraseña larga**. Pulsa **Create Database**.
+3. **Apunta los tres datos tal como los muestra CyberPanel**: suele añadir un prefijo, por ejemplo `tudom_agora`. Los necesitas en el paso 6.
+
+## Paso 4 · Subir los archivos
+
+El ZIP trae dos carpetas, `public_html/` y `servidor/`, y esta guía. Deben quedar así:
 
 ```
 /home/TU-DOMINIO/
-├── public_html/   ← contenido de public_html/ del ZIP (incluye .htaccess y api/)
-└── servidor/      ← carpeta servidor/ del ZIP, al LADO de public_html, nunca adentro
+├── public_html/   ← la web (index.html, api/, assets/, .htaccess)
+└── servidor/      ← la parte privada, AL LADO de public_html, nunca dentro
 ```
 
-1. Respalda la web y la base antes de reemplazar una instalación anterior. Conserva tu `servidor/config/config.php`.
-2. Sube los archivos con el File Manager de CyberPanel (Websites → Manage → File Manager) o por SFTP. Verifica que se subió `public_html/.htaccess`: es un archivo oculto.
-3. Deja como dueño al usuario del sitio (lo ves en el File Manager o con `ls -l /home/TU-DOMINIO`):
+**Con el File Manager** (CyberPanel → Websites → Manage → **File Manager**):
+
+1. Entra en la carpeta `/home/TU-DOMINIO/` (un nivel por encima de `public_html`).
+2. Pulsa **Upload** y sube `agora-new-app-X.Y.Z.zip`.
+3. Clic derecho sobre el ZIP → **Extract** → extrae en `/home/TU-DOMINIO/`. Si pregunta, **reemplaza** `public_html`.
+4. Comprueba que existe `public_html/.htaccess`. Es un archivo oculto: activa «Show hidden files» si no lo ves.
+
+**Por terminal** (si el ZIP ya está en `/home/TU-DOMINIO/`):
 
 ```bash
-chown -R USUARIO_DEL_SITIO:USUARIO_DEL_SITIO /home/TU-DOMINIO/public_html /home/TU-DOMINIO/servidor
-find /home/TU-DOMINIO/servidor -type d -exec chmod 750 {} \; && find /home/TU-DOMINIO/servidor -type f -exec chmod 640 {} \;
+cd /home/TU-DOMINIO && unzip -o agora-new-app-X.Y.Z.zip
 ```
 
-4. **Reinicia OpenLiteSpeed** después de subir o cambiar un `.htaccess`, porque OpenLiteSpeed solo relee las reglas al reiniciar: `systemctl restart lsws` (o CyberPanel → Server Status → LiteSpeed Status → Reboot).
-5. OpenLiteSpeed solo aplica las reglas `Rewrite` del `.htaccess`. Ignora `Header`, `Options` y `Require`. Por eso `servidor/` debe quedar **fuera** de `public_html`; la API se niega a arrancar si lo detecta adentro. Para las cabeceras de seguridad, agrega en CyberPanel → Websites → Manage → vHost Conf, dentro de `context / { … }`:
+## Paso 5 · Dar los archivos al usuario del sitio
+
+Mira cuál es el usuario del sitio:
+
+```bash
+ls -ld /home/TU-DOMINIO/public_html
+```
+
+En la salida, la tercera columna es el usuario (por ejemplo `tudom1234`). Usa ese nombre en lugar de `USUARIO`:
+
+```bash
+chown -R USUARIO:USUARIO /home/TU-DOMINIO/public_html /home/TU-DOMINIO/servidor
+find /home/TU-DOMINIO/servidor -type d -exec chmod 750 {} \;
+find /home/TU-DOMINIO/servidor -type f -exec chmod 640 {} \;
+chmod 770 /home/TU-DOMINIO/servidor/storage
+```
+
+`servidor/storage/` debe poder escribirse: ahí se guarda la clave con la que se cifran los tokens en el servidor.
+
+## Paso 6 · El archivo de configuración
+
+1. Genera **dos claves distintas** (pega el comando dos veces y copia cada resultado):
+
+   ```bash
+   /usr/local/lsws/lsphp83/bin/php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
+   ```
+
+2. Crea `config.php` copiando el ejemplo:
+
+   ```bash
+   cd /home/TU-DOMINIO/servidor/config && cp config.example.php config.php && chown USUARIO:USUARIO config.php && chmod 640 config.php
+   ```
+
+3. Ábrelo con el File Manager (clic derecho → **Edit**) y completa:
+
+   | Campo | Qué poner |
+   |---|---|
+   | `app_url` | `https://TU-DOMINIO`, exactamente como entras (con o sin `www`) |
+   | `app_key` | La **primera** clave del punto 1 |
+   | `vault_key` | La **segunda** clave del punto 1 (cifra los tokens de las cuentas) |
+   | `db` → `name`, `user`, `password` | Los del paso 3, con el prefijo de CyberPanel |
+   | `db` → `host` | `localhost` (si no conecta, prueba `127.0.0.1`) |
+   | `env` | `production` |
+   | `cookie_secure` | `true` |
+
+4. Guarda. **No cambies `app_key` ni `vault_key` después**: si cambian, hay que volver a escribir los tokens de las cuentas y de la agencia.
+
+## Paso 7 · Preparar la base de datos
+
+```bash
+cd /home/TU-DOMINIO
+sudo -u USUARIO /usr/local/lsws/lsphp83/bin/php servidor/bin/migrate.php
+```
+
+Debe responder `{"ok":true,"applied":[...]}` con la lista de migraciones. Si responde `"applied":[]`, ya estaban aplicadas (no es un error).
+
+## Paso 8 · Crear la cuenta de dueño (solo por terminal)
+
+Las cuentas de **dueño de Ágora** (Master y Superadmin) **solo se crean aquí**: la web no deja crearlas ni ascender a nadie a dueño.
+
+```bash
+cd /home/TU-DOMINIO
+sudo -u USUARIO /usr/local/lsws/lsphp83/bin/php servidor/bin/crear-dueno.php
+```
+
+Te pregunta, uno a uno:
+
+1. **Nombre y apellido**.
+2. **Correo** (con el que entrarás).
+3. **Contraseña**, de al menos 12 caracteres. **No se ve mientras la escribes**: es normal.
+4. **Repite la contraseña**.
+
+- La **primera** cuenta que crees es la **Master** (dueña principal; solo hay una).
+- Si vuelves a ejecutar el comando, crea un **Superadmin** (otro dueño de Ágora). Después, la Master le asigna subcuentas desde Agencia → Gestión de usuarios.
+- Para ver qué cuentas de dueño existen: `… crear-dueno.php --listar`.
+
+## Paso 9 · Reiniciar el servidor web y cabeceras de seguridad
+
+OpenLiteSpeed solo lee las reglas del `.htaccess` al reiniciar:
+
+```bash
+systemctl restart lsws
+```
+
+Cabeceras de seguridad (opcional pero recomendado): CyberPanel → Websites → Manage → **vHost Conf**. Dentro de `context / { … }` añade lo siguiente, guarda y vuelve a ejecutar `systemctl restart lsws`:
 
 ```
 extraHeaders            <<<END_extraHeaders
@@ -92,94 +175,93 @@ X-Frame-Options SAMEORIGIN
 END_extraHeaders
 ```
 
-6. No publiques `tests/`, `construccion/`, `prueba.html` ni la documentación privada. Los datos sintéticos viven en `servidor/datos-sinteticos/`, fuera de la web.
-7. Si el sitio usa `open_basedir`, debe incluir `/home/TU-DOMINIO` completo (no solo `public_html`), para que PHP pueda leer `servidor/`. Si SELinux está en modo `Enforcing` (`getenforce`), los archivos deben conservar el contexto del sitio: `restorecon -R /home/TU-DOMINIO`.
+## Paso 10 · Tarea programada (cron)
 
-## 3. Configurar el servidor
+Envía los mensajes en cola y limpia sesiones vencidas. CyberPanel → Websites → Manage → **Cron Jobs** → añade:
 
-Copia `servidor/config/config.example.php` como `servidor/config/config.php`. Completa `app_url` con la dirección exacta del sitio (https://TU-DOMINIO, con o sin `www` tal como se entra) y los datos de la base que creaste en CyberPanel → Databases → Create Database. El host es `localhost`; si la conexión falla, prueba `127.0.0.1`. Conserva `env=production` y `cookie_secure=true`.
+- **Frecuencia:** cada minuto (`* * * * *`).
+- **Comando:**
 
-Genera dos valores **distintos** de 64 caracteres hexadecimales, uno para `app_key` y otro para `install_token`:
+  ```
+  /usr/local/lsws/lsphp83/bin/php /home/TU-DOMINIO/servidor/bin/worker.php --max-jobs=50 >/dev/null 2>&1
+  ```
 
-```bash
-php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
-```
+## Paso 11 · Comprobar
 
-Ejecuta el comando dos veces. No uses claves de ejemplo ni publiques esos valores. Mantén `config.php` privado y con permisos mínimos que permitan leerlo al proceso PHP. No cambies `app_key` rutinariamente: invalida tokens CSRF y controles de frecuencia anteriores.
+Abre en el navegador:
 
-`db.persistent=true` reutiliza conexiones por proceso PHP. Dimensiona el número de procesos respecto de `max_connections` y la cuota del plan. No es un pool global ni garantiza capacidad ilimitada.
+- `https://TU-DOMINIO/api/health` → debe decir `{"status":"ok","version":"X.Y.Z"}`.
+- `https://TU-DOMINIO/api/status` → `{"maintenance":false}`.
+- `https://TU-DOMINIO/` → la pantalla de entrada. Entra con el correo y la contraseña del paso 8.
 
-## 4. Instalar y crear el dueño
+Comprueba también que `https://TU-DOMINIO/servidor/config/config.php` **no** abre nada.
 
-**Desde el navegador:** abre `https://TU-DOMINIO/install.php`, introduce el token privado y los datos del dueño. La contraseña debe tener al menos 12 caracteres y como máximo 72 bytes. El instalador aplica las migraciones y crea un único usuario `MASTER`.
+---
 
-Al terminar, elimina `public_html/install.php` y deja `install_token` vacío en la configuración. Entra con el correo y la contraseña que acabas de crear. **No existe una contraseña de producción predeterminada.**
+## Paso 12 · Primeros pasos dentro de la app
 
-**Alternativa por SSH:** entra a `/home/TU-DOMINIO` y ejecuta `/usr/local/lsws/lsphp83/bin/php servidor/bin/migrate.php`; después ejecuta `/usr/local/lsws/lsphp83/bin/php servidor/bin/create-owner.php` proporcionando por entrada estándar un objeto JSON con `nombre`, `correo` y `clave`. Usa un archivo temporal privado fuera de la web, y bórralo después. No pongas contraseñas en argumentos de comandos ni en repositorios.
+### Crear una subcuenta y conectarla con su cuenta
 
-Migraciones activas: `servidor/app/database/migrations/`. El antiguo `020_saas_governance.sql` se movió a `docs/historico/sql/` y no debe importarse. Las migraciones tienen control de checksum. No edites una migración ya aplicada; añade una nueva. Si una instalación inicial se interrumpe durante DDL, conserva el error y rehace la instalación en otra base vacía; no borres una base con datos reales.
+1. **Agencia** → **Nueva subcuenta**: nombre de la empresa, de la subcuenta, código y logo (PNG; si es muy grande se reduce solo).
+2. En **«Conexión con la cuenta»**:
+   - **Location ID:** en la subcuenta de la cuenta → Settings → Business Profile (arriba, «Location ID»).
+   - **Token de la integración privada:** en la subcuenta → Settings → **Private Integrations** → **Create new integration**. Ponle un nombre (por ejemplo «Ágora») y marca estos permisos:
+     - `locations.readonly`, `users.readonly`
+     - `contacts.readonly`, `contacts.write`, `locations/tags.readonly`, `locations/customFields.readonly`
+     - `conversations.readonly`, `conversations.write`, `conversations/message.readonly`, `conversations/message.write`
+     - `opportunities.readonly`, `opportunities.write`
+     - `calendars.readonly`, `calendars/events.readonly`
+     - Opcionales, para lo que viene: `invoices.readonly`, `products.readonly`, `socialplanner/account.readonly`, `socialplanner/post.readonly`
 
-### Actualizar desde 2.0
+     Copia el token (empieza por `pit-`) y pégalo. **Solo se ve una vez en la cuenta**: si lo pierdes, crea otro.
+   - **Company ID** (opcional): Agency View → Settings → Company.
+3. **Guardar**. Vuelve a abrir **Editar datos** y pulsa **Probar conexión**: debe decir «Conectada con …» y la lista de lo que el token puede leer.
+4. Desde ese momento, **Bandeja**, **Contactos**, **Oportunidades**, **Ganadas** y el **tablero** de esa subcuenta leen en vivo de la cuenta. Cada persona ve solo lo que tiene asignado; para eso, su correo en Ágora debe ser el mismo que en la cuenta.
 
-1. Respaldo de base y archivos.
-2. Sube `public_html/` y `servidor/` nuevos (conserva tu `servidor/config/config.php`).
-3. Agrega `'remember_seconds'=>604800,` a `config.php` (opcional; ese es el valor por omisión).
-4. Ejecuta `/usr/local/lsws/lsphp83/bin/php servidor/bin/migrate.php` por SSH. Aplica `002_agencia.sql` (columnas `plan`, `license_expires_at`, `last_login_at`) y `003_cobros.sql` (columna `billing`). Sin SSH: sube temporalmente `install.php`, define `install_token` y envía el formulario; aplica las migraciones y luego responde "Ya existe un dueño" (es lo esperado). Bórralo y vacía el token.
-5. Los navegadores toman la versión nueva solos: el service worker cambió de caché (`agora-digital-app-2.1.0-…`).
+### Consumos de la agencia (solo dueños)
 
-## 5. Arranque operativo
+1. **Agencia** → menú de la izquierda → **Consumos**.
+2. **Company ID:** Agency View → Settings → Company.
+3. **Token de agencia:** en Agency View → Settings → **Private Integrations** → nueva integración con el permiso `saas/company.read` (y los de lectura de ubicaciones si los pide). Pégalo y pulsa **Guardar**.
+4. Elige mes y subcuenta y pulsa **Actualizar**. Se puede descargar en texto o PDF.
 
-1. El dueño crea las subcuentas en Agencia y sus administradores locales.
-2. Los Superadmins se asignan explícitamente a las subcuentas autorizadas. La pantalla de usuarios de Agencia muestra únicamente Master y Superadmins.
-3. Dentro de cada subcuenta, abre Ajustes para importar datos y Usuarios para gestionar el equipo.
-4. Crea una tarea y un convenio de prueba, recarga y comprueba persistencia. Verifica con un usuario local que no puede acceder a otra empresa.
-5. Comprueba el perfil, los logotipos y el tamaño móvil. Revisa logs PHP ante errores con su identificador de solicitud.
+### Crear los usuarios de cada subcuenta
 
-La instalación empieza vacía. Los gráficos no representan datos reales hasta cargar los reportes. Los ejemplos de `tests/fixtures/` son **sintéticos**, exclusivos de pruebas; no cargarlos como contabilidad real.
+Agencia → subcuenta → **Administrar usuarios**. Roles: Admin, Supervisor, Ejecutivo y los de consulta. Los ejecutivos solo ven lo que tienen asignado en la cuenta.
 
-## 5 bis. Datos sintéticos en un servidor de pruebas con MySQL
+---
 
-En el ambiente de pruebas del punto 0 los datos se cargan solos. Si en cambio montaste un servidor de pruebas con MySQL, puedes cargarlos con un comando:
+## Actualizar a una versión nueva
 
-```bash
-cd /home/TU-DOMINIO
-/usr/local/lsws/lsphp83/bin/php servidor/bin/sembrar-sinteticos.php --confirmo-pruebas
-```
+1. Haz un **respaldo**: CyberPanel → Backup (sitio y base de datos).
+2. Sube el ZIP nuevo y extráelo **reemplazando** `public_html/` y `servidor/`. **Conserva** `servidor/config/config.php` y `servidor/storage/`: no los borres.
+3. Repite el **paso 5** (permisos).
+4. Abre la app: las migraciones nuevas se aplican solas. Si prefieres hacerlo a mano: el **paso 7**.
+5. Si cambió el `.htaccess`: `systemctl restart lsws`.
+6. Comprueba `https://TU-DOMINIO/api/health` (versión nueva).
 
-Al terminar, el comando muestra los correos (`admin.asocim@agora.test`, `ejecutivo1.streamingnet@agora.test`…) y la clave (con MySQL, por defecto `Agora-Pruebas-2026!`, porque ahí la mínima es de 12 caracteres; puedes indicar otra con `--clave=`). Para limpiar: `… sembrar-sinteticos.php --borrar --confirmo-pruebas`. Los detalles están en `servidor/datos-sinteticos/LEEME.md`. **Antes de producción**, borra los datos sintéticos y elimina esa carpeta y el comando.
+## Respaldos
 
-## 6. Cron y mensajes
+- **Base de datos y archivos**, a diario, desde CyberPanel → Backup.
+- Guarda aparte, en un sitio seguro, `servidor/config/config.php` y `servidor/storage/motor-vault.key`. Sin ellos, los tokens guardados no se pueden abrir y hay que volver a escribirlos.
 
-En CyberPanel → Websites → Manage → Cron Jobs (o con `crontab -u USUARIO_DEL_SITIO -e`), crea una tarea cada minuto:
+---
 
-```bash
-* * * * * /usr/local/lsws/lsphp83/bin/php /home/TU-DOMINIO/servidor/bin/worker.php --max-jobs=50 >/dev/null 2>&1
-```
+## Paquete de demostración
 
-El worker toma un bloqueo para evitar ejecuciones superpuestas, limpia sesiones/limitadores vencidos y claves idempotentes de más de siete días. Procesa hasta 50 mensajes por ejecución. Conserva los logs fuera de `public_html` y establece su rotación. Supervisa `agora_jobs`: `queued`, `running`, `done`, `failed`, `manual_review`.
+`agora-cyberpanel-2.1.19-demo.zip` es la versión original con datos inventados y un **modo pruebas** (entra con `admin` / `123456789`, sin base de datos). Sirve solo para enseñar la app. **Nunca** lo instales en un servidor con datos reales. El paquete de producción no trae ese modo: si falta `config.php`, avisa en lugar de abrir una base de pruebas.
 
-Para GHL, configura por ID interno de subcuenta `ghl.tenants[ID] = ['token'=>..., 'location_id'=>...]` en el archivo privado. El worker verifica que el contacto externo pertenece a esa ubicación antes de enviar. No se probó entrega externa sin credenciales. Los resultados ambiguos quedan en revisión manual y no se reenvían automáticamente, para evitar duplicados.
+---
 
-**La sincronización automática de contactos, oportunidades y conversaciones de GHL no está implementada en esta entrega.** No basta con agregar un token para habilitarla. La interfaz local dispone de importación JSON para contactos, pipelines, oportunidades y reportes. Webhooks, plantillas, notificaciones push y passkeys requieren implementación/configuración adicional; no se anuncian como activos.
-
-## 7. Convenios y firma por enlace
+## Convenios y firma por enlace
 
 La creación, cálculo en centavos, edición de borrador, PDF, revocación y protección del documento firmado están implementados. Para habilitar la aceptación por enlace, revisa primero el texto de `Contracts::document()` y activa `signing_enabled`.
 
 El enlace caduca en siete días, se almacena con hash y solo admite una aceptación. Generar otro revoca el anterior. Se comparte manualmente; no se envía correo automático. Esta aceptación registra nombre declarado, fecha e IP y no verifica identidad mediante un proveedor de firma certificada. No presentarla como firma certificada ni como facturación fiscal.
 
-## 8. Verificación y actualizaciones
+---
 
-- Abre `/api/health` y confirma la versión 2.1.19. Abre `/api/status`: debe responder `{"maintenance":false}`.
-- Verifica que `/servidor/config/config.php` no sea accesible y que no esté disponible el instalador.
-- Comprueba HTTPS, cookies Secure/HttpOnly/SameSite y que `/api/*` nunca se cachee.
-- Respaldos diarios de la base, retención acorde a la operación y prueba de restauración en otro entorno. Los adjuntos de perfil se guardan en la base; también respalda los archivos privados de configuración por un canal seguro.
-- Actualiza primero en staging. Conserva respaldo y versión anterior del código. Un cambio de esquema no se revierte solamente reemplazando archivos.
-- Las rutas de demostración y pruebas no deben ser accesibles en producción. No ejecutar el sembrado de 10.000 usuarios en una base real.
-
-Consulta `docs/ESCALABILIDAD.md`, `docs/IMPORTACION.md` y `docs/AUDITORIA-BACKEND.md` para alcance y resultados verificables.
-
-## 9. Si sale la pantalla de mantenimiento
+## Si algo falla: la pantalla de mantenimiento
 
 La pantalla "Oops! Algo ocurre" aparece cuando la app no logra hablar con la API. Desde la 2.1.12 la tarjeta muestra el **detalle para quien administra el servidor**, y lo mismo responde `https://TU-DOMINIO/api/status`:
 
@@ -188,12 +270,17 @@ La pantalla "Oops! Algo ocurre" aparece cuando la app no logra hablar con la API
 | Responde 404 o una página HTML | La API no está enrutada: falta `public_html/.htaccess` o no se reinició OpenLiteSpeed (`systemctl restart lsws`). |
 | `servidor` · No se encontró la carpeta servidor/ | Sube `servidor/` a `/home/TU-DOMINIO/servidor`, al lado de `public_html`. |
 | `expuesto` · servidor/ está dentro de public_html | Muévela un nivel arriba. |
-| `config` · problema en servidor/config/config.php | Corrige `config.php` (punto 3). Sin `config.php`, Ágora arranca en modo pruebas (punto 0). |
+| `config` · problema en servidor/config/config.php | Corrige `config.php` (paso 6). Sin `config.php`, la app avisa y no arranca. |
 | `db` · No se pudo conectar a la base de datos | Revisa nombre, usuario y clave de CyberPanel → Databases; prueba host `127.0.0.1`. |
-| `migraciones` · La base está vacía o incompleta | Abre `/install.php` (primera vez) o ejecuta `migrate.php` (punto 4). |
+| `migraciones` · La base está vacía o incompleta | Ejecuta el **paso 7** (`migrate.php`). |
 | Al entrar dice "Origen no autorizado" | `app_url` en `config.php` no coincide con la dirección del navegador. Debe ser exacta: `https://`, con o sin `www` igual que como entras. |
-| `php` / `ext` | Elige PHP 8.3 para el sitio o instala la extensión indicada (punto 1). En pruebas falta `pdo_sqlite`: `dnf install lsphp83-pdo lsphp83-sqlite3` y `systemctl restart lsws`. |
+| `php` / `ext` | Elige PHP 8.3 para el sitio o instala la extensión indicada (paso 2). En pruebas falta `pdo_sqlite`: `dnf install lsphp83-pdo lsphp83-sqlite3` y `systemctl restart lsws`. |
 | `storage` · Modo pruebas: PHP no puede escribir | `chown -R USUARIO_DEL_SITIO:USUARIO_DEL_SITIO /home/TU-DOMINIO/servidor/storage` |
 | `pruebas` · no se pudo preparar | Borra `servidor/storage/agora-pruebas.sqlite*` y vuelve a abrir el sitio. El detalle queda en el log de PHP. |
 
 Los errores internos quedan en el log de PHP del sitio (`/home/TU-DOMINIO/logs/`) con el mismo número de referencia que muestra la app.
+
+| Al conectar una subcuenta: «El token no es válido o fue revocado» | Crea otra integración privada en la subcuenta y pega el token nuevo. |
+| «No tiene permiso para leer esta ubicación» | A la integración privada le falta `locations.readonly`. Edítala y añádelo. |
+| La bandeja dice «en espera para respetar la cuota» | Es normal un momento: Ágora no pasa de 20 consultas cada 10 segundos por subcuenta. Se recupera sola. |
+| Una persona no ve sus conversaciones | Su correo en Ágora debe ser el mismo que en la cuenta, y la conversación debe estar asignada a ella. |

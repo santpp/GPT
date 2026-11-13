@@ -246,6 +246,7 @@ function route() {
   if (/^\/agencia\/subcuenta\/\d+$/.test(p)) return {view:'agencyAccount', id: p.split('/').pop()};
   if (p === '/agencia/usuarios') return {view:'agencyTeam'};
   if (p === '/agencia/actividad') return {view:'agencyActivity'};
+  if (p === '/agencia/consumos') return {view:'agencyConsumos'};
   if (p === '/agencia/textos') return {view:'agencyTexts'};
   if (p === '/agencia/estudio-ia') return {view:'agencyStudio'};
   if (p === '/perfil') return {view:'perfil'};
@@ -312,7 +313,7 @@ function render(focus) {
   const root = document.documentElement;
   if (!ME || !AGORA_ME) { root.classList.add('is-auth'); return V.entrar.render(); }
   if (R.view === 'entrar') { go(homePath(), {replace: true}); return; }
-  if (esSuperAdmin() && AGENCY_CONTEXT && !['agencia','perfil','agencyControl','agencyAccount','agencyTeam','agencyTexts','agencyStudio','agencyActivity'].includes(R.view)) { toast('Selecciona una subcuenta para abrir sus módulos.'); go('/agencia', {replace:true}); return; }
+  if (esSuperAdmin() && AGENCY_CONTEXT && !['agencia','perfil','agencyControl','agencyAccount','agencyTeam','agencyTexts','agencyStudio','agencyActivity','agencyConsumos'].includes(R.view)) { toast('Selecciona una subcuenta para abrir sus módulos.'); go('/agencia', {replace:true}); return; }
   if (R.view === 'agencia' && !esSuperAdmin()) { go(homePath(), {replace:true}); return; }
   if (R.view === 'agencia' && esSuperAdmin() && !AGENCY_CONTEXT) { resetAccountData(); AGENCY_CONTEXT = true; }
   root.classList.remove('is-auth'); $('#lg')?.remove();
@@ -323,7 +324,7 @@ function render(focus) {
     R = {view: 'ag_inbox', mod: 'bandeja'};
   }
   if (R.unknown) { toast('Esa dirección no existe. Te llevamos al inicio.'); go(homePath(), {replace:true}); return; }
-  if (['agencyControl','agencyAccount','agencyTeam','agencyTexts','agencyStudio','agencyActivity'].includes(R.view) && !esSuperAdmin()) { topbar();paint(agencyRouteDenied());return; }
+  if (['agencyControl','agencyAccount','agencyTeam','agencyTexts','agencyStudio','agencyActivity','agencyConsumos'].includes(R.view) && !esSuperAdmin()) { topbar();paint(agencyRouteDenied());return; }
   topbar();
   const gen = ++GEN;
   const v = V[R.view];
@@ -1485,7 +1486,7 @@ function launcherFrame(mode, content) {
   if (!agency) return `<div class="launch-layout launch-no-rail"><div class="launch-content">${content}</div></div>`;
   const name = ME?.nombre || AGORA_ME?.user?.name || 'Mi cuenta';
   const groupIcons = {general:'home',ingresos:'invoice',clientes:'users',gestion:'pie',contratos:'receipt',administracion:'gear'};
-  return `<div class="launch-layout"><aside class="launch-rail" aria-label="Navegación de ${agency ? 'Agencia' : 'subcuenta'}"><div class="launch-brand launch-brand-logo" aria-label="Ágora Digital App">${LOGO}</div><p class="launch-rail-label">${agency ? 'Agencia' : esc(ws?.name() || 'Mi subcuenta')}</p><nav class="launch-primary"><a class="${R.view==='agencia'?'is-current':''}" href="${href(agency ? '/agencia' : '/centro')}" ${R.view==='agencia'?'aria-current="page"':''}>${icon(agency ? 'users' : 'home')}${agency ? 'Subcuentas' : 'Inicio de subcuenta'}</a>${!agency && esSuperAdmin() ? `<button type="button" data-agency-return>${icon('users')}Ir a subcuentas</button>` : ''}${agency ? '' : Object.entries(GRUPOS).map(([id,g]) => `<button type="button" data-launch-group="group-${id}">${icon(groupIcons[id])}${esc(g.name)}</button>`).join('')}</nav><div class="launch-system"><p class="launch-rail-label">${AG_GOB_NOMBRE}</p><a href="${href('/agencia/control')}" ${R.view==='agencyControl'?'aria-current="page"':''}>${icon('pie')}Resumen</a><a href="${href('/agencia/usuarios')}" ${R.view==='agencyTeam'?'aria-current="page"':''}>${icon('team')}Gestión de usuarios</a><a href="${href('/agencia/actividad')}" ${R.view==='agencyActivity'?'aria-current="page"':''}>${icon('shield')}Registro de actividad</a><a href="${href('/agencia/estudio-ia')}" ${R.view==='agencyStudio'?'aria-current="page"':''}>${icon('spark')}Estudio</a>${!agency ? `<p class="launch-rail-label">Mi espacio</p><a href="${href('/ajustes')}">${icon('gear')}Ajustes</a><a href="${href('/ayuda')}">${icon('info')}Ayuda</a>` : ''}</div><a class="launch-person" href="${href('/perfil')}" ${R.view==='perfil'?'aria-current="page"':''}><span class="launch-avatar">${personalAvatar()}</span><span><b>${esc(name)}</b><small>${esSuperAdmin() ? (esMaster() ? 'Master · Dueño' : 'Superadmin de Agencia') : 'Mi perfil y cuenta'}</small></span>${icon('chevR')}</a></aside><div class="launch-content">${content}</div></div>`;
+  return `<div class="launch-layout"><aside class="launch-rail" aria-label="Navegación de ${agency ? 'Agencia' : 'subcuenta'}"><div class="launch-brand launch-brand-logo" aria-label="Ágora Digital App">${LOGO}</div><p class="launch-rail-label">${agency ? 'Agencia' : esc(ws?.name() || 'Mi subcuenta')}</p><nav class="launch-primary"><a class="${R.view==='agencia'?'is-current':''}" href="${href(agency ? '/agencia' : '/centro')}" ${R.view==='agencia'?'aria-current="page"':''}>${icon(agency ? 'users' : 'home')}${agency ? 'Subcuentas' : 'Inicio de subcuenta'}</a>${!agency && esSuperAdmin() ? `<button type="button" data-agency-return>${icon('users')}Ir a subcuentas</button>` : ''}${agency ? '' : Object.entries(GRUPOS).map(([id,g]) => `<button type="button" data-launch-group="group-${id}">${icon(groupIcons[id])}${esc(g.name)}</button>`).join('')}</nav><div class="launch-system"><p class="launch-rail-label">${AG_GOB_NOMBRE}</p><a href="${href('/agencia/control')}" ${R.view==='agencyControl'?'aria-current="page"':''}>${icon('pie')}Resumen</a><a href="${href('/agencia/usuarios')}" ${R.view==='agencyTeam'?'aria-current="page"':''}>${icon('team')}Gestión de usuarios</a><a href="${href('/agencia/actividad')}" ${R.view==='agencyActivity'?'aria-current="page"':''}>${icon('shield')}Registro de actividad</a><a href="${href('/agencia/consumos')}" ${R.view==='agencyConsumos'?'aria-current="page"':''}>${icon('wallet')}Consumos</a><a href="${href('/agencia/estudio-ia')}" ${R.view==='agencyStudio'?'aria-current="page"':''}>${icon('spark')}Estudio</a>${!agency ? `<p class="launch-rail-label">Mi espacio</p><a href="${href('/ajustes')}">${icon('gear')}Ajustes</a><a href="${href('/ayuda')}">${icon('info')}Ayuda</a>` : ''}</div><a class="launch-person" href="${href('/perfil')}" ${R.view==='perfil'?'aria-current="page"':''}><span class="launch-avatar">${personalAvatar()}</span><span><b>${esc(name)}</b><small>${esSuperAdmin() ? (esMaster() ? 'Master · Dueño' : 'Superadmin de Agencia') : 'Mi perfil y cuenta'}</small></span>${icon('chevR')}</a></aside><div class="launch-content">${content}</div></div>`;
 }
 document.addEventListener('click', e => {
   const button = e.target.closest('[data-launch-group]');
@@ -3936,6 +3937,18 @@ var AGENCY_AUDIT_LOGS = window.__DEMO__ ? [
   {id:'log_7',fecha:'2026-11-04 14:02:11',admin:'Dueño de Ágora',correo:'demo.agencia@agora.test',rolAdmin:'MASTER',accion:'subcuenta.aprobada',tipo:'Aprobación',entidad:'ASOCIM · Admisiones',codigo:'ASO-ADM',detalle:'Aprobación de renovación anual y auditoría completada.',anterior:'Pendiente',nuevo:'Activa',ip:'190.24.112.45'}
 ] : [];
 
+/* Agora New App · Consumos de la agencia: la misma pantalla de Ágora Mobile (assets/motor/consumption.js).
+   Token de agencia y Company ID se escriben ahí y se guardan cifrados en el servidor. Solo dueños. */
+V.agencyConsumos = {
+  render() {
+    if (!esSuperAdmin()) return agencyRouteDenied();
+    return launcherFrame('agencia', head(AG_GOB_NOMBRE, 'Consumos', 'Lo que gasta cada subcuenta en la cuenta este mes y su plan. El token de agencia se escribe aquí y no vuelve a mostrarse.') + '<section class="panel cons-erp"><div id="cons-root" data-view="consumption"></div></section>');
+  },
+  mounted(root) {
+    const box = root.querySelector('#cons-root'); if (!box) return;
+    import('/assets/motor/consumption.js').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+  },
+};
 V.agencyActivity = {
   need:async()=>{if(!window.__DEMO__){const d=await agoraApi('agency/activity');AGENCY_AUDIT_LOGS=d.items||[];}},
   render() {

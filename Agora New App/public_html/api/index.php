@@ -28,6 +28,16 @@ try{
  if(!in_array($method,['GET','POST','PUT','DELETE'],true))\Agora\Core\Http::fail('Método no permitido.',405);
  $body=$method==='GET'?[]:\Agora\Core\Http::body();
  if($method!=='GET')$api->a->assertCsrf();
+ // Agora New App: lo que habla en vivo con la cuenta lo atiende el motor de Ágora Mobile (si la subcuenta está conectada).
+ if(\Agora\Core\MotorMobile::consumos($path)){if($method!=='GET')$api->a->rate('writes:'.($api->a->user['id']??0),120,60);\Agora\Core\MotorMobile::atenderConsumos($db,$config,$api->a,$path,$method);}
+ if($api->a->user&&\Agora\Core\MotorMobile::atiende($path,$method)){
+  $tenantVivo=$api->a->workspace();
+  if(\Agora\Core\MotorMobile::conectada($db,$tenantVivo)){
+   $api->a->permit($method==='GET'?'datos.consultar':($path==='workspace/assign'?'conversaciones.reasignar':'conversaciones.atender'));
+   if($method!=='GET')$api->a->rate('writes:'.$api->a->user['id'],120,60);
+   \Agora\Core\MotorMobile::atender($db,$config,$api->a,$path,$method);
+  }
+ }
  if($path==='sign')$api->a->rate('sign:'.($_SERVER['REMOTE_ADDR']??''),100,300);
  if($api->a->user&&$method!=='GET')$api->a->rate('writes:'.$api->a->user['id'],120,60);
  $call=fn()=>$api->dispatch($path,$method,$body);

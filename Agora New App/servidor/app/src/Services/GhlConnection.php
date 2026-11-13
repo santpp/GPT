@@ -97,8 +97,9 @@ final class GhlConnection {
  /** Petición a la cuenta. En pruebas se sustituye con $GLOBALS['agoraGhlTransport']. @return array{0:int,1:mixed} */
  public static function request(string $method,string $path,string $token,?array $body=null,string $version=self::VERSION):array{
   if(isset($GLOBALS['agoraGhlTransport'])&&is_callable($GLOBALS['agoraGhlTransport']))return ($GLOBALS['agoraGhlTransport'])($method,$path,$token,$body);
-  $h=curl_init(self::API.$path);
-  curl_setopt_array($h,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>20,CURLOPT_CONNECTTIMEOUT=>8,CURLOPT_FOLLOWLOCATION=>false,CURLOPT_PROTOCOLS=>CURLPROTO_HTTPS,CURLOPT_CUSTOMREQUEST=>$method,
+  $base=getenv('APP_ENV')==='development'&&preg_match('~^http://127\.0\.0\.1:\d+$~',(string)getenv('AGORA_GHL_FAKE'))?getenv('AGORA_GHL_FAKE'):self::API; // solo desarrollo
+  $h=curl_init($base.$path);
+  curl_setopt_array($h,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>20,CURLOPT_CONNECTTIMEOUT=>8,CURLOPT_FOLLOWLOCATION=>false,CURLOPT_PROTOCOLS=>$base===self::API?CURLPROTO_HTTPS:CURLPROTO_HTTP|CURLPROTO_HTTPS,CURLOPT_CUSTOMREQUEST=>$method,
    CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$token,'Version: '.$version,'Accept: application/json','Content-Type: application/json']]);
   if($body!==null)curl_setopt($h,CURLOPT_POSTFIELDS,DB::json($body));
   $raw=curl_exec($h);$status=(int)curl_getinfo($h,CURLINFO_RESPONSE_CODE);curl_close($h);

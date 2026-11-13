@@ -270,6 +270,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - El repositorio se divide: `Agora Mobile/` (release 1.10.14 de nueva.agoradigital.app; el código sigue en la raíz) y `Agora New App/` (ERP 2.1.19 recibido: `public_html/`, `servidor/`). Análisis completo: `Agora New App/ANALISIS.md`. Sin Docker; MySQL.
 - Se deja de llamar «armazón». Lo de abajo es el historial de cuando lo era.
 - **2.2.0 (13 de noviembre)**: estable en MySQL; conexión con la cuenta por subcuenta (token cifrado, Location ID, «Probar conexión»); fuente Author; arreglos de Ajustes, Contactos, Gestión Comercial y logos; paquete de producción sin modo pruebas (`agora-new-app-2.2.0.zip`) y paquete de demo aparte. Siguiente: Conversaciones con el motor de Ágora Mobile.
+- **2.3.0 (14 de noviembre)**: bandeja, contactos, oportunidades, ganadas y tablero en vivo con el motor de Ágora Mobile 1.10.14; Consumos con token de agencia; dueños solo por terminal; guía de instalación paso a paso. Siguiente: probar con token real; interfaz de la bandeja al día con Ágora Mobile; avisos al teléfono; anuncios y redes.
 
 ## (Historial) Armazón nuevo (Agora Digital App)
 - Paquete de pantallas de terceros que reemplaza el armazón visual (Resumen, ARP Comercial, Tareas, Auditoría, Athena…). Revisado y corregido en 1.1.1/1.2.x, sin publicar.

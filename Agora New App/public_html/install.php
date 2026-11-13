@@ -1,14 +1,11 @@
 <?php
 declare(strict_types=1);
-ini_set('display_errors','0');header('Cache-Control: no-store');header('X-Frame-Options: DENY');header('Referrer-Policy: no-referrer');
-if($_SERVER['REQUEST_METHOD']==='GET'){
-?><!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Instalar Ágora</title><link rel="stylesheet" href="/assets/sistema.css"><link rel="stylesheet" href="/assets/marca.css"><main class="ct" style="max-width:650px;padding:32px"><h1>Instalar Ágora Digital</h1><p>Primero configura la conexión privada y el token de instalación. Usa una base de datos vacía destinada a Ágora.</p><form id="setup"><label class="fld">Token privado de instalación<input type="password" name="token" required autocomplete="off"></label><label class="fld">Nombre del dueño<input name="nombre" required maxlength="120"></label><label class="fld">Correo del dueño<input name="correo" type="email" required></label><label class="fld">Contraseña (12–72 caracteres)<input name="clave" type="password" minlength="12" maxlength="72" required autocomplete="new-password"></label><button class="btn btn-cta">Instalar y crear dueño</button></form><p id="result" role="status"></p></main><script>document.querySelector('form').onsubmit=async e=>{e.preventDefault();const f=e.target,b=f.querySelector('button'),r=document.querySelector('#result');b.disabled=true;try{const response=await fetch('/install.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(f)))}),d=await response.json();if(!response.ok)throw Error(d.error);f.remove();r.innerHTML='Instalación completada. Retira el token de config.php y elimina install.php. <a href="/">Abrir Ágora</a>';}catch(x){r.textContent=x.message;b.disabled=false;}};</script></html><?php exit;}
-try{
- require dirname(__DIR__).'/servidor/bootstrap.php';
- if($_SERVER['REQUEST_METHOD']!=='POST')Agora\Core\Http::fail('Método no permitido.',405);
- if(($config['env']??'production')==='production'&&(empty($_SERVER['HTTPS'])||$_SERVER['HTTPS']==='off')&&($_SERVER['SERVER_PORT']??'')!=='443')Agora\Core\Http::fail('Se requiere HTTPS para instalar.',403);
- if(($_SERVER['HTTP_ORIGIN']??'')!==rtrim($config['app_url'],'/'))Agora\Core\Http::fail('Origen no autorizado.',403);
- $b=Agora\Core\Http::body();$token=$config['install_token']??'';
- if(!preg_match('/^[a-f0-9]{64}$/D',$token)||!hash_equals($token,(string)($b['token']??'')))Agora\Core\Http::fail('Instalación deshabilitada o token inválido.',403);
- $db=new Agora\Core\DB($config['db']);Agora\Core\Installer::migrate($db);Agora\Core\Installer::owner($db,$b);Agora\Core\Http::response(['ok'=>true]);
-}catch(Throwable $e){http_response_code($e instanceof Agora\Core\HttpError?$e->getCode():500);header('Content-Type: application/json');echo json_encode(['error'=>$e instanceof Agora\Core\HttpError?$e->getMessage():'No se pudo instalar. Revisa la configuración y el registro de PHP.']);}
+// Agora New App: la instalación ya no se hace desde el navegador. La cuenta de dueño se crea solo por terminal.
+http_response_code(410);header('Content-Type: text/html; charset=utf-8');header('Cache-Control: no-store');
+?><!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Instalación</title>
+<body style="font-family:system-ui,sans-serif;max-width:560px;margin:60px auto;padding:0 20px;line-height:1.5">
+<h1>La instalación se hace por la terminal</h1>
+<p>Por seguridad, la base de datos y la cuenta de dueño se preparan desde la terminal del servidor:</p>
+<pre style="background:#f1f1f5;padding:12px;border-radius:8px;white-space:pre-wrap">php servidor/bin/migrate.php
+php servidor/bin/crear-dueno.php</pre>
+<p>Los pasos completos están en <b>INSTALAR-CYBERPANEL.md</b>. Puedes borrar este archivo.</p></body></html>

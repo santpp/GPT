@@ -27,3 +27,64 @@ html,body,button,input,select,textarea{font-family:var(--font-text)}
 #bx-conexion .ghl-in{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;text-transform:none;letter-spacing:0}
 .conexion-datos{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.6}
 .conexion-datos .is-disponible{color:#2f7a52}.conexion-datos .is-sin_permiso{color:#ad103c}.conexion-datos .is-no_disponible,.conexion-datos .is-sin_red{color:var(--muted,#5d6370)}
+
+/* Cabecera del chat en el teléfono: en 390 px no caben el nombre, «¿Venta ganada?» y cuatro botones.
+   «¿Ganada?» queda con su ✓ (el nombre completo sigue en su etiqueta) y «Ampliar» y el avatar se quitan (en el teléfono no aportan y quitan sitio al nombre). */
+@media(max-width:600px){
+  .live-chat-header{gap:4px;padding:10px 10px}
+  .live-chat-header > div{overflow:hidden;min-width:0}
+  .live-chat-header h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .live-chat-header .won-button{flex:none;padding:6px 10px}
+  .live-chat-header .won-button .won-short,.live-chat-header .won-button .won-long{display:none!important}
+  .live-chat-header #live-focus,.live-chat-header > .avatar{display:none!important}
+}
+
+/* Consumos (copiado de Ágora Mobile 1.10.14) */
+/* 1.10.2 · Consumos */
+.cons{display:grid;gap:18px;max-width:980px}
+.cons-block{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg,16px);padding:20px}
+.cons-block h3{margin:0 0 10px;font-size:18px}
+.cons-note{margin:6px 0;color:var(--muted);font-size:14px;line-height:1.5}.cons-note.warn{color:#ad103c;font-weight:600}
+.cons details>summary{cursor:pointer;font-weight:600;min-height:36px;display:flex;align-items:center}
+.cons-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin:12px 0}
+.cons-bar label,.cons-form label{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink)}
+.cons-bar select,.cons-form input{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:var(--r-md,10px);background:var(--paper);color:var(--ink);font:inherit}
+.cons-bar .primary{min-height:44px;padding:8px 22px;border-radius:var(--r-md,10px);border:1px solid var(--green);background:var(--green);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.cons-form{display:grid;gap:12px;max-width:520px;margin-top:8px}
+.cons-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}
+.cons-actions button,.cons-open{min-height:44px;padding:8px 16px;border-radius:var(--r-md,10px);border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+.cons-actions button.primary{background:var(--green);border-color:var(--green);color:#fff}
+.cons-totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:12px 0}
+.cons-totals div{border:1px solid var(--line);border-radius:12px;padding:12px}.cons-totals small{display:block;color:var(--muted);font-size:13px}.cons-totals strong{font-size:26px}
+.cons-list{display:grid;gap:12px}
+.cons-card{border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:10px}
+.cons-card header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.cons-card h4{margin:0;font-size:18px}
+.cons-plan{display:block;font-size:14px;color:var(--ink);margin-top:2px}.cons-plan.muted{color:var(--muted)}
+.cons-money{text-align:right}.cons-money strong{display:block;font-size:22px}.cons-money small{color:var(--muted)}
+.cons-card dl{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0}.cons-card dt{font-size:12px;color:var(--muted)}.cons-card dd{margin:0;font-weight:700}
+.cons-mini{display:flex;flex-wrap:wrap;gap:8px}.cons-mini span{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+.cons-open{justify-self:start}
+.cons-days{display:flex;align-items:flex-end;gap:3px;height:90px;margin:8px 0;border-bottom:1px solid var(--line)}.cons-days span{flex:1;min-width:4px;max-width:34px;background:var(--green);border-radius:3px 3px 0 0}
+/* La hoja del reporte */
+.cons-sheet{background:#fff;color:#0b0b10;border:1px solid var(--line);border-radius:16px;padding:32px;display:grid;gap:18px}
+.cons-sheet-h{display:flex;align-items:center;gap:18px;border-bottom:2px solid #ad103c;padding-bottom:14px}.cons-sheet-h img{height:44px;width:auto}.cons-sheet-h h2{margin:0;font-size:26px}.cons-sheet-h p{margin:2px 0 0;color:#30343c}
+.cons-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.cons-kpis div{background:#f7f7fa;border-radius:12px;padding:12px 14px}.cons-kpis small{display:block;color:#30343c;font-size:13px}.cons-kpis strong{font-size:26px}.cons-kpis.small strong{font-size:18px}
+.cons-sheet-sub{display:grid;gap:10px;border-top:1px solid #e5e4e9;padding-top:16px;break-inside:avoid-page}
+.cons-sheet-title{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}.cons-sheet-title h3{margin:0;font-size:22px}.cons-sheet-title span{color:#30343c}
+.cons-sheet h4{margin:8px 0 0;font-size:16px}
+.cons-sheet table{width:100%;border-collapse:collapse;font-size:14px}.cons-sheet th,.cons-sheet td{text-align:left;padding:6px 8px;border-bottom:1px solid #e5e4e9}.cons-sheet .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cons-split td.bar{width:42%}.cons-split td.bar i{display:block;height:10px;background:#ad103c;border-radius:5px}
+.cons-moves em{color:#30343c;font-style:normal;font-size:12px;border:1px solid #d8dde6;border-radius:6px;padding:0 6px;margin-left:4px}
+.cons-sheet-f{color:#30343c;font-size:12px;text-align:center;border-top:1px solid #e5e4e9;padding-top:10px}
+#cons-print{display:none}
+@media(max-width:600px){.cons-kpis{grid-template-columns:1fr}.cons-sheet{padding:18px}}
+@media print{
+ body.cons-printing>*:not(#app){display:none!important}
+ body.cons-printing .sidebar,body.cons-printing .topbar,body.cons-printing .page-heading,body.cons-printing .page-footer,body.cons-printing #toast{display:none!important}
+ body.cons-printing .cons>*:not(#cons-print){display:none!important}
+ body.cons-printing #cons-print{display:block!important}
+ body.cons-printing main,body.cons-printing #view{padding:0!important;margin:0!important;background:#fff!important}
+ body.cons-printing .cons-sheet{border:0;padding:0;border-radius:0}
+ body.cons-printing .cons-sheet-sub{page-break-inside:avoid}
+ @page{size:A4;margin:14mm}
+}

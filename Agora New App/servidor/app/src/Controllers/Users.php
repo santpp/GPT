@@ -58,6 +58,7 @@ final class Users {
  public function save(array $b,bool $agency,bool $update=false):array{
   if($agency)$this->auth->master();else $this->auth->manage();
   $u=null;if($update){$id=Http::integer($b['id']??0,1,PHP_INT_MAX);$u=$this->db->one('SELECT * FROM agora_users WHERE id=? FOR UPDATE',[$id]);if(!$u)Http::fail('Usuario no encontrado.',404);if($u['role']==='MASTER'||(int)$u['id']===(int)$this->auth->user['id'])Http::fail('Este acceso está protegido. Usa tu perfil para datos personales.',403);if($agency&&$u['role']!=='SUPERADMIN'||!$agency&&(int)$u['local_tenant_id']!==$this->auth->tenant)Http::fail('Usuario fuera de alcance.',403);}
+  if($agency&&!$update)Http::fail('Las cuentas de dueño (Superadmin) se crean solo desde la terminal del servidor: servidor/bin/crear-dueno.php.',403);
   $role=$b['rol']??$u['role']??'USUARIO';$allowed=$agency?['SUPERADMIN']:['ADMIN','SUPERVISOR','EJECUTIVO','REMITENTE','USUARIO','CONSULTA','VISOR'];if(!in_array($role,$allowed,true))Http::fail('Rol no asignable.',403);
   $name=isset($b['nombre'])?Http::text($b,'nombre'):($u['name']??Http::text($b,'nombre'));$email=isset($b['correo'])?Http::email($b):($u['email']??Http::email($b));
   if(isset($b['estado'])&&!in_array($b['estado'],['activo','inactivo'],true))Http::fail('Estado inválido.');$active=isset($b['estado'])?($b['estado']==='activo'):($b['activo']??($u['active']??true));$hash=$u['password_hash']??null;if(isset($b['clave']))$hash=password_hash(Http::password($b['clave']),PASSWORD_DEFAULT);if(!$hash)Http::fail('La contraseña inicial es obligatoria.');

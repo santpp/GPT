@@ -1,17 +1,18 @@
 # Agora New App · análisis del ERP 2.1.19
 
-## Estado (2.2.0 · 13 de noviembre de 2026)
+## Estado (2.3.0 · 14 de noviembre de 2026)
 
 | | |
 |---|---|
-| Paquete de producción | `agora-new-app-2.2.0.zip` (+ `.sha256`), creado con `tools/package.py`: sin modo pruebas, datos sintéticos, demos ni logos de clientes |
-| Paquete de demostración | `agora-cyberpanel-2.1.19-demo.zip`: el original, con datos sintéticos y modo pruebas (admin / 123456789). Solo para enseñar, nunca con datos reales |
-| Estabilidad | Probado en local con MySQL (MariaDB 10.11): instalación, migraciones, 40 rutas de la API, los 27 módulos como dueña, administradora y ejecutivo, en ordenador y teléfono, sin errores |
-| Arreglos de esta versión | Ajustes se quedaba cargando · Contactos se pisaba en el teléfono · Gestión Comercial fallaba para administradores · logos grandes rechazados · tres fuentes compitiendo (ahora solo Author) |
-| Conexión con la cuenta | Agencia → Editar datos → «Conexión con la cuenta»: Location ID, Company ID, token cifrado. «Probar conexión» dice qué áreas puede leer el token. Prueba: `tests/ghl-conexion.php` (16 comprobaciones) |
-| Siguiente | Conversaciones con el motor de Ágora Mobile (punto 4 del plan) |
+| Paquete de producción | `agora-new-app-2.3.0.zip` (+ `.sha256`), con `tools/package.py`. Sin modo pruebas, datos sintéticos, demos ni logos de clientes |
+| Paquete de demostración | `agora-cyberpanel-2.1.19-demo.zip` (el original, con datos inventados). Solo para enseñar |
+| Instalación | `INSTALAR-CYBERPANEL.md`, paso a paso. Cuentas de dueño solo por terminal (`servidor/bin/crear-dueno.php`) |
+| Cuenta en vivo | Conexión por subcuenta (token cifrado, Location ID, «Probar conexión»). Con conexión, bandeja, mensajes, envío, asignación, contactos, oportunidades, embudos, ganadas y tablero los atiende el **motor de Ágora Mobile 1.10.14** (`servidor/motor/`, puente `app/src/Core/MotorMobile.php`) |
+| Consumos | Agencia → Consumos (solo dueños): token de agencia y Company ID cifrados |
+| Pruebas | `tests/ghl-conexion.php` (16), `tests/motor-puente.py` (18, con la cuenta simulada `tests/fake-ghl.py`), recorrido de los 27 módulos con dueña, administradora, ejecutivo y una subcuenta sin conexión, e instalación en limpio del paquete |
+| Pendiente | Probar con un token real · actualizar la interfaz de la bandeja a la de Ágora Mobile 1.10.14 (el ERP trae una versión anterior empaquetada en `agora-modulos.js`) · avisos al teléfono · anuncios y redes |
 
-Desarrollo local: `php -S 127.0.0.1:8090 -t "Agora New App/public_html" "Agora New App/dev-router.php"` con `AGORA_CONFIG=/ruta/config.php`.
+Desarrollo local: `APP_ENV=development AGORA_GHL_FAKE=http://127.0.0.1:8099 AGORA_CONFIG=/ruta/config.php php -S 127.0.0.1:8090 -t "Agora New App/public_html" "Agora New App/dev-router.php"` y `python3 "Agora New App/tests/fake-ghl.py" 8099`.
 
 ---
 

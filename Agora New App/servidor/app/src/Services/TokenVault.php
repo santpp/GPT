@@ -13,6 +13,7 @@ final class TokenVault {
  private string $key;
  public function __construct(array $config){
   if(!function_exists('sodium_crypto_aead_xchacha20poly1305_ietf_encrypt'))throw new HttpError('Falta la extensión PHP sodium para guardar el token cifrado.',503);
+  if(array_key_exists('vault_key',$config)&&!(is_string($config['vault_key'])&&preg_match('/^[a-f0-9]{64}$/D',$config['vault_key'])))throw new HttpError('La vault_key de config.php no es válida: deben ser 64 caracteres hexadecimales (paso 6 de la guía).',503);
   $hex=is_string($config['vault_key']??null)&&preg_match('/^[a-f0-9]{64}$/D',$config['vault_key'])?$config['vault_key']:null;
   $this->key=$hex!==null?hex2bin($hex):hash_hkdf('sha256',hex2bin((string)$config['app_key']),SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_KEYBYTES,'agora-ghl-token-v1');
  }

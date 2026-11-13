@@ -52,7 +52,8 @@ final class UsuariosAgencia {
   $mias=$this->alcance();
   return ['items'=>array_map(fn($u)=>$this->publico($u,$cuentas),$rows),'total'=>$total,'parcial'=>$total>count($rows),
    'subcuentas'=>array_values(array_map(fn($id)=>['id'=>$id,'nombre'=>$cuentas[$id]??(string)$id],$mias)),
-   'roles'=>['agencia'=>$this->esMaster()?['SUPERADMIN']:[],'subcuenta'=>self::LOCALES],'esMaster'=>$this->esMaster()];
+   'roles'=>['agencia'=>[], // Agora New App: dueños y superadmin solo se crean por la terminal (bin/crear-dueno.php)
+   'subcuenta'=>self::LOCALES],'esMaster'=>$this->esMaster()];
  }
  public function guardar(array $b):array{
   $id=Http::integer($b['id']??0,1,PHP_INT_MAX);
@@ -65,6 +66,7 @@ final class UsuariosAgencia {
    if($correo!==$u['email']&&$this->db->one('SELECT id FROM agora_users WHERE email=? AND id<>?',[$correo,$id]))Http::fail('Ese correo ya lo usa otra persona.',409);
    $rol=(string)($b['rolNuevo']??$u['role']);$activo=array_key_exists('activo',$b)?($b['activo']===true):(bool)$u['active'];
    if($rol==='MASTER'&&$u['role']!=='MASTER')Http::fail('El rol Master no se puede asignar.',403);
+   if($rol==='SUPERADMIN'&&$u['role']!=='SUPERADMIN')Http::fail('Las cuentas de dueño (Superadmin) se crean solo desde la terminal del servidor: servidor/bin/crear-dueno.php.',403);
    if($yo&&$rol!==$u['role'])Http::fail('No puedes cambiar tu propio rol.',403);
    if($yo&&!$activo)Http::fail('No puedes desactivarte a ti mismo.',403);
    if($u['role']==='MASTER'&&($rol!=='MASTER'||!$activo))Http::fail('El Master no se puede desactivar ni cambiar de rol.',403);
