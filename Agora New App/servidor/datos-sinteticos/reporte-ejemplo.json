@@ -1,0 +1,1611 @@
+{
+  "kind": "report",
+  "period": "2026-11",
+  "data": {
+    "gc": {
+      "title": "REPORTE DE GESTIÓN COMERCIAL | Noviembre 2026",
+      "codes": [
+        "DGP",
+        "DAT",
+        "DCO",
+        "MCE",
+        "CIN",
+        "CFO"
+      ],
+      "sedes": [
+        [
+          "Sede Maracay",
+          3
+        ],
+        [
+          "Sede Valencia",
+          3
+        ]
+      ],
+      "cols": [
+        "Asesora",
+        "Inscritos",
+        "Vendido",
+        "Recurrencia",
+        "1.ª cuota",
+        "Entradas",
+        "Pendiente",
+        "10 %",
+        "7 %",
+        "3 %"
+      ],
+      "advisors": [
+        {
+          "name": "Lcda. Lisbella Moreno",
+          "counts": [
+            10,
+            8,
+            6,
+            6,
+            6,
+            4
+          ],
+          "inscritos": 40,
+          "vendido": 346275,
+          "recurrencia": 190451,
+          "cuota1": 76181,
+          "entradas": 31165,
+          "pendiente": 223763,
+          "com10": 7618,
+          "com7": 5333,
+          "com3": 2285,
+          "contactos": 243,
+          "canales": [
+            36,
+            78,
+            56,
+            73
+          ]
+        },
+        {
+          "name": "Lcda. Yurbis Ramírez",
+          "counts": [
+            7,
+            6,
+            6,
+            5,
+            4,
+            4
+          ],
+          "inscritos": 32,
+          "vendido": 260399,
+          "recurrencia": 143219,
+          "cuota1": 57288,
+          "entradas": 23436,
+          "pendiente": 168270,
+          "com10": 5729,
+          "com7": 4010,
+          "com3": 1719,
+          "contactos": 194,
+          "canales": [
+            29,
+            62,
+            45,
+            58
+          ]
+        },
+        {
+          "name": "Br. Karina Díaz",
+          "counts": [
+            6,
+            5,
+            5,
+            4,
+            4,
+            3
+          ],
+          "inscritos": 27,
+          "vendido": 224489,
+          "recurrencia": 123469,
+          "cuota1": 49388,
+          "entradas": 20204,
+          "pendiente": 145065,
+          "com10": 4939,
+          "com7": 3457,
+          "com3": 1482,
+          "contactos": 164,
+          "canales": [
+            25,
+            52,
+            38,
+            49
+          ]
+        },
+        {
+          "name": "Lcda. Andreína Sosa",
+          "counts": [
+            6,
+            4,
+            4,
+            4,
+            3,
+            2
+          ],
+          "inscritos": 23,
+          "vendido": 194837,
+          "recurrencia": 107160,
+          "cuota1": 42864,
+          "entradas": 17535,
+          "pendiente": 125904,
+          "com10": 4286,
+          "com7": 3000,
+          "com3": 1286,
+          "contactos": 140,
+          "canales": [
+            21,
+            45,
+            32,
+            42
+          ]
+        }
+      ],
+      "total": {
+        "name": "TOTAL",
+        "counts": [
+          29,
+          23,
+          21,
+          19,
+          17,
+          13
+        ],
+        "inscritos": 122,
+        "vendido": 1026000,
+        "recurrencia": 564299,
+        "cuota1": 225721,
+        "entradas": 92340,
+        "pendiente": 663002,
+        "com10": 22572,
+        "com7": 15800,
+        "com3": 6772
+      }
+    },
+    "metas": {
+      "recaudacion": {
+        "title": "Metas de recaudación",
+        "items": [
+          [
+            "Meta Real",
+            12500
+          ],
+          [
+            "Meta Ideal",
+            15625
+          ]
+        ]
+      },
+      "pupitres": {
+        "title": "Metas de pupitres",
+        "items": [
+          [
+            "Total de Pupitres:",
+            154
+          ],
+          [
+            "Pupitres Ocupados:",
+            20
+          ],
+          [
+            "Pupitres Vendidos:",
+            122
+          ],
+          [
+            "Pupitres Disponibles:",
+            12
+          ],
+          [
+            "De Ocupación %:",
+            0.922077922077922
+          ]
+        ]
+      },
+      "ocupacion": {
+        "title": "Metas de ocupación",
+        "items": [
+          [
+            "Meta Real:",
+            154
+          ],
+          [
+            "Total Inscrito:",
+            122
+          ],
+          [
+            "Meta Ideal:",
+            169
+          ],
+          [
+            "Logro:",
+            0.7922077922077922
+          ]
+        ]
+      }
+    },
+    "valor": {
+      "title": "Metas por asesora",
+      "cols": [
+        "Asesora",
+        "Meta",
+        "Logrado",
+        "%"
+      ],
+      "rows": [
+        [
+          "Lcda. Lisbella Moreno",
+          421875,
+          346275,
+          0.8208
+        ],
+        [
+          "Lcda. Yurbis Ramírez",
+          317250,
+          260399,
+          0.8208006304176517
+        ],
+        [
+          "Br. Karina Díaz",
+          273500,
+          224489,
+          0.8208007312614259
+        ],
+        [
+          "Lcda. Andreína Sosa",
+          237375,
+          194837,
+          0.8207983149025803
+        ],
+        [
+          "TOTAL",
+          1250000,
+          1026000,
+          0.8208
+        ]
+      ]
+    },
+    "cierre": {
+      "title": "Cierre de ventas",
+      "cols": [
+        "Asesora",
+        "Contactos",
+        "Inscritos",
+        "Conversión"
+      ],
+      "rows": [
+        [
+          "Lcda. Lisbella Moreno",
+          243,
+          40,
+          0.1646090534979424
+        ],
+        [
+          "Lcda. Yurbis Ramírez",
+          194,
+          32,
+          0.16494845360824742
+        ],
+        [
+          "Br. Karina Díaz",
+          164,
+          27,
+          0.16463414634146342
+        ],
+        [
+          "Lcda. Andreína Sosa",
+          140,
+          23,
+          0.16428571428571428
+        ],
+        [
+          "TOTAL",
+          741,
+          122,
+          0.16464237516869096
+        ]
+      ]
+    },
+    "catalog": {
+      "title": "LEYENDA DE PROGRAMAS",
+      "cols": [
+        "Acrónimo",
+        "Programa",
+        "Mensualidad",
+        "Duración"
+      ],
+      "rows": [
+        [
+          "DGP",
+          "Diplomado en Gerencia de Proyectos",
+          85,
+          "6 meses"
+        ],
+        [
+          "DAT",
+          "Diplomado en Analítica de Datos",
+          95,
+          "6 meses"
+        ],
+        [
+          "DCO",
+          "Diplomado en Comunicación Organizacional",
+          80,
+          "5 meses"
+        ],
+        [
+          "MCE",
+          "Maestría en Comunicación Corporativa y Empresarial",
+          160,
+          "24 meses"
+        ],
+        [
+          "CIN",
+          "Curso de Inglés Instrumental",
+          45,
+          "4 meses"
+        ],
+        [
+          "CFO",
+          "Curso de Formación de Facilitadores",
+          55,
+          "3 meses"
+        ]
+      ]
+    },
+    "hist": {
+      "cols": [
+        "Mes",
+        "Monto 2025",
+        "P 2025",
+        "Monto 2026",
+        "P 2026",
+        "Variación $",
+        "Variación P"
+      ],
+      "rows": [
+        [
+          "Enero",
+          680000,
+          38,
+          962000,
+          58,
+          0.41470588235294126,
+          0.5263157894736843
+        ],
+        [
+          "Febrero",
+          430000,
+          32,
+          948000,
+          54,
+          1.2046511627906975,
+          0.6875
+        ],
+        [
+          "Marzo",
+          490000,
+          34,
+          783000,
+          46,
+          0.5979591836734695,
+          0.3529411764705883
+        ],
+        [
+          "Abril",
+          240000,
+          22,
+          769000,
+          44,
+          2.2041666666666666,
+          1
+        ],
+        [
+          "Mayo",
+          459700,
+          30,
+          841000,
+          52,
+          0.8294539917337393,
+          0.7333333333333334
+        ],
+        [
+          "Junio",
+          410000,
+          28,
+          490000,
+          38,
+          0.19512195121951215,
+          0.3571428571428572
+        ],
+        [
+          "Julio",
+          425000,
+          31,
+          848000,
+          56,
+          0.9952941176470589,
+          0.8064516129032258
+        ],
+        [
+          "Agosto",
+          565000,
+          34,
+          1149000,
+          101,
+          1.033628318584071,
+          1.9705882352941178
+        ],
+        [
+          "Septiembre",
+          1123000,
+          157,
+          1389525,
+          170,
+          0.23733303650935,
+          0.08280254777070062
+        ],
+        [
+          "Octubre",
+          1090000,
+          148,
+          1248000,
+          149,
+          0.14495412844036704,
+          0.006756756756756799
+        ],
+        [
+          "Noviembre",
+          680000,
+          96,
+          1026000,
+          122,
+          0.5088235294117647,
+          0.27083333333333326
+        ],
+        [
+          "Diciembre",
+          320000,
+          44,
+          null,
+          null,
+          null,
+          null
+        ]
+      ],
+      "formulas": {},
+      "total": [
+        "TOTAL",
+        6912700,
+        694,
+        10453525,
+        890,
+        0.5122202612582638,
+        0.282420749279539
+      ]
+    },
+    "ads": {
+      "title": "GESTIÓN META ADS | Noviembre 2026",
+      "rows": [
+        [
+          "Campaña de captación de nuevos estudiantes",
+          "Mercadeo",
+          72240,
+          2408,
+          "2026-11-01",
+          "2026-11-30",
+          30,
+          "Mensajes",
+          "Aragua y Carabobo 25-45",
+          412,
+          28,
+          175,
+          2580
+        ],
+        [
+          "Campaña Maestría · tráfico a formulario",
+          "Mercadeo",
+          56070,
+          1869,
+          "2026-11-01",
+          "2026-11-30",
+          30,
+          "Tráfico",
+          "Profesionales 28-50",
+          268,
+          19,
+          209,
+          2951
+        ],
+        [
+          "Campaña Cursos cortos · alcance local",
+          "Mercadeo",
+          47040,
+          1568,
+          "2026-11-01",
+          "2026-11-30",
+          30,
+          "Alcance",
+          "Maracay 20-40",
+          196,
+          12,
+          240,
+          3920
+        ],
+        [
+          "Campaña Remarketing · formularios abiertos",
+          "Mercadeo",
+          34650,
+          1155,
+          "2026-11-01",
+          "2026-11-30",
+          30,
+          "Conversiones",
+          "Visitantes de 30 días",
+          124,
+          9,
+          279,
+          3850
+        ]
+      ],
+      "total": {
+        "label": "TOTAL DE CAMPAÑAS",
+        "inversion": 210000,
+        "gastoDiario": 7000,
+        "resultados": 1000,
+        "ventas": 68,
+        "cpl": 210,
+        "cpc": 3088
+      },
+      "legend": {
+        "title": "Cómo leer la tabla",
+        "items": [
+          [
+            "Resultados",
+            "Contactos que dejó la campaña en Meta."
+          ],
+          [
+            "Ventas",
+            "Inscripciones atribuidas a la campaña."
+          ],
+          [
+            "Costo por contacto",
+            "Inversión entre resultados."
+          ],
+          [
+            "Costo por venta",
+            "Inversión entre ventas cerradas."
+          ]
+        ]
+      },
+      "eff": {
+        "title": "Contactos por canal · noviembre 2026",
+        "cols": [
+          "Asesora",
+          "Meta",
+          "CRM",
+          "Formulario",
+          "Presencial",
+          "Total",
+          "Cierres",
+          "Logro"
+        ],
+        "rows": [
+          [
+            "Lcda. Lisbella Moreno",
+            36,
+            78,
+            56,
+            73,
+            243,
+            40,
+            0.1646090534979424
+          ],
+          [
+            "Lcda. Yurbis Ramírez",
+            29,
+            62,
+            45,
+            58,
+            194,
+            32,
+            0.16494845360824742
+          ],
+          [
+            "Br. Karina Díaz",
+            25,
+            52,
+            38,
+            49,
+            164,
+            27,
+            0.16463414634146342
+          ],
+          [
+            "Lcda. Andreína Sosa",
+            21,
+            45,
+            32,
+            42,
+            140,
+            23,
+            0.16428571428571428
+          ],
+          [
+            "TOTAL",
+            111,
+            237,
+            171,
+            222,
+            741,
+            122,
+            0.16464237516869096
+          ]
+        ]
+      }
+    },
+    "rent": {
+      "title": "RENTABILIDAD DEL MES",
+      "cols": [
+        "Indicador",
+        "Valor",
+        "Indicador (%)"
+      ],
+      "rows": [
+        [
+          "Ingresos Brutos",
+          10260,
+          null
+        ],
+        [
+          "Inversión Meta ADS",
+          2100,
+          0.2046783625730994
+        ],
+        [
+          "Gastos Operativos",
+          1050,
+          null
+        ],
+        [
+          "Margen de Utilidad",
+          6884.28,
+          null
+        ],
+        [
+          "CPA",
+          17.21,
+          null
+        ],
+        [
+          "ROAS",
+          4.89,
+          null
+        ]
+      ]
+    },
+    "varAnual": {
+      "ventas": {
+        "title": "Variación anual de ventas",
+        "items": [
+          [
+            "Noviembre 2025",
+            6800
+          ],
+          [
+            "Noviembre 2026",
+            10260
+          ],
+          [
+            "Variación",
+            0.5088235294117647
+          ]
+        ]
+      },
+      "inventario": {
+        "title": "Variación anual de inscritos",
+        "items": [
+          [
+            "Noviembre 2025",
+            96
+          ],
+          [
+            "Noviembre 2026",
+            122
+          ],
+          [
+            "Variación",
+            0.27083333333333326
+          ]
+        ]
+      }
+    },
+    "sales": {
+      "cols": [
+        "id",
+        "hoja",
+        "n",
+        "fecha",
+        "fechaOrigen",
+        "cliente",
+        "cedula",
+        "producto",
+        "montoTotal",
+        "recurrencia",
+        "cuota1",
+        "inscripcion",
+        "entradas",
+        "solvencia",
+        "mesCulminacion",
+        "pendiente",
+        "factura",
+        "com10",
+        "com7",
+        "com3",
+        "fila"
+      ],
+      "rows": [
+        [
+          "202610-0-0",
+          "CV Lisbella Moreno",
+          1,
+          "2026-11-03",
+          "",
+          "María Rangel 1",
+          "V-1*.***.100",
+          "DGP",
+          57713,
+          31742,
+          12697,
+          3463,
+          5194,
+          0,
+          "",
+          37294,
+          "261100",
+          1270,
+          889,
+          381,
+          10
+        ],
+        [
+          "202610-0-1",
+          "CV Lisbella Moreno",
+          2,
+          "2026-11-07",
+          "",
+          "José Pérez 1",
+          "V-1*.***.101",
+          "DAT",
+          57713,
+          31742,
+          12697,
+          3463,
+          5194,
+          0,
+          "",
+          37294,
+          "261101",
+          1270,
+          889,
+          381,
+          11
+        ],
+        [
+          "202610-0-2",
+          "CV Lisbella Moreno",
+          3,
+          "2026-11-11",
+          "",
+          "Andrés Gil 1",
+          "V-1*.***.102",
+          "DCO",
+          57713,
+          31742,
+          12697,
+          3463,
+          5194,
+          0,
+          "",
+          37294,
+          "261102",
+          1270,
+          889,
+          381,
+          12
+        ],
+        [
+          "202610-0-3",
+          "CV Lisbella Moreno",
+          4,
+          "2026-11-15",
+          "",
+          "Luisa Fermín 1",
+          "V-1*.***.103",
+          "MCE",
+          57713,
+          31742,
+          12697,
+          3463,
+          5194,
+          0,
+          "",
+          37294,
+          "261103",
+          1270,
+          889,
+          381,
+          13
+        ],
+        [
+          "202610-0-4",
+          "CV Lisbella Moreno",
+          5,
+          "2026-11-19",
+          "",
+          "Carla Ojeda 1",
+          "V-1*.***.104",
+          "CIN",
+          57713,
+          31742,
+          12697,
+          3463,
+          5194,
+          0,
+          "",
+          37294,
+          "261104",
+          1270,
+          889,
+          381,
+          14
+        ],
+        [
+          "202610-0-5",
+          "CV Lisbella Moreno",
+          6,
+          "2026-11-23",
+          "",
+          "Pedro Silva 1",
+          "V-1*.***.105",
+          "CFO",
+          57713,
+          31742,
+          12697,
+          3463,
+          5194,
+          0,
+          "",
+          37294,
+          "261105",
+          1270,
+          889,
+          381,
+          15
+        ],
+        [
+          "202610-1-0",
+          "CV Yurbis Ramírez",
+          1,
+          "2026-11-03",
+          "",
+          "María Rangel 2",
+          "V-1*.***.100",
+          "DAT",
+          43400,
+          23870,
+          9548,
+          2604,
+          3906,
+          0,
+          "",
+          28045,
+          "261110",
+          955,
+          668,
+          286,
+          10
+        ],
+        [
+          "202610-1-1",
+          "CV Yurbis Ramírez",
+          2,
+          "2026-11-07",
+          "",
+          "José Pérez 2",
+          "V-1*.***.101",
+          "DCO",
+          43400,
+          23870,
+          9548,
+          2604,
+          3906,
+          0,
+          "",
+          28045,
+          "261111",
+          955,
+          668,
+          286,
+          11
+        ],
+        [
+          "202610-1-2",
+          "CV Yurbis Ramírez",
+          3,
+          "2026-11-11",
+          "",
+          "Andrés Gil 2",
+          "V-1*.***.102",
+          "MCE",
+          43400,
+          23870,
+          9548,
+          2604,
+          3906,
+          0,
+          "",
+          28045,
+          "261112",
+          955,
+          668,
+          286,
+          12
+        ],
+        [
+          "202610-1-3",
+          "CV Yurbis Ramírez",
+          4,
+          "2026-11-15",
+          "",
+          "Luisa Fermín 2",
+          "V-1*.***.103",
+          "CIN",
+          43400,
+          23870,
+          9548,
+          2604,
+          3906,
+          0,
+          "",
+          28045,
+          "261113",
+          955,
+          668,
+          286,
+          13
+        ],
+        [
+          "202610-1-4",
+          "CV Yurbis Ramírez",
+          5,
+          "2026-11-19",
+          "",
+          "Carla Ojeda 2",
+          "V-1*.***.104",
+          "CFO",
+          43400,
+          23870,
+          9548,
+          2604,
+          3906,
+          0,
+          "",
+          28045,
+          "261114",
+          955,
+          668,
+          286,
+          14
+        ],
+        [
+          "202610-1-5",
+          "CV Yurbis Ramírez",
+          6,
+          "2026-11-23",
+          "",
+          "Pedro Silva 2",
+          "V-1*.***.105",
+          "DGP",
+          43400,
+          23870,
+          9548,
+          2604,
+          3906,
+          0,
+          "",
+          28045,
+          "261115",
+          955,
+          668,
+          286,
+          15
+        ],
+        [
+          "202610-2-0",
+          "CV Karina Díaz",
+          1,
+          "2026-11-03",
+          "",
+          "María Rangel 3",
+          "V-1*.***.100",
+          "DCO",
+          37415,
+          20578,
+          8231,
+          2245,
+          3367,
+          0,
+          "",
+          24178,
+          "261120",
+          823,
+          576,
+          247,
+          10
+        ],
+        [
+          "202610-2-1",
+          "CV Karina Díaz",
+          2,
+          "2026-11-07",
+          "",
+          "José Pérez 3",
+          "V-1*.***.101",
+          "MCE",
+          37415,
+          20578,
+          8231,
+          2245,
+          3367,
+          0,
+          "",
+          24178,
+          "261121",
+          823,
+          576,
+          247,
+          11
+        ],
+        [
+          "202610-2-2",
+          "CV Karina Díaz",
+          3,
+          "2026-11-11",
+          "",
+          "Andrés Gil 3",
+          "V-1*.***.102",
+          "CIN",
+          37415,
+          20578,
+          8231,
+          2245,
+          3367,
+          0,
+          "",
+          24178,
+          "261122",
+          823,
+          576,
+          247,
+          12
+        ],
+        [
+          "202610-2-3",
+          "CV Karina Díaz",
+          4,
+          "2026-11-15",
+          "",
+          "Luisa Fermín 3",
+          "V-1*.***.103",
+          "CFO",
+          37415,
+          20578,
+          8231,
+          2245,
+          3367,
+          0,
+          "",
+          24178,
+          "261123",
+          823,
+          576,
+          247,
+          13
+        ],
+        [
+          "202610-2-4",
+          "CV Karina Díaz",
+          5,
+          "2026-11-19",
+          "",
+          "Carla Ojeda 3",
+          "V-1*.***.104",
+          "DGP",
+          37415,
+          20578,
+          8231,
+          2245,
+          3367,
+          0,
+          "",
+          24178,
+          "261124",
+          823,
+          576,
+          247,
+          14
+        ],
+        [
+          "202610-2-5",
+          "CV Karina Díaz",
+          6,
+          "2026-11-23",
+          "",
+          "Pedro Silva 3",
+          "V-1*.***.105",
+          "DAT",
+          37415,
+          20578,
+          8231,
+          2245,
+          3367,
+          0,
+          "",
+          24178,
+          "261125",
+          823,
+          576,
+          247,
+          15
+        ],
+        [
+          "202610-3-0",
+          "CV Andreína Sosa",
+          1,
+          "2026-11-03",
+          "",
+          "María Rangel 4",
+          "V-1*.***.100",
+          "MCE",
+          32473,
+          17860,
+          7144,
+          1948,
+          2923,
+          0,
+          "",
+          20984,
+          "261130",
+          714,
+          500,
+          214,
+          10
+        ],
+        [
+          "202610-3-1",
+          "CV Andreína Sosa",
+          2,
+          "2026-11-07",
+          "",
+          "José Pérez 4",
+          "V-1*.***.101",
+          "CIN",
+          32473,
+          17860,
+          7144,
+          1948,
+          2923,
+          0,
+          "",
+          20984,
+          "261131",
+          714,
+          500,
+          214,
+          11
+        ],
+        [
+          "202610-3-2",
+          "CV Andreína Sosa",
+          3,
+          "2026-11-11",
+          "",
+          "Andrés Gil 4",
+          "V-1*.***.102",
+          "CFO",
+          32473,
+          17860,
+          7144,
+          1948,
+          2923,
+          0,
+          "",
+          20984,
+          "261132",
+          714,
+          500,
+          214,
+          12
+        ],
+        [
+          "202610-3-3",
+          "CV Andreína Sosa",
+          4,
+          "2026-11-15",
+          "",
+          "Luisa Fermín 4",
+          "V-1*.***.103",
+          "DGP",
+          32473,
+          17860,
+          7144,
+          1948,
+          2923,
+          0,
+          "",
+          20984,
+          "261133",
+          714,
+          500,
+          214,
+          13
+        ],
+        [
+          "202610-3-4",
+          "CV Andreína Sosa",
+          5,
+          "2026-11-19",
+          "",
+          "Carla Ojeda 4",
+          "V-1*.***.104",
+          "DAT",
+          32473,
+          17860,
+          7144,
+          1948,
+          2923,
+          0,
+          "",
+          20984,
+          "261134",
+          714,
+          500,
+          214,
+          14
+        ],
+        [
+          "202610-3-5",
+          "CV Andreína Sosa",
+          6,
+          "2026-11-23",
+          "",
+          "Pedro Silva 4",
+          "V-1*.***.105",
+          "DCO",
+          32473,
+          17860,
+          7144,
+          1948,
+          2923,
+          0,
+          "",
+          20984,
+          "261135",
+          714,
+          500,
+          214,
+          15
+        ]
+      ]
+    },
+    "cvSheets": [
+      {
+        "sheet": "CV Lisbella Moreno",
+        "totals": {
+          "Monto Total Vendido": 346275,
+          "Comisiones del Departamento 10%": 7618,
+          "Pendiente por Cobrar": 223763
+        }
+      },
+      {
+        "sheet": "CV Yurbis Ramírez",
+        "totals": {
+          "Monto Total Vendido": 260399,
+          "Comisiones del Departamento 10%": 5729,
+          "Pendiente por Cobrar": 168270
+        }
+      },
+      {
+        "sheet": "CV Karina Díaz",
+        "totals": {
+          "Monto Total Vendido": 224489,
+          "Comisiones del Departamento 10%": 4939,
+          "Pendiente por Cobrar": 145065
+        }
+      },
+      {
+        "sheet": "CV Andreína Sosa",
+        "totals": {
+          "Monto Total Vendido": 194837,
+          "Comisiones del Departamento 10%": 4286,
+          "Pendiente por Cobrar": 125904
+        }
+      }
+    ],
+    "costs": {
+      "title": "ESTRUCTURA DE COSTO | Noviembre 2026",
+      "fixedTitle": "Gastos fijos",
+      "varTitle": "Gastos variables",
+      "nomina": {
+        "title": "Nómina del departamento",
+        "cols": [
+          "Cargo",
+          "Tipo",
+          "Monto"
+        ],
+        "rows": [
+          [
+            "Dirección comercial",
+            "Fijo",
+            60000
+          ],
+          [
+            "Asesoras (4)",
+            "Fijo",
+            120000
+          ],
+          [
+            "Mercadeo",
+            "Fijo",
+            45000
+          ],
+          [
+            "Administración",
+            "Fijo",
+            38000
+          ]
+        ],
+        "total": 263000,
+        "totalLabel": "Total de nómina"
+      },
+      "herr": {
+        "title": "Herramientas y servicios",
+        "cols": [
+          "Servicio",
+          "Tipo",
+          "Monto"
+        ],
+        "rows": [
+          [
+            "CRM Go High Level",
+            "Mensual",
+            9700
+          ],
+          [
+            "Meta Business",
+            "Mensual",
+            0
+          ],
+          [
+            "Correo corporativo",
+            "Mensual",
+            3600
+          ],
+          [
+            "Hospedaje y dominio",
+            "Mensual",
+            2800
+          ],
+          [
+            "Digitel datos",
+            "Mensual",
+            1800,
+            "18,00 $"
+          ],
+          [
+            "Digitel voz",
+            "Mensual",
+            1400,
+            "14,00 $"
+          ]
+        ],
+        "total": 16100,
+        "totalReal": 19300,
+        "formula": "=SUMA(D18:D29)"
+      },
+      "inversion": {
+        "title": "Inversión del mes",
+        "cols": [
+          "Concepto",
+          "Tipo",
+          "Monto"
+        ],
+        "rows": [
+          [
+            "Publicidad Meta ADS",
+            "Variable",
+            210000
+          ],
+          [
+            "Interfaz de WhatsApp",
+            "Variable",
+            4500
+          ]
+        ]
+      },
+      "comisiones": {
+        "title": "Comisiones",
+        "cols": [
+          "Concepto",
+          "Tipo",
+          "Monto"
+        ],
+        "rows": [
+          [
+            "Comisiones del departamento",
+            "Variable",
+            25572
+          ]
+        ]
+      },
+      "resumen": {
+        "title": "Resumen de costos",
+        "items": [
+          [
+            "Gastos fijos",
+            279100
+          ],
+          [
+            "Gastos variables",
+            240072
+          ],
+          [
+            "Costo de mercadeo y ventas",
+            519172
+          ]
+        ]
+      },
+      "proximos": {
+        "title": "Próximas inversiones",
+        "label": "Total previsto",
+        "cols": [
+          "Concepto",
+          "Tipo",
+          "Monto"
+        ],
+        "rows": [
+          [
+            "Mejora del CRM",
+            "Previsto",
+            35000
+          ],
+          [
+            "Material POP",
+            "Previsto",
+            18000,
+            "180 $"
+          ],
+          [
+            "Feria educativa",
+            "Previsto",
+            42000,
+            "420 $"
+          ]
+        ],
+        "total": 35000,
+        "totalReal": 95000
+      },
+      "fijos": {
+        "label": "Gastos fijos",
+        "total": 279100
+      },
+      "variables": {
+        "label": "Gastos variables",
+        "total": 240072
+      }
+    },
+    "issues": [
+      {
+        "id": "com-base-2026-10",
+        "sev": "Alta",
+        "title": "La base de las comisiones no coincide",
+        "area": "Comisiones",
+        "detail": "El resumen de gestión calcula el 10 % sobre la primera cuota y la estructura de costos usa otra base. Falta definir cuál manda y cuándo se devenga.",
+        "src": "GESTIÓN COMERCIAL · V11:Y16"
+      },
+      {
+        "id": "herr-suma-2026-10",
+        "sev": "Alta",
+        "title": "La suma de herramientas deja fuera dos líneas",
+        "area": "Costos",
+        "detail": "La fórmula del total de herramientas no alcanza las dos últimas líneas de Digitel, así que el gasto fijo sale por debajo.",
+        "src": "Estructura de Costo · D18:D31"
+      },
+      {
+        "id": "cpl-camp-2026-10",
+        "sev": "Media",
+        "title": "Campañas sin resultados por día",
+        "area": "Publicidad",
+        "detail": "Las campañas traen el resultado del mes completo, de modo que el costo por contacto no se puede seguir día a día.",
+        "src": "GESTION META ADS · J9:J22"
+      },
+      {
+        "id": "fact-prog-2026-10",
+        "sev": "Baja",
+        "title": "Programas que no están en la leyenda",
+        "area": "Facturación",
+        "detail": "Los libros de facturas usan acrónimos que la leyenda del reporte no recoge; conviene agregarlos para que los informes cuadren.",
+        "src": "FACTURAS"
+      }
+    ],
+    "sources": [
+      {
+        "file": "Reporte de Gestión Comercial Noviembre 2026.xlsx",
+        "sha256": "b7c41f9ad0e25a3c8f16d4b0e9a7c2538d41f0b6ac93e7d5128fa460b3c97e1d",
+        "sheets": [
+          {
+            "sheet": "GESTIÓN COMERCIAL",
+            "cells": 1842,
+            "captured": 1842,
+            "filler": 214,
+            "unmapped": []
+          },
+          {
+            "sheet": "GESTION META ADS",
+            "cells": 386,
+            "captured": 386,
+            "filler": 41,
+            "unmapped": []
+          },
+          {
+            "sheet": "CV Lisbella Moreno",
+            "cells": 512,
+            "captured": 512,
+            "filler": 96,
+            "unmapped": []
+          },
+          {
+            "sheet": "CV Yurbis Ramírez",
+            "cells": 512,
+            "captured": 512,
+            "filler": 96,
+            "unmapped": []
+          },
+          {
+            "sheet": "CV Karina Díaz",
+            "cells": 512,
+            "captured": 512,
+            "filler": 96,
+            "unmapped": []
+          },
+          {
+            "sheet": "CV Andreína Sosa",
+            "cells": 512,
+            "captured": 512,
+            "filler": 96,
+            "unmapped": []
+          }
+        ]
+      },
+      {
+        "file": "Estructura de Costo 2026.xlsx",
+        "sha256": "3f8a1c6d59b204e7fa8c0d31b5e9726408fd1a7c3b26e590d4af81c097b3e2a5",
+        "sheets": [
+          {
+            "sheet": "Estructura de Costo",
+            "cells": 268,
+            "captured": 268,
+            "filler": 32,
+            "unmapped": []
+          }
+        ]
+      }
+    ],
+    "meta": {
+      "generated": "2026-11-02T09:14:00"
+    }
+  }
+}

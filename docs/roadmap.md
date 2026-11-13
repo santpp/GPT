@@ -266,7 +266,11 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - Dependen del armazón de Agora Digital App (abajo): no se publican hasta que se retome.
 - Pendiente si se retoma: conectar los cobros, planes y egresos al Resumen; las pantallas de Contratos (otro servidor).
 
-## Armazón nuevo (Agora Digital App) — futuro lejano, sin versión
+## Agora New App (ERP) — activo desde el 13 de noviembre de 2026
+- El repositorio se divide: `Agora Mobile/` (release 1.10.14 de nueva.agoradigital.app; el código sigue en la raíz) y `Agora New App/` (ERP 2.1.19 recibido: `public_html/`, `servidor/`). Análisis completo: `Agora New App/ANALISIS.md`. Sin Docker; MySQL.
+- Se deja de llamar «armazón». Lo de abajo es el historial de cuando lo era.
+
+## (Historial) Armazón nuevo (Agora Digital App)
 - Paquete de pantallas de terceros que reemplaza el armazón visual (Resumen, ARP Comercial, Tareas, Auditoría, Athena…). Revisado y corregido en 1.1.1/1.2.x, sin publicar.
 - La versión activa sigue siendo la 1.10.1. Sólo se retoma cuando el usuario lo pida explícitamente.
 

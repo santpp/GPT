@@ -1,0 +1,28 @@
+Options -Indexes
+DirectoryIndex index.html
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:[0-9]+)?$
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+# API: se enruta desde la raíz (OpenLiteSpeed de CyberPanel no siempre aplica el .htaccess de subcarpetas).
+RewriteRule ^api/index\.php$ - [L]
+RewriteRule ^api(/.*)?$ /api/index.php [L,QSA]
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+RewriteRule ^(centro|modulos|inicio|comercial|bandeja|contactos|oportunidades|tareas|equipo|publicidad|ventas|facturacion|costos|catalogo|tendencias|calidad|configuracion|contratos|con-convenio|registro|auditoria|usuarios|ajustes|ayuda|agencia|perfil|tablero|personas|conexiones|entrar|conversations)(/.*)?$ index.html [L]
+# 2.1.17 · datos: Migración de datos (y Productos/Personalizar de 2.1.16, que faltaban)
+RewriteRule ^(migracion|productos|personalizar)(/.*)?$ index.html [L]
+</IfModule>
+<IfModule mod_headers.c>
+Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'"
+Header always set X-Content-Type-Options "nosniff"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+Header always set X-Frame-Options "SAMEORIGIN"
+<FilesMatch "^(index\.html|sw\.js|version\.json)$">
+Header set Cache-Control "no-cache"
+</FilesMatch>
+</IfModule>

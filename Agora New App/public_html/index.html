@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es-VE" data-theme="light" data-accent="vino">
+<head>
+<meta charset="utf-8">
+<base href="/">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F5F5F7">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Agora Digital App · operación comercial, convenios y trazabilidad">
+<title>Agora Digital App</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/icons/favicon-48.png">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Ágora">
+<script>
+/* Asegurar que window.fetch sea asignable si el entorno o extensión lo define solo con getter */
+(function() {
+  try {
+    var _f = window.fetch;
+    Object.defineProperty(window, 'fetch', {
+      configurable: true,
+      enumerable: true,
+      get: function() { return _f; },
+      set: function(fn) { _f = fn; }
+    });
+  } catch (e) {}
+})();
+/* El tema, antes de pintar, para que no parpadee. */
+(function(){var r=document.documentElement,g=function(k,d){try{return JSON.parse(localStorage.getItem('agora_'+k)||JSON.stringify(d))}catch(e){return d}};try{var t=g('tema','auto');var d=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);r.setAttribute('data-theme',d?'dark':'light');r.setAttribute('data-accent',g('acento','vino'))}catch(e){}if(/Mac|iPhone|iPad|iPod/.test(navigator.platform||navigator.userAgent))document.documentElement.classList.add('is-apple')})();
+</script>
+<link rel="stylesheet" href="/assets/sistema.css">
+<link rel="stylesheet" href="/assets/modulos.css">
+<link rel="stylesheet" href="/assets/marca.css">
+<link rel="stylesheet" href="/assets/diseno.css">
+<link rel="stylesheet" href="/assets/ecosistema.css">
+</head>
+<body>
+<a class="skip" href="#app">Saltar al contenido</a>
+
+<!-- Armazón del panel: barra con las áreas, lienzo, pie y pestañas del celular -->
+<header class="tb" id="tb"></header>
+<aside class="side" id="side" aria-label="Módulos" hidden></aside>
+<main id="app" class="ct" tabindex="-1"></main>
+<footer class="ft"><span><b>Ágora Digital App</b><span id="app-version" hidden>AGORA · v1.0.0</span></span><span id="foot"></span></footer>
+<nav class="tabbar" id="tabbar" aria-label="Módulos"></nav>
+
+<!-- Capas del sistema de diseño: guía, avisos y menús/hojas -->
+<div id="tip" role="tooltip"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="layer"></div>
+
+<!-- Nodos que los módulos de Ágora esperan de su cáscara: el aviso de ventas ganadas
+     sin monto y la ventana de acciones (fichas, cifras del mes, novedades…). -->
+<div id="won-banner" class="won-banner" role="alert" hidden></div>
+<dialog id="action-dialog"><form method="dialog"><button class="dialog-close" aria-label="Cerrar">×</button></form><div id="dialog-content"></div></dialog>
+
+<script src="/assets/config.js"></script>
+<script src="/assets/backend-client.js"></script>
+<script src="/assets/agora-modulos.js"></script>
+<script src="/assets/agora-app.js" defer></script>
+<script>
+/* El trabajador de servicio: el mismo de Ágora, con la caché de esta versión.
+   Se encarga de los avisos (push) y de abrir la conversación al tocarlos. */
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+</script>
+</body>
+</html>

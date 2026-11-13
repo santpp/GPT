@@ -1,5 +1,9 @@
 # Ágora Digital · Workspace comercial
 
+> **Repositorio dividido (13 de noviembre de 2026):**
+> - **Agora Mobile**: Ágora 1.x en producción (nueva.agoradigital.app). Código en la raíz; releases en [`Agora Mobile/`](Agora%20Mobile/README.md).
+> - **Agora New App**: el ERP, en [`Agora New App/`](Agora%20New%20App/ANALISIS.md) (análisis y plan).
+
 **Actualización 0.8.0:** [ZIP sin configuración ni claves](releases/agora-update-0.8.0.zip) · [Pasos sin terminal](deploy/native/UPDATE-0.8.0.md).
 
 Entrada directa sin depender del menú o de rewrites: `https://nueva.agoradigital.app/conexiones.html`. La URL `/version.json` identifica el paquete instalado.

@@ -1,0 +1,31 @@
+/* Identidad oficial: manual Ágora, páginas 5–6. Fuentes locales. */
+@font-face{font-family:Author;src:url("fonts/Author-Variable.woff2") format("woff2");font-weight:200 700;font-style:normal;font-display:swap}
+@font-face{font-family:Author;src:url("fonts/Author-VariableItalic.woff2") format("woff2");font-weight:200 700;font-style:italic;font-display:swap}
+@font-face{font-family:Inter;src:url("fonts/Inter-Variable.ttf") format("truetype");font-weight:100 900;font-style:normal;font-display:swap}
+:root{--font-text:Author,Inter,system-ui,sans-serif;--font-display:Author,Inter,system-ui,sans-serif;--font-rounded:Author,Inter,system-ui,sans-serif;--deep:#282E49;--gold:#FABD4B;--cream:#EFEFEF}
+:root[data-theme="light"]{--bg:#EFEFEF;--ink:#282E49;--ink-2:#282E49}
+.launch-rail{background:var(--deep)}
+.launch-brand-logo{padding:12px 16px 24px;--iso:#EFEFEF}
+.launch-primary a,.launch-primary button,.launch-system>a{font-size:14px;min-height:40px}
+.launch-rail-label,.launch-person small{font-size:12px}
+.launch-primary .is-current{box-shadow:inset 3px 0 var(--gold)}
+.launch-content{padding:24px clamp(16px,2.2vw,32px)}
+.launch-content .operations-grid,.launch-content .agency-grid{gap:14px}
+input,select,textarea,button{font-family:var(--font-text)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+@media(max-width:760px){.launch-content{padding:18px 14px}.launch-brand-logo>svg{width:140px}.launch-primary a,.launch-primary button,.launch-system>a{min-height:44px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+@media print{.tb,.ft,.tabbar,.demo-flag,.mod-h .acts,.manual-actions,#layer,#toast{display:none!important}.manual-wrap{display:block!important}body,#app{background:white!important;color:black!important}.manual h2{break-after:avoid}.manual p{orphans:3;widows:3}}
+
+.launch-system>a[aria-current="page"]{background:#ffffff13;color:white;box-shadow:inset 3px 0 var(--gold)}
+
+.launch-brand-logo svg{fill:#EFEFEF}.tb svg[aria-label="Ágora"],.lg-wrap svg[aria-label="Ágora"]{fill:var(--ink)}
+.launch-content .operation-card{min-height:174px;padding:18px}
+.launch-content .operation-card p,.launch-content .agency-card>p{font-size:14px;line-height:1.45;margin-bottom:12px}
+.launch-content .operation-open{font-size:14px;color:var(--ink)}
+.launch-content .operations-group{margin-bottom:24px}
+.launch-content .agency-grid{grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr))}
+@media(max-width:480px){.launch-content .operation-card{min-height:164px}.launch-brand-logo{padding:4px 16px 14px}.launch-brand-logo>svg{width:116px}.launch-person{margin-top:12px}}
+[data-theme="dark"] .launch-chip{background:#282E49;color:#EFEFEF;border-color:#4b526b}
+[data-theme="dark"] .launch-content .operation-card,[data-theme="dark"] .launch-content .agency-card{border-color:#454857}
