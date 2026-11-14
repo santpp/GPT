@@ -6,7 +6,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.7.0'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.7.1'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -47,14 +47,12 @@ final class Api {
   if($p==='workspace/permisos'||$p==='workspace/usuarios/permisos')return $this->u->permissions($p,$m,$b);
   if($p==='workspace/branding'&&in_array($m,['GET','POST']))return $this->ag->branding($m,$b);
   if($p==='admin/maintenance'&&$m==='POST'){$this->a->manage();$this->db->run('UPDATE agora_tenants SET status=?,revision=revision+1 WHERE id=?',[($b['on']??false)?'inactiva':'activa',$this->a->tenant]);$this->a->audit('estado.actualizado','ajuste',(string)$this->a->tenant);return ['maintenance'=>(bool)($b['on']??false)];}
-  // 2.7.0 · Redes sociales (Social Planner de la cuenta conectada). Es de toda la empresa: quien solo ve lo suyo no entra.
+  // 2.7.0 · Redes sociales (Social Planner de la cuenta conectada), solo lectura. Es de toda la empresa: quien solo ve lo suyo no entra.
   if($p==='workspace/redes'||str_starts_with($p,'workspace/redes/')){
    if($this->a->assignedOnly())Http::fail('Las redes sociales son de toda la empresa: tu rol no las ve.',403);
    $redes=new \Agora\Services\Redes($this->db,$this->config,$this->a);
    if($p==='workspace/redes'&&$m==='GET')return $redes->resumen();
    if($p==='workspace/redes/publicaciones'&&$m==='GET')return $redes->publicaciones($_GET);
-   if($p==='workspace/redes/publicaciones'&&$m==='POST')return $redes->crear($b);
-   if(preg_match('~^workspace/redes/publicaciones/([A-Za-z0-9_-]{1,80})$~D',$p,$x)&&$m==='DELETE')return $redes->borrar($x[1]);
    Http::fail('Ruta no disponible.',404);
   }
   // 2.6.0 · «Nuevo contacto» escribe en la cuenta conectada.

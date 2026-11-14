@@ -18,7 +18,8 @@ final class GhlGateway {
     private const WINDOW=10;
     private const LOCK_WAIT=6;
     public function __construct(private readonly ?Closure $factory=null) {}
-    public function execute(array $connection,Closure $operation,bool $disableOnForbidden=true):array {
+    /** Agora New App 2.7.1 · $soft: una lectura opcional (redes) que la cuenta rechaza con 4xx no pausa la subcuenta ni cuenta como fallo. */
+    public function execute(array $connection,Closure $operation,bool $disableOnForbidden=true,bool $soft=false):array {
         $id=(int)$connection['id'];$key='agora-api:'.$id;
         // Screens read several things at once; waiting our turn beats refusing.
         if((int)query('SELECT GET_LOCK(?,?)',[$key,self::LOCK_WAIT])->fetchColumn()!==1)throw new GhlCooldown(2);
@@ -42,6 +43,7 @@ final class GhlGateway {
                 return $result;
             } catch(Throwable $error) {
                 $status=$error instanceof GhlApiException?$error->status:$client->status;
+                if($soft&&$status>=400&&$status<500&&$status!==429){query('UPDATE ghl_sync_state SET last_http_status=? WHERE connection_id=?',[$status,$id]);throw $error;}
                 $wait=$error instanceof GhlApiException && $status===429 ? max(30,$error->retryAfter) : min(3600,15*(2**min(8,(int)$state['failures'])));
                 $quota=$this->quota($client);$pause=max($now+$wait,$this->quotaPause($quota,$now));
                 $code=in_array($status,[401,403],true)?'authentication_or_scope':($status===429?'rate_limited':'upstream_error');

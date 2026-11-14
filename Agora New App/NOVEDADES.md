@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.7.1:**
+- **Redes sociales queda solo para ver métricas.** Se quitaron «Nueva publicación» y «Borrar»: en Ágora no se publica ni se borra (el servidor tampoco lo acepta). Quedan las redes conectadas, las cifras de los últimos 7 días frente a los 7 anteriores (ahora también separadas por red) y la lista de publicaciones por estado.
+- **Arreglado: «La cuenta no dio las cifras de las redes».** Se le pedían a la cuenta con el identificador equivocado de cada red; ahora va el que pide la documentación. Solo se piden las redes que la cuenta puede medir.
+- **Arreglado: «La cuenta pidió esperar un momento» al abrir Redes.** Un rechazo de la cuenta en una lectura de redes pausaba toda la subcuenta unos segundos (también la bandeja). Ahora las lecturas de redes no pausan nada.
+- Las redes se guardan 5 minutos y las cifras 15, para no gastar cuota.
+- Para las cifras basta el permiso de lectura de Social Planner; el de escritura (`socialplanner/post.write`) ya no hace falta.
+
 **Novedades 2.7.0:**
 - **Módulo nuevo: Redes sociales** (Gestión y resultados), con el Social Planner de la cuenta conectada:
   - Redes conectadas (Facebook, Instagram, LinkedIn, Google Business, TikTok…), con aviso cuando una conexión venció.

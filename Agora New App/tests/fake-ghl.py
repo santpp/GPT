@@ -106,7 +106,9 @@ class H(BaseHTTPRequestHandler):
             before=len(POSTS);POSTS[:]=[x for x in POSTS if x['_id']!=m4.group(3)]
             return self.out(200,{'success':True}) if len(POSTS)<before else self.out(404,{'message':'Post not found'})
         if p=='/social-media-posting/statistics' and m=='POST':
-            return self.out(201,{'results':{'dayRange':['2026-11-08','2026-11-09','2026-11-10','2026-11-11','2026-11-12','2026-11-13','2026-11-14'],'totals':{'posts':3,'likes':41,'followers':1280,'impressions':2350,'comments':7},'breakdowns':{'posts':{'total':3,'totalChange':50},'impressions':{'total':2350,'totalChange':-12},'reach':{'total':1900,'totalChange':8}}},'message':'ok'})
+            perfiles={a['profileId'] for a in SOCIAL_ACCOUNTS}
+            if __import__('os').environ.get('FAKE_STATS_FAIL') or not b.get('profileIds') or any(x not in perfiles for x in b['profileIds']):return self.out(422,{'message':'profileIds must be profile ids from /accounts'})
+            return self.out(201,{'results':{'dayRange':['2026-11-08','2026-11-09','2026-11-10','2026-11-11','2026-11-12','2026-11-13','2026-11-14'],'totals':{'posts':3,'likes':41,'followers':1280,'impressions':2350,'comments':7},'breakdowns':{'posts':{'total':3,'totalChange':50},'impressions':{'total':2350,'totalChange':-12},'reach':{'total':1900,'totalChange':8}},'platformTotals':{'impressions':{'facebook':1500,'instagram':850},'followers':{'facebook':900,'instagram':380},'likes':{'facebook':25,'instagram':16}}},'message':'ok'})
         if p=='/__tasks':return self.out(200,{'tasks':TASKS})
         if re.match(r'^/contacts/[\w-]+/(notes|tasks|appointments)$',p):
             key=p.rsplit('/',1)[1];return self.out(200,{key:[] ,'events':[]})

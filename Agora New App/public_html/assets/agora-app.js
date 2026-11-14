@@ -4051,7 +4051,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.7.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.7.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -4395,7 +4395,7 @@ const logAntes = l => l.anterior ?? l.antes ?? '—';
 const logDespues = l => l.nuevo ?? l.despues ?? '—';
 /* Acciones del registro en palabras sencillas (el servidor guarda códigos como "rol.cambiado"). */
 const ACCION_LEGIBLE = {
-  'rol.cambiado': 'Cambió un rol', 'subcuenta.estado': 'Cambió el estado de una subcuenta', 'subcuenta.creada': 'Creó una subcuenta', 'subcuenta.conexion': 'Cambió la conexión con la cuenta', 'subcuenta.conexion.probada': 'Probó la conexión con la cuenta', 'agencia.conexion': 'Cambió la conexión de la agencia', 'subcuenta.cobros': 'Anotó cobros de una subcuenta', 'facturas.importadas': 'Importó facturas', 'usuario.enlace': 'Cambió el enlace de una persona con la cuenta', 'redes.publicacion': 'Programó una publicación en redes', 'redes.borrada': 'Borró una publicación de redes', 'contacto.creado': 'Creó un contacto', 'equipo.actualizado': 'Actualizó el equipo de la cuenta', 'usuario.creado': 'Agregó una persona', 'usuario.actualizado': 'Cambió los datos de una persona', 'usuario.revocado': 'Quitó el acceso a una persona', 'perfil.actualizado': 'Actualizó su perfil', 'identidad.actualizada': 'Cambió la identidad de la subcuenta', creo: 'Creó', edito: 'Editó', elimino: 'Eliminó', envio: 'Envió', firmo: 'Firmó', entro: 'Entró', salio: 'Salió', asigno: 'Asignó', exporto: 'Exportó', bloqueo: 'Bloqueó', sesion: 'Inicio de sesión', agencia: 'Cambio de la agencia', invoice: 'Facturas', report: 'Reporte mensual', contact: 'Contacto', task: 'Tarea', 'agencia.conexion.probada': 'Probó la conexión de la agencia', 'agencia.conexion.quitada': 'Quitó el token de agencia',
+  'rol.cambiado': 'Cambió un rol', 'subcuenta.estado': 'Cambió el estado de una subcuenta', 'subcuenta.creada': 'Creó una subcuenta', 'subcuenta.conexion': 'Cambió la conexión con la cuenta', 'subcuenta.conexion.probada': 'Probó la conexión con la cuenta', 'agencia.conexion': 'Cambió la conexión de la agencia', 'subcuenta.cobros': 'Anotó cobros de una subcuenta', 'facturas.importadas': 'Importó facturas', 'usuario.enlace': 'Cambió el enlace de una persona con la cuenta', 'contacto.creado': 'Creó un contacto', 'equipo.actualizado': 'Actualizó el equipo de la cuenta', 'usuario.creado': 'Agregó una persona', 'usuario.actualizado': 'Cambió los datos de una persona', 'usuario.revocado': 'Quitó el acceso a una persona', 'perfil.actualizado': 'Actualizó su perfil', 'identidad.actualizada': 'Cambió la identidad de la subcuenta', creo: 'Creó', edito: 'Editó', elimino: 'Eliminó', envio: 'Envió', firmo: 'Firmó', entro: 'Entró', salio: 'Salió', asigno: 'Asignó', exporto: 'Exportó', bloqueo: 'Bloqueó', sesion: 'Inicio de sesión', agencia: 'Cambio de la agencia', invoice: 'Facturas', report: 'Reporte mensual', contact: 'Contacto', task: 'Tarea', 'agencia.conexion.probada': 'Probó la conexión de la agencia', 'agencia.conexion.quitada': 'Quitó el token de agencia',
   'subcuenta.actualizada': 'Editó una subcuenta', 'subcuenta.cobros': 'Actualizó los cobros de una subcuenta', 'subcuenta.tipo': 'Cambió el tipo de cuenta de una subcuenta', 'productos.actualizados': 'Actualizó los productos y rubros', 'personalizacion.actualizada': 'Personalizó el tablero y los módulos', 'etiquetas.actualizadas': 'Actualizó las etiquetas del CRM', 'usuario.creado': 'Agregó a una persona',
   'usuario.editado': 'Editó a una persona', 'usuario.actualizado': 'Editó a una persona', 'usuario.revocado': 'Quitó el acceso a una persona',
   'clave.cambiada': 'Cambió una clave', 'permisos.actualizados': 'Cambió permisos', 'estado.actualizado': 'Cambió un estado',
@@ -8478,14 +8478,14 @@ function teMapearExterno(ed, ext) {
 
 /* =====================================================================================
    2.7.0 · Redes sociales (Social Planner de la cuenta conectada)
-   Cuentas conectadas, cifras de los últimos días, publicaciones por estado y nueva publicación.
-   Es de toda la empresa: lo ven administración y supervisión; publica quien está enlazado con la cuenta.
+   Solo lectura: redes conectadas, cifras de los últimos 7 días y publicaciones por estado.
+   No se publica ni se borra desde Ágora. Es de toda la empresa: lo ven administración y supervisión.
    ===================================================================================== */
 const REDES = {resumen: null, tipo: 'scheduled', items: null, pagina: 0, hayMas: false, error: '', errorLista: '', cargandoMas: false};
 const REDES_ESTADO = {scheduled: ['Programada', 'sc-info'], published: ['Publicada', 'sc-ok'], failed: ['Con error', 'sc-bad'], draft: ['Borrador', 'sc-gray'], in_progress: ['Publicándose', 'sc-info'], in_review: ['En revisión', 'sc-warn'], deleted: ['Borrada', 'sc-gray'], notification_sent: ['Aviso enviado', 'sc-gray']};
 const REDES_TABS = [['scheduled', 'Programadas'], ['published', 'Publicadas'], ['failed', 'Con error'], ['draft', 'Borradores'], ['all', 'Todas']];
 MODS.redes = {g: 'gestion', view: 'redes', name: 'Redes sociales', icon: 'send', path: '/redes', c: 'var(--mod-azul)',
-  desc: 'Lo programado y lo publicado en las redes de la empresa, con sus cifras.', ok: () => agoraReady() && conectada() && puede('datos.consultar') && !ESPACIO?.permisos?.soloAsignado};
+  desc: 'Las cifras de las redes de la empresa y lo que se programó y publicó.', ok: () => agoraReady() && conectada() && puede('datos.consultar') && !ESPACIO?.permisos?.soloAsignado};
 async function redesCargarLista(mas = false) {
   const pag = mas ? REDES.pagina + 1 : 0;
   try {
@@ -8503,8 +8503,7 @@ V.redes = {
   },
   render() {
     const r = REDES.resumen;
-    const acts = r?.puedePublicar ? `<button class="btn btn-cta" type="button" data-redes-nueva>${icon('plus')}Nueva publicación</button>` : '';
-    const cabeza = head('Gestión y resultados', 'Redes sociales', 'Lo programado y lo publicado en las redes de la empresa, con sus cifras de los últimos días.', acts);
+    const cabeza = head('Gestión y resultados', 'Redes sociales', 'Las cifras de las redes de la empresa y lo que se programó y publicó. Para publicar, usa la cuenta.');
     if (REDES.error) return cabeza + `<section class="panel"><p class="redes-aviso">${icon('warn')}<span>${esc(REDES.error)}</span></p><div class="form-ft" style="justify-content:flex-start"><button class="btn" type="button" data-redes-reintentar>${icon('refresh')}Reintentar</button></div></section>`;
     if (!r) return loading('Redes sociales');
     const cuentas = r.cuentas || [];
@@ -8512,7 +8511,9 @@ V.redes = {
       : '<li class="redes-cuenta is-vacia">Todavía no hay redes conectadas en la cuenta de esta subcuenta.</li>';
     const c = r.cifras;
     const tile = (t, v, cambio) => `<div class="redes-cifra"><span class="redes-cifra-l">${t}</span><strong class="redes-cifra-v">${v == null ? '—' : NI.format(v)}</strong><span class="redes-cifra-d">${cambio != null ? (redesCambio(cambio) ? redesCambio(cambio) + ' frente al periodo anterior' : 'Igual que el periodo anterior') : ''}</span></div>`;
-    const cifras = c ? `<div class="redes-cifras">${tile('Publicaciones', c.publicaciones, c.cambio?.publicaciones)}${tile('Impresiones', c.impresiones, c.cambio?.impresiones)}${tile('Alcance', c.alcance, c.cambio?.alcance)}${tile('Me gusta', c.meGusta)}${tile('Comentarios', c.comentarios)}${tile('Seguidores', c.seguidores)}</div>`
+    const porRed = (c?.porRed || []).filter(x => x.impresiones != null || x.seguidores != null || x.meGusta != null);
+    const tablaRed = porRed.length > 1 ? `<ul class="redes-porred" aria-label="Por red">${porRed.map(x => `<li><b>${esc(x.red)}</b><span>${x.impresiones == null ? '—' : NI.format(x.impresiones)} <small>impresiones</small></span><span>${x.meGusta == null ? '—' : NI.format(x.meGusta)} <small>me gusta</small></span><span>${x.seguidores == null ? '—' : NI.format(x.seguidores)} <small>seguidores</small></span></li>`).join('')}</ul>` : '';
+    const cifras = c ? `<div class="redes-cifras">${tile('Publicaciones', c.publicaciones, c.cambio?.publicaciones)}${tile('Impresiones', c.impresiones, c.cambio?.impresiones)}${tile('Alcance', c.alcance, c.cambio?.alcance)}${tile('Me gusta', c.meGusta)}${tile('Comentarios', c.comentarios)}${tile('Seguidores', c.seguidores)}</div>${tablaRed}`
       : `<p class="redes-nota">${esc(r.avisoCifras || (cuentas.length ? 'La cuenta todavía no da cifras de estas redes.' : 'Las cifras aparecen cuando haya redes conectadas.'))}</p>`;
     const tabs = `<nav class="agency-chips redes-tabs" role="tablist" aria-label="Publicaciones por estado">${REDES_TABS.map(([id, t]) => `<button type="button" role="tab" class="agency-chip-btn ${REDES.tipo === id ? 'is-active' : ''}" aria-selected="${REDES.tipo === id}" data-redes-tab="${id}">${t}</button>`).join('')}</nav>`;
     const items = REDES.items;
@@ -8521,73 +8522,24 @@ V.redes = {
       : !items.length ? `<p class="redes-nota">${REDES.tipo === 'scheduled' ? 'No hay nada programado entre los últimos 30 días y los próximos 60.' : 'No hay publicaciones con este estado entre los últimos 30 días y los próximos 60.'}</p>`
       : `<ul class="redes-lista">${items.map(p => {
           const [et, tono] = REDES_ESTADO[p.estado] || [p.estado || 'Sin estado', 'sc-gray'];
-          const borrable = r.puedePublicar && ['scheduled', 'draft'].includes(p.estado);
           const redes = (p.cuentas || []).map(x => `${esc(x.red || p.red)} · ${esc(x.nombre)}`).join(', ') || esc(p.red);
           const img = p.media?.find(m => m.tipo === 'imagen')?.url || p.media?.[0]?.miniatura;
           return `<li class="redes-post">${img ? `<img class="redes-img" src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}<div class="redes-post-tx">
             <p class="redes-post-meta"><span class="sc ${tono}">${esc(et)}</span><time>${esc(redesFecha(p.fecha))}</time></p>
             <p class="redes-post-texto">${esc(p.texto || '(sin texto)')}</p>
-            <p class="redes-post-redes">${redes}</p>${p.error ? `<p class="redes-post-error">${esc(p.error)}</p>` : ''}</div>
-            ${borrable ? `<button class="btn btn-sm" type="button" data-redes-borrar="${esc(p.id)}">Borrar</button>` : ''}</li>`;
+            <p class="redes-post-redes">${redes}</p>${p.error ? `<p class="redes-post-error">${esc(p.error)}</p>` : ''}</div></li>`;
         }).join('')}</ul>${REDES.hayMas ? `<button class="btn redes-mas" type="button" data-redes-mas ${REDES.cargandoMas ? 'disabled' : ''}>${REDES.cargandoMas ? 'Cargando…' : 'Ver más'}</button>` : ''}`;
     return cabeza
       + panel('Redes conectadas', 'Se conectan y se vuelven a conectar en la cuenta de la subcuenta.', `<ul class="redes-cuentas">${chips}</ul>`)
-      + `<div class="mt">${panel(c?.dias ? `Cifras de los últimos ${c.dias} días` : 'Cifras', 'Lo que la cuenta informa de las redes conectadas.', cifras)}</div>`
+      + `<div class="mt">${panel(c?.dias ? `Cifras de los últimos ${c.dias} días` : 'Cifras de los últimos 7 días', 'Frente a los 7 días anteriores. Lo que la cuenta informa de las redes conectadas.', cifras)}</div>`
       + `<div class="mt">${panel('Publicaciones', 'De los últimos 30 días a los próximos 60.', tabs + lista)}</div>`;
   },
   mounted(root) {
     root.querySelector('[data-redes-reintentar]')?.addEventListener('click', () => { REDES.resumen = null; REDES.items = null; repaint(); V.redes.need().then(repaint); });
-    root.querySelector('[data-redes-nueva]')?.addEventListener('click', redesNuevaModal);
     root.querySelectorAll('[data-redes-tab]').forEach(b => b.onclick = async () => { if (REDES.tipo === b.dataset.redesTab) return; REDES.tipo = b.dataset.redesTab; REDES.items = null; repaint(); await redesCargarLista(); repaint(); });
     root.querySelector('[data-redes-mas]')?.addEventListener('click', async () => { REDES.cargandoMas = true; repaint(); await redesCargarLista(true); REDES.cargandoMas = false; repaint(); });
-    root.querySelectorAll('[data-redes-borrar]').forEach(b => b.onclick = () => confirmModal('¿Borrar esta publicación?', 'Se borra también de la programación de la cuenta. No se puede deshacer.', 'Borrar', async () => {
-      try { await agoraApi(`workspace/redes/publicaciones/${encodeURIComponent(b.dataset.redesBorrar)}`, {method: 'DELETE'}); toast('Publicación borrada.'); await redesCargarLista(); repaint(); }
-      catch (x) { toast(x.message); }
-    }));
   },
 };
-function redesNuevaModal() {
-  const r = REDES.resumen; if (!r?.puedePublicar) return;
-  const vivas = (r.cuentas || []).filter(c => !c.vencida);
-  const local = d => { const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return z.toISOString().slice(0, 16); };
-  const en1h = new Date(Date.now() + 3600000); en1h.setMinutes(0, 0, 0);
-  const requestId = 'redes' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
-  const s = openModal(modalHead('Nueva publicación', 'Queda en la programación de la cuenta y se publica sola a la hora elegida.') + `<form class="bx-form" novalidate><div class="bx-grid">
-    ${r.enlazado ? '' : '<p class="redes-aviso bx-wide">' + icon('info') + '<span>Para publicar, tu usuario tiene que estar enlazado con la cuenta. Pídeselo a quien administra la subcuenta (Usuarios y roles).</span></p>'}
-    <fieldset class="bx bx-wide"><legend>${icon('edit')}Texto</legend>
-      <label class="fld"><span class="sr-only">Texto de la publicación</span><textarea name="texto" rows="5" maxlength="3000" required placeholder="Lo que quieres publicar"></textarea><span class="fld-hint" data-redes-cuenta>0 / 3.000</span></label>
-      <label class="fld">Imagen (opcional)<input name="imagen" type="url" inputmode="url" maxlength="1000" placeholder="https://… enlace a una imagen ya publicada"><span class="fld-hint">Pega el enlace de una imagen o video que ya esté en internet.</span></label>
-    </fieldset>
-    <fieldset class="bx"><legend>${icon('send')}Dónde</legend>
-      ${vivas.length ? vivas.map(c => `<label class="bx-check"><input type="checkbox" name="cuenta" value="${esc(c.id)}"> ${esc(c.red)} · ${esc(c.nombre)}</label>`).join('') : '<p class="bx-help">No hay redes conectadas que se puedan usar.</p>'}
-    </fieldset>
-    <fieldset class="bx"><legend>${icon('calendar')}Cuándo</legend>
-      <label class="bx-check"><input type="radio" name="modo" value="programar" checked> Programar</label>
-      <label class="fld"><span class="sr-only">Fecha y hora</span><input name="cuando" type="datetime-local" value="${local(en1h)}" min="${local(new Date(Date.now() + 180000))}"></label>
-      <label class="bx-check"><input type="radio" name="modo" value="borrador"> Guardar como borrador</label>
-    </fieldset></div>
-    <p class="fld-err" role="alert"></p>
-    <div class="bx-foot"><p class="bx-help">Cada red recorta el texto a su límite.</p><div class="acts"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="submit" ${r.enlazado && vivas.length ? '' : 'disabled'}>Guardar publicación</button></div></div></form>`, {wide: true});
-  const f = s.querySelector('form'), err = f.querySelector('.fld-err');
-  f.texto.addEventListener('input', () => { f.querySelector('[data-redes-cuenta]').textContent = `${NI.format(f.texto.value.length)} / 3.000`; });
-  const sync = () => { f.cuando.disabled = f.querySelector('[name=modo]:checked').value === 'borrador'; };
-  f.querySelectorAll('[name=modo]').forEach(x => x.addEventListener('change', sync));
-  f.onsubmit = async ev => {
-    ev.preventDefault(); err.textContent = '';
-    const cuentas = [...f.querySelectorAll('[name=cuenta]:checked')].map(x => x.value);
-    const borrador = f.querySelector('[name=modo]:checked').value === 'borrador';
-    if (!f.texto.value.trim()) { err.textContent = 'Escribe el texto de la publicación.'; f.texto.focus(); return; }
-    if (!cuentas.length) { err.textContent = 'Elige al menos una red.'; return; }
-    if (!borrador && (!f.cuando.value || new Date(f.cuando.value).getTime() < Date.now() + 120000)) { err.textContent = 'Elige una fecha y hora al menos dos minutos en el futuro.'; return; }
-    const b = f.querySelector('[type=submit]'); busy(b, true, 'Guardando…');
-    try {
-      await agoraApi('workspace/redes/publicaciones', {method: 'POST', body: {texto: f.texto.value.trim(), imagen: f.imagen.value.trim(), cuentas, borrador, cuando: borrador ? null : new Date(f.cuando.value).toISOString(), requestId}});
-      closeModal(); toast(borrador ? 'Borrador guardado.' : 'Publicación programada.');
-      REDES.tipo = borrador ? 'draft' : 'scheduled'; REDES.items = null; repaint(); await redesCargarLista(); repaint();
-    } catch (x) { busy(b, false); err.textContent = x.message; }
-  };
-}
-
 /* ---------- 2.6.0 · «Nuevo contacto»: lo crea en la cuenta conectada y abre su ficha ---------- */
 function contactoNuevoModal() {
   const requestId = 'contacto' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 8);

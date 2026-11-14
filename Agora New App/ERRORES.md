@@ -30,6 +30,8 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 27 | La tarjeta «Así va tu cuenta» de Inicio se veía poco seria (icono de color y flecha). | Diseño. | «Resumen de hoy» con tres cifras reales y un enlace sobrio al tablero. | Corregido en 2.6.1 |
 | 28 | «ARP Comercial»: nadie sabía qué significaba «ARP». | Nombre heredado del código recibido, sin definir en ningún archivo. | Se llama «Tablero comercial». | Corregido en 2.6.2 |
 | 29 | Tablas anchas en el teléfono (había que deslizar a los lados). | Tablas de escritorio sin versión para pantalla angosta. | Se leen como fichas. | Corregido en 2.6.2 |
+| 30 | Redes sociales: «La cuenta no dio las cifras de las redes». | Se pedían las cifras con el `id` de cada red en lugar del `profileId` que pide la documentación. | Se manda el `profileId` y solo de las redes que la cuenta puede medir. | Corregido en 2.7.1. Por confirmar con la cuenta real |
+| 31 | Redes sociales: «La cuenta pidió esperar un momento» en la lista de publicaciones. | El rechazo anterior hacía que la pasarela pausara toda la subcuenta 15 segundos o más, también la bandeja. | Las lecturas de redes son «suaves»: un rechazo no pausa la subcuenta. | Corregido en 2.7.1 |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 
@@ -43,14 +45,14 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 
 | N.º | Qué falta | Por qué importa |
 |---|---|---|
-| 11 | Probar las escrituras con la cuenta real: enviar un mensaje, asignar una conversación, editar un contacto, mover y crear una oportunidad, marcar ganada, crear, corregir y completar una tarea, crear un contacto nuevo, y programar y borrar una publicación en Redes sociales. | Las atiende el mismo código de Ágora Mobile 1.10.14, pero en esta app solo se probaron contra una cuenta simulada; desde el entorno de desarrollo no hay salida a la cuenta real. |
-| 12 | Confirmar el error 2 en tests después de subir la 2.7.0. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
+| 11 | Probar las escrituras con la cuenta real: enviar un mensaje, asignar una conversación, editar un contacto, mover y crear una oportunidad, marcar ganada, crear, corregir y completar una tarea, crear un contacto nuevo, y abrir Redes sociales y ver sus cifras. | Las atiende el mismo código de Ágora Mobile 1.10.14, pero en esta app solo se probaron contra una cuenta simulada; desde el entorno de desarrollo no hay salida a la cuenta real. |
+| 12 | Confirmar el error 2 en tests después de subir la 2.7.1. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
 | 13 | Cabeceras de seguridad en OpenLiteSpeed. | OpenLiteSpeed no aplica las líneas `Header` del `.htaccess`; van en el vHost (paso 9 de la guía). |
 | 14 | (Resuelto en 2.5.0) La bandeja usaba el código de una versión anterior de Ágora Mobile. | Bandeja, Contactos y Embudos ya llevan lo de la 1.10.14. |
 
 ## Cómo comprobar la versión instalada
 
-- `https://TU-DOMINIO/api/health` debe decir `"version":"2.7.0"`.
+- `https://TU-DOMINIO/api/health` debe decir `"version":"2.7.1"`.
 - `https://TU-DOMINIO/version.json` debe decir lo mismo.
 - Si una pantalla se ve rara tras actualizar: recarga una vez. Si sigue, en Chrome toca el icono a la izquierda de la dirección → Configuración del sitio → Borrar datos, y vuelve a entrar.
 
@@ -62,4 +64,4 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 - La hora de la tarea se envía con la zona horaria del navegador de quien la crea.
 - Cuando la cuenta rechaza un contacto duplicado, esa subcuenta espera unos segundos antes de la siguiente consulta (la misma protección de cuota de siempre).
 - «Nuevo contacto» pide nombre, apellido, teléfono y correo; etiquetas y campos personalizados se completan después en «Editar ficha».
-- Redes sociales: la imagen se adjunta por enlace (https); todavía no se sube un archivo desde Ágora. Las redes se conectan en la cuenta, no en Ágora.
+- Redes sociales es solo lectura: se publica y se conecta en la cuenta, no en Ágora.
