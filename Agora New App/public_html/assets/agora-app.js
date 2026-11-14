@@ -7844,12 +7844,22 @@ if (typeof document !== 'undefined' && document.readyState !== undefined) {
    ===================================================================================== */
 function xpTareaModal(previa) {
   const hoy = hoyYMD(), editar = !!previa?.id;
+  /* 2.4.0 · en una subcuenta conectada cada tarea va en la ficha de un contacto de la cuenta (una sola tarea, sin dobles). */
+  const pideContacto = !editar && conectada() && !previa?.contactId;
+  let elegido = previa?.contactId ? {id: previa.contactId, name: previa.contacto || ''} : null;
+  const tz = (() => { const o = -new Date().getTimezoneOffset(), a = Math.abs(o); return (o < 0 ? '-' : '+') + String(Math.floor(a / 60)).padStart(2, '0') + ':' + String(a % 60).padStart(2, '0'); })();
+  const requestId = 'tarea' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 8);
   const s = openModal(modalHead(editar ? 'Editar tarea' : 'Nueva tarea', editar ? 'Corrige lo que haga falta. El cambio queda en la auditoría.' : 'Queda a nombre de quien la tiene que hacer, con su fecha.') +
     `<form class="bx-form" novalidate><div class="bx-grid">
       <fieldset class="bx bx-wide"><legend>${icon('check')}Tarea</legend>
         <label class="fld"><span class="fld-l">¿Qué hay que hacer? <span class="req" aria-hidden="true">*</span></span><input name="titulo" maxlength="250" required autofocus value="${esc(previa?.titulo || '')}" placeholder="Llamar para confirmar la inscripción"></label>
         <label class="fld">Detalle<textarea name="detalle" maxlength="2000" rows="2" placeholder="Opcional">${esc(previa?.detalle || '')}</textarea></label>
       </fieldset>
+      ${pideContacto ? `<fieldset class="bx bx-wide"><legend>${icon('user')}Contacto</legend>
+        <label class="fld"><span class="fld-l">¿De quién es la tarea? <span class="req" aria-hidden="true">*</span></span><input name="contactoBuscar" type="search" autocomplete="off" placeholder="Busca por nombre, teléfono o correo"></label>
+        <div class="tarea-contactos" data-contactos role="listbox" aria-label="Contactos encontrados"></div>
+        <p class="bx-help" data-contacto-elegido>La tarea queda en la ficha de ese contacto, y aquí en Tareas.</p>
+      </fieldset>` : ''}
       <fieldset class="bx"><legend>${icon('calendar')}Cuándo</legend>
         <div class="bx-row">
           <label class="fld">Fecha<input name="vence" type="date" value="${esc(previa?.vence || (editar ? '' : hoy))}"></label>
@@ -7864,15 +7874,31 @@ function xpTareaModal(previa) {
     </div><p class="fld-err" role="alert"></p>
     <div class="bx-foot"><p class="bx-help">${editar && previa.contacto ? 'Contacto: ' + esc(previa.contacto) : 'Los campos con <span class="req">*</span> son obligatorios.'}</p><div class="acts"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="submit">${editar ? 'Guardar cambios' : 'Guardar tarea'}</button></div></div></form>`, {wide: true});
   const f = s.querySelector('form'), err = f.querySelector('.fld-err');
+  if (pideContacto) {
+    const caja = f.querySelector('[data-contactos]'), nota = f.querySelector('[data-contacto-elegido]'); let turno = 0, reloj = null;
+    const buscar = async q => {
+      const mio = ++turno; caja.innerHTML = '<p class="bx-help">Buscando…</p>';
+      try {
+        const d = await agoraApi(`workspace/contacts?connectionId=${encodeURIComponent(ws.current())}${q ? '&query=' + encodeURIComponent(q) : ''}`);
+        if (mio !== turno) return;
+        const items = (d.items || []).slice(0, 8);
+        caja.innerHTML = items.length ? items.map(c => `<button type="button" role="option" class="tarea-contacto" data-id="${esc(c.id)}" data-nombre="${esc(c.name || c.email || c.phone || 'Contacto')}"><b>${esc(c.name || 'Sin nombre')}</b><small>${esc([c.phone, c.email].filter(Boolean).join(' · '))}</small></button>`).join('') : '<p class="bx-help">Nadie coincide. Prueba con otro nombre, teléfono o correo.</p>';
+      } catch (x) { if (mio === turno) caja.innerHTML = `<p class="bx-help">${esc(x.message)}</p>`; }
+    };
+    f.contactoBuscar.addEventListener('input', () => { clearTimeout(reloj); reloj = setTimeout(() => buscar(f.contactoBuscar.value.trim()), 350); });
+    caja.addEventListener('click', e => { const b = e.target.closest('.tarea-contacto'); if (!b) return; elegido = {id: b.dataset.id, name: b.dataset.nombre}; caja.querySelectorAll('.tarea-contacto').forEach(x => x.classList.toggle('is-on', x === b)); nota.innerHTML = `Contacto elegido: <b>${esc(elegido.name)}</b>. La tarea queda en su ficha, y aquí en Tareas.`; err.textContent = ''; });
+    buscar('');
+  }
   f.onsubmit = async ev => {
     ev.preventDefault();
-    const fd = Object.fromEntries(new FormData(f));
+    const fd = Object.fromEntries(new FormData(f)); delete fd.contactoBuscar;
     if (!String(fd.titulo || '').trim()) { err.textContent = 'Escribe qué hay que hacer.'; f.titulo.focus(); return; }
+    if (pideContacto && !elegido) { err.textContent = 'Elige el contacto de la tarea.'; f.contactoBuscar.focus(); return; }
     if (!editar && fd.vence && fd.vence < hoy) { err.textContent = 'La fecha no puede ser anterior a hoy.'; return; }
     const b = f.querySelector('[type=submit]'); busy(b, true, 'Guardando…');
     try {
-      if (editar) await agoraApi(`workspace/tareas/${encodeURIComponent(previa.id)}`, {method: 'PUT', body: {...fd, titulo: fd.titulo.trim(), ...(previa.version ? {version: previa.version} : {})}});
-      else await agoraApi('workspace/tareas', {method: 'POST', body: {...fd, titulo: fd.titulo.trim(), origen: previa?.origen || 'manual', contactId: previa?.contactId || null, conversationId: previa?.conversationId || null}});
+      if (editar) await agoraApi(`workspace/tareas/${encodeURIComponent(previa.id)}`, {method: 'PUT', body: {...fd, tz, titulo: fd.titulo.trim(), ...(previa.version ? {version: previa.version} : {})}});
+      else await agoraApi('workspace/tareas', {method: 'POST', body: {...fd, tz, requestId, titulo: fd.titulo.trim(), origen: previa?.origen || 'manual', contactId: elegido?.id || previa?.contactId || null, contacto: elegido?.name || previa?.contacto || '', conversationId: previa?.conversationId || null}});
       closeModal(); await cargarTareas(true); repaint(); toast(editar ? 'Tarea actualizada.' : 'Tarea guardada.');
     } catch (x) { busy(b, false); err.textContent = x.message; }
   };

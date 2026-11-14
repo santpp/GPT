@@ -158,7 +158,8 @@ final class MotorMobile {
    if($accion==='estado'){$actions->completeTask($connection,$contactId,$m,$input);return ['id'=>(string)$input['taskId']];}
    if($accion==='editar'){
     $task=(string)($input['taskId']??'');if(!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$task))Http::fail('Tarea inválida.');
-    $payload=['title'=>mb_substr((string)$input['title'],0,190),'dueDate'=>(string)$input['dueDate'],'completed'=>(bool)$input['completed']]+(($input['body']??'')!==''?['body'=>mb_substr((string)$input['body'],0,2000)]:[]);
+    try{$due=(new \DateTimeImmutable((string)$input['dueDate']))->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z');}catch(\Exception){Http::fail('Fecha inválida.');}
+    $payload=['title'=>mb_substr((string)$input['title'],0,190),'dueDate'=>$due,'completed'=>(bool)$input['completed'],'body'=>mb_substr((string)($input['body']??''),0,2000)];
     $gateway->execute($connection,fn(\GhlClient $cl):array=>$cl->updateContactTask($contactId,$task,$payload),false);
     \ContactActivity::forget((int)$connection['id'],$contactId);return ['id'=>$task];
    }

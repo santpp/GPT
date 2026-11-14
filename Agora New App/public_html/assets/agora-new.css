@@ -150,3 +150,9 @@ html,body,button,input,select,textarea{font-family:var(--font-text)}
 /* 2.4.0 · aviso a quien no está enlazado con la cuenta */
 .aviso-enlace{display:flex;gap:10px;align-items:flex-start;margin:0 0 16px;padding:12px 14px;border-radius:14px;border:1px solid color-mix(in srgb,var(--gold,#FABD4B) 70%,transparent);background:color-mix(in srgb,var(--gold,#FABD4B) 12%,var(--surface,#fff));font-size:14px;line-height:1.45;color:var(--ink)}
 .aviso-enlace .ic{flex:none;width:18px;height:18px;margin-top:2px}
+/* 2.4.0 · elegir el contacto de una tarea */
+.tarea-contactos{display:grid;gap:6px;max-height:232px;overflow:auto}
+.tarea-contacto{display:grid;gap:2px;text-align:left;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface,#fff);color:var(--ink);font:inherit;cursor:pointer;min-height:44px}
+.tarea-contacto:hover{background:var(--fill-3,#f4f4f7)}
+.tarea-contacto.is-on{border-color:var(--brand);background:var(--brand-soft,#f6e7ec)}
+.tarea-contacto b{font-size:14px}.tarea-contacto small{font-size:12.5px;color:var(--muted)}

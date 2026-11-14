@@ -20,6 +20,7 @@ PIPES=[{'id':'p1','name':'Embudo de ventas','stages':[{'id':'s1','name':'Lead nu
 OPPS=[{'id':f'o{i}','name':n,'contactId':k,'contact':{'id':k,'name':CONTACTS[k]['contactName'],'email':CONTACTS[k]['email'],'phone':CONTACTS[k]['phone']},'monetaryValue':v,'pipelineId':'p1','pipelineStageId':st,'status':s,'assignedTo':CONTACTS[k]['assignedTo'],'locationId':LOC,'updatedAt':'2026-11-12T10:00:00Z','lastStatusChangeAt':'2026-11-12T10:00:00Z','createdAt':'2026-11-01T10:00:00Z'}
       for i,(n,k,v,st,s) in enumerate([('Reserva sábado','k0',250,'s1','open'),('Plan anual','k2',900,'s2','open'),('Curso intensivo','k1',300,'s3','won'),('Asesoría','k3',150,'s1','open')])]
 SENT=[]
+TASKS=[]
 def log(*a):
     with open('fake-ghl.log','a') as f:f.write(' '.join(map(str,a))+'\n')
 class H(BaseHTTPRequestHandler):
@@ -71,6 +72,16 @@ class H(BaseHTTPRequestHandler):
         if m2 and m2.group(1) in CONTACTS:
             if m=='PUT':CONTACTS[m2.group(1)].update({k:v for k,v in b.items() if k in('firstName','lastName','email','phone','assignedTo')});return self.out(200,{'contact':CONTACTS[m2.group(1)]})
             return self.out(200,{'contact':CONTACTS[m2.group(1)]})
+        m3=re.match(r'^/contacts/([\w-]+)/tasks$',p)
+        if m3 and m=='POST':
+            t={'id':f'task{len(TASKS)+1}','contactId':m3.group(1),'title':b.get('title'),'body':b.get('body'),'dueDate':b.get('dueDate'),'completed':False};TASKS.append(t);return self.out(201,{'task':t})
+        if m3 and m=='GET':return self.out(200,{'tasks':[t for t in TASKS if t['contactId']==m3.group(1)]})
+        m3=re.match(r'^/contacts/([\w-]+)/tasks/([\w-]+)(/completed)?$',p)
+        if m3 and m=='PUT':
+            t=next((x for x in TASKS if x['id']==m3.group(2) and x['contactId']==m3.group(1)),None)
+            if not t:return self.out(404,{'message':'task not found'})
+            t.update({k:v for k,v in b.items() if k in('title','body','dueDate','completed')});return self.out(200,{'task':t})
+        if p=='/__tasks':return self.out(200,{'tasks':TASKS})
         if re.match(r'^/contacts/[\w-]+/(notes|tasks|appointments)$',p):
             key=p.rsplit('/',1)[1];return self.out(200,{key:[] ,'events':[]})
         if p=='/opportunities/pipelines':return self.out(200,{'pipelines':PIPES})
