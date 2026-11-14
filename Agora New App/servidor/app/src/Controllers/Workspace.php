@@ -7,11 +7,22 @@ final class Workspace {
  public function __construct(public DB $db,public Auth $auth){$this->records=new Records($db,$auth);}
  public function tasks(string $method,array $b,?string $id=null):array{
   if($method==='GET'){$p=$this->records->page('task');$args=[$this->auth->tenant];$sql="SELECT status,COUNT(*) n FROM agora_records WHERE tenant_id=? AND kind='task'";if($this->auth->assignedOnly()){$sql.=' AND owner_id=?';$args[]=$this->auth->user['id'];}$rows=$this->db->all($sql.' GROUP BY status',$args);$stats=array_column($rows,'n','status');return $p+['resumen'=>['pendientes'=>(int)($stats['pendiente']??0),'hechas'=>(int)($stats['hecha']??0)]];}
-  $this->auth->write();if($id){$r=$this->records->get('task',$id,true);$d=$this->records->payload($r);$status=$b['estado']??'';if(!in_array($status,['pendiente','hecha'],true))Http::fail('Estado de tarea inválido.');$d['estado']=$status;unset($d['version']);$this->records->save('task',$id,$d,$r['label'],$status,$r['period']);return ['ok'=>true];}
+  $this->auth->write();if($id){$r=$this->records->get('task',$id,true);$d=$this->records->payload($r);$status=$b['estado']??'';if(!in_array($status,['pendiente','hecha'],true))Http::fail('Estado de tarea inválido.');if(($d['cuentaTareaId']??'')!==''&&($d['estado']??'')!==$status)\Agora\Core\MotorMobile::tarea($this->db,$this->auth->config,$this->auth,'estado',(string)$d['contactId'],['taskId'=>(string)$d['cuentaTareaId'],'completed'=>$status==='hecha']);$d['estado']=$status;unset($d['version']);$this->records->save('task',$id,$d,$r['label'],$status,$r['period']);return ['ok'=>true];}
   $title=Http::text($b,'titulo',250);$date=Http::text($b,'vence',10,false);if($date!==''&&(!preg_match('/^\d{4}-\d{2}-\d{2}$/D',$date)||!checkdate((int)substr($date,5,2),(int)substr($date,8,2),(int)substr($date,0,4))))Http::fail('Fecha inválida.');$hour=Http::text($b,'hora',5,false);if($hour!==''&&!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/D',$hour))Http::fail('Hora inválida.');
-  $contact=$b['contactId']??null;$conv=$b['conversationId']??null;if($contact)$this->records->get('contact',(string)$contact);if($conv)$this->records->get('conversation',(string)$conv);
+  // 2.4.0 · con la subcuenta conectada, la tarea se escribe en la ficha del contacto en la cuenta y aquí queda la misma (sin dobles).
+  $conectada=\Agora\Core\MotorMobile::conectada($this->db,(int)$this->auth->tenant);
+  $contact=$b['contactId']??null;$conv=$b['conversationId']??null;
+  if($conectada){if(!is_string($contact)||$contact==='')Http::fail('Elige el contacto de la tarea. En una subcuenta conectada cada tarea va en la ficha de un contacto.');if($conv!==null&&(!is_string($conv)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conv)))$conv=null;}
+  else{if($contact)$this->records->get('contact',(string)$contact);if($conv)$this->records->get('conversation',(string)$conv);}
   $owner=(int)$this->auth->user['id'];if(isset($b['responsableId'])&&$this->auth->user['role']!=='EJECUTIVO'){$this->auth->manage();$owner=Http::integer($b['responsableId'],1,PHP_INT_MAX);if(!$this->db->one('SELECT id FROM agora_users WHERE id=? AND local_tenant_id=? AND active=1',[$owner,$this->auth->tenant]))Http::fail('Responsable no disponible.');}
-  $id=bin2hex(random_bytes(12));$d=['id'=>$id,'titulo'=>$title,'detalle'=>Http::text($b,'detalle',2000,false),'vence'=>$date?:null,'hora'=>$hour,'estado'=>'pendiente','responsable'=>$this->auth->user['name'],'responsableId'=>$owner,'origen'=>'manual','contactId'=>$contact,'conversationId'=>$conv,'contacto'=>null];
+  $cuentaId='';
+  if($conectada){
+   $tz=is_string($b['tz']??null)&&preg_match('/^[+-]\d{2}:\d{2}$/D',$b['tz'])?$b['tz']:'Z';
+   $due=($date?:gmdate('Y-m-d')).'T'.($hour?:'12:00').':00'.$tz;
+   $cuentaId=\Agora\Core\MotorMobile::tarea($this->db,$this->auth->config,$this->auth,'crear',(string)$contact,['title'=>mb_substr($title,0,190),'dueDate'=>$due,'body'=>Http::text($b,'detalle',2000,false),'requestId'=>$b['requestId']??null])['id'];
+   if($cuentaId==='')Http::fail('La cuenta no confirmó la tarea. Revisa la ficha del contacto antes de repetirla.',424);
+  }
+  $id=$cuentaId!==''?\Agora\Core\MotorMobile::uidTarea($cuentaId):bin2hex(random_bytes(12));$d=['cuentaTareaId'=>$cuentaId?:null,'contacto'=>$conectada?Http::text($b,'contacto',190,false):null,'id'=>$id,'titulo'=>$title,'detalle'=>Http::text($b,'detalle',2000,false),'vence'=>$date?:null,'hora'=>$hour,'estado'=>'pendiente','responsable'=>$this->auth->user['name'],'responsableId'=>$owner,'origen'=>'manual','contactId'=>$contact,'conversationId'=>$conv];
   $this->records->save('task',$id,$d,$title,'pendiente',substr($date,0,7),$owner);return ['ok'=>true,'id'=>$id];
  }
  public function reports():array{

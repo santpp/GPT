@@ -47,6 +47,18 @@ final class Api {
   if($p==='workspace/permisos'||$p==='workspace/usuarios/permisos')return $this->u->permissions($p,$m,$b);
   if($p==='workspace/branding'&&in_array($m,['GET','POST']))return $this->ag->branding($m,$b);
   if($p==='admin/maintenance'&&$m==='POST'){$this->a->manage();$this->db->run('UPDATE agora_tenants SET status=?,revision=revision+1 WHERE id=?',[($b['on']??false)?'inactiva':'activa',$this->a->tenant]);$this->a->audit('estado.actualizado','ajuste',(string)$this->a->tenant);return ['maintenance'=>(bool)($b['on']??false)];}
+  // 2.4.0 · equipo de la cuenta conectada y enlace de cada persona con su usuario de la cuenta.
+  if($p==='workspace/usuarios/equipo'){
+   $this->a->manage();$t=(int)$this->a->tenant;$conectada=\Agora\Core\MotorMobile::conectada($this->db,$t);
+   if($m==='POST'){if(!$conectada)Http::fail('Esta subcuenta todavía no está conectada con su cuenta.',409);\Agora\Core\MotorMobile::sincronizar($this->db,$this->config,$t);$this->a->audit('equipo.actualizado','usuario',(string)$t);}
+   $items=(new \Agora\Services\UserLinks($this->db))->team($t);
+   return ['conectada'=>$conectada,'items'=>$items,'sincronizado'=>$items?max(array_column($items,'sincronizado')):null];
+  }
+  if($p==='workspace/usuarios/enlace'&&$m==='POST'){
+   $this->a->manage();$id=Http::integer($b['id']??0,1,PHP_INT_MAX);$ext=trim((string)($b['enlace']??''));
+   $e=(new \Agora\Services\UserLinks($this->db))->set((int)$this->a->tenant,$id,$ext);
+   $this->a->audit('usuario.enlace','usuario',(string)$id,['conUsuarioDeLaCuenta'=>$ext!=='']);return ['ok'=>true,'enlace'=>$e];
+  }
   if(in_array($p,['workspace/usuarios','usuarios'])&&in_array($m,['GET','POST']))return $m==='GET'?$this->u->listing(false):$this->u->save($b,false);
   if(preg_match('~^(workspace/usuarios/(rol|estado|nombre|clave)|usuarios/(rol|clave|activar|desactivar))$~D',$p)&&$m==='POST'){if(str_ends_with($p,'activar'))$b['activo']=!str_ends_with($p,'desactivar');return $this->u->save($b,false,true);}
   // 2.1.19 · tablas editables: columnas, filas agregadas a mano y carga masiva de cada tabla

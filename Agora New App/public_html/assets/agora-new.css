@@ -147,3 +147,6 @@ html,body,button,input,select,textarea{font-family:var(--font-text)}
 #view.ag label.contact-switch > input:checked + .switch-track::after{transform:translateX(18px)}
 #view.ag label.contact-switch > input:focus-visible + .switch-track{outline:3px solid var(--focus,#1a73e8);outline-offset:2px}
 #view.ag label.contact-switch small{display:block;font-weight:400;font-size:12.5px;color:var(--muted)}
+/* 2.4.0 · aviso a quien no está enlazado con la cuenta */
+.aviso-enlace{display:flex;gap:10px;align-items:flex-start;margin:0 0 16px;padding:12px 14px;border-radius:14px;border:1px solid color-mix(in srgb,var(--gold,#FABD4B) 70%,transparent);background:color-mix(in srgb,var(--gold,#FABD4B) 12%,var(--surface,#fff));font-size:14px;line-height:1.45;color:var(--ink)}
+.aviso-enlace .ic{flex:none;width:18px;height:18px;margin-top:2px}

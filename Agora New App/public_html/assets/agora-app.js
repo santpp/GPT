@@ -181,15 +181,15 @@ const MODS = {
   inicio: {g: 'ingresos', view: 'tc_resumen', name: 'Gestión Comercial', icon: 'trend', path: '/inicio', c: 'var(--brand)', periodo: true,
     desc: 'El reporte del mes: identidad, ventas y tendencia del año.', ok: () => tableroHay('resumen')},
   comercial: {g: 'ingresos', view: 'ag_dashboard', ag: 'dashboard', name: 'ARP Comercial', icon: 'pie', path: '/comercial', c: 'var(--mod-vino)',
-    desc: 'Las cifras del día, los anuncios y la rentabilidad.', ok: () => agoraReady()},
+    desc: 'Las cifras del día, los anuncios y la rentabilidad.', ok: () => agoraReady() && puede('datos.consultar')},
   bandeja: {g: 'clientes', view: 'ag_inbox', ag: 'inbox', name: 'Bandeja de conversaciones', icon: 'chat', path: '/bandeja', c: 'var(--mod-azul)',
-    desc: 'Todos los canales en una sola lista.', ok: () => agoraReady(), n: () => unread || null},
+    desc: 'Todos los canales en una sola lista.', ok: () => agoraReady() && puede('datos.consultar'), n: () => unread || null},
   contactos: {g: 'clientes', view: 'ag_contacts', ag: 'contacts', name: 'Contactos', icon: 'users', path: '/contactos', c: 'var(--mod-azul)',
-    desc: 'Las fichas de la subcuenta y su historial.', ok: () => agoraReady()},
+    desc: 'Las fichas de la subcuenta y su historial.', ok: () => agoraReady() && puede('datos.consultar')},
   oportunidades: {g: 'clientes', view: 'ag_board', ag: 'board', name: 'Oportunidades', icon: 'trend', path: '/oportunidades', c: 'var(--mod-oro)',
-    desc: 'Los embudos por etapa y las ventas ganadas.', ok: () => agoraReady(), n: () => wonPendientes || null},
+    desc: 'Los embudos por etapa y las ventas ganadas.', ok: () => agoraReady() && puede('datos.consultar'), n: () => wonPendientes || null},
   tareas: {g: 'clientes', view: 'tareas', name: 'Tareas', icon: 'check', path: '/tareas', c: 'var(--ok-solid)',
-    desc: 'Lo que cada ejecutivo tiene pendiente hoy.', ok: () => !!ME || agoraReady(), n: () => tareasPendientes()},
+    desc: 'Lo que cada ejecutivo tiene pendiente hoy.', ok: () => (!!ME || agoraReady()) && puede('datos.consultar'), n: () => tareasPendientes()},
   equipo: {g: 'gestion', view: 'tc_equipo', name: 'Equipo', icon: 'team', path: '/equipo', c: 'var(--mod-vino)', periodo: true,
     desc: 'Ventas, cobranza y comisiones de cada asesora.', ok: () => tableroHay('equipo')},
   publicidad: {g: 'gestion', view: 'tc_marketing', name: 'Embudo y publicidad', icon: 'rocket', path: '/publicidad', c: 'var(--mod-azul)', periodo: true,
@@ -207,29 +207,34 @@ const MODS = {
   calidad: {g: 'gestion', view: 'tc_calidad', name: 'Calidad de datos', icon: 'warn', path: '/calidad', c: 'var(--mod-seguridad)',
     desc: 'Lo que conviene corregir antes de cerrar números.', ok: () => tableroHay('calidad')},
   convenios: {g: 'contratos', view: 'contratos', name: 'Contratos', icon: 'invoice', path: '/contratos', c: 'var(--mod-oro)',
-    desc: 'Convenios de pago: estado, firma y documentos.', ok: () => can('ver'), n: () => DATA.contratos?.length},
+    desc: 'Convenios de pago: estado, firma y documentos.', ok: () => can('ver') && puede('datos.consultar'), n: () => DATA.contratos?.length},
   conConvenio: {g: 'contratos', view: 'contactos', name: 'Con convenio', icon: 'user', path: '/con-convenio', c: 'var(--mod-oro)',
-    desc: 'Personas con convenio y búsqueda en la cartera.', ok: () => can('ver'), n: () => DATA.contratos ? clientes().length : null},
+    desc: 'Personas con convenio y búsqueda en la cartera.', ok: () => can('ver') && puede('datos.consultar'), n: () => DATA.contratos ? clientes().length : null},
   registro: {g: 'contratos', view: 'registro', name: 'Registro', icon: 'history', path: '/registro', c: 'var(--mod-oro)',
-    desc: 'Todo lo que pasa con los convenios, con su hora.', ok: () => can('usuarios')},
+    desc: 'Todo lo que pasa con los convenios, con su hora.', ok: () => puede('auditoria.ver')},
   auditoria: {g: 'administracion', view: 'auditoria', name: 'Auditoría', icon: 'shield', path: '/auditoria', c: 'var(--mod-seguridad)', periodo: true,
-    desc: 'Quién tocó qué contacto, cuándo y desde dónde.', ok: () => puedeAuditar()},
+    desc: 'Quién tocó qué contacto, cuándo y desde dónde.', ok: () => puede('auditoria.ver')},
   configuracion: {g: 'administracion', view: 'tc_configuracion', name: 'Configuración mensual', icon: 'edit', path: '/configuracion', c: 'var(--mod-azul)', periodo: true,
     desc: 'Metas, umbrales y costos manuales de cada mes.', ok: () => tableroHay('configuracion')},
   usuarios: {g: 'administracion', view: 'usuarios', name: 'Usuarios y roles', icon: 'team', path: '/usuarios', c: 'var(--mod-seguridad)',
-    desc: 'Quién entra, con qué rol y la identidad del espacio.', ok: () => esAdmin()},
+    desc: 'Quién entra, con qué rol y la identidad del espacio.', ok: () => puede('usuarios.administrar')},
   conexiones: {g: 'administracion', view: 'ag_settings', ag: 'settings', name: 'Ajustes', icon: 'gear', path: '/ajustes', c: 'var(--mod-seguridad)',
-    desc: 'Cuentas conectadas, equipo importado y avisos.', ok: () => agoraAdmin()},
+    desc: 'Cuentas conectadas, equipo importado y avisos.', ok: () => puede('ajustes.editar')},
   ayuda: {g: 'administracion', view: 'ag_help', ag: 'help', name: 'Ayuda', icon: 'info', path: '/ayuda', c: 'var(--mod-azul)',
     desc: 'El manual de uso del sistema.', ok: () => agoraReady() || !!ME},
 };
 /** Los módulos a los que llega quien entró, en el orden de los grupos. */
-const ALL = () => Object.keys(GRUPOS).flatMap(g => Object.keys(MODS).filter(k => MODS[k].g === g && !MODS[k].dentro && !moduloOculto(k)));
+const ALL = () => Object.keys(GRUPOS).flatMap(g => Object.keys(MODS).filter(k => MODS[k].g === g && !MODS[k].dentro && !moduloOculto(k) && moduleAllowed(k)));
 /* 2.1.17: un módulo que vive dentro de otro (Catálogo dentro de Productos y servicios) marca a su padre en el menú. */
 const modMenu = () => MODS[R?.mod]?.dentro || R?.mod;
 /** Los 6 módulos principales con sus submódulos (Inicio va aparte: es fijo). */
 const gruposMenu = () => { const available = ALL().filter(k => !MODS[k].fijo); return Object.keys(GRUPOS).map(g => [g, available.filter(k => MODS[k].g === g)]).filter(([, ids]) => ids.length); };
-const moduleAllowed = id => !!MODS[id]?.ok();
+/* 2.4.0 · Permisos reales: el servidor dice qué puede hacer esta persona en la subcuenta activa (ESPACIO.permisos).
+   El menú, el inicio y el buscador muestran solo los módulos permitidos; el servidor sigue comprobando cada petición. */
+const puede = k => { const p = ESPACIO?.permisos; if (p && k in p) return !!p[k]; return esSuperAdmin() || (k === 'datos.consultar' && (!!ME || agoraReady())); };
+const hayReporte = () => !!ESPACIO?.hayReporte;
+const conectada = () => !!ESPACIO?.conectada;
+const moduleAllowed = id => { try { return !!MODS[id]?.ok(); } catch { return false; } };
 const moduleCaption = id => moduleAllowed(id) ? MODS[id].desc : 'Acceso restringido para tu rol · Consulta al administrador.';
 const homeMod = () => ALL()[0] || null;
 /* Nombre del módulo de agencia que antes se llamaba "Gobierno de agencia" (2.1.7). Cambiarlo aquí lo cambia en todo el panel. */
@@ -354,6 +359,9 @@ function paint(html, enter) {
   placeThumbs(document);
   // Agora New App: sobre «cargando», «error» o «sin acceso» no se ejecuta el código del módulo (antes, Ajustes se quedaba cargando).
   if (!app.querySelector('[data-placeholder]')) V[R.view]?.mounted?.(app);
+  // 2.4.0 · quien solo ve «lo asignado» y no está enlazado con la cuenta no verá nada: se le dice por qué.
+  if (['bandeja', 'contactos', 'oportunidades', 'comercial'].includes(R.mod) && conectada() && ESPACIO?.permisos?.soloAsignado && !ESPACIO?.enlace)
+    app.insertAdjacentHTML('afterbegin', `<p class="aviso-enlace" role="status">${icon('info')}<span><b>Tu usuario no está enlazado con la cuenta.</b> Por eso no ves conversaciones, contactos ni oportunidades. Pídele a quien administra tu subcuenta que te enlace en Usuarios y roles.</span></p>`);
   applyUiTexts();
   aplicarPaleta(); arpVigilar();
   syncAgencyRail();
@@ -1524,7 +1532,7 @@ V.centro = {
     const name = String(AGORA_ME?.user?.name || ME?.nombre || 'equipo').split(' ')[0];
     const account = ws?.name() || ESPACIO?.nombre || 'Tu subcuenta';
     try { localStorage.removeItem('agora_ultima_cuenta'); } catch { /* modo privado */ }
-    const content = `<div class="operations-home home-v2"><header class="operations-heading">${marcaInicio(account)}<h1>Hola, <em>${esc(name)}</em></h1><p class="operations-lede">Elige un módulo para ver sus herramientas.</p><p class="launch-summary"><strong>${grupos.length} módulos</strong> · ${ids.length} herramientas, ${ids.filter(moduleAllowed).length} habilitadas para tu rol.</p></header>${tableroInicioHtml()}${launcherRecent()}
+    const content = `<div class="operations-home home-v2"><header class="operations-heading">${marcaInicio(account)}<h1>Hola, <em>${esc(name)}</em></h1><p class="operations-lede">Elige un módulo para ver sus herramientas.</p><p class="launch-summary"><strong>${grupos.length} módulos</strong> · ${ids.length} herramientas a tu alcance.</p></header>${tableroInicioHtml()}${launcherRecent()}
       <section class="operations-group" aria-labelledby="group-modulos"><h2 id="group-modulos">Módulos<span>${grupos.length}</span></h2><div class="mod-tiles">${grupos.map(([g, x], i) => moduloTile(g, x, i)).join('')}</div></section></div>`;
     return launcherFrame('centro', content);
   }
@@ -2250,11 +2258,11 @@ const cargarUsuarios = async forzar => {
 };
 
 V.usuarios = {
-  need: () => Promise.all([cargarUsuarios(), cargarPermisos(), ESPACIO ? Promise.resolve() : bootEspacio()]),
+  need: () => Promise.all([cargarUsuarios(), cargarPermisos(), (ESPACIO ? Promise.resolve() : bootEspacio()).then(() => cargarEquipoCuenta())]),
   render() {
     const st = state.usuarios;
     const lede = 'Quién entra al sistema, con qué rol y qué puede hacer. La identidad de la empresa se administra desde Ajustes.';
-    const acts = `${esSuperAdmin() ? `<button class="btn" type="button" data-agencia-panel>${icon('briefcase')}Cuenta de agencia</button>` : ''}${esAdmin() ? `<button class="btn btn-cta" type="button" data-usuario-nuevo>${icon('plus')}Agregar persona</button>` : ''}`;
+    const acts = `${esSuperAdmin() ? `<button class="btn" type="button" data-agencia-panel>${icon('briefcase')}Cuenta de agencia</button>` : ''}${esAdmin() && conectada() ? `<button class="btn" type="button" data-equipo-actualizar title="Vuelve a leer las personas de la cuenta conectada">${icon('refresh')}Actualizar equipo</button>` : ''}${esAdmin() ? `<button class="btn btn-cta" type="button" data-usuario-nuevo>${icon('plus')}Agregar persona</button>` : ''}`;
     const cabeza = head('Acceso', 'Usuarios y roles', lede, acts);
     if (this.error) return cabeza + failed(this.error);
     if (!DATOS.usuarios) return cabeza + loading();
@@ -2266,7 +2274,7 @@ V.usuarios = {
     const cols = [
       {k: 'nombre', l: 'Persona', f: (v, r) => `<span class="who-cell"><b>${esc(v)}${r.yo ? ' <span class="sc sc-gray">Tú</span>' : ''}</b><small>${esc(r.correo)}</small></span>`},
       {k: 'rol', l: 'Rol', f: v => `<span class="rol-chip" style="--c:${ROLES_SISTEMA[v]?.c || 'var(--muted)'}">${esc(ROLES_SISTEMA[v]?.l || v)}</span>`},
-      {k: 'origen', l: 'De dónde', f: v => esc(v === 'ghl' ? 'Equipo de Go High Level' : v === 'contratos' ? 'Panel de Contratos' : 'Del sistema')},
+      ...(conectada() ? [{k: 'enlace', l: 'Usuario en la cuenta', f: v => v ? `<span class="who-cell"><span class="lt lt-ok"><i aria-hidden="true"></i>Enlazado con ${esc(v.nombre)}</span>${v.auto ? '<small>Por tener el mismo correo</small>' : ''}</span>` : '<span class="lt lt-warn"><i aria-hidden="true"></i>Sin enlazar</span>'}] : []),
       {k: 'ultimoAcceso', l: 'Último acceso', f: v => v ? `<span title="${esc(fstamp(v))}">${esc(when(v))}</span>` : '<span class="muted">Nunca</span>'},
       {k: 'estado', l: 'Estado', f: v => v === 'inactivo' ? '<span class="lt lt-bad"><i aria-hidden="true"></i>Desactivada</span>' : '<span class="lt lt-ok"><i aria-hidden="true"></i>Activa</span>'},
       {k: 'id', l: '', cls: 'act', f: (v, r) => esAdmin() ? `<button class="btn btn-sm" type="button" data-usuario="${esc(v)}" aria-haspopup="true">${icon('more')}<span>Opciones</span></button>` : ''},
@@ -2710,10 +2718,42 @@ function usuarioNombreModal(u) {
   s.querySelector('form').onsubmit=async e=>{e.preventDefault();const f=e.currentTarget,nombre=f.nombre.value.trim();if(!nombre){f.querySelector('.fld-err').textContent='Escribe el nombre.';return;}try{await agoraApi('workspace/usuarios/nombre',{method:'POST',body:{id:u.id,nombre}});await cargarUsuarios(true);closeModal();repaint();toast('Nombre actualizado.');}catch(x){f.querySelector('.fld-err').textContent=x.message;}};
 }
 
+/* 2.4.0 · Enlace de cada persona con su usuario de la cuenta conectada. De él depende qué ve un ejecutivo (solo lo asignado a ese usuario). */
+let EQUIPO_CUENTA = null;
+async function cargarEquipoCuenta(actualizar = false) {
+  if (!conectada() || !puede('usuarios.administrar')) { EQUIPO_CUENTA = null; return null; }
+  try { EQUIPO_CUENTA = await agoraApi('workspace/usuarios/equipo', actualizar ? {method: 'POST', body: {}} : {}); }
+  catch (x) { if (actualizar) throw x; EQUIPO_CUENTA = null; }
+  return EQUIPO_CUENTA;
+}
+/** Personas de la cuenta que todavía no están enlazadas con nadie (o con `salvo`). */
+function equipoLibre(salvo) {
+  const tomados = new Set((DATOS.usuarios || []).filter(x => x.enlace && String(x.id) !== String(salvo?.id)).map(x => x.enlace.id));
+  return (EQUIPO_CUENTA?.items || []).filter(t => !tomados.has(t.id));
+}
+const equipoOpciones = (lista, elegido) => lista.map(t => `<option value="${esc(t.id)}" ${t.id === elegido ? 'selected' : ''}>${esc(t.nombre)}${t.correo ? ' · ' + esc(t.correo) : ''}</option>`).join('');
+async function usuarioEnlaceModal(u) {
+  if (!esAdmin() && !esSuperAdmin()) return;
+  await cargarEquipoCuenta();
+  const libres = equipoLibre(u);
+  const s = openModal(modalHead('Enlazar con la cuenta', esc(u.nombre) + ' · ' + esc(u.correo)) + `<form class="form" novalidate>
+    <p class="bx-help">Elige qué persona de la cuenta es. Un ejecutivo ve solo las conversaciones, contactos y oportunidades asignadas a esa persona.</p>
+    <label class="fld">Persona en la cuenta<select name="enlace"><option value="">${u.enlace?.auto || !u.enlace ? 'Automático: la que tenga su mismo correo' : 'Volver a automático (por correo)'}</option>${equipoOpciones(libres, u.enlace && !u.enlace.auto ? u.enlace.id : '')}</select></label>
+    <p class="bx-help">${u.enlace ? `Ahora: enlazado con <b>${esc(u.enlace.nombre)}</b>${u.enlace.auto ? ' (por tener el mismo correo)' : ''}.` : 'Ahora: sin enlazar. Nadie en la cuenta tiene su correo.'}${libres.length ? '' : ' No hay personas libres en la cuenta: pulsa «Actualizar equipo».'}</p>
+    <p class="fld-err" role="alert"></p>
+    <div class="form-ft"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="submit">Guardar enlace</button></div></form>`);
+  const f = s.querySelector('form');
+  f.onsubmit = async e => {
+    e.preventDefault(); const b = f.querySelector('[type=submit]'); busy(b, true, 'Guardando…');
+    try { await agoraApi('workspace/usuarios/enlace', {method: 'POST', body: {id: u.id, enlace: f.enlace.value}}); await cargarUsuarios(true); closeModal(); repaint(); toast('Enlace guardado.'); }
+    catch (x) { busy(b, false); f.querySelector('.fld-err').textContent = x.message; }
+  };
+}
 function usuarioModal(previo) {
   const roles = Object.keys(ROLES_SISTEMA).filter(r => r !== 'SUPERADMIN');
   const s = openModal(modalHead(previo ? 'Cambiar rol' : 'Agregar persona', previo ? esc(previo.nombre) : 'Entra con su correo y la clave temporal que le compartas.')
     + `<form class="form" novalidate>
+      ${previo || !equipoLibre().length ? '' : `<label class="fld">Traer del equipo de la cuenta <small>(opcional)</small><select name="enlace"><option value="">Persona nueva, sin enlazar</option>${equipoOpciones(equipoLibre(), '')}</select><span class="fld-hint">Rellena su nombre y correo, y la deja enlazada.</span></label>`}
       ${previo ? '' : `<label class="fld">Nombre completo<input name="nombre" autofocus></label><label class="fld">Correo<input name="correo" type="email"></label>
       <label class="fld">Clave temporal (mínimo 12 caracteres)<span class="pw-in"><input name="clave" value="${claveAzar()}" autocomplete="off"><button class="pw-eye" type="button" data-regen>Otra</button></span></label>`}
       <div class="seg-fld">Rol${seg('rol-sys', roles.map(r => [r, ROLES_SISTEMA[r].l]), previo?.rol || 'EJECUTIVO', 'Rol')}</div>
@@ -2722,9 +2762,11 @@ function usuarioModal(previo) {
       <div class="form-ft"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="submit">${previo ? 'Guardar rol' : 'Agregar persona'}</button></div></form>`);
   const f = s.querySelector('form');
   s.querySelector('[data-regen]')?.addEventListener('click', () => { f.clave.value = claveAzar(); });
+  f.enlace?.addEventListener('change', () => { const t = (EQUIPO_CUENTA?.items || []).find(x => x.id === f.enlace.value); if (t) { f.nombre.value = t.nombre; f.correo.value = t.correo; } });
   f.onsubmit = async ev => {
     ev.preventDefault();
     const fd = Object.fromEntries(new FormData(f)), err = f.querySelector('.fld-err');
+    if (!fd.enlace) delete fd.enlace;
     fd.rol = f.querySelector('[data-seg="rol-sys"] .is-on')?.dataset.v || 'EJECUTIVO';
     if (!previo) {
       if (!String(fd.nombre || '').trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(fd.correo || '').trim())) { err.textContent = 'Escribe el nombre y un correo válido.'; return; }
@@ -2743,7 +2785,7 @@ function usuarioModal(previo) {
 function usuarioMenu(id, ancla) {
   const u = (DATOS.usuarios || []).find(x => String(x.id) === String(id));
   if (!u) return;
-  const el = openPop(ancla, `<button type="button" data-u="nombre">${icon('edit')}Cambiar nombre</button><button type="button" data-u="rol">${icon('shield')}Cambiar rol</button><button type="button" data-u="permisos">${icon('check')}Permisos individuales</button>${u.estado === 'inactivo' ? `<button type="button" data-u="on">${icon('check')}Reactivar</button>` : `<button type="button" data-u="off">${icon('pause')}Desactivar</button>`}`, 'ctx', {align: 'right'});
+  const el = openPop(ancla, `<button type="button" data-u="nombre">${icon('edit')}Cambiar nombre</button><button type="button" data-u="rol">${icon('shield')}Cambiar rol</button><button type="button" data-u="permisos">${icon('check')}Permisos individuales</button>${conectada() ? `<button type="button" data-u="enlace">${icon('sync')}Enlazar con la cuenta</button>` : ''}${u.estado === 'inactivo' ? `<button type="button" data-u="on">${icon('check')}Reactivar</button>` : `<button type="button" data-u="off">${icon('pause')}Desactivar</button>`}`, 'ctx', {align: 'right'});
   if (!el) return;
   el.setAttribute('role', 'menu');
   el.onclick = async e => {
@@ -2751,6 +2793,7 @@ function usuarioMenu(id, ancla) {
     if (a === 'nombre') return usuarioNombreModal(u);
     if (a === 'rol') return usuarioModal(u);
     if (a === 'permisos') return permisosUsuarioModal(u);
+    if (a === 'enlace') return usuarioEnlaceModal(u);
     const estado = a === 'off' ? 'inactivo' : 'activo';
     confirmModal(a === 'off' ? 'Desactivar persona' : 'Reactivar persona',
       a === 'off' ? `${esc(u.nombre)} dejará de entrar al sistema. Puedes reactivarla cuando quieras.` : `${esc(u.nombre)} podrá entrar otra vez.`,
@@ -2826,6 +2869,7 @@ document.addEventListener('click', e => {
   if (c('[data-agencia-panel]') || c('[data-agency-return]')) { volverAgencia(); return; }
   if (c('[data-usuario-nuevo]')) { usuarioModal(); return; }
   if ((el = c('[data-usuario]'))) { usuarioMenu(el.dataset.usuario, el); return; }
+  if ((el = c('[data-equipo-actualizar]'))) { busy(el, true, 'Actualizando…'); cargarEquipoCuenta(true).then(async d => { await cargarUsuarios(true); repaint(); toast(`Equipo actualizado: ${(d?.items || []).length} personas en la cuenta.`); }).catch(x => { busy(el, false); toast(x.message); }); return; }
   if (c('[data-logo-quitar]')) {
     confirmModal('Quitar el logo', 'El espacio volverá a mostrar solo el nombre.', 'Quitar', async () => {
       await agoraApi('workspace/branding', {method: 'POST', body: {nombre: ESPACIO?.nombre || '', logo: null}});
@@ -2921,9 +2965,10 @@ var TB = {
    esconden los que ese reporte no trae (facturación, costos, calidad de datos). */
 function tableroHay(id) {
   if (!ME && !AGORA_ME) return false;
-  if (id === 'configuracion') return tableroCan('ver.configuracion');
-  if (id === 'ventas') return tableroCan('ver.ventas') || tableroCan('ver.ventas.propias');
-  return true;
+  if (id === 'configuracion') return puede('ajustes.editar') && hayReporte();
+  if (id === 'ventas') return puede('datos.consultar') && (tableroCan('ver.ventas') || tableroCan('ver.ventas.propias'));
+  /* Los módulos del reporte mensual solo existen si la subcuenta tiene un reporte cargado y la persona ve cifras del equipo. */
+  return puede('equipo.metricas') && puede('finanzas') && hayReporte();
 }
 const enTablero = () => R && typeof R.view === 'string' && R.view.indexOf('tc_') === 0;
 
@@ -2976,6 +3021,7 @@ async function cargarTablero() {
   TB.estado = 'cargando';
   TB.carga = (async () => {
     try {
+      if (!(puede('equipo.metricas') && puede('finanzas'))) { TB.estado = 'sin-datos'; TB.error = ''; return null; }
       const d = await agoraApi('workspace/reporte');
       checkContext(epoch);
       TB.cfg = d.configuracion || {};
@@ -5214,7 +5260,7 @@ function porMoneda(lista, f) {
 }
 let PROD_F = {cobro: '', rubro: '', q: ''};
 MODS.productos = {g: 'ingresos', view: 'productos', name: 'Productos y servicios', icon: 'wallet', path: '/productos', c: 'var(--mod-oro)',
-  desc: 'Tus rubros y productos, con su forma de cobro.', ok: () => !!ME || agoraReady()};
+  desc: 'Tus rubros y productos, con su forma de cobro.', ok: () => (!!ME || agoraReady()) && puede('datos.consultar')};
 V.productos = {
   need: () => Promise.all([cargarCatalogo(), MODS.catalogo?.ok() && typeof cargarTablero === 'function' ? cargarTablero().catch(() => null) : null]),
   render() {
@@ -5522,7 +5568,7 @@ function arpPersonalizar(root) {
    04k-embudos-capi.js (embTab, indTab…); aquí solo se arma la pantalla y la barra de guardar,
    que guarda de una vez todo lo pendiente (embudos, indicadores y personalización). */
 MODS.personalizar = {g: 'administracion', view: 'personalizar', name: 'Personalizar', icon: 'palette', path: '/personalizar', c: 'var(--mod-seguridad)',
-  desc: 'Tus embudos, tus indicadores (KPI), el CRM y los módulos visibles.', ok: () => esAdmin() || esSuperAdmin()};
+  desc: 'Tus embudos, tus indicadores (KPI), el CRM y los módulos visibles.', ok: () => puede('ajustes.editar')};
 { const ayuda = MODS.ayuda; delete MODS.ayuda; MODS.ayuda = ayuda; }
 let PZ_TAB = 'embudos', PZ = null, PZ_CRM = null;
 const PZ_TABS = [['embudos', 'trend', 'Embudos'], ['indicadores', 'pie', 'Indicadores (KPI)'], ['crm', 'users', 'CRM'], ['modulos', 'sidebar', 'Módulos'], ['inicio', 'home', 'Pantalla de inicio']];
@@ -6154,7 +6200,7 @@ async function migDescargarDatos(mod, alAvanzar) {
 
 /* ---------- Módulo ---------- */
 MODS.migracion = {g: 'administracion', view: 'migracion', name: 'Migración de datos', icon: 'upload', path: '/migracion', c: 'var(--mod-seguridad)',
-  desc: 'Descarga y carga tus datos con Excel, y ajusta sus campos.', ok: () => esAdmin()};
+  desc: 'Descarga y carga tus datos con Excel, y ajusta sus campos.', ok: () => puede('ajustes.editar')};
 V.migracion = {
   async need() {
     if (!MIG.modulos) { const d = await agoraApi('workspace/campos'); MIG.modulos = d.modulos || []; }
@@ -6909,8 +6955,9 @@ function vgRegistradasMontar(root) {
 }
 if (typeof V === 'object' && V.tc_ventas) {
   const base = V.tc_ventas;
-  const tab = () => { let t = ''; try { t = store.get('vg.tab', ''); } catch { t = ''; } return t === 'reporte' || t === 'registradas' ? t : (typeof TB !== 'undefined' && TB.estado === 'listo' ? 'reporte' : 'registradas'); };
-  const tabs = t => `<div class="vg-tabs" role="tablist" aria-label="Vistas de Ventas"><button type="button" role="tab" class="agency-chip-btn ${t === 'registradas' ? 'is-active' : ''}" aria-selected="${t === 'registradas'}" data-vg-tab="registradas">${icon('receipt')}Ventas registradas${VG.datos?.pendientes?.length ? ` <span class="vg-badge">${VG.datos.pendientes.length}</span>` : ''}</button><button type="button" role="tab" class="agency-chip-btn ${t === 'reporte' ? 'is-active' : ''}" aria-selected="${t === 'reporte'}" data-vg-tab="reporte">${icon('pie')}Reporte del mes</button></div>`;
+  const conReporte = () => typeof TB !== 'undefined' && TB.estado === 'listo';
+  const tab = () => { if (!conReporte()) return 'registradas'; let t = ''; try { t = store.get('vg.tab', ''); } catch { t = ''; } return t === 'reporte' || t === 'registradas' ? t : 'reporte'; };
+  const tabs = t => !conReporte() ? '' : `<div class="vg-tabs" role="tablist" aria-label="Vistas de Ventas"><button type="button" role="tab" class="agency-chip-btn ${t === 'registradas' ? 'is-active' : ''}" aria-selected="${t === 'registradas'}" data-vg-tab="registradas">${icon('receipt')}Ventas registradas${VG.datos?.pendientes?.length ? ` <span class="vg-badge">${VG.datos.pendientes.length}</span>` : ''}</button><button type="button" role="tab" class="agency-chip-btn ${t === 'reporte' ? 'is-active' : ''}" aria-selected="${t === 'reporte'}" data-vg-tab="reporte">${icon('pie')}Reporte del mes</button></div>`;
   V.tc_ventas = {
     need: () => Promise.allSettled([base.need ? base.need() : null, vgCargar()]).then(r => { if (r[1].status === 'rejected' && tab() === 'registradas') throw r[1].reason; }),
     render() { const t = tab(); return tabs(t) + (t === 'reporte' ? base.render() : vgRegistradasHtml()); },

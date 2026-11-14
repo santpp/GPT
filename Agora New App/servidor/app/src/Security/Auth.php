@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace Agora\Security;
-use Agora\Core\{DB,Http};
+use Agora\Core\{DB,Http,HttpError};
 final class Auth {
  public ?array $user=null; public ?array $session=null; public ?int $tenant=null;
  public function __construct(public DB $db,public array $config){
@@ -42,6 +42,14 @@ final class Auth {
   if(in_array($role,['MASTER','SUPERADMIN'],true))return;
   $roles=$this->db->setting($this->tenant,'permissions.roles',[]);$user=$this->db->setting($this->tenant,'permissions.user.'.$this->user['id'],[]);
   if(($user[$key]??$roles[$role][$key]??true)===false)Http::fail('Esta función está restringida para tu acceso.',403);
+ }
+ /** Agora New App · lo que esta persona puede hacer en la subcuenta activa (rol + ajustes de permisos). La pantalla lo usa para mostrar solo sus módulos; el servidor sigue comprobando cada petición. */
+ public function effective():array{
+  $out=[];foreach(array_keys(self::POLICY) as $k){try{$this->permit($k);$out[$k]=true;}catch(HttpError){$out[$k]=false;}}
+  $out['finanzas']=in_array($this->requireUser()['role'],['MASTER','SUPERADMIN','ADMIN','SUPERVISOR'],true);
+  $out['administra']=in_array($this->requireUser()['role'],['MASTER','SUPERADMIN','ADMIN'],true);
+  $out['soloAsignado']=$this->assignedOnly();
+  return $out;
  }
  public function authorizeTenant(int $id,bool $allowPaused=false):array{
   $u=$this->requireUser();$t=$this->db->one('SELECT * FROM agora_tenants WHERE id=?',[$id]);if(!$t)Http::fail('Subcuenta no disponible.',404);

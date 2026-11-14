@@ -52,7 +52,8 @@ final class Users {
   $total=(int)$this->db->one("SELECT COUNT(*) n FROM agora_users WHERE $where",$args)['n'];$args[]=max(0,(int)($_GET['cursor']??0));
   $rows=$this->db->all("SELECT * FROM agora_users WHERE $where AND id>? ORDER BY id LIMIT 101",$args);$more=count($rows)>100;if($more)array_pop($rows);
   $permissions=[];if(!$agency&&$rows){$keys=array_map(fn($u)=>'permissions.user.'.$u['id'],$rows);$slots=implode(',',array_fill(0,count($keys),'?'));foreach($this->db->all("SELECT setting_key,data FROM agora_settings WHERE tenant_id=? AND setting_key IN ($slots)",array_merge([$this->auth->tenant],$keys)) as $r)$permissions[$r['setting_key']]=json_decode($r['data'],true);}
-  $items=array_map(function($u)use($permissions){$u['avatar']=null;return $this->auth->publicUser($u,$permissions['permissions.user.'.$u['id']]??[]);},$rows);
+  $enlaces=$agency?[]:(new \Agora\Services\UserLinks($this->db))->forUsers((int)$this->auth->tenant,$rows);
+  $items=array_map(function($u)use($permissions,$enlaces,$agency){$u['avatar']=null;$d=$this->auth->publicUser($u,$permissions['permissions.user.'.$u['id']]??[]);if(!$agency)$d['enlace']=$enlaces[(int)$u['id']]??null;return $d;},$rows);
   return ['items'=>$items,'usuarios'=>$items,'total'=>$total,'hasMore'=>$more,'nextCursor'=>$more?(string)end($rows)['id']:null];
  }
  public function save(array $b,bool $agency,bool $update=false):array{
@@ -65,6 +66,7 @@ final class Users {
   if($u){$this->db->run('UPDATE agora_users SET name=?,email=?,role=?,active=?,password_hash=?,auth_version=auth_version+1 WHERE id=?',[$name,$email,$role,(int)(bool)$active,$hash,$u['id']]);$id=(int)$u['id'];if(!$active)$this->db->run('DELETE FROM agora_sessions WHERE user_id=?',[$id]);}
   else{$this->db->run('INSERT INTO agora_users(name,email,role,active,password_hash,local_tenant_id) VALUES(?,?,?,?,?,?)',[$name,$email,$role,(int)(bool)$active,$hash,$agency?null:$this->auth->tenant]);$id=(int)$this->db->pdo->lastInsertId();}
   if($agency){$ids=$b['tenants']??[];if(!is_array($ids)||!count($ids)||count($ids)>1000)Http::fail('Selecciona subcuentas válidas.');$this->db->run('DELETE FROM agora_assignments WHERE user_id=?',[$id]);foreach(array_unique($ids) as $t){$t=Http::integer($t,1,PHP_INT_MAX);$this->auth->authorizeTenant($t,true);$this->db->run('INSERT INTO agora_assignments(user_id,tenant_id) VALUES(?,?)',[$id,$t]);}}
+  if(!$agency&&array_key_exists('enlace',$b)){(new \Agora\Services\UserLinks($this->db))->set((int)$this->auth->tenant,$id,trim((string)($b['enlace']??'')));$this->auth->audit('usuario.enlace','usuario',(string)$id,['conUsuarioDeLaCuenta'=>trim((string)($b['enlace']??''))!=='']);}
   $this->auth->audit($u?'usuario.actualizado':'usuario.creado','usuario',(string)$id,['rol'=>$role,'activo'=>(bool)$active]);return ['ok'=>true,'id'=>$id];
  }
  /** Revoca el acceso de un usuario local de la subcuenta activa: lo desactiva e invalida sus sesiones. */

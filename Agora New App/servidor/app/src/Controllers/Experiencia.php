@@ -24,6 +24,11 @@ final class Experiencia {
   if(!in_array($status,['pendiente','hecha'],true))Http::fail('Estado de tarea inválido.');
   $expected=isset($b['version'])?Http::integer($b['version'],1,PHP_INT_MAX):null;
   $d['titulo']=$title;$d['detalle']=Http::text($b,'detalle',2000,false);$d['vence']=$date?:null;$d['hora']=$hour;$d['estado']=$status;
+  // 2.4.0 · si la tarea vive en la cuenta, la corrección se escribe allí primero.
+  if(($d['cuentaTareaId']??'')!==''&&($d['contactId']??'')!==''){
+   $tz=is_string($b['tz']??null)&&preg_match('/^[+-]\d{2}:\d{2}$/D',$b['tz'])?$b['tz']:'Z';
+   \Agora\Core\MotorMobile::tarea($this->db,$this->auth->config,$this->auth,'editar',(string)$d['contactId'],['taskId'=>(string)$d['cuentaTareaId'],'title'=>$title,'body'=>(string)$d['detalle'],'dueDate'=>($date?:gmdate('Y-m-d')).'T'.($hour?:'12:00').':00'.$tz,'completed'=>$status==='hecha']);
+  }
   unset($d['version']);
   $saved=$this->records->save('task',$id,$d,$title,$status,substr($date,0,7),null,$expected);
   return ['ok'=>true,'tarea'=>$saved];

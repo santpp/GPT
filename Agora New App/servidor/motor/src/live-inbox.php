@@ -119,12 +119,15 @@ if(preg_match('~^/api/workspace/activity(/note|/task|/task-state|/contact)?$~',$
         require_once __DIR__.'/ContactActions.php';
         $actions=new ContactActions();$input=body();
         try {
-            respond(match($action){
+            $resultado=match($action){
                 '/note'=>$actions->note($connection,$contactId,$membership,$input),
                 '/task'=>$actions->task($connection,$contactId,$membership,$input),
                 '/task-state'=>$actions->completeTask($connection,$contactId,$membership,$input),
                 '/contact'=>$actions->contact($connection,$contactId,$membership,$input),
-            });
+            };
+            // Agora New App: la app anfitriona anota la tarea en su módulo Tareas (una sola tarea, en los dos sitios).
+            if(isset($GLOBALS['motorPuente']['alActuar'])){try{($GLOBALS['motorPuente']['alActuar'])($action,$contactId,$input,$resultado,$record);}catch(Throwable $e){error_log('Agora motor: gancho de actividad '.get_class($e));}}
+            respond($resultado);
         } catch(ActionProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
     }
     if($action!==''||$method!=='GET')respond(['error'=>'Not found'],404);

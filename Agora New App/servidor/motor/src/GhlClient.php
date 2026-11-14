@@ -89,6 +89,10 @@ final class GhlClient {
     public function completeContactTask(string $contact,string $task,bool $completed):array {
         return $this->put('/contacts/'.rawurlencode($contact).'/tasks/'.rawurlencode($task).'/completed','2021-07-28',['completed'=>$completed]);
     }
+    /** Agora New App: corrige título, detalle o fecha de una tarea del contacto. */
+    public function updateContactTask(string $contact,string $task,array $payload):array {
+        return $this->put('/contacts/'.rawurlencode($contact).'/tasks/'.rawurlencode($task),'2021-07-28',$payload);
+    }
     private function put(string $path,string $version,array $payload):array {return $this->get($path,$version,$payload,'PUT');}
     private function delete(string $path,string $version,array $payload):array {return $this->get($path,$version,$payload,'DELETE');}
     /** Lo que la cuenta explica al rechazar una petición (sin contenido de mensajes ni marcas), para poder diagnosticar. */

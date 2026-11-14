@@ -98,9 +98,26 @@ final class MotorMobile {
   $restringido=$a->assignedOnly();
   $puede=static function(string $k)use($a):bool{try{$a->permit($k);return true;}catch(HttpError){return false;}};
   $escribe=$puede('conversaciones.atender');$reasigna=$puede('conversaciones.reasignar');
-  $GLOBALS['motorPuente']=['connectionId'=>$tenant,'membership'=>function(array $connection)use($user,$restringido,$escribe,$reasigna):array{
+  // 2.4.0 · una tarea creada o completada desde la ficha del contacto queda también en el módulo Tareas (misma tarea, mismo identificador).
+  $alActuar=static function(string $accion,string $contactId,array $input,array $r,array $conv)use($erp,$a,$user,$tenant):void{
+   $rec=new \Agora\Services\Records($erp,$a);
+   if($accion==='/task'&&($r['id']??'')!==''){
+    $uid=self::uidTarea((string)$r['id']);if($erp->one("SELECT 1 x FROM agora_records WHERE tenant_id=? AND kind='task' AND uid=?",[$tenant,$uid]))return;
+    $due=(string)($input['dueDate']??'');$fecha=preg_match('/^\d{4}-\d{2}-\d{2}/',$due)?substr($due,0,10):gmdate('Y-m-d');$hora=preg_match('/^\d{4}-\d{2}-\d{2}[T ](\d{2}:\d{2})/',$due,$x)?$x[1]:'';
+    $titulo=mb_substr(trim((string)($input['title']??'Tarea')),0,250);
+    $rec->save('task',$uid,['id'=>$uid,'titulo'=>$titulo,'detalle'=>mb_substr((string)($input['body']??''),0,2000),'vence'=>$fecha,'hora'=>$hora,'estado'=>'pendiente','responsable'=>$user['name'],'responsableId'=>(int)$user['id'],'origen'=>'ficha','contactId'=>$contactId,'conversationId'=>$conv['id']??null,'contacto'=>(string)($conv['contactName']??$conv['fullName']??''),'cuentaTareaId'=>(string)$r['id']],$titulo,'pendiente',substr($fecha,0,7),(int)$user['id']);
+   }
+   if($accion==='/task-state'&&is_string($input['taskId']??null)){
+    $uid=self::uidTarea($input['taskId']);$row=$erp->one("SELECT * FROM agora_records WHERE tenant_id=? AND kind='task' AND uid=?",[$tenant,$uid]);if(!$row)return;
+    $d=json_decode((string)$row['data'],true)?:[];$d['estado']=($input['completed']??false)?'hecha':'pendiente';
+    $erp->run("UPDATE agora_records SET data=?,status=?,version=version+1,updated_at=UTC_TIMESTAMP() WHERE seq=?",[DB::json($d),$d['estado'],$row['seq']]);
+   }
+  };
+  $GLOBALS['motorPuente']=['connectionId'=>$tenant,'alActuar'=>$alActuar,'membership'=>function(array $connection)use($erp,$user,$restringido,$escribe,$reasigna):array{
    $full=\PermissionPolicy::capabilities(['identity_type'=>'native','role'=>'administrator']);
-   $eu=\query('SELECT * FROM external_users WHERE connection_id=? AND active=TRUE AND LOWER(email)=LOWER(?) LIMIT 1',[$connection['id'],(string)$user['email']])->fetch()?:null;
+   // 2.4.0 · primero el enlace que eligió quien administra; si no hay, el del mismo correo.
+   $enlace=(new \Agora\Services\UserLinks($erp))->forUser((int)$connection['id'],['id'=>$user['id'],'email'=>$user['email']]);
+   $eu=$enlace?(\query('SELECT * FROM external_users WHERE connection_id=? AND active=TRUE AND external_user_id=? LIMIT 1',[$connection['id'],$enlace['id']])->fetch()?:null):null;
    if(!$restringido){$caps=$full;}
    else{$caps=$eu?\PermissionPolicy::capabilities($eu+['identity_type'=>'external']):array_map(fn($v)=>false,$full);$caps['assignedDataOnly']=true;}
    foreach(['sendMessages','editContacts','editOpportunities'] as $k)$caps[$k]=($caps[$k]??false)&&$escribe;
@@ -112,6 +129,43 @@ final class MotorMobile {
   $path='/api/'.$p;$method=$m;
   require dirname(__DIR__,3).'/motor/src/live-inbox.php';
   \respond(['error'=>'Ruta no disponible.'],404);
+ }
+
+ /** Identificador local de una tarea que vive en la cuenta: siempre el mismo para la misma tarea, así no hay dobles. */
+ public static function uidTarea(string $cuentaTareaId):string{return 'c'.substr(hash('sha256',$cuentaTareaId),0,23);}
+ /**
+  * 2.4.0 · Escribe en la cuenta una tarea creada, corregida o completada en Ágora.
+  * $accion: crear | estado | editar. Devuelve ['id'=>id de la tarea en la cuenta].
+  * Quien solo ve «lo asignado» solo puede tocar contactos asignados a su usuario de la cuenta.
+  */
+ public static function tarea(DB $erp,array $config,Auth $a,string $accion,string $contactId,array $input):array{
+  $tenant=(int)$a->tenant;self::instalar($erp,$config);self::arrancar($config);
+  if(!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))Http::fail('Elige un contacto válido.');
+  $connection=\query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$tenant,self::AGENCIA])->fetch();
+  if(!$connection){self::sincronizar($erp,$config,$tenant);$connection=\query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$tenant,self::AGENCIA])->fetch();}
+  if(!$connection)Http::fail('Esta subcuenta todavía no está conectada con su cuenta.',409);
+  require_once dirname(__DIR__,3).'/motor/src/ContactActions.php';
+  $gateway=new \GhlGateway();
+  try{
+   if($a->assignedOnly()){
+    $enlace=(new \Agora\Services\UserLinks($erp))->forUser($tenant,['id'=>$a->user['id'],'email'=>$a->user['email']]);
+    $c=$gateway->execute($connection,fn(\GhlClient $cl):array=>$cl->contact($contactId),true);
+    if(!$enlace||(($c['contact']['assignedTo']??null)!==$enlace['id']))Http::fail('Ese contacto no está asignado a ti.',403);
+   }
+   $m=['capabilities'=>['editContacts'=>true]];$actions=new \ContactActions($gateway);
+   $input['requestId']=is_string($input['requestId']??null)&&preg_match('/^[A-Za-z0-9_-]{16,64}$/D',$input['requestId'])?$input['requestId']:bin2hex(random_bytes(16));
+   if($accion==='crear'){$r=$actions->task($connection,$contactId,$m,$input);return ['id'=>(string)($r['id']??'')];}
+   if($accion==='estado'){$actions->completeTask($connection,$contactId,$m,$input);return ['id'=>(string)$input['taskId']];}
+   if($accion==='editar'){
+    $task=(string)($input['taskId']??'');if(!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$task))Http::fail('Tarea inválida.');
+    $payload=['title'=>mb_substr((string)$input['title'],0,190),'dueDate'=>(string)$input['dueDate'],'completed'=>(bool)$input['completed']]+(($input['body']??'')!==''?['body'=>mb_substr((string)$input['body'],0,2000)]:[]);
+    $gateway->execute($connection,fn(\GhlClient $cl):array=>$cl->updateContactTask($contactId,$task,$payload),false);
+    \ContactActivity::forget((int)$connection['id'],$contactId);return ['id'=>$task];
+   }
+  }catch(\ActionProblem $e){Http::fail($e->getMessage(),$e->httpStatus);}
+  catch(\GhlCooldown $e){header('Retry-After: '.$e->retryAfter);Http::fail('La cuenta pidió esperar un momento. La tarea todavía no se guardó: inténtalo otra vez.',429);}
+  catch(\GhlApiException $e){Http::fail(in_array($e->status,[401,403],true)?'La cuenta rechazó la tarea por permisos. Revisa el permiso de escritura de contactos en la conexión.':'La cuenta no aceptó la tarea (código '.$e->status.'). Revisa los datos e inténtalo otra vez.',424);}
+  Http::fail('Acción de tarea no disponible.',400);
  }
 
  /** Consumos de la agencia: solo dueños (MASTER y SUPERADMIN). Token de agencia y Company ID cifrados en el motor. */
