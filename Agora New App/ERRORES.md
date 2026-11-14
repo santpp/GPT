@@ -15,6 +15,7 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 5 | Al conectar la agencia no se sabía si el token servía hasta abrir un informe. | No había prueba de conexión para la agencia. | «Guardar y probar» consulta la billetera y explica el fallo: token rechazado, sin permiso o Company ID equivocado. | Corregido en 2.3.1 |
 | 6 | Guardar o quitar el token de agencia no dejaba rastro. | Esas acciones las atendía el motor de Ágora Mobile, que no escribe en el registro del ERP. | Guardar, probar y quitar quedan en el Registro de actividad (sin el token). | Corregido en 2.3.1 |
 | 7 | La ventana de la subcuenta era larga y la conexión quedaba al final. | Se había agregado como último recuadro. | La conexión va justo después de los datos de la empresa, con Location ID y token lado a lado. | Corregido en 2.3.1 |
+| 15 | Al crear una subcuenta y pulsar «Ir a subcuenta»: «La subcuenta no está autorizada. Actualiza Agencia e inténtalo de nuevo». | La app lee una sola vez, al iniciar sesión, la lista de subcuentas a las que llegas. La subcuenta recién creada no estaba en esa lista hasta recargar la página. El servidor sí la autorizaba. | La lista se vuelve a pedir al servidor al cargar Agencia y antes de entrar a una subcuenta. El aviso ahora distingue el caso de un Superadmin sin esa subcuenta asignada. | Corregido en 2.3.2 |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 
@@ -28,13 +29,13 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 
 | N.º | Qué falta | Por qué importa |
 |---|---|---|
-| 11 | Probar con un token real de subcuenta y uno real de agencia. | Todo está probado contra una cuenta simulada; desde el entorno de desarrollo no hay salida a la cuenta real. |
-| 12 | Confirmar el error 2 en tests después de subir la 2.3.1. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
+| 11 | Probar las escrituras con la cuenta real: enviar un mensaje, asignar una conversación, editar un contacto, mover y crear una oportunidad, marcar ganada. | Las atiende el mismo código de Ágora Mobile 1.10.14, pero en esta app solo se probaron contra una cuenta simulada; desde el entorno de desarrollo no hay salida a la cuenta real. |
+| 12 | Confirmar el error 2 en tests después de subir la 2.3.2. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
 | 13 | Cabeceras de seguridad en OpenLiteSpeed. | OpenLiteSpeed no aplica las líneas `Header` del `.htaccess`; van en el vHost (paso 9 de la guía). |
 | 14 | La pantalla de la bandeja usa el código de una versión anterior de Ágora Mobile. | Le faltan las mejoras de la 1.10.14 (búsqueda, embudos nuevos, línea de asignación). |
 
 ## Cómo comprobar la versión instalada
 
-- `https://TU-DOMINIO/api/health` debe decir `"version":"2.3.1"`.
+- `https://TU-DOMINIO/api/health` debe decir `"version":"2.3.2"`.
 - `https://TU-DOMINIO/version.json` debe decir lo mismo.
 - Si una pantalla se ve rara tras actualizar: recarga una vez. Si sigue, en Chrome toca el icono a la izquierda de la dirección → Configuración del sitio → Borrar datos, y vuelve a entrar.

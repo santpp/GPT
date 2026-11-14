@@ -4005,7 +4005,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.3.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.3.2').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -8398,6 +8398,17 @@ async function cargarAgencia() {
   if (!esSuperAdmin()) throw new Error('Acceso reservado al SuperAdmin');
   const d = await agoraApi('agency/accounts');
   AGENCY_ACCOUNTS = Array.isArray(d.items) ? d.items : [];
+  // 2.3.2 · una subcuenta recién creada todavía no está en la lista de la sesión: se vuelve a leer.
+  if (AGENCY_ACCOUNTS.some(a => !AGORA_CONN.some(c => String(c.id) === String(a.id)))) await recargarSubcuentas();
+}
+/** Vuelve a pedir al servidor a qué subcuentas llega esta persona (él decide; aquí solo se refresca la lista). */
+async function recargarSubcuentas() {
+  try {
+    const {items, reason} = await agoraApi('workspace/connections');
+    AGORA_CONN = Array.isArray(items) ? items : [];
+    AGORA_REASON = reason || null;
+    ws?.setConnections(AGORA_CONN, AGORA_REASON);
+  } catch { /* se conserva la lista anterior */ }
 }
 function volverAgencia() {
   if (!esSuperAdmin() || SWITCHING) return;
@@ -8406,8 +8417,9 @@ function volverAgencia() {
 }
 async function abrirCuentaAgencia(id) {
   if (!esSuperAdmin() || SWITCHING) return false;
+  if (!AGORA_CONN.some(x => String(x.id) === String(id))) await recargarSubcuentas();
   if (!AGORA_CONN.some(x => String(x.id) === String(id))) {
-    toast('La subcuenta no está autorizada. Actualiza Agencia e inténtalo de nuevo.'); return false;
+    toast(esMaster() ? 'No se pudo abrir la subcuenta. Recarga la página e inténtalo de nuevo.' : 'Esta subcuenta no está asignada a tu usuario. Pídele a la Master que te la asigne en Gestión de usuarios.'); return false;
   }
   return cambiarSubcuenta(id);
 }
