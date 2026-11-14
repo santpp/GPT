@@ -21,6 +21,11 @@ OPPS=[{'id':f'o{i}','name':n,'contactId':k,'contact':{'id':k,'name':CONTACTS[k][
       for i,(n,k,v,st,s) in enumerate([('Reserva sábado','k0',250,'s1','open'),('Plan anual','k2',900,'s2','open'),('Curso intensivo','k1',300,'s3','won'),('Asesoría','k3',150,'s1','open')])]
 SENT=[]
 TASKS=[]
+SOCIAL_ACCOUNTS=[{'id':'acc-fb','profileId':'fb1','name':'ASOCIM Admisiones','platform':'facebook','type':'page','isExpired':False},
+ {'id':'acc-ig','profileId':'ig1','name':'@asocim','platform':'instagram','type':'business','isExpired':False},
+ {'id':'acc-li','profileId':'li1','name':'ASOCIM','platform':'linkedin','type':'page','isExpired':True}]
+POSTS=[{'_id':'post-pub','summary':'Abrimos inscripciones para el diplomado de enero.','status':'published','platform':'facebook','accountIds':['acc-fb'],'displayDate':'2026-11-10T14:00:00.000Z','publishedAt':'2026-11-10T14:00:00.000Z','media':[],'type':'post','source':'composer'},
+ {'_id':'post-err','summary':'Clase abierta este sábado.','status':'failed','error':'Token de la página vencido','platform':'linkedin','accountIds':['acc-li'],'displayDate':'2026-11-12T15:00:00.000Z','media':[],'type':'post','source':'composer'}]
 def log(*a):
     with open('fake-ghl.log','a') as f:f.write(' '.join(map(str,a))+'\n')
 class H(BaseHTTPRequestHandler):
@@ -32,7 +37,7 @@ class H(BaseHTTPRequestHandler):
         try:return json.loads(self.rfile.read(n) or b'{}')
         except Exception:return {}
     def route(self,m):
-        u=urlparse(self.path);p=u.path;q={k:v[0] for k,v in parse_qs(u.query).items()};b=self.body() if m in('POST','PUT') else {}
+        u=urlparse(self.path);p=u.path;q={k:v[0] for k,v in parse_qs(u.query).items()};b=self.body() if m in('POST','PUT','DELETE') else {}
         log(m,self.path,self.headers.get('Version'),json.dumps(b)[:200] if b else '')
         if not (self.headers.get('Authorization') or '').startswith('Bearer pit-'):return self.out(401,{'message':'Invalid JWT'})
         if p==f'/locations/{LOC}':return self.out(200,{'location':{'id':LOC,'name':'ASOCIM Admisiones'}})
@@ -85,6 +90,23 @@ class H(BaseHTTPRequestHandler):
             t=next((x for x in TASKS if x['id']==m3.group(2) and x['contactId']==m3.group(1)),None)
             if not t:return self.out(404,{'message':'task not found'})
             t.update({k:v for k,v in b.items() if k in('title','body','dueDate','completed')});return self.out(200,{'task':t})
+        m4=re.match(r'^/social-media-posting/([\w-]+)/(accounts|posts/list|posts|posts/([\w-]+))$',p)
+        if m4 and m4.group(1)!=LOC:return self.out(403,{'message':'not authorized for this location'})
+        if m4 and m4.group(2)=='accounts' and m=='GET':return self.out(200,{'success':True,'statusCode':200,'message':'Fetched Accounts','results':{'accounts':SOCIAL_ACCOUNTS,'groups':[]}})
+        if m4 and m4.group(2)=='posts/list' and m=='POST':
+            t=b.get('type','all');items=[x for x in POSTS if t in('all','recent') or x['status']==t]
+            if not b.get('fromDate') or not b.get('includeUsers'):return self.out(422,{'message':'fromDate and includeUsers are required'})
+            return self.out(201,{'success':True,'statusCode':201,'message':'Fetched Posts','results':{'posts':items,'count':len(items)}})
+        if m4 and m4.group(2)=='posts' and m=='POST':
+            if not b.get('userId') or not b.get('accountIds') or not b.get('type'):return self.out(422,{'message':'userId, accountIds and type are required'})
+            pid='post-'+__import__('uuid').uuid4().hex[:10]
+            POSTS.append({'_id':pid,'summary':b.get('summary'),'status':b.get('status') or 'scheduled','platform':'facebook','accountIds':b['accountIds'],'displayDate':b.get('scheduleDate') or '2026-11-20T15:00:00.000Z','media':b.get('media') or [],'type':'post','source':'composer','createdBy':b.get('userId')})
+            return self.out(201,{'success':True,'statusCode':201,'message':'Created Post','results':{'post':POSTS[-1]}})
+        if m4 and m4.group(3) and m=='DELETE':
+            before=len(POSTS);POSTS[:]=[x for x in POSTS if x['_id']!=m4.group(3)]
+            return self.out(200,{'success':True}) if len(POSTS)<before else self.out(404,{'message':'Post not found'})
+        if p=='/social-media-posting/statistics' and m=='POST':
+            return self.out(201,{'results':{'dayRange':['2026-11-08','2026-11-09','2026-11-10','2026-11-11','2026-11-12','2026-11-13','2026-11-14'],'totals':{'posts':3,'likes':41,'followers':1280,'impressions':2350,'comments':7},'breakdowns':{'posts':{'total':3,'totalChange':50},'impressions':{'total':2350,'totalChange':-12},'reach':{'total':1900,'totalChange':8}}},'message':'ok'})
         if p=='/__tasks':return self.out(200,{'tasks':TASKS})
         if re.match(r'^/contacts/[\w-]+/(notes|tasks|appointments)$',p):
             key=p.rsplit('/',1)[1];return self.out(200,{key:[] ,'events':[]})
@@ -104,4 +126,5 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):self.route('GET')
     def do_POST(self):self.route('POST')
     def do_PUT(self):self.route('PUT')
+    def do_DELETE(self):self.route('DELETE')
 HTTPServer(('127.0.0.1',int(sys.argv[1]) if len(sys.argv)>1 else 8099),H).serve_forever()

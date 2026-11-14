@@ -15,7 +15,7 @@ RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 RewriteRule ^(centro|modulos|inicio|comercial|bandeja|contactos|oportunidades|tareas|equipo|publicidad|ventas|facturacion|costos|catalogo|tendencias|calidad|configuracion|contratos|con-convenio|registro|auditoria|usuarios|ajustes|ayuda|agencia|perfil|tablero|personas|conexiones|entrar|conversations)(/.*)?$ index.html [L]
 # 2.1.17 · datos: Migración de datos (y Productos/Personalizar de 2.1.16, que faltaban)
-RewriteRule ^(migracion|productos|personalizar)(/.*)?$ index.html [L]
+RewriteRule ^(migracion|productos|personalizar|redes)(/.*)?$ index.html [L]
 </IfModule>
 <IfModule mod_headers.c>
 Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'"

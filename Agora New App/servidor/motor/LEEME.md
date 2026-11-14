@@ -16,3 +16,4 @@ oportunidades, embudos, ventas ganadas, tablero y consumos de la agencia.
   y `src/GhlClient.php` tiene `updateContactTask` para corregir una tarea. Al actualizar el motor, volver a aplicar los dos.
 - 2.6.0: `src/GhlClient.php` tiene `createContact` (crea un contacto nuevo sin tocar los existentes). Volver a aplicarlo al actualizar el motor.
 - 2.6.1: `src/OperationsReport.php` (de la línea 1.11 de Ágora Mobile) y su bloque de rutas `workspace/dia|eficacia|ads` en `src/live-inbox.php`. La tabla `daily_metrics` la crea el puente al instalar el motor.
+- 2.7.0: `src/GhlClient.php` tiene los métodos `social*` (Social Planner: cuentas, publicaciones, crear, borrar, cifras). Volver a aplicarlos al actualizar el motor.

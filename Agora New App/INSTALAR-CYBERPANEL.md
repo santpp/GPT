@@ -211,7 +211,8 @@ Comprueba también que `https://TU-DOMINIO/servidor/config/config.php` **no** ab
      - `conversations.readonly`, `conversations.write`, `conversations/message.readonly`, `conversations/message.write`
      - `opportunities.readonly`, `opportunities.write`
      - `calendars.readonly`, `calendars/events.readonly`
-     - Opcionales, para lo que viene: `invoices.readonly`, `products.readonly`, `socialplanner/account.readonly`, `socialplanner/post.readonly`
+     - Para **Redes sociales**: `socialplanner/account.readonly`, `socialplanner/post.readonly`, `socialplanner/post.write` (y `socialplanner/statistics.readonly` si la integración lo ofrece, para las cifras)
+     - Opcionales, para lo que viene: `invoices.readonly`, `products.readonly`
 
      Copia el token (empieza por `pit-`) y pégalo. **Solo se ve una vez en la cuenta**: si lo pierdes, crea otro.
 3. **Guardar**. Vuelve a abrir **Editar datos** y pulsa **Probar conexión**: debe decir «Conectada con …» y la lista de lo que el token puede leer.
@@ -241,6 +242,14 @@ El token de agencia se guarda cifrado y nadie puede volver a verlo; guardar, pro
 ### Contactos nuevos
 
 Con la subcuenta conectada, **Contactos → Nuevo contacto** lo crea en la cuenta (hace falta el teléfono o el correo). Necesita el mismo permiso `contacts.write` de la integración privada.
+
+### Redes sociales
+
+**Gestión y resultados → Redes sociales** muestra las redes conectadas en la cuenta de la subcuenta, sus cifras de los últimos días y las publicaciones (programadas, publicadas, con error y borradores). **Nueva publicación** programa un texto (con una imagen por enlace, si quieres) en las redes elegidas, o lo guarda como borrador.
+
+- Lo ven Administración y Supervisión. Un ejecutivo no lo ve: las redes son de toda la empresa.
+- Para publicar, la persona tiene que estar **enlazada** con su usuario de la cuenta (Usuarios y roles).
+- Las redes se conectan y se vuelven a conectar en la cuenta, no en Ágora. Si una conexión venció, Ágora lo avisa y no deja publicar en ella.
 
 ### Tareas
 

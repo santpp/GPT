@@ -254,3 +254,34 @@ html,body,button,input,select,textarea{font-family:var(--font-text)}
   table.t-fichas tr:hover td,table.t-fichas tr:nth-child(even) td{background:transparent!important}
   table.t-fichas td:first-child::after{content:none!important}
 }
+/* 2.7.0 · Redes sociales */
+.redes-cuentas{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}
+.redes-cuenta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:40px;padding:6px 12px 6px 6px;border:1px solid var(--line);border-radius:12px;background:var(--surface,#fff);font-size:14px}
+.redes-cuenta b{font-weight:600}
+.redes-cuenta small{flex-basis:100%;padding-left:4px;color:var(--brand);font-size:12.5px;font-weight:600}
+.redes-cuenta.is-vencida{border-color:color-mix(in srgb,var(--brand) 40%,var(--line))}
+.redes-cuenta.is-vacia{padding:10px 12px;color:var(--muted)}
+.redes-red{display:inline-flex;align-items:center;min-height:26px;padding:0 9px;border-radius:8px;background:var(--fill-3,#f4f4f7);font-size:12px;font-weight:700;color:var(--ink)}
+.redes-red.redes-facebook{background:#e8effc;color:#0a57d0}.redes-red.redes-instagram{background:#fbe8ef;color:#ad103c}.redes-red.redes-linkedin{background:#e6f0f7;color:#0a66c2}.redes-red.redes-google{background:#e9f4ec;color:#2f7a52}.redes-red.redes-tiktok{background:#ededf0;color:#1d1d1f}
+.redes-cifras{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line)}
+.redes-cifra{display:grid;gap:4px;padding:14px 16px;min-width:0;border-bottom:1px solid var(--line)}
+.redes-cifra:not(:nth-child(3n+1)){border-left:1px solid var(--line)}
+.redes-cifra:nth-last-child(-n+3){border-bottom:0}
+.redes-cifra-l{font-size:12.5px;font-weight:600;color:var(--muted)}
+.redes-cifra-v{font:700 26px/1.1 var(--font-display);color:var(--ink);font-variant-numeric:tabular-nums}
+.redes-cifra-d{font-size:12.5px;color:var(--muted);min-height:1em}
+@media(max-width:600px){.redes-cifras{grid-template-columns:repeat(2,minmax(0,1fr))}.redes-cifra{padding:12px}.redes-cifra:not(:nth-child(3n+1)){border-left:0}.redes-cifra:nth-child(even){border-left:1px solid var(--line)}.redes-cifra:nth-last-child(-n+3){border-bottom:1px solid var(--line)}.redes-cifra:nth-last-child(-n+2){border-bottom:0}.redes-cifra-v{font-size:22px}}
+.redes-nota{margin:4px 0 0;padding:14px 16px;border-radius:12px;background:var(--fill-3,#f4f4f7);color:var(--muted);font-size:14px;line-height:1.45}
+.redes-aviso{display:flex;gap:10px;align-items:flex-start;margin:0;padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--gold,#FABD4B) 12%,var(--surface,#fff));border:1px solid color-mix(in srgb,var(--gold,#FABD4B) 60%,transparent);font-size:14px;line-height:1.45;color:var(--ink)}
+.redes-aviso .ic{flex:none;width:18px;height:18px;margin-top:2px}
+.redes-tabs{margin:0 0 14px}
+.redes-lista{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.redes-post{display:flex;gap:14px;align-items:flex-start;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface,#fff)}
+.redes-img{flex:none;width:72px;height:72px;object-fit:cover;border-radius:10px;background:var(--fill-3,#f4f4f7)}
+.redes-post-tx{flex:1;min-width:0;display:grid;gap:6px}
+.redes-post-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0;font-size:13px;color:var(--muted)}
+.redes-post-texto{margin:0;font-size:14.5px;line-height:1.5;color:var(--ink);white-space:pre-line;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.redes-post-redes{margin:0;font-size:12.5px;color:var(--muted)}
+.redes-post-error{margin:0;font-size:13px;color:var(--brand);font-weight:600}
+.redes-mas{display:block;margin:12px auto 0}
+@media(max-width:600px){.redes-post{flex-wrap:wrap}.redes-post > .btn{margin-left:auto}.redes-img{width:56px;height:56px}}

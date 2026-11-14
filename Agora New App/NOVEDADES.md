@@ -1,5 +1,15 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.7.0:**
+- **Módulo nuevo: Redes sociales** (Gestión y resultados), con el Social Planner de la cuenta conectada:
+  - Redes conectadas (Facebook, Instagram, LinkedIn, Google Business, TikTok…), con aviso cuando una conexión venció.
+  - Cifras de los últimos días: publicaciones, impresiones, alcance, me gusta, comentarios y seguidores, con el cambio frente al periodo anterior.
+  - Publicaciones de los últimos 30 días a los próximos 60, por estado: programadas, publicadas, con error (con el motivo), borradores.
+  - Nueva publicación: texto, imagen por enlace (opcional), redes elegidas, y fecha y hora o borrador. Borrar una programada o un borrador.
+  - Lo ven Administración y Supervisión; publica quien está enlazado con la cuenta. Queda en la Auditoría.
+- Permisos nuevos que conviene agregar a la integración privada: `socialplanner/account.readonly`, `socialplanner/post.readonly`, `socialplanner/post.write`. Si faltan, el módulo lo dice en palabras y la conexión sigue funcionando para lo demás.
+- Sin migraciones. Prueba nueva: `tests/redes.py` (15).
+
 **Novedades 2.6.2:**
 - **«ARP Comercial» pasa a llamarse «Tablero comercial»** en el menú, Inicio, Athena, Personalizar, Indicadores y la guía de uso. La dirección sigue siendo `/comercial`.
 - **El equipo de cada cuenta conectada se vuelve a leer solo, una vez al día**, con la misma tarea programada de siempre (`servidor/bin/worker.php`, cada minuto). Hasta tres subcuentas por vuelta para cuidar la cuota. El botón «Actualizar equipo» sigue para hacerlo al momento.
