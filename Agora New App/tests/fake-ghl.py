@@ -98,6 +98,8 @@ class H(BaseHTTPRequestHandler):
             t=b.get('type','all');items=[x for x in POSTS if t in('all','recent') or x['status']==t]
             if b.get('accounts'):acc=set(a.strip() for a in b['accounts'].split(','));items=[x for x in items if acc & set(x['accountIds'])]
             if not b.get('fromDate') or not b.get('includeUsers'):return self.out(422,{'message':'fromDate and includeUsers are required'})
+            # Como en la cuenta real: con la versión 2021-07-28 las nativas (hechas en Meta Business Suite) no salen.
+            if self.headers.get('Version')!='v3':items=[x for x in items if x.get('source')!='native']
             return self.out(201,{'success':True,'statusCode':201,'message':'Fetched Posts','results':{'posts':items,'count':len(items)}})
         if m4 and m4.group(2)=='posts' and m=='POST':
             if not b.get('userId') or not b.get('accountIds') or not b.get('type'):return self.out(422,{'message':'userId, accountIds and type are required'})
@@ -112,11 +114,18 @@ class H(BaseHTTPRequestHandler):
             if __import__('os').environ.get('FAKE_STATS_FAIL') or not b.get('profileIds') or any(x not in perfiles for x in b['profileIds']):return self.out(422,{'message':'profileIds must be profile ids from /accounts'})
             return self.out(201,{'results':{'dayRange':['2026-11-08','2026-11-09','2026-11-10','2026-11-11','2026-11-12','2026-11-13','2026-11-14'],'totals':{'posts':3,'likes':41,'followers':1280,'impressions':2350,'comments':7},'breakdowns':{'posts':{'total':3,'totalChange':50},'impressions':{'total':2350,'totalChange':-12},'reach':{'total':1900,'totalChange':8}},'platformTotals':{'impressions':{'facebook':1500,'instagram':850},'followers':{'facebook':900,'instagram':380},'likes':{'facebook':25,'instagram':16}}},'message':'ok'})
         if p=='/ad-publishing/facebook/reporting/list' and m=='GET':
-            if 'campaignId=' not in u.query:return self.out(422,{'message':['campaignId must be present']})
+            if __import__('os').path.exists('/tmp/fake-ghl-sin-anuncios'):return self.out(404,{'message':'Integration not found'})
             if q.get('type')=='AD_MANAGER':return self.out(200,{'success':True,'data':{'campaigns':[]}})
             camps=[{'id':'120200001','name':'Diplomado de enero · Leads','effective_status':'ACTIVE','insights':{'spend':'412.35','impressions':'48210','reach':'30110','clicks':'1290','conversions':'86','ctr':'2.67','cpc':'0.32'}},
                    {'id':'120200002','name':'Clase abierta sábado','effective_status':'PAUSED','insights':{'spend':'96.10','impressions':'12004','reach':'9800','clicks':'301','conversions':'14'}}]
             return self.out(200,{'success':True,'data':{'campaigns':camps,'total':2}})
+        if p in('/ad-publishing/facebook/integration','/ad-publishing/facebook/reporting') and m=='GET':
+            if __import__('os').path.exists('/tmp/fake-ghl-sin-anuncios'):return self.out(404,{'message':'Integration not found'})
+            if p.endswith('integration'):return self.out(200,{'integration':{'adAccountId':'act_1','pageId':'pg_1'}})
+            return self.out(200,{'data':[{'spend':'508.45','impressions':'60214','clicks':'1591','conversions':'100'}]})
+        if p=='/ad-publishing/facebook/ad-accounts' and m=='GET':
+            if __import__('os').path.exists('/tmp/fake-ghl-sin-anuncios'):return self.out(200,{'adAccounts':[]})
+            return self.out(200,{'adAccounts':[{'id':'act_1','name':'ASOCIM'}]})
         if p=='/__tasks':return self.out(200,{'tasks':TASKS})
         if re.match(r'^/contacts/[\w-]+/(notes|tasks|appointments)$',p):
             key=p.rsplit('/',1)[1];return self.out(200,{key:[] ,'events':[]})

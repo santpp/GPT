@@ -92,8 +92,10 @@ final class Redes {
   $todas=$this->cuentas($c);$red=is_string($q['red']??null)&&preg_match('/^[a-z_]{2,30}$/D',$q['red'])?$q['red']:'';
   $filtro=['type'=>$tipo,'skip'=>(string)($pagina*20),'limit'=>'20','fromDate'=>$desde.'T00:00:00.000Z','toDate'=>$hasta.'T23:59:59.999Z','includeUsers'=>'false'];
   if($red!==''){$ids=array_column(array_filter($todas,fn($x)=>$x['plataforma']===$red),'id');if(!$ids)return ['tipo'=>$tipo,'red'=>$red,'desde'=>$desde,'hasta'=>$hasta,'pagina'=>0,'items'=>[],'total'=>0,'hayMas'=>false];$filtro['accounts']=implode(',',$ids);}
-  $r=$this->leer($c,fn(\GhlClient $cl):array=>$cl->socialPosts((string)$c['location_id'],$filtro));
-  $lista=$r['results']['posts']??$r['posts']??[];$total=$r['results']['count']??null;
+  $clave='social:posts:'.substr(hash('sha256',json_encode($filtro)),0,20);
+  $leida=self::guardado($c,$clave,300);
+  if($leida===null){$leida=$this->leerPublicaciones($c,$filtro,$tipo);if($leida['lista'])self::guardar($c,$clave,$leida);}
+  $lista=$leida['lista'];$total=$leida['total'];
   $cuentas=[];foreach($todas as $x)$cuentas[$x['id']]=$x;
   $out=[];foreach(is_array($lista)?$lista:[] as $p){
    if(!is_array($p))continue;
@@ -101,11 +103,58 @@ final class Redes {
    $media=[];foreach(is_array($p['media']??null)?$p['media']:[] as $m)if(is_array($m)&&is_string($m['url']??null)&&str_starts_with($m['url'],'https://'))$media[]=['url'=>$m['url'],'tipo'=>str_starts_with((string)($m['type']??''),'video')?'video':'imagen','miniatura'=>is_string($m['thumbnail']??null)&&str_starts_with($m['thumbnail'],'https://')?$m['thumbnail']:null];
    $plat=strtolower((string)($p['platform']??''));if($plat===''&&$ids&&isset($cuentas[$ids[0]]))$plat=$cuentas[$ids[0]]['plataforma'];
    if($red!==''&&$plat!==''&&$plat!==$red)continue;
-   $out[]=['id'=>(string)($p['_id']??$p['id']??''),'texto'=>mb_substr((string)($p['summary']??''),0,3000),'estado'=>is_string($p['status']??null)?$p['status']:'','fecha'=>(string)($p['displayDate']??$p['scheduleDate']??$p['publishedAt']??$p['createdAt']??''),
+   $out[]=['id'=>(string)($p['_id']??$p['id']??$p['postId']??''),'texto'=>mb_substr((string)($p['summary']??$p['caption']??$p['message']??$p['text']??''),0,3000),'estado'=>is_string($p['status']??null)?$p['status']:'','fecha'=>(string)($p['displayDate']??$p['publishedAt']??$p['scheduleDate']??$p['createdAt']??''),
     'error'=>is_string($p['error']??null)&&$p['error']!==''?mb_substr($p['error'],0,240):null,'plataforma'=>$plat,'red'=>$plat!==''?self::nombrePlataforma($plat):'',
     'cuentas'=>array_values(array_map(fn($i)=>['id'=>$i,'nombre'=>$cuentas[$i]['nombre']??'Cuenta','red'=>$cuentas[$i]['red']??''],$ids)),'media'=>$media,'nativa'=>!in_array(strtolower((string)($p['source']??'composer')),['composer','recurring','csv',''],true)];
   }
-  return ['tipo'=>$tipo,'red'=>$red,'desde'=>$desde,'hasta'=>$hasta,'pagina'=>$pagina,'items'=>$out,'total'=>is_numeric($total)?(int)$total:null,'hayMas'=>is_array($lista)&&count($lista)===20];
+  $res=['tipo'=>$tipo,'red'=>$red,'desde'=>$desde,'hasta'=>$hasta,'pagina'=>$pagina,'items'=>$out,'total'=>is_numeric($total)?(int)$total:null,'hayMas'=>count($lista)>=20];
+  // Solo los dueños de Ágora ven cómo respondió la cuenta (sin contenido), para diagnosticar una lista vacía.
+  if(in_array($this->a->requireUser()['role'],['MASTER','SUPERADMIN'],true))$res['diagnostico']=$leida['diagnostico'];
+  return $res;
+ }
+ /**
+  * Pide la lista a la cuenta: primero con la versión «v3», luego con la 2021-07-28.
+  * Si con el tipo pedido no viene nada, prueba con «todas» y filtra por estado aquí (algunas cuentas solo responden así para las nativas).
+  * @return array{lista:list<array>,total:?int,diagnostico:list<string>}
+  */
+ private function leerPublicaciones(array $c,array $filtro,string $tipo):array{
+  $diag=[];$intentos=[];
+  foreach(['v3','2021-07-28'] as $v){$intentos[]=[$v,$filtro];}
+  if($tipo!=='all')foreach(['v3','2021-07-28'] as $v){$intentos[]=[$v,['type'=>'all']+$filtro];}
+  $hubo=false;$permiso=false;$ultimo=null;
+  foreach($intentos as [$v,$f]){
+   $f['type']=$f['type']??$tipo;$etq='versión '.$v.', tipo '.$f['type'];
+   try{$r=(new \GhlGateway())->execute($c,fn(\GhlClient $cl):array=>$cl->socialPosts((string)$c['location_id'],$f,$v),false,true);}
+   catch(\GhlCooldown $e){header('Retry-After: '.$e->retryAfter);Http::fail('La cuenta pidió esperar un momento. Inténtalo otra vez en unos segundos.',429);}
+   catch(\GhlApiException $e){$diag[]=$etq.': código '.$e->status.($e->detail!==''?' ('.$e->detail.')':'');$ultimo=$e->status;if(in_array($e->status,[401,403],true))$permiso=true;continue;}
+   $hubo=true;[$lista,$donde,$total]=self::listaPosts($r);
+   if($f['type']!==$tipo&&$tipo!=='all')$lista=array_values(array_filter($lista,fn($p)=>strtolower((string)($p['status']??''))===$tipo));
+   $diag[]=$etq.': respondió; '.($donde!==''?'lista en «'.$donde.'»':'sin lista reconocible (claves: '.implode(', ',array_slice(array_map('strval',array_keys($r)),0,8)).')').'; '.count($lista).' publicaciones'.($total!==null?', total '.$total:'');
+   if($lista)return ['lista'=>$lista,'total'=>$f['type']===$tipo?$total:null,'diagnostico'=>$diag];
+  }
+  if(!$hubo){
+   if($permiso)Http::fail('La conexión de esta subcuenta no tiene permiso para leer las publicaciones. Pídele a la agencia que agregue los permisos de Social Planner a la integración.',424);
+   Http::fail('La cuenta no dio las publicaciones (código '.$ultimo.'). Inténtalo otra vez en un momento.',424);
+  }
+  return ['lista'=>[],'total'=>0,'diagnostico'=>$diag];
+ }
+ /** Encuentra la lista de publicaciones sin suponer el anidado: results.posts, posts, data… o la primera lista de objetos con id. */
+ private static function listaPosts(array $r):array{
+  foreach([['results','posts'],['posts'],['data','posts'],['results','data'],['data'],['results']] as $ruta){
+   $v=$r;foreach($ruta as $k)$v=is_array($v)&&array_key_exists($k,$v)?$v[$k]:null;
+   if(is_array($v)&&array_is_list($v)){
+    $tot=$r['results']['count']??$r['results']['total']??$r['count']??$r['total']??null;
+    return [array_values(array_filter($v,'is_array')),implode('.',$ruta),is_numeric($tot)?(int)$tot:null];
+   }
+  }
+  $hallada=null;$donde='';
+  $buscar=function(mixed $v,string $ruta,int $prof)use(&$buscar,&$hallada,&$donde):void{
+   if($hallada!==null||$prof>4||!is_array($v))return;
+   if(array_is_list($v)&&$v&&is_array($v[0])&&(isset($v[0]['_id'])||isset($v[0]['summary'])||isset($v[0]['postId']))){$hallada=$v;$donde=$ruta;return;}
+   foreach($v as $k=>$h)$buscar($h,ltrim($ruta.'.'.$k,'.'),$prof+1);
+  };
+  $buscar($r,'',0);
+  return [$hallada?array_values(array_filter($hallada,'is_array')):[],$donde,null];
  }
  private static function fecha(mixed $v):?string{return is_string($v)&&preg_match('/^\d{4}-\d{2}-\d{2}$/D',$v)&&strtotime($v)!==false?$v:null;}
 }

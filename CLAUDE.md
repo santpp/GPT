@@ -34,7 +34,7 @@ Léelo entero antes de tocar nada. Es el resumen de cómo trabajamos y de lo que
 ## Estructura del repositorio
 
 - **Raíz** (`src/`, `public/`, `database/`, `tests/`, `deploy/`): **Ágora Mobile** (Ágora 1.x), en producción en nueva.agoradigital.app. Última: **1.10.14**. Paquete en `Agora Mobile/agora-update-1.10.14.zip` (+ `.sha256`, `manual-vendedores.pdf`). PHP 8.3 sin framework, módulos ES en el navegador, `public/router.php`, `src/live-inbox.php`, pasarela `GhlGateway` (20 consultas cada 10 s, 50 000 al día), `TokenVault` (sodium, XChaCha20). Diseño: `docs/DESIGN.md`, `tests/design-tokens.py`.
-- **`Agora New App/`**: el **ERP** (no llamarlo «armazón»). Hoy en pruebas en **tests.agoradigital.app** (CyberPanel + OpenLiteSpeed). Versión actual: **2.8.1**.
+- **`Agora New App/`**: el **ERP** (no llamarlo «armazón»). Hoy en pruebas en **tests.agoradigital.app** (CyberPanel + OpenLiteSpeed). Versión actual: **2.8.2**.
 - `docs/roadmap.md`: historial de versiones de ambos.
 
 ## Agora New App (ERP) · cómo está hecho
@@ -64,6 +64,7 @@ Léelo entero antes de tocar nada. Es el resumen de cómo trabajamos y de lo que
 - **Por confirmar con la cuenta real** (el usuario prueba en tests): escrituras (enviar, asignar, editar contacto, mover/crear oportunidad, marcar ganada, tareas, nuevo contacto), cifras de redes y **Campañas de Meta** (la documentación no dice la forma de la respuesta).
 - **No hacer por ahora**: avisos al teléfono («la prioridad no es móvil»), publicar o borrar publicaciones desde Ágora, conexión directa con Meta.
 - **Aprendido**: la cuenta sí sincroniza publicaciones hechas en Meta Business Suite («Native post», interruptor «Sync posts» en Social Planner). No afirmes que algo no existe en la cuenta sin evidencia; si el usuario muestra lo contrario, créele y corrige.
+- **2.8.2 por confirmar**: la lista de publicaciones se pide con `Version: v3` (y si falla, 2021-07-28); las Campañas de Meta necesitan la cuenta publicitaria conectada en el administrador de anuncios de la cuenta (no basta Social Planner). Si salen vacías, la dueña ve un «Detalle técnico» con el código y motivo de cada intento: pídele captura de eso.
 - **Siguiente posible**: bajar de campaña a conjuntos/anuncios; campañas de Google; módulos del reporte para empresas que no son ASOCIM (el usuario debe decir cuáles y qué miden).
 - Ágora Mobile V2.1: resumen diario o semanal y cabeceras de seguridad (OpenLiteSpeed ignora `Header` en `.htaccess`). Pendiente de decidir: límite de intentos de contraseña por correo y Capacitor 6.2.3. En espera: plantillas de WhatsApp (falta el identificador de la cuenta de WhatsApp Business). Futuro lejano: módulo de inventario.
 - Registro de errores y su estado: `Agora New App/ERRORES.md`. Revisión por módulos: `Agora New App/REVISION-MODULOS.md`. Guía de instalación: `Agora New App/INSTALAR-CYBERPANEL.md`.

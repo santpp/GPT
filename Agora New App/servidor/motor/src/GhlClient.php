@@ -75,6 +75,9 @@ final class GhlClient {
     public function adReportingList(string $location,string $from,string $to,string $type,string $listType='campaigns',?string $campaign=null):array {
         return $this->get('/ad-publishing/facebook/reporting/list?'.http_build_query(['locationId'=>$location,'listType'=>$listType,'startDate'=>$from,'endDate'=>$to,'type'=>$type]+($campaign!==null?['campaignId'=>$campaign]:[])),'2021-07-28');
     }
+    /** Agora New App 2.8.2 · diagnóstico de Campañas: integración de anuncios de Meta y cuentas publicitarias de la subcuenta. */
+    public function adIntegration(string $location):array {return $this->get('/ad-publishing/facebook/integration?'.http_build_query(['locationId'=>$location]),'2021-07-28');}
+    public function adAccounts(string $location):array {return $this->get('/ad-publishing/facebook/ad-accounts?'.http_build_query(['locationId'=>$location,'limit'=>25]),'2021-07-28');}
     /** One page of contacts, used only to read the total the search reports. */
     /** Búsqueda de contactos con filtros, página y orden (la que da el total real). */
     public function searchContacts(string $location,array $filters,int $page,int $limit,?string $query=null,?array $sort=null):array {
@@ -95,7 +98,8 @@ final class GhlClient {
     }
     /** Agora New App 2.7.0 · Social Planner, solo lectura: cuentas, publicaciones y estadísticas (versión 2021-07-28). */
     public function socialAccounts(string $location):array {return $this->get('/social-media-posting/'.rawurlencode($location).'/accounts','2021-07-28');}
-    public function socialPosts(string $location,array $filter):array {return $this->get('/social-media-posting/'.rawurlencode($location).'/posts/list','2021-07-28',$filter);}
+    /** Agora New App 2.8.2: la lista de publicaciones se pide primero con la versión «v3» (la que documenta las nativas) y, si falla, con 2021-07-28. */
+    public function socialPosts(string $location,array $filter,string $version='v3'):array {return $this->get('/social-media-posting/'.rawurlencode($location).'/posts/list',$version,$filter);}
     public function socialStatistics(string $location,array $profiles,array $platforms=[]):array {return $this->get('/social-media-posting/statistics?locationId='.rawurlencode($location),'2021-07-28',['profileIds'=>array_values($profiles)]+($platforms?['platforms'=>array_values($platforms)]:[]));}
     /** Agora New App: crea un contacto nuevo en la cuenta (no modifica uno existente). */
     public function createContact(array $payload):array {return $this->get('/contacts/','2021-07-28',$payload);}

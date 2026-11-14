@@ -304,3 +304,9 @@ html,body,button,input,select,textarea{font-family:var(--font-text)}
 .redes-grupo{display:flex;align-items:center;gap:10px;margin:18px 0 10px;font-size:14px}
 .redes-grupo:first-of-type{margin-top:4px}
 .redes-grupo small{font-size:12.5px;font-weight:500;color:var(--muted)}
+
+/* 2.8.2 · detalle técnico de lecturas (solo dueños de Ágora) */
+.diag{margin-top:12px;font-size:.82rem;color:var(--muted,#667)}
+.diag summary{cursor:pointer;font-weight:600}
+.diag ul{margin:6px 0 0;padding-left:18px}
+.diag li{margin:2px 0;word-break:break-word}

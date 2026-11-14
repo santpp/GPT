@@ -35,6 +35,8 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 32 | Redes sociales: no se veían las publicaciones. | La pantalla abría en «Programadas» y solo miraba 30 días atrás. Además, la cuenta solo informa lo publicado desde su planificador. | Abre en «Publicadas», mira 90 días, agrupa y filtra por red, y explica lo del planificador. | Resuelto en 2.7.3: se quitó la lista (las publicaciones se hacen en Meta Business Suite y la cuenta no las informa) |
 | 33 | Las imágenes de las publicaciones no se mostrarían. | La regla de seguridad del sitio (`img-src`) solo permitía imágenes propias. | Se permitieron en 2.7.2; en 2.7.3, sin lista de publicaciones, se vuelve a permitir solo imágenes propias. | Ya no aplica |
 | 34 | Se quitó la lista de publicaciones creyendo que la cuenta no informa lo hecho en Meta Business Suite. | Error de interpretación: la cuenta sincroniza las publicaciones nativas («Native post») si la red tiene activada la sincronización; ASOCIM tiene 231. | La lista vuelve, con la marca «Hecha en Meta». | Corregido en 2.8.1. Por confirmar con la cuenta real |
+| 35 | Redes y anuncios: la lista de publicaciones salía vacía en la cuenta real, aunque la cuenta tiene 231 publicadas (nativas de Meta). | Se pedía con la versión 2021-07-28; la documentación de la versión «v3» es la que describe esta lista. No se pudo comprobar contra la cuenta real. | 2.8.2: se pide con «v3» y, si falla, con la vieja; si «Publicadas» viene vacía, se prueba «Todas» y se filtra; lectura sin suponer el anidado; detalle técnico para dueños. | Por confirmar en tests |
+| 36 | Campañas de Meta: «No hay una cuenta publicitaria… (código 404)». | La cuenta respondió 404 a la lista de campañas. Lo más probable: la cuenta publicitaria de Meta no está conectada en el administrador de anuncios de la cuenta (es distinto de conectar Facebook e Instagram para publicar). | 2.8.2: Ágora pregunta si hay integración de anuncios y cuentas publicitarias, intenta los totales del mes y da un aviso preciso; detalle técnico para dueños. | Por confirmar en tests |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 
@@ -49,13 +51,13 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | N.º | Qué falta | Por qué importa |
 |---|---|---|
 | 11 | Probar las escrituras con la cuenta real: enviar un mensaje, asignar una conversación, editar un contacto, mover y crear una oportunidad, marcar ganada, crear, corregir y completar una tarea, crear un contacto nuevo, abrir Redes y anuncios y ver sus cifras, y ver las campañas de Meta del mes. | Las atiende el mismo código de Ágora Mobile 1.10.14, pero en esta app solo se probaron contra una cuenta simulada; desde el entorno de desarrollo no hay salida a la cuenta real. |
-| 12 | Confirmar el error 2 en tests después de subir la 2.8.1. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
+| 12 | Confirmar el error 2 en tests después de subir la 2.8.2. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
 | 13 | Cabeceras de seguridad en OpenLiteSpeed. | OpenLiteSpeed no aplica las líneas `Header` del `.htaccess`; van en el vHost (paso 9 de la guía). |
 | 14 | (Resuelto en 2.5.0) La bandeja usaba el código de una versión anterior de Ágora Mobile. | Bandeja, Contactos y Embudos ya llevan lo de la 1.10.14. |
 
 ## Cómo comprobar la versión instalada
 
-- `https://TU-DOMINIO/api/health` debe decir `"version":"2.8.1"`.
+- `https://TU-DOMINIO/api/health` debe decir `"version":"2.8.2"`.
 - `https://TU-DOMINIO/version.json` debe decir lo mismo.
 - Si una pantalla se ve rara tras actualizar: recarga una vez. Si sigue, en Chrome toca el icono a la izquierda de la dirección → Configuración del sitio → Borrar datos, y vuelve a entrar.
 

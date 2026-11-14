@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.2:**
+- **Publicaciones vacías en la cuenta real (arreglo probable):** la lista se pedía con la versión vieja de lectura, que no trae las publicaciones hechas en Meta Business Suite. Ahora se pide con la versión nueva («v3») y, si esa falla, con la vieja; si con «Publicadas» no viene nada, se prueba con «Todas» y se filtra aquí. La respuesta se lee sin suponer dónde viene la lista. Se guarda 5 minutos.
+- **Campañas de Meta: el aviso dice la causa real.** Si la cuenta no entrega la lista, Ágora pregunta además si hay cuenta publicitaria conectada y si hay totales del mes. Avisos posibles: «no hay cuenta publicitaria conectada en el administrador de anuncios» (tener Facebook e Instagram conectados para publicar no basta), «está conectada pero no entregó la lista», o solo los totales del mes si es lo único que da. Un aviso de error se vuelve a comprobar a los 2 minutos (antes, 20).
+- **Detalle técnico solo para dueños de Ágora:** cuando campañas o publicaciones salen vacías, la dueña ve debajo cómo respondió la cuenta en cada intento (código y motivo, sin contenido). Sirve para saber qué falta sin acceso al servidor.
+- Sin migraciones ni cambios en `.htaccess`.
+
 **Novedades 2.8.1:**
 - **Vuelven las publicaciones en «Redes y anuncios»**, solo para ver: publicadas (abre aquí), programadas, con error y borradores; de los últimos 90 días y los próximos 60; agrupadas por red y con filtro «Red». **Incluyen las hechas en Meta Business Suite** («Hecha en Meta»), que la cuenta sincroniza cuando la red tiene activada la sincronización de publicaciones. (En 2.7.3 se habían quitado por un error de interpretación: se creía que la cuenta solo informaba lo publicado desde su planificador.)
 - El `.htaccess` vuelve a permitir imágenes por https (las miniaturas de las publicaciones). **Cambia el `.htaccess`.**

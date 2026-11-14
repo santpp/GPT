@@ -4051,7 +4051,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.8.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.8.2').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -8488,7 +8488,7 @@ async function redesCargarLista(mas = false) {
   const pag = mas ? REDES.pagina + 1 : 0;
   try {
     const d = await agoraApi(`workspace/redes/publicaciones?tipo=${encodeURIComponent(REDES.tipo)}&red=${encodeURIComponent(REDES.red)}&pagina=${pag}`);
-    REDES.items = mas ? [...(REDES.items || []), ...d.items] : d.items; REDES.pagina = pag; REDES.hayMas = !!d.hayMas; REDES.total = d.total; REDES.errorLista = '';
+    REDES.items = mas ? [...(REDES.items || []), ...d.items] : d.items; REDES.pagina = pag; REDES.hayMas = !!d.hayMas; REDES.total = d.total; REDES.diag = d.diagnostico || null; REDES.errorLista = '';
   } catch (x) { if (!mas) REDES.items = []; REDES.errorLista = x.message; }
 }
 const redesFecha = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString('es-VE', {weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}); };
@@ -8522,7 +8522,7 @@ V.redes = {
     const items = REDES.items;
     const lista = items === null ? '<div class="redes-lista"><span class="sk w80"></span><span class="sk w60"></span></div>'
       : REDES.errorLista ? `<p class="redes-aviso">${icon('warn')}<span>${esc(REDES.errorLista)}</span></p>`
-      : !items.length ? `<p class="redes-nota">${REDES.tipo === 'scheduled' ? 'No hay nada programado para los próximos 60 días.' : 'No hay publicaciones con este estado en los últimos 90 días.'} </p>`
+      : !items.length ? `<p class="redes-nota">${REDES.tipo === 'scheduled' ? 'No hay nada programado para los próximos 60 días.' : 'No hay publicaciones con este estado en los últimos 90 días.'} </p>${Array.isArray(REDES.diag) && REDES.diag.length ? `<details class="diag"><summary>Detalle técnico (solo dueños de Ágora)</summary><ul>${REDES.diag.map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}`
       : (() => {
           const tarjeta = p => {
           const [et, tono] = REDES_ESTADO[p.estado] || [p.estado || 'Sin estado', 'sc-gray'];
@@ -8577,7 +8577,13 @@ function campanasHtml() {
   else if (CAMP.error) cuerpo = `<p class="redes-aviso">${icon('warn')}<span>${esc(CAMP.error)}</span></p>`;
   else if (!d) cuerpo = '';
   else if (d.estado === 'permiso') cuerpo = `<p class="redes-nota">La conexión de esta subcuenta no tiene permiso para leer los anuncios. Pídele a la agencia que agregue el permiso de lectura de anuncios a la integración.</p>`;
-  else if (d.estado !== 'ok') cuerpo = `<p class="redes-nota">No hay una cuenta publicitaria de Meta conectada en la cuenta de esta subcuenta (o no respondió${d.http ? ', código ' + esc(d.http) : ''}). Se conecta en la cuenta, en el administrador de anuncios.</p>`;
+  else if (d.estado === 'sin_integracion') cuerpo = `<p class="redes-nota">La cuenta de esta subcuenta no tiene conectada una cuenta publicitaria de Meta en su administrador de anuncios. Tener Facebook e Instagram conectados para publicar no basta: la agencia debe conectar la cuenta publicitaria en la sección de anuncios de la cuenta. Después, las campañas aparecen aquí solas.</p>`;
+  else if (d.estado === 'sin_lista') cuerpo = `<p class="redes-nota">La cuenta publicitaria de Meta está conectada, pero la cuenta no entregó la lista de campañas de ${esc(mesNombre(d.mes))}${d.http ? ' (código ' + esc(d.http) + ')' : ''}. Vuelve a intentarlo en unos minutos.</p>`;
+  else if (d.estado !== 'ok' && d.estado !== 'totales') cuerpo = `<p class="redes-nota">La cuenta no entregó las campañas de Meta${d.http ? ' (código ' + esc(d.http) + ')' : ''}. Revisa que la cuenta publicitaria de Meta esté conectada en la sección de anuncios de la cuenta.</p>`;
+  else if (d.estado === 'totales') {
+    const t = d.totales, cifra = (l, v) => `<div class="redes-cifra"><span class="redes-cifra-l">${l}</span><strong class="redes-cifra-v">${v}</strong><span class="redes-cifra-d"></span></div>`;
+    cuerpo = `<div class="redes-cifras">${cifra('Inversión', plata(t.inversion))}${cifra('Resultados', n(t.resultados))}${cifra('Costo por resultado', plata(t.costoPorResultado))}${cifra('Impresiones', n(t.impresiones))}${cifra('Clics · CTR', `${n(t.clics)} <small>${pct(t.ctr)}</small>`)}</div><p class="camp-nota">La cuenta dio los totales del mes, pero no el detalle por campaña.</p>`;
+  }
   else if (!d.campanas.length) cuerpo = `<p class="redes-nota">No hubo campañas con actividad en ${esc(mesNombre(d.mes))}.</p>`;
   else {
     const t = d.totales;
@@ -8590,7 +8596,8 @@ function campanasHtml() {
       }).join('')}</tbody></table></div>
       <p class="camp-nota">${esc(mesNombre(d.mes))}, del ${esc(d.desde.slice(8))} al ${esc(d.hasta.slice(8))}. «Resultados» son las conversiones que informa Meta (por ejemplo, formularios de clientes potenciales o mensajes iniciados), según el objetivo de cada campaña.</p>`;
   }
-  return `<section class="panel camp-meta"><div class="panel-h"><div><h2 class="t-panel">Campañas de Meta</h2><p>Lo invertido y lo obtenido en cada campaña de Facebook e Instagram, con los datos de la cuenta publicitaria.</p></div>${sel}</div>${cuerpo}</section>`;
+  const diag = d && Array.isArray(d.diagnostico) && d.diagnostico.length && d.estado !== 'ok' ? `<details class="diag"><summary>Detalle técnico (solo dueños de Ágora)</summary><ul>${d.diagnostico.map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>` : '';
+  return `<section class="panel camp-meta"><div class="panel-h"><div><h2 class="t-panel">Campañas de Meta</h2><p>Lo invertido y lo obtenido en cada campaña de Facebook e Instagram, con los datos de la cuenta publicitaria.</p></div>${sel}</div>${cuerpo}${diag}</section>`;
 }
 function campanasMontar(root) {
   root.querySelector('[data-camp-mes]')?.addEventListener('change', async e => { CAMP.mes = e.target.value; CAMP.datos = null; repaint(); await campanasCargar(); repaint(); });

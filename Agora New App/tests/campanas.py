@@ -37,6 +37,13 @@ st,d=a.call('workspace/campanas?mes=2099-01')
 ok(st in(400,422),'un mes que todavía no empieza se rechaza')
 ok(s.call('workspace/campanas')[0]==200,'la supervisora también las ve')
 ok(e.call('workspace/campanas')[0]==403,'un ejecutivo no ve la inversión en anuncios')
+ok('diagnostico' not in d,'el detalle técnico no se muestra a quien no es dueño de Ágora')
+import os
+open('/tmp/fake-ghl-sin-anuncios','w').close()
+try:
+    st,d=a.call('workspace/campanas?mes=2026-10')
+    ok(st==200 and d['estado']=='sin_integracion' and d['integracion'] is False,'sin cuenta publicitaria conectada (la cuenta responde 404) se dice exactamente eso')
+finally:os.remove('/tmp/fake-ghl-sin-anuncios')
 st,d=a.call(f'workspace/inbox?connectionId={a.ws}')
 ok(st==200,'leer las campañas no frena la bandeja')
 print(f'{n} comprobaciones')

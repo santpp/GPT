@@ -4,7 +4,7 @@ namespace Agora\Services;
 use Agora\Core\{DB,Http,MotorMobile};
 use Agora\Security\Auth;
 /**
- * Agora New App 2.8.0 · Campañas de Meta de la cuenta conectada (Ad Manager), solo lectura.
+ * Agora New App 2.8.2 · Campañas de Meta de la cuenta conectada (Ad Manager), solo lectura.
  *
  * Lee la lista de campañas con sus cifras en un mes, también las creadas en el Administrador de anuncios de Meta
  * (fuente «INTEGRATION»), y las del Ad Manager de la cuenta (fuente «AD_MANAGER»).
@@ -26,16 +26,32 @@ final class Campanas {
   if(!$c)Http::fail('Esta subcuenta todavía no está conectada con su cuenta.',409);
   $clave='meta:campanas:'.$desde.':'.$hasta;
   $g=\query('SELECT payload,UNIX_TIMESTAMP(fetched_at) AS at FROM directory_cache WHERE connection_id=? AND cache_key=?',[$c['id'],$clave])->fetch();
-  if($g&&time()-(int)$g['at']<1200&&is_array($d=json_decode((string)$g['payload'],true)))return $d;
-  $campanas=[];$estado='sin_conexion';$http=null;
+  if($g&&is_array($d=json_decode((string)$g['payload'],true))&&time()-(int)$g['at']<(($d['estado']??'')==='ok'?1200:120))return $this->paraQuien($d);
+  $campanas=[];$estado='sin_conexion';$http=null;$diag=[];
   foreach(['INTEGRATION','AD_MANAGER'] as $tipo){
    foreach([null,''] as $campania){
-    try{$r=(new \GhlGateway())->execute($c,fn(\GhlClient $cl):array=>$cl->adReportingList((string)$c['location_id'],$desde,$hasta,$tipo,'campaigns',$campania),false,true);}
-    catch(\GhlCooldown $e){header('Retry-After: '.$e->retryAfter);Http::fail('La cuenta pidió esperar un momento. Inténtalo otra vez en unos segundos.',429);}
-    catch(\GhlApiException $e){$http=$e->status;if(in_array($e->status,[401,403],true)){$estado='permiso';break 2;}continue;}
+    $etq='lista '.$tipo.($campania===null?'':' (campaignId vacío)');
+    try{$r=$this->leer($c,fn(\GhlClient $cl):array=>$cl->adReportingList((string)$c['location_id'],$desde,$hasta,$tipo,'campaigns',$campania));}
+    catch(\GhlApiException $e){$http=$e->status;$diag[]=$etq.': código '.$e->status.($e->detail!==''?' ('.$e->detail.')':'');if(in_array($e->status,[401,403],true)){$estado='permiso';break 2;}continue;}
     $lista=self::lista($r);
+    $diag[]=$etq.': respondió ('.($lista===null?'sin lista reconocible; claves: '.implode(', ',array_slice(array_map('strval',array_keys($r)),0,8)):count($lista).' campañas').')';
     if($lista!==null){$estado='ok';foreach($lista as $x){$x['origen']=$tipo==='INTEGRATION'?'Meta':'Ad Manager';$campanas[$x['id']!==''?$x['id']:$tipo.count($campanas)]=$x;}break;}
    }
+  }
+  $totalesCuenta=null;$integracion=null;$cuentasPub=null;
+  if($estado!=='ok'&&$estado!=='permiso'){
+   // Sin lista: ¿hay totales del mes? ¿Está conectada la cuenta publicitaria? Así el aviso dice lo que pasa de verdad.
+   foreach(['INTEGRATION','AD_MANAGER'] as $tipo){
+    try{$r=$this->leer($c,fn(\GhlClient $cl):array=>$cl->adReporting((string)$c['location_id'],$desde,$hasta,$tipo));}
+    catch(\GhlApiException $e){$diag[]='totales '.$tipo.': código '.$e->status.($e->detail!==''?' ('.$e->detail.')':'');continue;}
+    $f=self::totalesDe($r);$diag[]='totales '.$tipo.': respondió ('.($f?'con cifras':'sin cifras; claves: '.implode(', ',array_slice(array_map('strval',array_keys($r)),0,8))).')';
+    if($f){$totalesCuenta=$f;$estado='totales';break;}
+   }
+   try{$r=$this->leer($c,fn(\GhlClient $cl):array=>$cl->adIntegration((string)$c['location_id']));$integracion=self::hayAlgo($r);$diag[]='integración de anuncios: respondió ('.($integracion?'conectada':'vacía').')';}
+   catch(\GhlApiException $e){$diag[]='integración de anuncios: código '.$e->status.($e->detail!==''?' ('.$e->detail.')':'');if($e->status===404)$integracion=false;if(in_array($e->status,[401,403],true)&&$estado!=='totales')$estado='permiso';}
+   try{$r=$this->leer($c,fn(\GhlClient $cl):array=>$cl->adAccounts((string)$c['location_id']));$l=self::primeraLista($r);$cuentasPub=$l===null?null:count($l);$diag[]='cuentas publicitarias: respondió ('.($cuentasPub===null?'sin lista':$cuentasPub).')';}
+   catch(\GhlApiException $e){$diag[]='cuentas publicitarias: código '.$e->status.($e->detail!==''?' ('.$e->detail.')':'');}
+   if($estado==='sin_conexion')$estado=$integracion===false||$cuentasPub===0?'sin_integracion':($integracion===true||$cuentasPub?'sin_lista':'sin_conexion');
   }
   $campanas=array_values($campanas);
   usort($campanas,fn($a,$b)=>($b['inversion']??0)<=>($a['inversion']??0));
@@ -43,9 +59,34 @@ final class Campanas {
   $tot=['inversion'=>$sum('inversion'),'impresiones'=>$sum('impresiones'),'alcance'=>$sum('alcance'),'clics'=>$sum('clics'),'resultados'=>$sum('resultados')];
   $tot['costoPorResultado']=$tot['inversion']!==null&&$tot['resultados']?round($tot['inversion']/$tot['resultados'],2):null;
   $tot['ctr']=$tot['impresiones']&&$tot['clics']!==null?round(100*$tot['clics']/$tot['impresiones'],2):null;
-  $out=['mes'=>$mes,'desde'=>$desde,'hasta'=>$hasta,'estado'=>$estado,'http'=>$estado==='ok'?null:$http,'campanas'=>$campanas,'totales'=>$tot,'leidoEn'=>gmdate('c')];
+  if($totalesCuenta)$tot=$totalesCuenta;
+  $out=['mes'=>$mes,'desde'=>$desde,'hasta'=>$hasta,'estado'=>$estado,'http'=>$estado==='ok'?null:$http,'campanas'=>$campanas,'totales'=>$tot,'integracion'=>$integracion,'cuentasPublicitarias'=>$cuentasPub,'diagnostico'=>$diag,'leidoEn'=>gmdate('c')];
   \query('INSERT INTO directory_cache(connection_id,cache_key,payload) VALUES(?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload),fetched_at=CURRENT_TIMESTAMP',[$c['id'],$clave,json_encode($out,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE)]);
-  return $out;
+  return $this->paraQuien($out);
+ }
+ /** El detalle técnico de cómo respondió la cuenta solo lo ven los dueños de Ágora. */
+ private function paraQuien(array $d):array{if(!in_array($this->a->requireUser()['role'],['MASTER','SUPERADMIN'],true))unset($d['diagnostico']);return $d;}
+ private function leer(array $c,\Closure $op):array{
+  try{return (new \GhlGateway())->execute($c,$op,false,true);}
+  catch(\GhlCooldown $e){header('Retry-After: '.$e->retryAfter);Http::fail('La cuenta pidió esperar un momento. Inténtalo otra vez en unos segundos.',429);}
+ }
+ private static function hayAlgo(array $r):bool{
+  foreach(['integration','data','results','adAccount','adAccountId','id','_id','pageId'] as $k)if(!empty($r[$k]))return true;
+  return false;
+ }
+ private static function primeraLista(array $r):?array{
+  foreach($r as $v){if(is_array($v)&&array_is_list($v))return $v;if(is_array($v))foreach($v as $h)if(is_array($h)&&array_is_list($h))return $h;}
+  return null;
+ }
+ /** Totales del mes desde el reporte agregado (sin lista de campañas). */
+ private static function totalesDe(array $r):?array{
+  $filas=[];$buscar=function(mixed $v,int $p)use(&$buscar,&$filas):void{if($p>5||!is_array($v))return;$x=['inversion'=>self::num($v,['spend','amountSpent']),'impresiones'=>self::num($v,['impressions']),'clics'=>self::num($v,['clicks']),'resultados'=>self::num($v,['conversions','results','leads'])];if(array_filter($x,fn($n)=>$n!==null)){$filas[]=$x;return;}foreach($v as $h)$buscar($h,$p+1);};
+  $buscar($r,0);if(!$filas)return null;
+  $s=fn($k)=>array_reduce($filas,fn($t,$f)=>$f[$k]===null?$t:($t??0)+$f[$k],null);
+  $t=['inversion'=>$s('inversion')!==null?round($s('inversion'),2):null,'impresiones'=>$s('impresiones'),'alcance'=>null,'clics'=>$s('clics'),'resultados'=>$s('resultados')];
+  $t['costoPorResultado']=$t['inversion']!==null&&$t['resultados']?round($t['inversion']/$t['resultados'],2):null;
+  $t['ctr']=$t['impresiones']&&$t['clics']!==null?round(100*$t['clics']/$t['impresiones'],2):null;
+  return $t;
  }
 
  /** Busca en la respuesta la lista de campañas (objetos con nombre o id y alguna cifra). null si no hay ninguna lista reconocible. */
