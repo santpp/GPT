@@ -4051,7 +4051,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.7.2').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.7.3').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -8478,32 +8478,21 @@ function teMapearExterno(ed, ext) {
 
 /* =====================================================================================
    2.7.0 · Redes sociales (Social Planner de la cuenta conectada)
-   Solo lectura: redes conectadas, cifras de los últimos 7 días y publicaciones por estado.
-   No se publica ni se borra desde Ágora. Es de toda la empresa: lo ven administración y supervisión.
+   Solo lectura: redes conectadas y cifras de los últimos 7 días (en total y por red).
+   No se publica ni se listan publicaciones. Es de toda la empresa: lo ven administración y supervisión.
    ===================================================================================== */
-const REDES = {resumen: null, tipo: 'published', red: '', items: null, pagina: 0, hayMas: false, error: '', errorLista: '', cargandoMas: false};
-const REDES_ESTADO = {scheduled: ['Programada', 'sc-info'], published: ['Publicada', 'sc-ok'], failed: ['Con error', 'sc-bad'], draft: ['Borrador', 'sc-gray'], in_progress: ['Publicándose', 'sc-info'], in_review: ['En revisión', 'sc-warn'], deleted: ['Borrada', 'sc-gray'], notification_sent: ['Aviso enviado', 'sc-gray']};
-const REDES_TABS = [['published', 'Publicadas'], ['scheduled', 'Programadas'], ['failed', 'Con error'], ['draft', 'Borradores'], ['all', 'Todas']];
+const REDES = {resumen: null, error: ''};
 MODS.redes = {g: 'gestion', view: 'redes', name: 'Redes sociales', icon: 'send', path: '/redes', c: 'var(--mod-azul)',
-  desc: 'Las cifras de las redes de la empresa y lo que se programó y publicó.', ok: () => agoraReady() && conectada() && puede('datos.consultar') && !ESPACIO?.permisos?.soloAsignado};
-async function redesCargarLista(mas = false) {
-  const pag = mas ? REDES.pagina + 1 : 0;
-  try {
-    const d = await agoraApi(`workspace/redes/publicaciones?tipo=${encodeURIComponent(REDES.tipo)}&red=${encodeURIComponent(REDES.red)}&pagina=${pag}`);
-    REDES.items = mas ? [...(REDES.items || []), ...d.items] : d.items; REDES.pagina = pag; REDES.hayMas = !!d.hayMas; REDES.errorLista = '';
-  } catch (x) { if (!mas) REDES.items = []; REDES.errorLista = x.message; }
-}
-const redesFecha = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString('es-VE', {weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}); };
+  desc: 'Seguidores, alcance e interacción de las redes de la empresa.', ok: () => agoraReady() && conectada() && puede('datos.consultar') && !ESPACIO?.permisos?.soloAsignado};
 const redesCambio = v => v == null || !isFinite(v) || v === 0 ? '' : `<span class="delta ${v > 0 ? 'up' : 'down'}">${v > 0 ? '↑' : '↓'} ${NI.format(Math.abs(Math.round(v)))} %</span>`;
 V.redes = {
   need: async () => {
     REDES.error = '';
-    try { REDES.resumen = await agoraApi('workspace/redes'); } catch (x) { REDES.resumen = null; REDES.error = x.message; return; }
-    await redesCargarLista();
+    try { REDES.resumen = await agoraApi('workspace/redes'); } catch (x) { REDES.resumen = null; REDES.error = x.message; }
   },
   render() {
     const r = REDES.resumen;
-    const cabeza = head('Gestión y resultados', 'Redes sociales', 'Las cifras de las redes de la empresa y lo que se programó y publicó. Para publicar, usa la cuenta.');
+    const cabeza = head('Gestión y resultados', 'Redes sociales', 'Las cifras de las redes de la empresa en los últimos 7 días, frente a los 7 anteriores.');
     if (REDES.error) return cabeza + `<section class="panel"><p class="redes-aviso">${icon('warn')}<span>${esc(REDES.error)}</span></p><div class="form-ft" style="justify-content:flex-start"><button class="btn" type="button" data-redes-reintentar>${icon('refresh')}Reintentar</button></div></section>`;
     if (!r) return loading('Redes sociales');
     const cuentas = r.cuentas || [];
@@ -8515,38 +8504,12 @@ V.redes = {
     const tablaRed = porRed.length > 1 ? `<ul class="redes-porred" aria-label="Por red">${porRed.map(x => `<li><b>${esc(x.red)}</b><span>${x.impresiones == null ? '—' : NI.format(x.impresiones)} <small>impresiones</small></span><span>${x.meGusta == null ? '—' : NI.format(x.meGusta)} <small>me gusta</small></span><span>${x.seguidores == null ? '—' : NI.format(x.seguidores)} <small>seguidores</small></span></li>`).join('')}</ul>` : '';
     const cifras = c ? `<div class="redes-cifras">${tile('Publicaciones', c.publicaciones, c.cambio?.publicaciones)}${tile('Impresiones', c.impresiones, c.cambio?.impresiones)}${tile('Alcance', c.alcance, c.cambio?.alcance)}${tile('Me gusta', c.meGusta)}${tile('Comentarios', c.comentarios)}${tile('Seguidores', c.seguidores)}</div>${tablaRed}`
       : `<p class="redes-nota">${esc(r.avisoCifras || (cuentas.length ? 'La cuenta todavía no da cifras de estas redes.' : 'Las cifras aparecen cuando haya redes conectadas.'))}</p>`;
-    const redesDisp = [...new Map((cuentas || []).map(x => [x.plataforma, x.red])).entries()];
-    const filtroRed = redesDisp.length > 1 ? `<label class="fld redes-filtro">Red<select data-redes-red><option value="">Todas las redes</option>${redesDisp.map(([id, n]) => `<option value="${esc(id)}" ${REDES.red === id ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>` : '';
-    const tabs = filtroRed + `<nav class="agency-chips redes-tabs" role="tablist" aria-label="Publicaciones por estado">${REDES_TABS.map(([id, t]) => `<button type="button" role="tab" class="agency-chip-btn ${REDES.tipo === id ? 'is-active' : ''}" aria-selected="${REDES.tipo === id}" data-redes-tab="${id}">${t}</button>`).join('')}</nav>`;
-    const items = REDES.items;
-    const lista = items === null ? '<div class="redes-lista"><span class="sk w80"></span><span class="sk w60"></span></div>'
-      : REDES.errorLista ? `<p class="redes-aviso">${icon('warn')}<span>${esc(REDES.errorLista)}</span></p>`
-      : !items.length ? `<p class="redes-nota">${REDES.tipo === 'scheduled' ? 'No hay nada programado para los próximos 60 días.' : 'No hay publicaciones con este estado en los últimos 90 días.'} La cuenta solo informa lo que se publica desde su planificador: lo que se sube directamente en Instagram o Facebook no aparece aquí.</p>`
-      : (() => {
-          const tarjeta = p => {
-          const [et, tono] = REDES_ESTADO[p.estado] || [p.estado || 'Sin estado', 'sc-gray'];
-          const redes = (p.cuentas || []).map(x => `${esc(x.red || p.red)} · ${esc(x.nombre)}`).join(', ') || esc(p.red);
-          const img = p.media?.find(m => m.tipo === 'imagen')?.url || p.media?.[0]?.miniatura;
-          return `<li class="redes-post">${img ? `<img class="redes-img" src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}<div class="redes-post-tx">
-            <p class="redes-post-meta"><span class="sc ${tono}">${esc(et)}</span><time>${esc(redesFecha(p.fecha))}</time></p>
-            <p class="redes-post-texto">${esc(p.texto || '(sin texto)')}</p>
-            <p class="redes-post-redes">${redes}</p>${p.error ? `<p class="redes-post-error">${esc(p.error)}</p>` : ''}</div></li>`;
-        };
-          const grupos = new Map(); items.forEach(p => { const k = p.red || 'Otras'; if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(p); });
-          if (REDES.red || grupos.size < 2) return `<ul class="redes-lista">${items.map(tarjeta).join('')}</ul>`;
-          return [...grupos.entries()].map(([red, lista]) => `<h3 class="redes-grupo"><span class="redes-red redes-${esc(lista[0].plataforma)}">${esc(red)}</span><small>${NI.format(lista.length)} publicaci${lista.length === 1 ? 'ón' : 'ones'}</small></h3><ul class="redes-lista">${lista.map(tarjeta).join('')}</ul>`).join('');
-        })() + `${REDES.hayMas ? `<button class="btn redes-mas" type="button" data-redes-mas ${REDES.cargandoMas ? 'disabled' : ''}>${REDES.cargandoMas ? 'Cargando…' : 'Ver más'}</button>` : ''}`;
     return cabeza
       + panel('Redes conectadas', 'Se conectan y se vuelven a conectar en la cuenta de la subcuenta.', `<ul class="redes-cuentas">${chips}</ul>`)
-      + `<div class="mt">${panel(c?.dias ? `Cifras de los últimos ${c.dias} días` : 'Cifras de los últimos 7 días', 'Frente a los 7 días anteriores. Lo que la cuenta informa de las redes conectadas.', cifras)}</div>`
-      + `<div class="mt">${panel('Publicaciones', 'Las de los últimos 90 días y lo programado para los próximos 60, separadas por red. Solo lo que pasa por el planificador de la cuenta.', tabs + lista)}</div>`;
+      + `<div class="mt">${panel(c?.dias ? `Cifras de los últimos ${c.dias} días` : 'Cifras de los últimos 7 días', 'Frente a los 7 días anteriores. Lo que la cuenta informa de las redes conectadas.', cifras)}</div>`;
   },
   mounted(root) {
-    root.querySelector('[data-redes-reintentar]')?.addEventListener('click', () => { REDES.resumen = null; REDES.items = null; repaint(); V.redes.need().then(repaint); });
-    root.querySelectorAll('.redes-img').forEach(img => { const quitar = () => img.remove(); if (img.complete && !img.naturalWidth) quitar(); else img.addEventListener('error', quitar, {once: true}); });
-    root.querySelector('[data-redes-red]')?.addEventListener('change', async e => { REDES.red = e.target.value; REDES.items = null; repaint(); await redesCargarLista(); repaint(); });
-    root.querySelectorAll('[data-redes-tab]').forEach(b => b.onclick = async () => { if (REDES.tipo === b.dataset.redesTab) return; REDES.tipo = b.dataset.redesTab; REDES.items = null; repaint(); await redesCargarLista(); repaint(); });
-    root.querySelector('[data-redes-mas]')?.addEventListener('click', async () => { REDES.cargandoMas = true; repaint(); await redesCargarLista(true); REDES.cargandoMas = false; repaint(); });
+    root.querySelector('[data-redes-reintentar]')?.addEventListener('click', () => { REDES.resumen = null; repaint(); V.redes.need().then(repaint); });
   },
 };
 /* ---------- 2.6.0 · «Nuevo contacto»: lo crea en la cuenta conectada y abre su ficha ---------- */

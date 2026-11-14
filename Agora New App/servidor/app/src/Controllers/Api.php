@@ -6,7 +6,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.7.2'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.7.3'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -52,7 +52,6 @@ final class Api {
    if($this->a->assignedOnly())Http::fail('Las redes sociales son de toda la empresa: tu rol no las ve.',403);
    $redes=new \Agora\Services\Redes($this->db,$this->config,$this->a);
    if($p==='workspace/redes'&&$m==='GET')return $redes->resumen();
-   if($p==='workspace/redes/publicaciones'&&$m==='GET')return $redes->publicaciones($_GET);
    Http::fail('Ruta no disponible.',404);
   }
   // 2.6.0 · «Nuevo contacto» escribe en la cuenta conectada.

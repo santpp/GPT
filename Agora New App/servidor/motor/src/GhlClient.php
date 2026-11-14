@@ -89,9 +89,8 @@ final class GhlClient {
     public function completeContactTask(string $contact,string $task,bool $completed):array {
         return $this->put('/contacts/'.rawurlencode($contact).'/tasks/'.rawurlencode($task).'/completed','2021-07-28',['completed'=>$completed]);
     }
-    /** Agora New App 2.7.0 · Social Planner, solo lectura: cuentas, publicaciones y estadísticas (versión 2021-07-28). */
+    /** Agora New App 2.7.0 · Social Planner, solo lectura: cuentas y estadísticas (versión 2021-07-28). */
     public function socialAccounts(string $location):array {return $this->get('/social-media-posting/'.rawurlencode($location).'/accounts','2021-07-28');}
-    public function socialPosts(string $location,array $filter):array {return $this->get('/social-media-posting/'.rawurlencode($location).'/posts/list','2021-07-28',$filter);}
     public function socialStatistics(string $location,array $profiles,array $platforms=[]):array {return $this->get('/social-media-posting/statistics?locationId='.rawurlencode($location),'2021-07-28',['profileIds'=>array_values($profiles)]+($platforms?['platforms'=>array_values($platforms)]:[]));}
     /** Agora New App: crea un contacto nuevo en la cuenta (no modifica uno existente). */
     public function createContact(array $payload):array {return $this->get('/contacts/','2021-07-28',$payload);}

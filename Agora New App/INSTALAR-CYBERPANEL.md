@@ -211,7 +211,7 @@ Comprueba también que `https://TU-DOMINIO/servidor/config/config.php` **no** ab
      - `conversations.readonly`, `conversations.write`, `conversations/message.readonly`, `conversations/message.write`
      - `opportunities.readonly`, `opportunities.write`
      - `calendars.readonly`, `calendars/events.readonly`
-     - Para **Redes sociales** (solo lectura): `socialplanner/account.readonly`, `socialplanner/post.readonly` y `socialplanner/statistics.readonly` (este último, para las cifras)
+     - Para **Redes sociales** (solo cifras): `socialplanner/account.readonly` y `socialplanner/statistics.readonly`
      - Opcionales, para lo que viene: `invoices.readonly`, `products.readonly`
 
      Copia el token (empieza por `pit-`) y pégalo. **Solo se ve una vez en la cuenta**: si lo pierdes, crea otro.
@@ -245,7 +245,7 @@ Con la subcuenta conectada, **Contactos → Nuevo contacto** lo crea en la cuent
 
 ### Redes sociales
 
-**Gestión y resultados → Redes sociales** es solo para ver: las redes conectadas en la cuenta de la subcuenta, sus cifras de los últimos 7 días frente a los 7 anteriores (también por red) y las publicaciones de los últimos 90 días, agrupadas por red (publicadas, programadas, con error y borradores). Se publica y se conectan las redes en la cuenta, no en Ágora. **Solo aparece lo que se publica desde el planificador de la cuenta**: lo subido directamente en Instagram o Facebook no lo informa la cuenta.
+**Gestión y resultados → Redes sociales** es solo para ver las cifras: las redes conectadas en la cuenta de la subcuenta y sus cifras de los últimos 7 días frente a los 7 anteriores (publicaciones, impresiones, alcance, me gusta, comentarios, seguidores), en total y por red. Las redes se conectan en la cuenta, no en Ágora.
 
 - Lo ven Administración y Supervisión. Un ejecutivo no lo ve: las redes son de toda la empresa.
 - Si una conexión venció, Ágora lo avisa.

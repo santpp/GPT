@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.7.3:**
+- **Redes sociales queda solo con las cifras:** redes conectadas y cifras de los últimos 7 días frente a los 7 anteriores, en total y por red. Se quitó la lista de publicaciones (la cuenta solo informa lo publicado desde su planificador, y en Ágora se publica desde Meta Business Suite).
+- El `.htaccess` vuelve a permitir solo imágenes propias (ya no hacen falta las externas).
+
 **Novedades 2.7.2:**
 - **Redes sociales: las publicaciones se ven y se dividen por red.** La pantalla abre en «Publicadas» (antes abría en «Programadas», que suele estar vacía) y mira 90 días atrás (antes 30). Con «Todas las redes» se agrupan por red con su cantidad; el filtro «Red» deja ver solo una.
 - La pantalla explica que la cuenta solo informa lo que pasa por su planificador: lo que se sube directamente en Instagram o Facebook no aparece.

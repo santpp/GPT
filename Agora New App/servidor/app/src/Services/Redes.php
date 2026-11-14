@@ -8,8 +8,7 @@ use Agora\Security\Auth;
  *
  * - Redes conectadas en la cuenta, con aviso si alguna venció.
  * - Cifras de los últimos 7 días frente a los 7 anteriores (lo que la cuenta informa).
- * - Publicaciones: programadas, publicadas, con error y borradores.
- * No se publica ni se borra desde Ágora: eso se hace en la cuenta.
+ * No se publica ni se listan publicaciones: solo las cifras de las redes.
  * Todas las lecturas son «suaves»: si la cuenta rechaza una, la subcuenta no se pausa (la bandeja sigue).
  * Las redes se guardan 5 minutos y las cifras 15, para no gastar cuota.
  */
@@ -17,7 +16,6 @@ final class Redes {
  private const PLATAFORMAS=['facebook'=>'Facebook','instagram'=>'Instagram','linkedin'=>'LinkedIn','google'=>'Google Business','tiktok'=>'TikTok','twitter'=>'X','youtube'=>'YouTube','pinterest'=>'Pinterest','threads'=>'Threads','bluesky'=>'Bluesky'];
  /** Las que la cuenta puede medir (LinkedIn solo páginas y TikTok solo cuentas de empresa: la cuenta descarta las demás). */
  private const CON_CIFRAS=['facebook','instagram','linkedin','google','pinterest','youtube','tiktok'];
- private const TIPOS=['scheduled'=>'Programadas','published'=>'Publicadas','failed'=>'Con error','draft'=>'Borradores','all'=>'Todas'];
  public function __construct(private DB $db,private array $config,private Auth $a){}
 
  private function conexion():array{
@@ -80,32 +78,7 @@ final class Redes {
  }
  public function resumen():array{
   $c=$this->conexion();$cuentas=$this->cuentas($c);$x=$this->cifras($c,$cuentas);
-  return ['cuentas'=>$cuentas,'cifras'=>$x['cifras'],'avisoCifras'=>$x['aviso'],'tipos'=>self::TIPOS];
- }
- /** Publicaciones de un tipo y, si se pide, de una sola red, en un rango (por defecto, 90 días atrás y 60 adelante). */
- public function publicaciones(array $q):array{
-  $c=$this->conexion();
-  $tipo=is_string($q['tipo']??null)&&isset(self::TIPOS[$q['tipo']])?$q['tipo']:'all';
-  $desde=self::fecha($q['desde']??null)??gmdate('Y-m-d',strtotime('-90 days'));$hasta=self::fecha($q['hasta']??null)??gmdate('Y-m-d',strtotime('+60 days'));
-  if($desde>$hasta)[$desde,$hasta]=[$hasta,$desde];
-  $pagina=max(0,min(50,(int)($q['pagina']??0)));
-  $todas=$this->cuentas($c);$red=is_string($q['red']??null)&&preg_match('/^[a-z_]{2,30}$/D',$q['red'])?$q['red']:'';
-  $filtro=['type'=>$tipo,'skip'=>(string)($pagina*20),'limit'=>'20','fromDate'=>$desde.'T00:00:00.000Z','toDate'=>$hasta.'T23:59:59.999Z','includeUsers'=>'false'];
-  if($red!==''){$ids=array_column(array_filter($todas,fn($x)=>$x['plataforma']===$red),'id');if(!$ids)return ['tipo'=>$tipo,'red'=>$red,'desde'=>$desde,'hasta'=>$hasta,'pagina'=>0,'items'=>[],'total'=>0,'hayMas'=>false];$filtro['accounts']=implode(',',$ids);}
-  $r=$this->leer($c,fn(\GhlClient $cl):array=>$cl->socialPosts((string)$c['location_id'],$filtro));
-  $lista=$r['results']['posts']??$r['posts']??[];$total=$r['results']['count']??null;
-  $cuentas=[];foreach($todas as $x)$cuentas[$x['id']]=$x;
-  $out=[];foreach(is_array($lista)?$lista:[] as $p){
-   if(!is_array($p))continue;
-   $ids=is_array($p['accountIds']??null)?$p['accountIds']:(is_string($p['accountId']??null)?[$p['accountId']]:[]);
-   $media=[];foreach(is_array($p['media']??null)?$p['media']:[] as $m)if(is_array($m)&&is_string($m['url']??null)&&str_starts_with($m['url'],'https://'))$media[]=['url'=>$m['url'],'tipo'=>str_starts_with((string)($m['type']??''),'video')?'video':'imagen','miniatura'=>is_string($m['thumbnail']??null)&&str_starts_with($m['thumbnail'],'https://')?$m['thumbnail']:null];
-   $plat=strtolower((string)($p['platform']??''));if($plat===''&&$ids&&isset($cuentas[$ids[0]]))$plat=$cuentas[$ids[0]]['plataforma'];
-   if($red!==''&&$plat!==''&&$plat!==$red)continue;
-   $out[]=['id'=>(string)($p['_id']??$p['id']??''),'texto'=>mb_substr((string)($p['summary']??''),0,3000),'estado'=>is_string($p['status']??null)?$p['status']:'','fecha'=>(string)($p['displayDate']??$p['scheduleDate']??$p['publishedAt']??$p['createdAt']??''),
-    'error'=>is_string($p['error']??null)&&$p['error']!==''?mb_substr($p['error'],0,240):null,'plataforma'=>$plat,'red'=>$plat!==''?self::nombrePlataforma($plat):'',
-    'cuentas'=>array_values(array_map(fn($i)=>['id'=>$i,'nombre'=>$cuentas[$i]['nombre']??'Cuenta','red'=>$cuentas[$i]['red']??''],$ids)),'media'=>$media];
-  }
-  return ['tipo'=>$tipo,'red'=>$red,'desde'=>$desde,'hasta'=>$hasta,'pagina'=>$pagina,'items'=>$out,'total'=>is_numeric($total)?(int)$total:null,'hayMas'=>is_array($lista)&&count($lista)===20];
+  return ['cuentas'=>$cuentas,'cifras'=>$x['cifras'],'avisoCifras'=>$x['aviso']];
  }
  private static function fecha(mixed $v):?string{return is_string($v)&&preg_match('/^\d{4}-\d{2}-\d{2}$/D',$v)&&strtotime($v)!==false?$v:null;}
 }
