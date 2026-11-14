@@ -1,5 +1,10 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.3.3:**
+- **Bandeja: el botón de la ficha del contacto ya abre la ficha** (antes no hacía nada). En el teléfono reemplaza al chat y se cierra con la ×; en escritorio sale al lado.
+- Ficha y editor de contacto ordenados: oportunidad en filas, recuadros por grupo, interruptor «No contactar», campo modificado resaltado. El buscador ya no muestra dos bordes. El modo plantilla oculta la caja de texto libre.
+- Comprobación nueva `tests/ui-estados.py`: falla si un estado del programa de la bandeja no tiene estilo, o si la versión no coincide entre `index.html`, `version.json` y `sw.js`. Sin migraciones.
+
 **Novedades 2.3.2:**
 - **«Ir a subcuenta» en una subcuenta recién creada** ya no dice «La subcuenta no está autorizada»: la lista de subcuentas se vuelve a pedir al servidor en vez de usar la del inicio de sesión. Sin migraciones.
 
