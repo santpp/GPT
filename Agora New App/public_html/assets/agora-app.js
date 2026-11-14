@@ -2351,6 +2351,67 @@ function conexionEstadoHtml(c) {
   if (c.estado === 'error') return `<p class="conexion-estado is-error">${icon('warn')}${esc(c.error || 'La última prueba falló.')}${cuando}</p>`;
   return `<p class="conexion-estado">${icon('clock')}Guardada, sin probar. Token ${esc(c.token || '')}.</p>`;
 }
+/* Agora New App · conexión de la agencia (Company ID + token de agencia). Una sola para toda la agencia:
+   la usa Consumos para leer la billetera, el gasto y el plan de cada subcuenta. Solo dueños (lo comprueba el servidor). */
+async function agenciaConexionPintar(box) {
+  if (!box) return;
+  let s;
+  try { s = await agoraApi('admin/consumption'); } catch { box.hidden = true; return; }
+  if (!box.isConnected) return;
+  const ok = !!(s.tokenSaved && s.companyId);
+  box.hidden = false;
+  box.className = 'agency-conn ' + (ok ? 'is-ok' : 'is-none');
+  box.innerHTML = `<span class="agency-conn-ic">${icon('wallet')}</span>
+    <div class="agency-conn-tx"><b>Conexión de la agencia</b><span>${ok ? `Conectada · Company ID <code>${esc(s.companyId)}</code> · token ${esc('•••• ' + (s.tokenHint || ''))}` : 'Sin conectar. Con el token de agencia, Ágora lee la billetera: el gasto y el plan de cada subcuenta en Consumos.'}</span></div>
+    <div class="agency-conn-acts">${ok ? `<a class="btn btn-sm" href="${href('/agencia/consumos')}">${icon('wallet')}Ver consumos</a>` : ''}<button class="btn btn-sm ${ok ? '' : 'btn-cta'}" type="button" data-agency-conn>${ok ? 'Cambiar' : 'Conectar la agencia'}</button></div>`;
+  box.querySelector('[data-agency-conn]').onclick = () => agenciaConexionEditar(s, () => agenciaConexionPintar(box));
+}
+function agenciaConexionEditar(s, listo) {
+  if (!esSuperAdmin()) return;
+  const ok = !!(s.tokenSaved && s.companyId);
+  const m = openModal(modalHead('Conexión de la agencia', 'Se conecta una sola vez para toda la agencia. Cada subcuenta usa su propio token; este es el de la agencia, para Consumos.') +
+    `<form class="bx-form" novalidate><div class="bx-grid">
+      <fieldset class="bx bx-wide">
+        <legend>${icon('wallet')}Billetera y planes</legend>
+        ${ok ? `<p class="conexion-estado is-ok">${icon('check')}Conectada. Token ${esc('•••• ' + (s.tokenHint || ''))}.</p>` : `<p class="conexion-estado is-none">${icon('info')}Sin conectar todavía.</p>`}
+        <div class="bx-row con-row">
+          <label class="fld"><span class="fld-l">Company ID</span>
+            <input name="companyId" maxlength="80" autocomplete="off" spellcheck="false" class="ghl-in" placeholder="Ej: 5DP4iH6HLkQsiKESj6rh" value="${esc(s.companyId || '')}">
+            <span class="fld-hint">Vista de agencia → Ajustes → Compañía.</span></label>
+          <label class="fld"><span class="fld-l">Token de agencia</span>
+            <input name="token" type="password" maxlength="2000" autocomplete="new-password" spellcheck="false" class="ghl-in" placeholder="${s.tokenSaved ? esc('Guardado •••• ' + (s.tokenHint || '') + ' · escribe otro para cambiarlo') : 'pit-…'}">
+            <span class="fld-hint">Vista de agencia → Ajustes → Integraciones privadas, con permiso para ver la compañía y su billetera. Se guarda cifrado y no vuelve a mostrarse.</span></label>
+        </div>
+        <div class="bx-help" data-out role="status"></div>
+      </fieldset>
+     </div>
+     <p class="fld-err" role="alert"></p>
+     <div class="bx-foot"><p class="bx-help">${s.tokenSaved ? '<button class="btn btn-sm" type="button" data-forget>Quitar el token</button>' : 'No es el token de una subcuenta: es el de la agencia.'}</p><div class="acts"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="submit">Guardar y probar</button></div></div></form>`);
+  const f = m.querySelector('form'), err = f.querySelector('.fld-err'), out = f.querySelector('[data-out]'), btn = f.querySelector('[type=submit]');
+  f.onsubmit = async e => {
+    e.preventDefault(); err.textContent = ''; out.textContent = '';
+    const body = {companyId: f.companyId.value.trim()};
+    if (f.token.value.trim()) body.token = f.token.value.trim();
+    if (!body.companyId) { err.textContent = 'Escribe el Company ID de la agencia.'; f.companyId.focus(); return; }
+    if (!body.token && !s.tokenSaved) { err.textContent = 'Pega el token de agencia.'; f.token.focus(); return; }
+    busy(btn, true, 'Probando…');
+    try {
+      await agoraApi('admin/consumption/settings', {method: 'POST', body});
+      f.token.value = '';
+      const r = await agoraApi('admin/consumption/probar', {method: 'POST', body: {}});
+      if (r.estado === 'conectada') { closeModal(); toast('Agencia conectada. Ya puedes ver los consumos.'); listo?.(); return; }
+      s = r; err.textContent = r.error || 'No se pudo conectar.';
+      f.token.placeholder = r.tokenSaved ? 'Guardado •••• ' + (r.tokenHint || '') + ' · escribe otro para cambiarlo' : 'pit-…';
+      listo?.();
+    } catch (x) { err.textContent = x.message; }
+    finally { busy(btn, false); }
+  };
+  f.querySelector('[data-forget]')?.addEventListener('click', async () => {
+    if (!confirm('¿Quitar el token de agencia? Consumos dejará de leer la billetera hasta que pegues otro.')) return;
+    try { await agoraApi('admin/consumption/token', {method: 'DELETE'}); closeModal(); toast('Token de agencia quitado.'); listo?.(); }
+    catch (x) { err.textContent = x.message; }
+  });
+}
 const htmlNodo = html => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; };
 function agenciaCuentaEditar(a) {
   if (!esSuperAdmin()) return;
@@ -2394,6 +2455,21 @@ function agenciaCuentaEditar(a) {
           <label class="fld">Estado<select name="estado"><option value="activa" ${est==='activa'?'selected':''}>Activa</option><option value="inactiva" ${est==='inactiva'?'selected':''}>Inactiva</option><option value="pendiente" ${est==='pendiente'?'selected':''}>Pendiente</option></select></label>
         </div>
       </fieldset>
+      <fieldset class="bx bx-wide" id="bx-conexion">
+        <legend>${icon('sync')}Conexión con la cuenta</legend>
+        ${conexionEstadoHtml(a?.conexion)}
+        <div class="bx-row con-row">
+          <label class="fld"><span class="fld-l">Location ID</span>
+            <input name="ghlLocation" maxlength="64" autocomplete="off" spellcheck="false" class="ghl-in" placeholder="Ej: a1B2c3D4e5F6g7H8i9J0" value="${esc(a?.conexion?.origen === 'subcuenta' ? (a.conexion.locationId || '') : '')}">
+            <span class="fld-hint">Ajustes → Perfil del negocio.</span></label>
+          <label class="fld"><span class="fld-l">Token de la subcuenta</span>
+            <input name="ghlToken" type="password" maxlength="4000" autocomplete="new-password" spellcheck="false" class="ghl-in" placeholder="${a?.conexion?.origen === 'subcuenta' ? 'Guardado ' + esc(a.conexion.token || '') + ' · escribe otro para cambiarlo' : 'pit-…'}">
+            <span class="fld-hint">Ajustes → Integraciones privadas. Se guarda cifrado; solo se ven sus 4 últimos caracteres.</span></label>
+        </div>
+        ${a?.conexion?.origen === 'subcuenta' ? `<div class="con-acts"><button class="btn btn-sm" type="button" id="ghl-probar">${icon('refresh')}Probar conexión</button><label class="bx-check"><input type="checkbox" name="ghlQuitar"> Quitar la conexión</label></div><div class="bx-help" id="ghl-probar-out" role="status"></div>` : '<p class="bx-help">Al guardar podrás probarla. El gasto de la billetera se conecta una sola vez para toda la agencia, en Subcuentas → Conexión de la agencia.</p>'}
+      </fieldset>
+      ${perfilBx(a?.perfil, true)}
+      ${paletaBx(a?.paleta)}
       ${a ? '' : `<fieldset class="bx">
         <legend>${icon('calendar')}Licencia</legend>
         <div class="bx-row">
@@ -2405,23 +2481,6 @@ function agenciaCuentaEditar(a) {
       <fieldset class="bx ${a ? 'bx-wide' : ''}">
         <legend>${icon('edit')}Notas internas</legend>
         <label class="fld"><span class="sr-only">Notas internas</span><textarea name="notas" maxlength="500" rows="2" placeholder="Solo las ve la agencia">${esc(a?.notas||'')}</textarea></label>
-      </fieldset>
-      ${perfilBx(a?.perfil, true)}
-      ${paletaBx(a?.paleta)}
-      <fieldset class="bx bx-wide" id="bx-conexion">
-        <legend>${icon('sync')}Conexión con la cuenta</legend>
-        ${conexionEstadoHtml(a?.conexion)}
-        <div class="bx-row">
-          <label class="fld"><span class="fld-l">Location ID</span>
-            <input name="ghlLocation" maxlength="64" autocomplete="off" spellcheck="false" class="ghl-in" placeholder="Ej: a1B2c3D4e5F6g7H8i9J0" value="${esc(a?.conexion?.origen === 'subcuenta' ? (a.conexion.locationId || '') : '')}">
-            <span class="fld-hint">En la cuenta: Ajustes → Perfil del negocio.</span></label>
-          <label class="fld"><span class="fld-l">Company ID <small>(opcional)</small></span>
-            <input name="ghlCompany" maxlength="64" autocomplete="off" spellcheck="false" class="ghl-in" placeholder="Para consumos" value="${esc(a?.conexion?.companyId || '')}"></label>
-        </div>
-        <label class="fld"><span class="fld-l">Token de la integración privada</span>
-          <input name="ghlToken" type="password" maxlength="4000" autocomplete="new-password" spellcheck="false" class="ghl-in" placeholder="${a?.conexion?.origen === 'subcuenta' ? 'Guardado: ' + esc(a.conexion.token || '') : 'pit-…'}">
-          <span class="fld-hint">${a?.conexion?.origen === 'subcuenta' ? 'Déjalo vacío para conservar el guardado. ' : ''}Se guarda cifrado y nadie puede volver a verlo: solo sus 4 últimos caracteres. En la cuenta: Ajustes → Integraciones privadas.</span></label>
-        ${a?.conexion?.origen === 'subcuenta' ? `<div class="bx-row" style="align-items:center"><button class="btn btn-sm" type="button" id="ghl-probar">${icon('refresh')}Probar conexión</button><label class="bx-check"><input type="checkbox" name="ghlQuitar"> Quitar la conexión</label></div><p class="bx-help" id="ghl-probar-out" role="status"></p>` : '<p class="bx-help">Después de guardar podrás probar la conexión desde aquí.</p>'}
       </fieldset>
      </div>
      <p class="fld-err" id="agency-form-global-err" role="alert"></p>
@@ -2604,9 +2663,9 @@ function agenciaCuentaEditar(a) {
         perfil: perfilR.perfil
       };
       // Agora New App: conexión con la cuenta. Token vacío = se conserva el guardado.
-      const ghlLoc = f.ghlLocation.value.trim(), ghlTok = f.ghlToken.value.trim(), ghlCom = f.ghlCompany.value.trim();
+      const ghlLoc = f.ghlLocation.value.trim(), ghlTok = f.ghlToken.value.trim();
       if (f.ghlQuitar?.checked) payload.conexion = {quitar: true};
-      else if (ghlLoc || ghlTok || ghlCom) payload.conexion = {locationId: ghlLoc, token: ghlTok, companyId: ghlCom};
+      else if (ghlLoc || ghlTok) payload.conexion = {locationId: ghlLoc, token: ghlTok, ...(a?.conexion?.companyId ? {companyId: a.conexion.companyId} : {})};
       await agoraApi('agency/accounts', { method: a ? 'PUT' : 'POST', body: payload });
       closeModal();
       await cargarAgencia();
@@ -3946,7 +4005,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.3.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -4290,7 +4349,7 @@ const logAntes = l => l.anterior ?? l.antes ?? '—';
 const logDespues = l => l.nuevo ?? l.despues ?? '—';
 /* Acciones del registro en palabras sencillas (el servidor guarda códigos como "rol.cambiado"). */
 const ACCION_LEGIBLE = {
-  'rol.cambiado': 'Cambió un rol', 'subcuenta.estado': 'Cambió el estado de una subcuenta', 'subcuenta.creada': 'Creó una subcuenta', 'subcuenta.conexion': 'Cambió la conexión con la cuenta', 'subcuenta.conexion.probada': 'Probó la conexión con la cuenta',
+  'rol.cambiado': 'Cambió un rol', 'subcuenta.estado': 'Cambió el estado de una subcuenta', 'subcuenta.creada': 'Creó una subcuenta', 'subcuenta.conexion': 'Cambió la conexión con la cuenta', 'subcuenta.conexion.probada': 'Probó la conexión con la cuenta', 'agencia.conexion': 'Cambió la conexión de la agencia', 'agencia.conexion.probada': 'Probó la conexión de la agencia', 'agencia.conexion.quitada': 'Quitó el token de agencia',
   'subcuenta.actualizada': 'Editó una subcuenta', 'subcuenta.cobros': 'Actualizó los cobros de una subcuenta', 'subcuenta.tipo': 'Cambió el tipo de cuenta de una subcuenta', 'productos.actualizados': 'Actualizó los productos y rubros', 'personalizacion.actualizada': 'Personalizó el tablero y los módulos', 'etiquetas.actualizadas': 'Actualizó las etiquetas del CRM', 'usuario.creado': 'Agregó a una persona',
   'usuario.editado': 'Editó a una persona', 'usuario.actualizado': 'Editó a una persona', 'usuario.revocado': 'Quitó el acceso a una persona',
   'clave.cambiada': 'Cambió una clave', 'permisos.actualizados': 'Cambió permisos', 'estado.actualizado': 'Cambió un estado',
@@ -8384,12 +8443,13 @@ V.agencia = {
       </div>
       <div class="agency-active-chips-bar" data-adv-chips hidden></div>
       <p class="agency-filter-empty" id="agency-filter-empty" hidden>No hay subcuentas que coincidan con los filtros.<br><button type="button" class="btn btn-sm" id="agency-filter-reset">Restablecer filtros</button></p>` : '';
-    return launcherFrame('agencia', `<div class="agency-shell"><header class="operations-heading"><p class="operations-eyebrow"><span></span>Administración de Agencia</p><h1>Hola, <em>${esc(name)}</em></h1><p class="operations-lede">Elige una empresa y entra a su espacio de trabajo.</p><p class="launch-summary"><strong>${accounts ? accounts.length : '—'} subcuentas</strong> · Cada empresa con sus usuarios, módulos y datos aparte. <a class="launch-summary-link" href="${href('/agencia/control')}">Ver cómo va la agencia en ${AG_GOB_NOMBRE} ${icon('chevR')}</a></p></header><section aria-labelledby="launch-accounts"><div class="launch-section-heading"><h2 id="launch-accounts">Todas las subcuentas</h2><div class="acts"><button type="button" class="btn" id="agency-export" ${accounts?.length ? '' : 'disabled'}>${icon('download')}Informe</button><button type="button" class="btn" id="agency-start-tour">${icon('spark')}Guía</button><button type="button" class="btn btn-cta" data-agency-create ${esMaster() ? '' : 'disabled title="Solo el Master puede crear subcuentas"'}>${icon('plus')}Nueva subcuenta</button></div></div>${filterBar}<div class="agency-grid" id="agency-cards-grid">${cards}</div></section>${accounts?.length ? agenciaPanelFiltrosHtml(accounts) : ''}</div>`);
+    return launcherFrame('agencia', `<div class="agency-shell"><header class="operations-heading"><p class="operations-eyebrow"><span></span>Administración de Agencia</p><h1>Hola, <em>${esc(name)}</em></h1><p class="operations-lede">Elige una empresa y entra a su espacio de trabajo.</p><p class="launch-summary"><strong>${accounts ? accounts.length : '—'} subcuentas</strong> · Cada empresa con sus usuarios, módulos y datos aparte. <a class="launch-summary-link" href="${href('/agencia/control')}">Ver cómo va la agencia en ${AG_GOB_NOMBRE} ${icon('chevR')}</a></p></header><section class="agency-conn" id="agency-conn" aria-label="Conexión de la agencia" hidden></section><section aria-labelledby="launch-accounts"><div class="launch-section-heading"><h2 id="launch-accounts">Todas las subcuentas</h2><div class="acts"><button type="button" class="btn" id="agency-export" ${accounts?.length ? '' : 'disabled'}>${icon('download')}Informe</button><button type="button" class="btn" id="agency-start-tour">${icon('spark')}Guía</button><button type="button" class="btn btn-cta" data-agency-create ${esMaster() ? '' : 'disabled title="Solo el Master puede crear subcuentas"'}>${icon('plus')}Nueva subcuenta</button></div></div>${filterBar}<div class="agency-grid" id="agency-cards-grid">${cards}</div></section>${accounts?.length ? agenciaPanelFiltrosHtml(accounts) : ''}</div>`);
   },
   mounted(root) {
     root.querySelector('#agency-start-tour')?.addEventListener('click', () => agenciaIniciarTour(1));
     root.querySelector('#agency-export')?.addEventListener('click', () => exportarInformeSubcuentas(AGENCY_ACCOUNTS || []));
     root.querySelector('[data-agency-create]')?.addEventListener('click', () => agenciaCuentaEditar(null));
+    agenciaConexionPintar(root.querySelector('#agency-conn'));
     root.querySelectorAll('[data-agency-open]').forEach(el => el.onclick = () => abrirCuentaAgencia(el.dataset.agencyOpen));
     root.querySelectorAll('[data-agency-manage]').forEach(el => el.onclick = () => {
       const a = AGENCY_ACCOUNTS?.find(x => String(x.id) === String(el.dataset.agencyManage));

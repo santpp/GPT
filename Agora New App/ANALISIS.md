@@ -1,10 +1,10 @@
 # Agora New App · análisis del ERP 2.1.19
 
-## Estado (2.3.0 · 14 de noviembre de 2026)
+## Estado (2.3.1 · 14 de noviembre de 2026)
 
 | | |
 |---|---|
-| Paquete de producción | `agora-new-app-2.3.0.zip` (+ `.sha256`), con `tools/package.py`. Sin modo pruebas, datos sintéticos, demos ni logos de clientes |
+| Paquete de producción | `agora-new-app-2.3.1.zip` (+ `.sha256`), con `tools/package.py`. Sin modo pruebas, datos sintéticos, demos ni logos de clientes |
 | Paquete de demostración | `agora-cyberpanel-2.1.19-demo.zip` (el original, con datos inventados). Solo para enseñar |
 | Instalación | `INSTALAR-CYBERPANEL.md`, paso a paso. Cuentas de dueño solo por terminal (`servidor/bin/crear-dueno.php`) |
 | Cuenta en vivo | Conexión por subcuenta (token cifrado, Location ID, «Probar conexión»). Con conexión, bandeja, mensajes, envío, asignación, contactos, oportunidades, embudos, ganadas y tablero los atiende el **motor de Ágora Mobile 1.10.14** (`servidor/motor/`, puente `app/src/Core/MotorMobile.php`) |

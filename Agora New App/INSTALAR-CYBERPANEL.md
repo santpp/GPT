@@ -214,16 +214,20 @@ Comprueba también que `https://TU-DOMINIO/servidor/config/config.php` **no** ab
      - Opcionales, para lo que viene: `invoices.readonly`, `products.readonly`, `socialplanner/account.readonly`, `socialplanner/post.readonly`
 
      Copia el token (empieza por `pit-`) y pégalo. **Solo se ve una vez en la cuenta**: si lo pierdes, crea otro.
-   - **Company ID** (opcional): Agency View → Settings → Company.
 3. **Guardar**. Vuelve a abrir **Editar datos** y pulsa **Probar conexión**: debe decir «Conectada con …» y la lista de lo que el token puede leer.
 4. Desde ese momento, **Bandeja**, **Contactos**, **Oportunidades**, **Ganadas** y el **tablero** de esa subcuenta leen en vivo de la cuenta. Cada persona ve solo lo que tiene asignado; para eso, su correo en Ágora debe ser el mismo que en la cuenta.
 
-### Consumos de la agencia (solo dueños)
+### Conectar la agencia: token de agencia para Consumos (solo dueños, una sola vez)
 
-1. **Agencia** → menú de la izquierda → **Consumos**.
+Cada subcuenta usa **su** token (el de arriba). La billetera de la agencia (gasto, recargas y plan de cada subcuenta) se lee con **otro** token, el de la agencia, que se pone una sola vez:
+
+1. **Agencia** → **Subcuentas**: arriba sale la tarjeta **«Conexión de la agencia»** → **Conectar la agencia**.
 2. **Company ID:** Agency View → Settings → Company.
-3. **Token de agencia:** en Agency View → Settings → **Private Integrations** → nueva integración con el permiso `saas/company.read` (y los de lectura de ubicaciones si los pide). Pégalo y pulsa **Guardar**.
-4. Elige mes y subcuenta y pulsa **Actualizar**. Se puede descargar en texto o PDF.
+3. **Token de agencia:** en **Agency View** (no dentro de una subcuenta) → Settings → **Private Integrations** → nueva integración con el permiso `saas/company.read` (y `locations.readonly` si lo ofrece). Copia el token (`pit-…`).
+4. Pégalo y pulsa **Guardar y probar**. Debe quedar «Conectada». Si no, el aviso dice qué falta (token rechazado, sin permiso o Company ID equivocado).
+5. **Agencia** → **Consumos**: elige mes y subcuenta y pulsa **Actualizar**. Se puede descargar en texto o PDF.
+
+El token de agencia se guarda cifrado y nadie puede volver a verlo; guardar, probar o quitarlo queda en el **Registro de actividad**.
 
 ### Crear los usuarios de cada subcuenta
 
@@ -273,7 +277,7 @@ La pantalla "Oops! Algo ocurre" aparece cuando la app no logra hablar con la API
 | `config` · problema en servidor/config/config.php | Corrige `config.php` (paso 6). Sin `config.php`, la app avisa y no arranca. |
 | `db` · No se pudo conectar a la base de datos | Revisa nombre, usuario y clave de CyberPanel → Databases; prueba host `127.0.0.1`. |
 | `migraciones` · La base está vacía o incompleta | Ejecuta el **paso 7** (`migrate.php`). |
-| Al entrar dice "Origen no autorizado" | `app_url` en `config.php` no coincide con la dirección del navegador. Debe ser exacta: `https://`, con o sin `www` igual que como entras. |
+| Al entrar dice "Origen no autorizado…" | `app_url` en `config.php` no coincide con la dirección del navegador. Debe ser exacta: `https://`, con o sin `www` igual que como entras. |
 | `php` / `ext` | Elige PHP 8.3 para el sitio o instala la extensión indicada (paso 2). En pruebas falta `pdo_sqlite`: `dnf install lsphp83-pdo lsphp83-sqlite3` y `systemctl restart lsws`. |
 | `storage` · Modo pruebas: PHP no puede escribir | `chown -R USUARIO_DEL_SITIO:USUARIO_DEL_SITIO /home/TU-DOMINIO/servidor/storage` |
 | `pruebas` · no se pudo preparar | Borra `servidor/storage/agora-pruebas.sqlite*` y vuelve a abrir el sitio. El detalle queda en el log de PHP. |
@@ -282,5 +286,8 @@ Los errores internos quedan en el log de PHP del sitio (`/home/TU-DOMINIO/logs/`
 
 | Al conectar una subcuenta: «El token no es válido o fue revocado» | Crea otra integración privada en la subcuenta y pega el token nuevo. |
 | «No tiene permiso para leer esta ubicación» | A la integración privada le falta `locations.readonly`. Edítala y añádelo. |
+| La tarjeta «Conexión de la agencia» dice que el token no es válido | Ese token es de una subcuenta, o fue revocado. Créalo en **Agency View** → Private Integrations. |
+| «El token no tiene permiso para leer la billetera» | A la integración de agencia le falta `saas/company.read`, o el Company ID es de otra agencia. |
+| Una ventana se ve sin estilos (botones grises, letra distinta) | El navegador guardó archivos de una versión anterior. Desde la 2.3.1 la app pide siempre los nuevos: recarga una vez. Si sigue, Chrome → candado de la barra → Configuración del sitio → **Borrar datos**. |
 | La bandeja dice «en espera para respetar la cuota» | Es normal un momento: Ágora no pasa de 20 consultas cada 10 segundos por subcuenta. Se recupera sola. |
 | Una persona no ve sus conversaciones | Su correo en Ágora debe ser el mismo que en la cuenta, y la conversación debe estar asignada a ella. |

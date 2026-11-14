@@ -121,6 +121,33 @@ final class MotorMobile {
   self::instalar($erp,$config);self::arrancar($config);
   $u=['id'=>(int)$user['id'],'tenant_id'=>self::AGENCIA,'email'=>(string)$user['email'],'role'=>'administrator','identity_type'=>'native'];
   $path='/api/'.$p;$method=$m;
+  require_once dirname(__DIR__,3).'/motor/src/AgencyWallet.php';
+  // Agora New App: guardar, quitar y probar la conexión de la agencia quedan en el registro de actividad.
+  if($p==='admin/consumption/settings'&&$m==='POST'){
+   $b=\body();$w=new \AgencyWallet(self::AGENCIA,$GLOBALS['agencyTransport']??null);
+   try{$s=$w->save(array_key_exists('companyId',$b)?(string)$b['companyId']:null,isset($b['token'])?(string)$b['token']:null);}
+   catch(\InvalidArgumentException $e){\respond(['error'=>$e->getMessage()],422);}
+   $a->audit('agencia.conexion','agencia','consumos',['companyId'=>$s['companyId'],'tokenCambiado'=>isset($b['token'])&&trim((string)$b['token'])!=='']);
+   \respond($s);
+  }
+  if($p==='admin/consumption/token'&&$m==='DELETE'){$a->audit('agencia.conexion.quitada','agencia','consumos');}
+  if($p==='admin/consumption/probar'&&$m==='POST'){
+   $w=new \AgencyWallet(self::AGENCIA,$GLOBALS['agencyTransport']??null);$s=$w->settings();
+   if($s['companyId']===''||!$s['tokenSaved'])\respond(['estado'=>'sin_conexion','error'=>'Falta el Company ID o el token de agencia.']+$s);
+   try{$r=$w->transactions(gmdate('Y-m'),null,0,1);}catch(\Throwable $e){$r=['status'=>0,'error'=>'local'];}
+   $st=(int)$r['status'];
+   $error=match(true){
+    \AgencyWallet::ok($r)=>null,
+    $st===0=>'No hubo respuesta de la cuenta. Revisa que el servidor tenga salida a internet y vuelve a probar.',
+    $st===401=>'El token de agencia no es válido o fue revocado. Crea uno nuevo y pégalo aquí.',
+    $st===403=>'El token no tiene permiso para leer la billetera de la agencia (saas/company.read), o el Company ID es de otra agencia.',
+    in_array($st,[400,404,422],true)=>'La cuenta no reconoce ese Company ID. Cópialo de nuevo desde la vista de agencia.',
+    $st===429=>'La cuenta pidió esperar un momento. Prueba otra vez en un minuto.',
+    default=>'La cuenta respondió con un error (HTTP '.$st.'). Prueba otra vez en unos minutos.',
+   };
+   $a->audit('agencia.conexion.probada','agencia','consumos',['estado'=>$error===null?'conectada':'error','http'=>$st]);
+   \respond(['estado'=>$error===null?'conectada':'error','error'=>$error]+$s);
+  }
   require dirname(__DIR__,3).'/motor/src/consumption-routes.php';
   \respond(['error'=>'Ruta no disponible.'],404);
  }

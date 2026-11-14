@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.3.1:**
+- **Conexión de la agencia** en Agencia → Subcuentas (arriba): Company ID y **token de agencia** con «Guardar y probar». Es el token que lee la billetera para **Consumos**; antes solo estaba dentro de Consumos. Si falla, dice por qué en palabras (token rechazado, sin permiso o Company ID equivocado). Guardar, probar y quitar quedan en el Registro de actividad.
+- **Ventana «Nueva subcuenta / Datos de la empresa» reordenada**: la conexión va justo después de los datos de la empresa, con Location ID y token lado a lado. El Company ID ya no se pide por subcuenta (es de la agencia).
+- **Los estilos ya no se quedan viejos**: la app pide cada hoja de estilo y programa con su versión (`?v=2.3.1`) y el trabajador sin conexión busca primero en la red. Esto arregla pantallas «sin estilo» (botones grises, letra del sistema) tras actualizar sobre una versión anterior.
+- Sin migraciones nuevas. Reemplaza `public_html/` y `servidor/` conservando `servidor/config/config.php` y `servidor/storage/`.
+
 **Novedades 2.3.0:**
 - **Bandeja, contactos, oportunidades, ganadas y tablero en vivo** para las subcuentas conectadas: los atiende el mismo motor que Ágora Mobile (`servidor/motor/`), con su cuota (20 consultas cada 10 s por subcuenta), sus reglas de asignación (cada persona ve lo suyo según su correo en la cuenta) y su protección contra envíos repetidos. Las subcuentas sin conexión siguen como antes, con datos importados.
 - **Consumos** (Agencia → Consumos, solo dueños): token de agencia y Company ID cifrados; gasto y recargas por subcuenta y mes, en texto o PDF.

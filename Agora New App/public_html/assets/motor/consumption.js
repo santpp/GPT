@@ -81,7 +81,7 @@ export async function renderConsumption(container){
   function paintConn(){
     const ready=settings.tokenSaved&&settings.companyId;
     $('#cons-conn').innerHTML=`<h3>Conexión de agencia</h3>
-     ${ready?'<p class="cons-note">Conectada con el token de agencia. No se vuelve a mostrar.</p>':'<p class="cons-note">Con el token de agencia (Agency View → Settings → Private Integrations, permiso <b>saas/company.read</b>) Ágora lee el gasto y el plan de cada subcuenta. Se guarda cifrado en el servidor y no se vuelve a mostrar.</p>'}
+     ${ready?'<p class="cons-note">Conectada con el token de agencia. No se vuelve a mostrar.</p>':'<p class="cons-note">Con el token de agencia (Agency View → Settings → Private Integrations, permiso para ver la compañía y su billetera) Ágora lee el gasto y el plan de cada subcuenta. Se guarda cifrado en el servidor y no se vuelve a mostrar.</p>'}
      <details ${ready?'':'open'}><summary>${ready?'Cambiar el Company ID o el token':'Conectar la agencia'}</summary>
      <form id="cons-form" class="cons-form" autocomplete="off">
       <label>Company ID<input name="companyId" value="${esc(settings.companyId)}" placeholder="Agency View → Settings → Company" maxlength="80" spellcheck="false"></label>

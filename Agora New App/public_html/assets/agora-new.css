@@ -88,3 +88,18 @@ html,body,button,input,select,textarea{font-family:var(--font-text)}
  body.cons-printing .cons-sheet-sub{page-break-inside:avoid}
  @page{size:A4;margin:14mm}
 }
+/* 2.3.1 · Conexión de la agencia (Subcuentas) y conexión de la subcuenta, más ordenadas */
+.agency-conn{display:flex;align-items:center;gap:14px;margin:0 0 22px;padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:var(--surface,#fff)}
+.agency-conn.is-none{border-color:color-mix(in srgb,var(--gold,#FABD4B) 70%,transparent);background:color-mix(in srgb,var(--gold,#FABD4B) 9%,var(--surface,#fff))}
+.agency-conn-ic{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:12px;background:var(--brand-soft,#f6e7ec);color:var(--brand,#ad103c)}
+.agency-conn-ic .ic{width:20px;height:20px}
+.agency-conn-tx{display:grid;gap:2px;min-width:0;flex:1}
+.agency-conn-tx b{font-size:15px;color:var(--ink)}
+.agency-conn-tx span{font-size:13.5px;line-height:1.45;color:var(--muted)}
+.agency-conn-tx code{font:500 12.5px/1 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--ink);overflow-wrap:anywhere}
+.agency-conn-acts{display:flex;gap:8px;flex-wrap:wrap;flex:none}
+@media (max-width:640px){.agency-conn{flex-wrap:wrap}.agency-conn-acts{width:100%}.agency-conn-acts .btn{flex:1;justify-content:center}}
+.con-row{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);align-items:start}
+@media (max-width:640px){.con-row{grid-template-columns:minmax(0,1fr)}}
+.con-acts{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+#ghl-probar-out:empty,[data-out]:empty{display:none}

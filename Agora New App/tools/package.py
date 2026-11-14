@@ -6,7 +6,7 @@ config.php real, storage y cualquier archivo con aspecto de clave. El ZIP de dem
 (agora-cyberpanel-2.1.19-demo.zip)."""
 import hashlib,pathlib,re,sys,zipfile
 ROOT=pathlib.Path(__file__).resolve().parent.parent
-version=sys.argv[1] if len(sys.argv)>1 else '2.3.0'
+version=sys.argv[1] if len(sys.argv)>1 else '2.3.1'
 out=ROOT/f'agora-new-app-{version}.zip'
 FUERA=[r'^servidor/datos-sinteticos/',r'^servidor/bin/sembrar-sinteticos\.php$',r'^servidor/storage/(?!\.gitkeep$|\.gitignore$)',
        r'^servidor/config/config\.php$',r'^public_html/assets/demo(-capas)?\.js$',r'^public_html/assets/asocim-',

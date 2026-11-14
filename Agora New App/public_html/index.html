@@ -31,12 +31,12 @@
 /* El tema, antes de pintar, para que no parpadee. */
 (function(){var r=document.documentElement,g=function(k,d){try{return JSON.parse(localStorage.getItem('agora_'+k)||JSON.stringify(d))}catch(e){return d}};try{var t=g('tema','auto');var d=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);r.setAttribute('data-theme',d?'dark':'light');r.setAttribute('data-accent',g('acento','vino'))}catch(e){}if(/Mac|iPhone|iPad|iPod/.test(navigator.platform||navigator.userAgent))document.documentElement.classList.add('is-apple')})();
 </script>
-<link rel="stylesheet" href="/assets/sistema.css">
-<link rel="stylesheet" href="/assets/modulos.css">
-<link rel="stylesheet" href="/assets/marca.css">
-<link rel="stylesheet" href="/assets/diseno.css">
-<link rel="stylesheet" href="/assets/ecosistema.css">
-<link rel="stylesheet" href="/assets/agora-new.css">
+<link rel="stylesheet" href="/assets/sistema.css?v=2.3.1">
+<link rel="stylesheet" href="/assets/modulos.css?v=2.3.1">
+<link rel="stylesheet" href="/assets/marca.css?v=2.3.1">
+<link rel="stylesheet" href="/assets/diseno.css?v=2.3.1">
+<link rel="stylesheet" href="/assets/ecosistema.css?v=2.3.1">
+<link rel="stylesheet" href="/assets/agora-new.css?v=2.3.1">
 </head>
 <body>
 <a class="skip" href="#app">Saltar al contenido</a>
@@ -58,10 +58,10 @@
 <div id="won-banner" class="won-banner" role="alert" hidden></div>
 <dialog id="action-dialog"><form method="dialog"><button class="dialog-close" aria-label="Cerrar">×</button></form><div id="dialog-content"></div></dialog>
 
-<script src="/assets/config.js"></script>
-<script src="/assets/backend-client.js"></script>
-<script src="/assets/agora-modulos.js"></script>
-<script src="/assets/agora-app.js" defer></script>
+<script src="/assets/config.js?v=2.3.1"></script>
+<script src="/assets/backend-client.js?v=2.3.1"></script>
+<script src="/assets/agora-modulos.js?v=2.3.1"></script>
+<script src="/assets/agora-app.js?v=2.3.1" defer></script>
 <script>
 /* El trabajador de servicio: el mismo de Ágora, con la caché de esta versión.
    Se encarga de los avisos (push) y de abrir la conversación al tocarlos. */
