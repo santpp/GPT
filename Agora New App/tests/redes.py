@@ -33,8 +33,13 @@ ok(d.get('cifras') and d['cifras']['impresiones']==2350,'las cifras de los últi
 ok(e.call('workspace/redes')[0]==403,'un ejecutivo (solo ve lo suyo) no entra a las redes de la empresa')
 st,d=a.call('workspace/redes')
 ok(len(d['cifras'].get('porRed') or [])==2,'las cifras vienen también separadas por red')
-for ruta in ['workspace/redes/publicaciones','workspace/redes/publicaciones?tipo=published']:
-    ok(a.call(ruta)[0]==404,'la lista de publicaciones ya no existe ('+ruta.split('?')[0]+')')
+st,d=a.call('workspace/redes/publicaciones?tipo=published')
+ok(st==200 and {p['red'] for p in d['items']}>={'Facebook','Instagram'},'se ven las publicadas de todas las redes')
+ok(any(p['nativa'] for p in d['items']),'también las hechas en Meta Business Suite (nativas)')
+st,d=a.call('workspace/redes/publicaciones?tipo=published&red=instagram')
+ok(st==200 and d['items'] and all(p['red']=='Instagram' for p in d['items']),'se pueden ver solo las de una red')
+for ruta,met in [('workspace/redes/publicaciones','POST'),('workspace/redes/publicaciones/post-pub','DELETE')]:
+    ok(a.call(ruta,met,{})[0] in (404,405),f'desde Ágora no se publica ni se borra ({met})')
 st,d=s.call('workspace/redes')
 ok(st==200 and d.get('cifras'),'la supervisora ve las redes y sus cifras')
 st,d=c.call('workspace/redes')

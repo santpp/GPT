@@ -34,6 +34,7 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 31 | Redes sociales: «La cuenta pidió esperar un momento» en la lista de publicaciones. | El rechazo anterior hacía que la pasarela pausara toda la subcuenta 15 segundos o más, también la bandeja. | Las lecturas de redes son «suaves»: un rechazo no pausa la subcuenta. | Corregido en 2.7.1 |
 | 32 | Redes sociales: no se veían las publicaciones. | La pantalla abría en «Programadas» y solo miraba 30 días atrás. Además, la cuenta solo informa lo publicado desde su planificador. | Abre en «Publicadas», mira 90 días, agrupa y filtra por red, y explica lo del planificador. | Resuelto en 2.7.3: se quitó la lista (las publicaciones se hacen en Meta Business Suite y la cuenta no las informa) |
 | 33 | Las imágenes de las publicaciones no se mostrarían. | La regla de seguridad del sitio (`img-src`) solo permitía imágenes propias. | Se permitieron en 2.7.2; en 2.7.3, sin lista de publicaciones, se vuelve a permitir solo imágenes propias. | Ya no aplica |
+| 34 | Se quitó la lista de publicaciones creyendo que la cuenta no informa lo hecho en Meta Business Suite. | Error de interpretación: la cuenta sincroniza las publicaciones nativas («Native post») si la red tiene activada la sincronización; ASOCIM tiene 231. | La lista vuelve, con la marca «Hecha en Meta». | Corregido en 2.8.1. Por confirmar con la cuenta real |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 
@@ -48,13 +49,13 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | N.º | Qué falta | Por qué importa |
 |---|---|---|
 | 11 | Probar las escrituras con la cuenta real: enviar un mensaje, asignar una conversación, editar un contacto, mover y crear una oportunidad, marcar ganada, crear, corregir y completar una tarea, crear un contacto nuevo, abrir Redes y anuncios y ver sus cifras, y ver las campañas de Meta del mes. | Las atiende el mismo código de Ágora Mobile 1.10.14, pero en esta app solo se probaron contra una cuenta simulada; desde el entorno de desarrollo no hay salida a la cuenta real. |
-| 12 | Confirmar el error 2 en tests después de subir la 2.8.0. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
+| 12 | Confirmar el error 2 en tests después de subir la 2.8.1. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
 | 13 | Cabeceras de seguridad en OpenLiteSpeed. | OpenLiteSpeed no aplica las líneas `Header` del `.htaccess`; van en el vHost (paso 9 de la guía). |
 | 14 | (Resuelto en 2.5.0) La bandeja usaba el código de una versión anterior de Ágora Mobile. | Bandeja, Contactos y Embudos ya llevan lo de la 1.10.14. |
 
 ## Cómo comprobar la versión instalada
 
-- `https://TU-DOMINIO/api/health` debe decir `"version":"2.8.0"`.
+- `https://TU-DOMINIO/api/health` debe decir `"version":"2.8.1"`.
 - `https://TU-DOMINIO/version.json` debe decir lo mismo.
 - Si una pantalla se ve rara tras actualizar: recarga una vez. Si sigue, en Chrome toca el icono a la izquierda de la dirección → Configuración del sitio → Borrar datos, y vuelve a entrar.
 
@@ -66,5 +67,5 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 - La hora de la tarea se envía con la zona horaria del navegador de quien la crea.
 - Cuando la cuenta rechaza un contacto duplicado, esa subcuenta espera unos segundos antes de la siguiente consulta (la misma protección de cuota de siempre).
 - «Nuevo contacto» pide nombre, apellido, teléfono y correo; etiquetas y campos personalizados se completan después en «Editar ficha».
-- Redes sociales es solo lectura: se publica y se conecta en la cuenta, no en Ágora.
+- Redes y anuncios es solo lectura: se publica y se conecta en la cuenta, no en Ágora. Las publicaciones de Meta Business Suite aparecen solo si la red tiene activada la sincronización de publicaciones en la cuenta.
 - Campañas de Meta: la documentación de la cuenta no describe la forma de la respuesta ni si el campo de campaña es obligatorio para la lista; Ágora lo intenta de las dos maneras y busca cada cifra por su nombre. La primera prueba con la cuenta real de ASOCIM confirma que los números coinciden con los del Administrador de anuncios.

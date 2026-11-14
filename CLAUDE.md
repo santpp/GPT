@@ -34,7 +34,7 @@ Léelo entero antes de tocar nada. Es el resumen de cómo trabajamos y de lo que
 ## Estructura del repositorio
 
 - **Raíz** (`src/`, `public/`, `database/`, `tests/`, `deploy/`): **Ágora Mobile** (Ágora 1.x), en producción en nueva.agoradigital.app. Última: **1.10.14**. Paquete en `Agora Mobile/agora-update-1.10.14.zip` (+ `.sha256`, `manual-vendedores.pdf`). PHP 8.3 sin framework, módulos ES en el navegador, `public/router.php`, `src/live-inbox.php`, pasarela `GhlGateway` (20 consultas cada 10 s, 50 000 al día), `TokenVault` (sodium, XChaCha20). Diseño: `docs/DESIGN.md`, `tests/design-tokens.py`.
-- **`Agora New App/`**: el **ERP** (no llamarlo «armazón»). Hoy en pruebas en **tests.agoradigital.app** (CyberPanel + OpenLiteSpeed). Versión actual: **2.8.0**.
+- **`Agora New App/`**: el **ERP** (no llamarlo «armazón»). Hoy en pruebas en **tests.agoradigital.app** (CyberPanel + OpenLiteSpeed). Versión actual: **2.8.1**.
 - `docs/roadmap.md`: historial de versiones de ambos.
 
 ## Agora New App (ERP) · cómo está hecho
@@ -47,7 +47,7 @@ Léelo entero antes de tocar nada. Es el resumen de cómo trabajamos y de lo que
 - Enlace persona ↔ usuario de la cuenta: `Services/UserLinks.php` (explícito, o por correo si no hay). Un ejecutivo sin enlace no ve nada y se le avisa.
 - Lo que vive en la cuenta se escribe en la cuenta, sin copias locales: tareas (`MotorMobile::tarea`), «Nuevo contacto» (`MotorMobile::contactoNuevo`). Con la subcuenta conectada no hay «Agregar manual» ni Excel en Contactos, Oportunidades y Tareas.
 - Lecturas opcionales (redes, campañas) usan `GhlGateway::execute(..., soft: true)`: un 4xx no pausa la subcuenta.
-- Módulos: Tablero comercial (antes «ARP Comercial»; ruta `/comercial`), Inicio con «Resumen de hoy», Bandeja/Contactos/Oportunidades (al día con Mobile 1.10.14), Tareas, **Redes y anuncios** (`/redes`: cifras de redes de Social Planner, sin lista de publicaciones, y Campañas de Meta), **Embudo y publicidad** (Campañas de Meta en vivo arriba + reporte mensual), módulos del reporte mensual (Gestión Comercial, Equipo, Ventas, Facturación, Costos, Tendencias, Calidad, Configuración mensual: solo con reporte cargado), Contratos, Administración.
+- Módulos: Tablero comercial (antes «ARP Comercial»; ruta `/comercial`), Inicio con «Resumen de hoy», Bandeja/Contactos/Oportunidades (al día con Mobile 1.10.14), Tareas, **Redes y anuncios** (`/redes`: Campañas de Meta, cifras de redes de Social Planner y publicaciones por red, solo lectura; las publicaciones incluyen las nativas de Meta Business Suite que la cuenta sincroniza), **Embudo y publicidad** (Campañas de Meta en vivo arriba + reporte mensual), módulos del reporte mensual (Gestión Comercial, Equipo, Ventas, Facturación, Costos, Tendencias, Calidad, Configuración mensual: solo con reporte cargado), Contratos, Administración.
 - Pantalla: `public_html/assets/agora-app.js` (grande; el código principal vive dentro de un IIFE que termina con `render();` — **agrega código nuevo antes del arranque**, por ejemplo junto a `contactoNuevoModal`, o no será visible para `MODS`), `agora-modulos.js` (módulos de Mobile empaquetados), estilos nuevos en `assets/agora-new.css` (se carga al final).
 - **Al cambiar de versión** actualiza a la vez: `?v=X` en `index.html` y en el `import` de `motor/consumption.js` dentro de `agora-app.js`, `CACHE` en `sw.js`, `version.json`, `'version'` de `health` en `Api.php`, versión por defecto de `tools/package.py`, `ANALISIS.md`, `NOVEDADES.md`, `ERRORES.md`, `docs/roadmap.md`. `tests/ui-estados.py` comprueba que coincidan.
 - Rutas nuevas de la pantalla: agrégalas en `public_html/.htaccess` (OpenLiteSpeed: reiniciar `lsws`) y en `dev-router.php`.
@@ -62,7 +62,8 @@ Léelo entero antes de tocar nada. Es el resumen de cómo trabajamos y de lo que
 ## Pendientes y decisiones del usuario
 
 - **Por confirmar con la cuenta real** (el usuario prueba en tests): escrituras (enviar, asignar, editar contacto, mover/crear oportunidad, marcar ganada, tareas, nuevo contacto), cifras de redes y **Campañas de Meta** (la documentación no dice la forma de la respuesta).
-- **No hacer por ahora**: avisos al teléfono («la prioridad no es móvil»), publicar o listar publicaciones de redes, conexión directa con Meta.
+- **No hacer por ahora**: avisos al teléfono («la prioridad no es móvil»), publicar o borrar publicaciones desde Ágora, conexión directa con Meta.
+- **Aprendido**: la cuenta sí sincroniza publicaciones hechas en Meta Business Suite («Native post», interruptor «Sync posts» en Social Planner). No afirmes que algo no existe en la cuenta sin evidencia; si el usuario muestra lo contrario, créele y corrige.
 - **Siguiente posible**: bajar de campaña a conjuntos/anuncios; campañas de Google; módulos del reporte para empresas que no son ASOCIM (el usuario debe decir cuáles y qué miden).
 - Ágora Mobile V2.1: resumen diario o semanal y cabeceras de seguridad (OpenLiteSpeed ignora `Header` en `.htaccess`). Pendiente de decidir: límite de intentos de contraseña por correo y Capacitor 6.2.3. En espera: plantillas de WhatsApp (falta el identificador de la cuenta de WhatsApp Business). Futuro lejano: módulo de inventario.
 - Registro de errores y su estado: `Agora New App/ERRORES.md`. Revisión por módulos: `Agora New App/REVISION-MODULOS.md`. Guía de instalación: `Agora New App/INSTALAR-CYBERPANEL.md`.

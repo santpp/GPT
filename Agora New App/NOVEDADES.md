@@ -1,5 +1,10 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.1:**
+- **Vuelven las publicaciones en «Redes y anuncios»**, solo para ver: publicadas (abre aquí), programadas, con error y borradores; de los últimos 90 días y los próximos 60; agrupadas por red y con filtro «Red». **Incluyen las hechas en Meta Business Suite** («Hecha en Meta»), que la cuenta sincroniza cuando la red tiene activada la sincronización de publicaciones. (En 2.7.3 se habían quitado por un error de interpretación: se creía que la cuenta solo informaba lo publicado desde su planificador.)
+- El `.htaccess` vuelve a permitir imágenes por https (las miniaturas de las publicaciones). **Cambia el `.htaccess`.**
+- Necesita además el permiso `socialplanner/post.readonly`.
+
 **Novedades 2.8.0:**
 - **Campañas de Meta** (solo lectura), con los datos de la cuenta publicitaria conectada en el administrador de anuncios de la cuenta, también para campañas creadas en el Administrador de anuncios de Meta. Por mes (los últimos 6): inversión, resultados, costo por resultado, impresiones, alcance, clics y CTR, en total y por campaña, con su estado (activa, en pausa…).
 - Está en **dos módulos**: **«Redes y anuncios»** (antes «Redes sociales»), arriba de las cifras de las redes, y **«Embudo y publicidad»**, arriba de lo que viene del reporte mensual. Embudo y publicidad ahora aparece también en subcuentas sin reporte, solo con las campañas.

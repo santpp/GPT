@@ -211,7 +211,7 @@ Comprueba también que `https://TU-DOMINIO/servidor/config/config.php` **no** ab
      - `conversations.readonly`, `conversations.write`, `conversations/message.readonly`, `conversations/message.write`
      - `opportunities.readonly`, `opportunities.write`
      - `calendars.readonly`, `calendars/events.readonly`
-     - Para **Redes y anuncios** (solo lectura): `socialplanner/account.readonly`, `socialplanner/statistics.readonly` y, para las campañas de Meta, `adPublishing.readonly`
+     - Para **Redes y anuncios** (solo lectura): `socialplanner/account.readonly`, `socialplanner/post.readonly`, `socialplanner/statistics.readonly` y, para las campañas de Meta, `adPublishing.readonly`
      - Opcionales, para lo que viene: `invoices.readonly`, `products.readonly`
 
      Copia el token (empieza por `pit-`) y pégalo. **Solo se ve una vez en la cuenta**: si lo pierdes, crea otro.
@@ -248,6 +248,7 @@ Con la subcuenta conectada, **Contactos → Nuevo contacto** lo crea en la cuent
 **Gestión y resultados → Redes y anuncios** es solo para ver:
 - **Campañas de Meta** del mes (los últimos 6): inversión, resultados, costo por resultado, impresiones, alcance, clics y CTR, en total y por campaña. Lo mismo aparece arriba en **Embudo y publicidad**.
 - Las **redes conectadas** y sus cifras de los últimos 7 días frente a los 7 anteriores, en total y por red.
+- Las **publicaciones** (publicadas, programadas, con error, borradores), agrupadas por red. Incluyen las hechas en Meta Business Suite si en la cuenta la red tiene activada la sincronización de publicaciones (Social Planner → ajustes → «Sync posts»).
 
 Para que salgan las campañas: la cuenta publicitaria de Meta tiene que estar conectada en la cuenta de la subcuenta (Marketing → administrador de anuncios → conectar Facebook) y la integración privada necesita `adPublishing.readonly`. Sirve también para campañas creadas directamente en Meta.
 

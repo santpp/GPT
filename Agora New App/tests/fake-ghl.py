@@ -24,7 +24,7 @@ TASKS=[]
 SOCIAL_ACCOUNTS=[{'id':'acc-fb','profileId':'fb1','name':'ASOCIM Admisiones','platform':'facebook','type':'page','isExpired':False},
  {'id':'acc-ig','profileId':'ig1','name':'@asocim','platform':'instagram','type':'business','isExpired':False},
  {'id':'acc-li','profileId':'li1','name':'ASOCIM','platform':'linkedin','type':'page','isExpired':True}]
-POSTS=[{'_id':'post-ig','summary':'Así fue la graduación de la cohorte de octubre.','status':'published','platform':'instagram','accountIds':['acc-ig'],'displayDate':'2026-11-08T18:00:00.000Z','publishedAt':'2026-11-08T18:00:00.000Z','media':[{'url':'https://ejemplo.test/grad.jpg','type':'image/jpeg'}],'type':'post','source':'composer'},
+POSTS=[{'_id':'post-ig','summary':'Así fue la graduación de la cohorte de octubre.','status':'published','platform':'instagram','accountIds':['acc-ig'],'displayDate':'2026-11-08T18:00:00.000Z','publishedAt':'2026-11-08T18:00:00.000Z','media':[{'url':'https://ejemplo.test/grad.jpg','type':'image/jpeg'}],'type':'post','source':'native'},
  {'_id':'post-pub','summary':'Abrimos inscripciones para el diplomado de enero.','status':'published','platform':'facebook','accountIds':['acc-fb'],'displayDate':'2026-11-10T14:00:00.000Z','publishedAt':'2026-11-10T14:00:00.000Z','media':[],'type':'post','source':'composer'},
  {'_id':'post-err','summary':'Clase abierta este sábado.','status':'failed','error':'Token de la página vencido','platform':'linkedin','accountIds':['acc-li'],'displayDate':'2026-11-12T15:00:00.000Z','media':[],'type':'post','source':'composer'}]
 def log(*a):

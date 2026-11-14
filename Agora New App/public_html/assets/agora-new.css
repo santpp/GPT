@@ -288,3 +288,19 @@ html,body,button,input,select,textarea{font-family:var(--font-text)}
 .camp-nota{margin:10px 0 0;font-size:12.5px;line-height:1.45;color:var(--muted)}
 .camp-sk{display:grid;gap:10px;padding:10px 0}
 .camp-movible{margin:0 0 18px}
+/* 2.8.1 · Publicaciones de redes (de vuelta, solo lectura) */
+.redes-tabs{margin:0 0 14px}
+.redes-lista{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.redes-post{display:flex;gap:14px;align-items:flex-start;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface,#fff)}
+.redes-img{flex:none;width:72px;height:72px;object-fit:cover;border-radius:10px;background:var(--fill-3,#f4f4f7)}
+.redes-post-tx{flex:1;min-width:0;display:grid;gap:6px}
+.redes-post-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0;font-size:13px;color:var(--muted)}
+.redes-post-texto{margin:0;font-size:14.5px;line-height:1.5;color:var(--ink);white-space:pre-line;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.redes-post-redes{margin:0;font-size:12.5px;color:var(--muted)}
+.redes-post-error{margin:0;font-size:13px;color:var(--brand);font-weight:600}
+.redes-mas{display:block;margin:12px auto 0}
+@media(max-width:600px){.redes-post{flex-wrap:wrap}.redes-post > .btn{margin-left:auto}.redes-img{width:56px;height:56px}}
+.redes-filtro{max-width:260px;margin:0 0 12px}
+.redes-grupo{display:flex;align-items:center;gap:10px;margin:18px 0 10px;font-size:14px}
+.redes-grupo:first-of-type{margin-top:4px}
+.redes-grupo small{font-size:12.5px;font-weight:500;color:var(--muted)}
