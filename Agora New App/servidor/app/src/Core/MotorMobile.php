@@ -14,7 +14,7 @@ use Agora\Services\GhlConnection;
  * Sin conexión guardada, el ERP sigue respondiendo con sus datos importados, como hasta ahora.
  */
 final class MotorMobile {
- public const VERSION='motor-1.10.14';
+ public const VERSION='motor-1.10.14-dia';
  /** Tenant único del motor: la agencia. Cada subcuenta del ERP es una conexión con id = id de la subcuenta. */
  public const AGENCIA=1;
  /** Rutas en vivo (GET o el método indicado). */
@@ -24,6 +24,7 @@ final class MotorMobile {
   'workspace/contact-conversation'=>['POST'],'workspace/contact-fields'=>['GET'],'workspace/tags'=>['GET'],'workspace/templates'=>['GET'],
   'workspace/board'=>['GET'],'workspace/pipelines'=>['GET'],'workspace/opportunities'=>['GET'],'workspace/won'=>['GET'],'workspace/won-alert'=>['GET'],
   'workspace/dashboard'=>['GET'],'workspace/pulse'=>['GET'],'workspace/sync'=>['POST'],
+  'workspace/dia'=>['GET'],'workspace/eficacia'=>['GET'],'workspace/ads'=>['GET'],
  ];
  private static bool $arrancado=false;
 
@@ -63,6 +64,8 @@ final class MotorMobile {
   $schema=preg_replace('/CREATE TABLE (?!IF NOT EXISTS)/i','CREATE TABLE IF NOT EXISTS ',(string)file_get_contents($dir.'/schema.sql'));
   \db()->exec($schema);
   \Installation::applyMigrations();
+  // 2.6.1 · la foto diaria que da «frente a ayer» en Operación del día.
+  \db()->exec("CREATE TABLE IF NOT EXISTS daily_metrics (connection_id BIGINT UNSIGNED NOT NULL,day DATE NOT NULL,kind VARCHAR(20) CHARACTER SET ascii NOT NULL,payload JSON NOT NULL,updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,PRIMARY KEY (connection_id,day,kind),FOREIGN KEY (connection_id) REFERENCES ghl_connections(id) ON DELETE CASCADE)");
   \query('INSERT IGNORE INTO tenants(id,name,location_id) VALUES(?,?,?)',[self::AGENCIA,'Agencia','agora-new-app']);
   $erp->run('INSERT INTO agora_schema(version,checksum) VALUES(?,?)',[self::VERSION,hash('sha256',self::VERSION)]);
  }

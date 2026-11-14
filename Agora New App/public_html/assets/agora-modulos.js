@@ -384,9 +384,9 @@
       </div>
     </div>
     <div class="grid g3 mt">
-      ${panelx("Sin leer por asesor", "Quién tiene conversaciones esperando.", rueda((d.sinLeerPorAsesor || []).map((x) => ({ l: x.nombre, n: x.n })), { rotulo: "Conversaciones sin leer por asesor" }))}
-      ${panelx("Fuente de los leads", "Por dónde entraron hoy.", rueda((d.leadsPorFuente || []).map((x) => ({ l: x.fuente, n: x.n })), { rotulo: "Fuente de los leads" }))}
-      ${panelx("Leads por ejecutivo", "A quién le tocaron.", rueda((d.leadsPorUsuario || []).map((x) => ({ l: x.nombre, n: x.n })), { rotulo: "Leads asignados por ejecutivo" }))}
+      ${panelx("Sin leer por asesor", "Quién tiene conversaciones esperando.", rueda((d.sinLeerPorAsesor || []).map((x) => ({ l: x.nombre, n: x.n })), { rotulo: "Conversaciones sin leer por asesor" , vacio: "Nadie tiene conversaciones sin leer ahora." }))}
+      ${panelx("Fuente de los leads", "Por dónde entraron hoy.", rueda((d.leadsPorFuente || []).map((x) => ({ l: x.fuente, n: x.n })), { rotulo: "Fuente de los leads", vacio: d.leads === null || d.leads === void 0 ? "Todavía no hay datos de leads para hoy." : "Hoy todavía no entró ningún lead." }))}
+      ${panelx("Leads por ejecutivo", "A quién le tocaron.", rueda((d.leadsPorUsuario || []).map((x) => ({ l: x.nombre, n: x.n })), { rotulo: "Leads asignados por ejecutivo", vacio: d.leads === null || d.leads === void 0 ? "Todavía no hay datos de leads para hoy." : "Hoy no se asignó ningún lead." }))}
     </div>`;
   }
   function pintarAds(nodo, a, periodoTexto) {

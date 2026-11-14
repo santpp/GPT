@@ -26,6 +26,8 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 23 | «Agregar manual» y «Excel» en Contactos y Oportunidades guardaban en la base de Ágora mientras la lista se leía de la cuenta. | Dos orígenes de datos para la misma pantalla. | Con la subcuenta conectada esos botones no existen y el servidor rechaza la carga. | Corregido en 2.4.0 |
 | 24 | Ajustes nombraba al proveedor y decía que la sincronización «aún no está habilitada»; Ayuda decía «Versión 1.4.3» y hablaba de la demo. | Textos del código recibido, sin actualizar. | Reescritos. | Corregido en 2.4.0 |
 | 25 | Auditoría y Registro mostraban códigos (`subcuenta.cobros`, `invoice`, `sesion`). | No usaban la tabla de textos legibles. | La usan, con las acciones que faltaban. | Corregido en 2.4.0 |
+| 26 | En el tablero, «Sin leer por asesor», «Fuente de los leads» y «Operación del día» decían «Sin datos todavía» o «—» con la subcuenta conectada. | Esas tarjetas venían en el código recibido llamando a rutas del servidor que devolvían vacío, y nunca se conectaron con la cuenta. | El motor las calcula con la cuenta (Operación del día, Eficacia, Anuncios). | Corregido en 2.6.1 |
+| 27 | La tarjeta «Así va tu cuenta» de Inicio se veía poco seria (icono de color y flecha). | Diseño. | «Resumen de hoy» con tres cifras reales y un enlace sobrio al tablero. | Corregido en 2.6.1 |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 
@@ -40,13 +42,13 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | N.º | Qué falta | Por qué importa |
 |---|---|---|
 | 11 | Probar las escrituras con la cuenta real: enviar un mensaje, asignar una conversación, editar un contacto, mover y crear una oportunidad, marcar ganada, crear, corregir y completar una tarea, y crear un contacto nuevo. | Las atiende el mismo código de Ágora Mobile 1.10.14, pero en esta app solo se probaron contra una cuenta simulada; desde el entorno de desarrollo no hay salida a la cuenta real. |
-| 12 | Confirmar el error 2 en tests después de subir la 2.6.0. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
+| 12 | Confirmar el error 2 en tests después de subir la 2.6.1. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
 | 13 | Cabeceras de seguridad en OpenLiteSpeed. | OpenLiteSpeed no aplica las líneas `Header` del `.htaccess`; van en el vHost (paso 9 de la guía). |
 | 14 | (Resuelto en 2.5.0) La bandeja usaba el código de una versión anterior de Ágora Mobile. | Bandeja, Contactos y Embudos ya llevan lo de la 1.10.14. |
 
 ## Cómo comprobar la versión instalada
 
-- `https://TU-DOMINIO/api/health` debe decir `"version":"2.6.0"`.
+- `https://TU-DOMINIO/api/health` debe decir `"version":"2.6.1"`.
 - `https://TU-DOMINIO/version.json` debe decir lo mismo.
 - Si una pantalla se ve rara tras actualizar: recarga una vez. Si sigue, en Chrome toca el icono a la izquierda de la dirección → Configuración del sitio → Borrar datos, y vuelve a entrar.
 

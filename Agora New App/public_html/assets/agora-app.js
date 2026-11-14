@@ -1921,10 +1921,10 @@ const PAL = ['var(--brand)', 'var(--gold)', 'var(--teal)', 'var(--violet)', 'var
  * Se usa para las conversaciones sin leer por asesor, la fuente de los leads
  * y los leads asignados por usuario.
  */
-function donut(items, {centro = '', rotulo = ''} = {}) {
+function donut(items, {centro = '', rotulo = '', vacio = ''} = {}) {
   const lista = (items || []).filter(x => Number(x.n) > 0);
   const suma = lista.reduce((a, b) => a + Number(b.n), 0);
-  if (!suma) return `<p class="empty"><b>Sin datos todavía</b>${esc(rotulo || 'No hay nada que repartir en este periodo.')}</p>`;
+  if (!suma) return vacio ? `<p class="empty empty-sobrio">${esc(vacio)}</p>` : `<p class="empty"><b>Sin datos todavía</b>${esc(rotulo || 'No hay nada que repartir en este periodo.')}</p>`;
   const R = 52, C = 2 * Math.PI * R;
   let corrido = 0;
   const arcos = lista.map((it, i) => {
@@ -4051,7 +4051,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.6.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.6.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -5467,9 +5467,13 @@ function tbConfig() {
 }
 const tbVisible = id => { const m = TB_TARJETAS[id]?.mod; return !!m && !!MODS[m] && moduleAllowed(m) && !moduloOculto(m); };
 function tableroInicioHtml() {
-  /* 2.6.0 · un solo tablero: las cifras viven en ARP Comercial; Inicio solo lleva a él. */
-  if (MODS.comercial && moduleAllowed('comercial') && !moduloOculto('comercial'))
-    return `<section class="tb-inicio inicio-arp"><a class="inicio-arp-a" href="${href(MODS.comercial.path)}"><span class="inicio-arp-ic">${icon('pie')}</span><span class="inicio-arp-tx"><b>Así va tu cuenta</b><small>Conversaciones, leads, oportunidades y ventas de hoy, en ${esc(MODS.comercial.name)}.</small></span>${icon('chevR')}</a></section>`;
+  /* 2.6.1 · un solo tablero: Inicio muestra el resumen de hoy (tres cifras reales) y lleva a ARP Comercial. */
+  if (MODS.comercial && moduleAllowed('comercial') && !moduloOculto('comercial')) {
+    const mio = !!ESPACIO?.permisos?.soloAsignado;
+    const cifra = (k, t) => `<div class="inicio-resumen-c" data-ir="${k}"><span class="inicio-resumen-l">${t}</span><strong class="inicio-resumen-v"><span class="sk w40"></span></strong><span class="inicio-resumen-d"><span class="sk w60"></span></span></div>`;
+    return `<section class="tb-inicio inicio-resumen" aria-labelledby="inicio-resumen-t"><header class="inicio-resumen-h"><h2 id="inicio-resumen-t">${mio ? 'Lo tuyo hoy' : 'Resumen de hoy'}</h2><a class="inicio-resumen-ver" href="${href(MODS.comercial.path)}">Ver el tablero completo${icon('chevR')}</a></header>
+      <div class="inicio-resumen-g">${cifra('sinleer', 'Conversaciones sin leer')}${cifra('espera', 'Esperando respuesta')}${cifra('opp', 'Oportunidades abiertas')}</div></section>`;
+  }
   const c = tbConfig(); if (!c.visible) return '';
   const ids = c.tarjetas.filter(tbVisible);
   if (!ids.length) return esAdmin() ? `<section class="tb-inicio is-empty"><p>No hay tarjetas para mostrar en tu tablero. <a href="${href('/personalizar')}">Elige tus tarjetas</a>.</p></section>` : '';
@@ -7511,7 +7515,20 @@ async function kpiInicio(root) {
   const box = root.querySelector('.kpi-inicio .kpi-grid'); if (!box || epoch !== NAV_EPOCH) return;
   box.innerHTML = lista.map(k => kpiTarjeta(k, kpiValor(k, v || {}), false)).join('');
 }
-if (V.centro) { const montar = V.centro.mounted; V.centro.mounted = function (root) { montar?.call(this, root); kpiInicio(root); }; }
+/** 2.6.1 · llena el resumen de hoy del Inicio con las cifras del tablero (la misma lectura, guardada un minuto). */
+async function inicioResumen(root) {
+  const box = root?.querySelector('.inicio-resumen'); if (!box || !ws?.current()) return;
+  const epoch = NAV_EPOCH; let d = null;
+  try { d = await agoraApi(`workspace/dashboard?connectionId=${encodeURIComponent(ws.current())}`); } catch { d = null; }
+  if (epoch !== NAV_EPOCH || !box.isConnected) return;
+  const pon = (k, v, det) => { const c = box.querySelector(`[data-ir="${k}"]`); if (!c) return; c.querySelector('.inicio-resumen-v').textContent = v; c.querySelector('.inicio-resumen-d').textContent = det; };
+  if (!d) { box.querySelector('.inicio-resumen-g').innerHTML = '<p class="inicio-resumen-x">No se pudieron leer las cifras de hoy. Ábrelas en el tablero completo.</p>'; return; }
+  const c = d.conversations || {}, o = d.opportunities || {}, nf = x => x == null ? '—' : NI.format(x);
+  pon('sinleer', nf(c.unread), c.total != null ? `de ${nf(c.total)} conversaciones` : '');
+  pon('espera', nf(c.waiting), 'el cliente escribió último');
+  pon('opp', nf(o.count), o.value != null ? `${o.sampled ? 'al menos ' : ''}${usd(o.value)} en juego` : '');
+}
+if (V.centro) { const montar = V.centro.mounted; V.centro.mounted = function (root) { montar?.call(this, root); inicioResumen(root); kpiInicio(root); }; }
 /* ---------- ARP Comercial: nombre propio y chip de meta (capa sobre agora-modulos.js) ---------- */
 function kpiArp(root) {
   if (!root || !agoraReady()) return;

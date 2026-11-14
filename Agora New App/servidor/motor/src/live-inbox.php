@@ -105,6 +105,28 @@ if($path==='/api/workspace/contact'&&$method==='GET'){
     catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la ficha. Revisa el permiso de contactos.','code'=>'contact_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'La ficha recibida no tiene el formato esperado.','code'=>'contact_invalid_response'],424);}
 }
+// Agora New App 2.6.1 · Operación del día, eficacia de ventas e inversión en anuncios (de la línea 1.11 de Ágora Mobile).
+if(in_array($path,['/api/workspace/dia','/api/workspace/eficacia','/api/workspace/ads'],true)&&$method==='GET'){
+    require_once __DIR__.'/OperationsReport.php';
+    $report=new OperationsReport();
+    $day=OperationsReport::day($_GET['date']??null);
+    $period=Board::period($_GET['period']??null);
+    try{
+        if($path==='/api/workspace/dia')respond($report->operationDay($connection,$membership,$day));
+        if(!($membership['capabilities']['viewOpportunities']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar oportunidades.'],403);
+        if($path==='/api/workspace/eficacia'){
+            $pipeline=is_string($_GET['pipelineId']??null)&&preg_match('/^[A-Za-z0-9_-]{0,80}$/D',$_GET['pipelineId'])?$_GET['pipelineId']:'';
+            $person=is_string($_GET['userId']??null)&&preg_match('/^[A-Za-z0-9_-]{0,80}$/D',$_GET['userId'])?$_GET['userId']:'';
+            respond($report->efficiency($connection,$membership,$period,$pipeline,$person));
+        }
+        // Lo invertido es de la empresa: quien sólo ve lo suyo no lo recibe.
+        if(($membership['capabilities']['assignedDataOnly']??false)===true)respond(['estado'=>'permission']);
+        respond($report->ads($connection,$period,$day));
+    }
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La consulta está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>'No se pudo leer la cuenta. Revisa los permisos.','code'=>'report_upstream_'.$e->status],424);}
+    catch(Throwable $e){error_log('Report failure: '.get_class($e).' '.$e->getMessage());respond(['error'=>'La respuesta recibida no tiene el formato esperado.','code'=>'report_invalid_response'],424);}
+}
 if(preg_match('~^/api/workspace/activity(/note|/task|/task-state|/contact)?$~',$path,$activityMatch)&&in_array($method,['GET','POST'],true)){
     if(!($membership['capabilities']['viewContacts']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar la ficha del contacto.'],403);
     $conversation=$_GET['conversationId']??'';
