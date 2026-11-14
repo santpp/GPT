@@ -74,7 +74,7 @@ class H(BaseHTTPRequestHandler):
             return self.out(200,{'contact':CONTACTS[m2.group(1)]})
         m3=re.match(r'^/contacts/([\w-]+)/tasks$',p)
         if m3 and m=='POST':
-            t={'id':f'task{len(TASKS)+1}','contactId':m3.group(1),'title':b.get('title'),'body':b.get('body'),'dueDate':b.get('dueDate'),'completed':False};TASKS.append(t);return self.out(201,{'task':t})
+            t={'id':'t'+__import__('uuid').uuid4().hex[:20],'contactId':m3.group(1),'title':b.get('title'),'body':b.get('body'),'dueDate':b.get('dueDate'),'completed':False};TASKS.append(t);return self.out(201,{'task':t})
         if m3 and m=='GET':return self.out(200,{'tasks':[t for t in TASKS if t['contactId']==m3.group(1)]})
         m3=re.match(r'^/contacts/([\w-]+)/tasks/([\w-]+)(/completed)?$',p)
         if m3 and m=='PUT':

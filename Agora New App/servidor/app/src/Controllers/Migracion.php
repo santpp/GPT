@@ -291,6 +291,8 @@ final class Migracion {
   /* 2.1.19: «Agregar manual» crea un solo registro: basta el permiso de edición (lo revisa Api); la carga masiva sigue siendo de administración. */
   $manual=($b['manual']??false)===true&&($b['modo']??'')==='crear'&&is_array($b['filas']??null)&&count($b['filas'])===1&&in_array($b['modulo']??'',['contactos','oportunidades','ventas','tareas'],true);
   if(!$manual)$this->auth->manage();$t=$this->tenant();
+  // 2.4.0 · con la subcuenta conectada, contactos, oportunidades y tareas viven en la cuenta: aquí no se guardan copias.
+  if(in_array($b['modulo']??'',['contactos','oportunidades','tareas'],true)&&\Agora\Core\MotorMobile::conectada($this->db,(int)$t))Http::fail('Esta subcuenta está conectada con su cuenta: los contactos, las oportunidades y las tareas se crean desde sus pantallas y quedan en la cuenta.',409);
   $modulo=Http::text($b,'modulo',30);$d=self::def($modulo);if(!$d['importa'])Http::fail('Este módulo es solo de descarga.');
   $modo=$b['modo']??'';if(!in_array($modo,['crear','actualizar','simular'],true))Http::fail('Modo de importación inválido.');
   $filas=$b['filas']??null;if(!is_array($filas)||!array_is_list($filas)||count($filas)>self::LOTE)Http::fail('Envía hasta '.self::LOTE.' filas por lote.');

@@ -211,7 +211,7 @@ const MODS = {
   conConvenio: {g: 'contratos', view: 'contactos', name: 'Con convenio', icon: 'user', path: '/con-convenio', c: 'var(--mod-oro)',
     desc: 'Personas con convenio y búsqueda en la cartera.', ok: () => can('ver') && puede('datos.consultar'), n: () => DATA.contratos ? clientes().length : null},
   registro: {g: 'contratos', view: 'registro', name: 'Registro', icon: 'history', path: '/registro', c: 'var(--mod-oro)',
-    desc: 'Todo lo que pasa con los convenios, con su hora.', ok: () => puede('auditoria.ver')},
+    desc: 'Todo lo que pasa con los convenios, con su hora.', dentro: 'auditoria', ok: () => puede('auditoria.ver')},
   auditoria: {g: 'administracion', view: 'auditoria', name: 'Auditoría', icon: 'shield', path: '/auditoria', c: 'var(--mod-seguridad)', periodo: true,
     desc: 'Quién tocó qué contacto, cuándo y desde dónde.', ok: () => puede('auditoria.ver')},
   configuracion: {g: 'administracion', view: 'tc_configuracion', name: 'Configuración mensual', icon: 'edit', path: '/configuracion', c: 'var(--mod-azul)', periodo: true,
@@ -234,6 +234,8 @@ const gruposMenu = () => { const available = ALL().filter(k => !MODS[k].fijo); r
 const puede = k => { const p = ESPACIO?.permisos; if (p && k in p) return !!p[k]; return esSuperAdmin() || (k === 'datos.consultar' && (!!ME || agoraReady())); };
 const hayReporte = () => !!ESPACIO?.hayReporte;
 const conectada = () => !!ESPACIO?.conectada;
+/** Módulos cuyos datos se leen y escriben en la cuenta cuando la subcuenta está conectada. */
+const EN_VIVO = ['contactos', 'oportunidades', 'tareas'];
 const moduleAllowed = id => { try { return !!MODS[id]?.ok(); } catch { return false; } };
 const moduleCaption = id => moduleAllowed(id) ? MODS[id].desc : 'Acceso restringido para tu rol · Consulta al administrador.';
 const homeMod = () => ALL()[0] || null;
@@ -303,7 +305,7 @@ function pager(st, total, per) { const pages = Math.max(1, Math.ceil(total / per
 const searchFld = (val, ph, key = 'q') => `<label class="fld grow">Buscar<span class="search-in">${icon('search')}<input type="search" data-f="${key}" value="${esc(val)}" placeholder="${esc(ph)}" autocomplete="off" enterkeyhint="search"></span></label>`;
 const loading = (title = '') => `<span data-placeholder hidden></span>${title ? head(title, '<span class="sk w40" style="height:30px"></span>') : ''}<div class="grid g4">${'<div class="micro"><span class="sk w60"></span><span class="sk big"></span></div>'.repeat(4)}</div><div class="panel mt"><span class="sk w40"></span><span class="sk w80"></span><span class="sk w60"></span><span class="sk w80"></span></div>`;
 const failed = (msg) => `<span data-placeholder hidden></span><div class="panel"><p class="empty"><b>No se pudo cargar</b>${esc(msg)}<br><button class="btn btn-sm" type="button" data-retry>Intentar de nuevo</button></p></div>`;
-const noAccess = () => `<span data-placeholder hidden></span><section class="panel"><p class="empty"><b>${esc(MODS[R.mod]?.name || 'Módulo')} · Acceso restringido</b>Esta opción permanece visible. Tu rol no tiene permiso para abrirla en ${esc(ws?.name() || 'esta subcuenta')}. Consulta al administrador.<br><a class="btn btn-cta" href="${href(homePath())}">${icon('home')}Volver al inicio</a><button class="btn" type="button" data-open-modules>${icon('sidebar')}Ver todos los módulos</button></p></section>`;
+const noAccess = () => `<span data-placeholder hidden></span><section class="panel"><p class="empty"><b>${esc(MODS[R.mod]?.name || 'Módulo')} · Acceso restringido</b>Tu rol no tiene permiso para abrir esta pantalla en ${esc(ws?.name() || 'esta subcuenta')}. Consulta al administrador.<br><a class="btn btn-cta" href="${href(homePath())}">${icon('home')}Volver al inicio</a><button class="btn" type="button" data-open-modules>${icon('sidebar')}Ver todos los módulos</button></p></section>`;
 const kv = pairs => `<dl class="kv">${pairs.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
 
 /* =====================================================================================
@@ -475,9 +477,9 @@ V.contactos = {
     if (!puedeBuscar && st.tab === 'agora') st.tab = 'clientes';
     const lede = 'Las personas con convenio y los contactos de AGORA. Desde aquí abres sus convenios o creas uno nuevo.';
     const tabs = puedeBuscar ? `<div class="mb">${seg('ctab', [['clientes', 'Con convenio'], ['agora', 'Buscar en AGORA']], st.tab, 'Vista de contactos')}</div>` : '';
-    if (this.error) return head('Directorio', 'Contactos', lede) + failed(this.error);
+    if (this.error) return head('Convenios', 'Personas con convenio', lede) + failed(this.error);
     if (!DATA.contratos) return loading('Directorio');
-    return head('Directorio', 'Contactos', lede) + tabs + (st.tab === 'agora' ? this.agora() : this.clientes());
+    return head('Convenios', 'Personas con convenio', lede) + tabs + (st.tab === 'agora' ? this.agora() : this.clientes());
   },
   clientes() {
     const st = state.contactos, list = clientes(), q = norm(st.q);
@@ -849,7 +851,7 @@ V.registro = {
     const hoy = new Date().toDateString(), dHoy = all.filter(e => utc(e.creado_en)?.toDateString() === hoy).length;
     const cols = [
       {k: 'creado_en', l: 'Cuándo', f: v => `<span title="${esc(fstamp(v))}">${esc(when(v))}</span><small>${esc(fstamp(v))}</small>`},
-      {k: 'tipo', l: 'Acción', f: v => `<b class="strong">${esc(EVENTOS[v] || v)}</b>`},
+      {k: 'tipo', l: 'Acción', f: v => `<b class="strong">${esc(EVENTOS[v] || accionLegible(v))}</b>`},
       {k: 'cliente', l: 'Cliente', f: (v, r) => r.uid ? `<a href="${href('/contratos/' + r.uid)}">${esc(v || 'Sin nombre')}</a>` : '<span class="muted">Sin contrato</span>'},
       {k: 'detalle', l: 'Detalle', f: (v, r) => esc(det(r)) || '<span class="muted">—</span>'},
     ];
@@ -1377,7 +1379,6 @@ function rightCluster() {
     <button class="tb-ic" id="b-hist" type="button" aria-haspopup="true" aria-expanded="false" title="Historial de lo que has visto">${icon('history')}</button>
     <button class="tb-ath" id="b-ath" type="button" aria-haspopup="dialog" aria-expanded="false" title="Athena, tu agente">${athenaAvatar()}<span>Athena</span></button>
     ${atajo('centro', 'home', 'Inicio', 'Centro de operaciones')}
-    ${atajo('auditoria', 'shield', 'Auditoría', 'Trazabilidad de contactos y cambios')}
     <button class="tb-ic" id="b-theme" type="button" title="Cambiar tema (D)" aria-label="Cambiar tema">${icon(document.documentElement.dataset.theme === 'dark' ? 'sun' : 'moon')}</button>
     <button class="avatar avatar-ic ${bloqueada ? 'is-off' : ''}" id="b-acct" type="button" aria-haspopup="true" aria-expanded="false" title="Perfil de cuenta y opciones" aria-label="Perfil de cuenta y opciones">${personalAvatar()}</button>`;
 }
@@ -1396,8 +1397,7 @@ function topbar() {
   $('#navigation-context')?.remove();
   sideNav();
   const abiertas = [
-    ME ? `Contratos · ${ROLES[ME.rol]?.l || ME.rol}` : '',
-    AGORA_ME ? `Ágora · ${AGORA_ME.user?.role === 'administrator' ? 'administración' : 'equipo'}` : '',
+    ME ? (ROLES_SISTEMA?.[ME.rol]?.l || ROLES[ME.rol]?.l || 'Tu cuenta') : '',
   ].filter(Boolean);
   $('#foot').textContent = abiertas.join('   ·   ') || 'Sin sesión';
 }
@@ -1494,7 +1494,7 @@ function launcherFrame(mode, content) {
   if (!agency) return `<div class="launch-layout launch-no-rail"><div class="launch-content">${content}</div></div>`;
   const name = ME?.nombre || AGORA_ME?.user?.name || 'Mi cuenta';
   const groupIcons = {general:'home',ingresos:'invoice',clientes:'users',gestion:'pie',contratos:'receipt',administracion:'gear'};
-  return `<div class="launch-layout"><aside class="launch-rail" aria-label="Navegación de ${agency ? 'Agencia' : 'subcuenta'}"><div class="launch-brand launch-brand-logo" aria-label="Ágora Digital App">${LOGO}</div><p class="launch-rail-label">${agency ? 'Agencia' : esc(ws?.name() || 'Mi subcuenta')}</p><nav class="launch-primary"><a class="${R.view==='agencia'?'is-current':''}" href="${href(agency ? '/agencia' : '/centro')}" ${R.view==='agencia'?'aria-current="page"':''}>${icon(agency ? 'users' : 'home')}${agency ? 'Subcuentas' : 'Inicio de subcuenta'}</a>${!agency && esSuperAdmin() ? `<button type="button" data-agency-return>${icon('users')}Ir a subcuentas</button>` : ''}${agency ? '' : Object.entries(GRUPOS).map(([id,g]) => `<button type="button" data-launch-group="group-${id}">${icon(groupIcons[id])}${esc(g.name)}</button>`).join('')}</nav><div class="launch-system"><p class="launch-rail-label">${AG_GOB_NOMBRE}</p><a href="${href('/agencia/control')}" ${R.view==='agencyControl'?'aria-current="page"':''}>${icon('pie')}Resumen</a><a href="${href('/agencia/usuarios')}" ${R.view==='agencyTeam'?'aria-current="page"':''}>${icon('team')}Gestión de usuarios</a><a href="${href('/agencia/actividad')}" ${R.view==='agencyActivity'?'aria-current="page"':''}>${icon('shield')}Registro de actividad</a><a href="${href('/agencia/consumos')}" ${R.view==='agencyConsumos'?'aria-current="page"':''}>${icon('wallet')}Consumos</a><a href="${href('/agencia/estudio-ia')}" ${R.view==='agencyStudio'?'aria-current="page"':''}>${icon('spark')}Estudio</a>${!agency ? `<p class="launch-rail-label">Mi espacio</p><a href="${href('/ajustes')}">${icon('gear')}Ajustes</a><a href="${href('/ayuda')}">${icon('info')}Ayuda</a>` : ''}</div><a class="launch-person" href="${href('/perfil')}" ${R.view==='perfil'?'aria-current="page"':''}><span class="launch-avatar">${personalAvatar()}</span><span><b>${esc(name)}</b><small>${esSuperAdmin() ? (esMaster() ? 'Master · Dueño' : 'Superadmin de Agencia') : 'Mi perfil y cuenta'}</small></span>${icon('chevR')}</a></aside><div class="launch-content">${content}</div></div>`;
+  return `<div class="launch-layout"><aside class="launch-rail" aria-label="Navegación de ${agency ? 'Agencia' : 'subcuenta'}"><div class="launch-brand launch-brand-logo" aria-label="Ágora Digital App">${LOGO}</div><p class="launch-rail-label">${agency ? 'Agencia' : esc(ws?.name() || 'Mi subcuenta')}</p><nav class="launch-primary"><a class="${R.view==='agencia'?'is-current':''}" href="${href(agency ? '/agencia' : '/centro')}" ${R.view==='agencia'?'aria-current="page"':''}>${icon(agency ? 'users' : 'home')}${agency ? 'Subcuentas' : 'Inicio de subcuenta'}</a>${!agency && esSuperAdmin() ? `<button type="button" data-agency-return>${icon('users')}Ir a subcuentas</button>` : ''}${agency ? '' : Object.entries(GRUPOS).map(([id,g]) => `<button type="button" data-launch-group="group-${id}">${icon(groupIcons[id])}${esc(g.name)}</button>`).join('')}</nav><div class="launch-system"><p class="launch-rail-label">${AG_GOB_NOMBRE}</p><a href="${href('/agencia/control')}" ${R.view==='agencyControl'?'aria-current="page"':''}>${icon('pie')}Resumen</a><a href="${href('/agencia/usuarios')}" ${R.view==='agencyTeam'?'aria-current="page"':''}>${icon('team')}Gestión de usuarios</a><a href="${href('/agencia/actividad')}" ${R.view==='agencyActivity'?'aria-current="page"':''}>${icon('shield')}Registro de actividad</a><a href="${href('/agencia/consumos')}" ${R.view==='agencyConsumos'?'aria-current="page"':''}>${icon('wallet')}Consumos</a>${!agency ? `<p class="launch-rail-label">Mi espacio</p><a href="${href('/ajustes')}">${icon('gear')}Ajustes</a><a href="${href('/ayuda')}">${icon('info')}Ayuda</a>` : ''}</div><a class="launch-person" href="${href('/perfil')}" ${R.view==='perfil'?'aria-current="page"':''}><span class="launch-avatar">${personalAvatar()}</span><span><b>${esc(name)}</b><small>${esSuperAdmin() ? (esMaster() ? 'Master · Dueño' : 'Superadmin de Agencia') : 'Mi perfil y cuenta'}</small></span>${icon('chevR')}</a></aside><div class="launch-content">${content}</div></div>`;
 }
 document.addEventListener('click', e => {
   const button = e.target.closest('[data-launch-group]');
@@ -2128,7 +2128,7 @@ V.auditoria = {
     const cols = [
       {k: 'at', l: 'Cuándo', f: v => `<span class="who-cell"><b>${esc(when(v))}</b><small>${esc(fstamp(v))}</small></span>`},
       {k: 'actor', l: 'Quién', f: (v, r) => `<span class="who-cell"><b>${esc(v)}</b><small>${esc(r.rol || '')}</small></span>`},
-      {k: 'accion', l: 'Qué hizo', f: (v, r) => `<span class="sc sc-${ACCION_TONO[v] || 'gray'}">${esc(r.accionTexto || v)}</span>`},
+      {k: 'accion', l: 'Qué hizo', f: (v, r) => `<span class="sc sc-${ACCION_TONO[v] || 'gray'}">${esc(r.accionTexto || accionLegible(v))}</span>`},
       {k: 'modulo', l: 'Módulo', f: v => esc(MODULOS_AUD[v] || v)},
       {k: 'objeto', l: 'Sobre qué', f: (v, r) => r.contacto
         ? `<span class="who-cell"><b>${esc(r.contacto)}</b><small>${esc(v || '')}</small></span>`
@@ -2291,7 +2291,7 @@ V.usuarios = {
     return cabeza
       + `<div class="grid g4">
         ${metric('Personas activas', int(activos.length), `${int(todos.length - activos.length)} desactivada${todos.length - activos.length === 1 ? '' : 's'}`)}
-        ${['SUPERADMIN', 'ADMIN', 'EJECUTIVO'].map(r => metric(ROLES_SISTEMA[r].l, int(activos.filter(u => u.rol === r).length), ROLES_SISTEMA[r].d, {filter: r, on: st.rol === r})).join('')}
+        ${['ADMIN', 'SUPERVISOR', 'EJECUTIVO'].map(r => metric(ROLES_SISTEMA[r].l, int(activos.filter(u => u.rol === r).length), ROLES_SISTEMA[r].d, {filter: r, on: st.rol === r})).join('')}
       </div>`
       + `<section class="panel mt"><div class="tools">${searchFld(st.q, 'Nombre o correo')}${st.q || st.rol ? '<button class="btn clear" type="button" data-clear>Quitar filtros</button>' : ''}</div>
         ${table(cols, filas, {empty: '<b>Nadie coincide</b>Prueba con otro nombre o quita los filtros.'})}</section>`
@@ -4051,7 +4051,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.3.3').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.4.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -4333,8 +4333,8 @@ if (!window.__DEMO__) {
   V.usuarios.render=function(){return usersRender.call(this)+`<section class="panel mt"><form id="server-user-search"><label class="fld">Buscar en todos los usuarios de esta subcuenta<input name="q" type="search" maxlength="120" value="${esc(USER_PAGE.q)}"></label><button class="btn" type="submit">Buscar en servidor</button></form><p class="src">${DATOS.usuarios?.length||0} visibles de ${USER_PAGE.total} resultados. Los filtros superiores se aplican a la página visible.</p>${USER_PAGE.next?'<button type="button" class="btn" id="users-next">Página siguiente</button>':''}</section>`;};
   V.usuarios.mounted=function(root){usersMounted?.call(this,root);root.querySelector('#server-user-search')?.addEventListener('submit',async e=>{e.preventDefault();USER_PAGE.q=new FormData(e.target).get('q');USER_PAGE.cursor='';await cargarUsuarios(true);repaint();});root.querySelector('#users-next')?.addEventListener('click',async()=>{USER_PAGE.cursor=USER_PAGE.next;await cargarUsuarios(true);repaint();});};
   V.ag_settings={
-    render(){return head('Administración','Ajustes','Configuración y carga de datos de la subcuenta activa.')+`<section class="panel"><h2>Datos reales</h2><p>Importa un archivo JSON con hasta 500 contactos, etapas, oportunidades o facturas. Para reportes usa el esquema de la guía incluida en el proyecto. Los identificadores existentes actualizan el registro.</p><form id="native-import"><label class="fld">Archivo JSON<input type="file" name="file" accept="application/json,.json" required></label><p class="fld-err" role="status"></p><div class="form-ft"><button class="btn btn-cta" type="submit">Validar e importar</button></div></form><details><summary>Ejemplo de contacto</summary><pre style="white-space:pre-wrap">${esc(JSON.stringify({kind:'contact',items:[{id:'cliente-001',name:'Nombre del cliente',email:'cliente@ejemplo.com',phone:'+580000000000'}]},null,2))}</pre></details></section><section class="panel mt"><h2>Conexiones y operación</h2><p>La autenticación, los datos y la auditoría se guardan en MySQL/MariaDB. Las credenciales de integraciones se configuran en el servidor. La sincronización automática de GHL aún no está habilitada en esta versión.</p><p id="native-status" role="status">Comprobando conexión…</p><button class="btn" type="button" id="native-refresh">Comprobar servicios</button><a class="btn" href="${href('/usuarios')}">Administrar usuarios</a><a class="btn" href="${href('/perfil')}">Mi perfil</a></section>`;},
-    mounted(root){const status=root.querySelector('#native-status');const refresh=async()=>{status.textContent='Comprobando conexión…';try{const d=await agoraApi('admin/diagnostics');status.textContent=`Base de datos conectada · Mensajería GHL: ${d.ghlConfigured?'credenciales configuradas; requiere cron':'sin configurar'} · revisado a las ${new Date().toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;}catch(e){status.textContent=e.message;}};root.querySelector('#native-refresh').onclick=refresh;refresh();root.querySelector('#native-import').onsubmit=async e=>{e.preventDefault();const f=e.target,file=f.querySelector('[type=file]').files[0],button=f.querySelector('[type=submit]'),out=f.querySelector('[role=status]');busy(button,true,'Importando…');try{if(!file||file.size>1800000)throw Error('Selecciona un JSON de máximo 1,8 MB.');const body=JSON.parse(await file.text());const result=await agoraApi('workspace/import',{method:'POST',body});out.textContent=result.period?'Reporte importado: '+result.period:`Importación completada: ${result.imported} registros.`;TB.estado='sin-cargar';DATOS.contactos=null;}catch(err){out.textContent=err.message;}finally{busy(button,false);}};}
+    render(){return head('Administración','Ajustes','El reporte mensual y el estado de la subcuenta.')+`<section class="panel"><h2>Reporte mensual</h2><p>Sube aquí el archivo del reporte de gestión del mes (formato JSON). Con él se arman Gestión Comercial, Equipo, Ventas, Facturación, Costos y Tendencias. Los contactos, oportunidades y productos se cargan con Excel en Migración de datos.</p><form id="native-import"><label class="fld">Archivo del reporte<input type="file" name="file" accept="application/json,.json" required></label><p class="fld-err" role="status"></p><div class="form-ft"><button class="btn btn-cta" type="submit">Validar e importar</button>${MODS.migracion && moduleAllowed('migracion') ? `<a class="btn" href="${href('/migracion')}">${icon('upload')}Ir a Migración de datos</a>` : ''}</div></form></section><section class="panel mt"><h2>Estado de la subcuenta</h2><p id="native-status" role="status">Comprobando…</p><p class="bx-help">La conexión con la cuenta la administra la agencia. Si falta o falla, pídele que la revise.</p><div class="form-ft" style="justify-content:flex-start"><button class="btn" type="button" id="native-refresh">${icon('refresh')}Comprobar otra vez</button></div></section>`;},
+    mounted(root){const status=root.querySelector('#native-status');const refresh=async()=>{status.textContent='Comprobando…';try{const d=await agoraApi('admin/diagnostics');status.textContent=`Base de datos: conectada · Cuenta de la subcuenta: ${d.ghlConfigured?'conectada (bandeja, contactos, oportunidades y tareas en vivo)':'sin conectar'} · revisado a las ${new Date().toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'})}`;}catch(e){status.textContent=e.message;}};root.querySelector('#native-refresh').onclick=refresh;refresh();root.querySelector('#native-import').onsubmit=async e=>{e.preventDefault();const f=e.target,file=f.querySelector('[type=file]').files[0],button=f.querySelector('[type=submit]'),out=f.querySelector('[role=status]');busy(button,true,'Importando…');try{if(!file||file.size>1800000)throw Error('Selecciona un archivo de máximo 1,8 MB.');const body=JSON.parse(await file.text());const result=await agoraApi('workspace/import',{method:'POST',body});out.textContent=result.period?'Reporte importado: '+result.period:`Importación completada: ${result.imported} registros.`;TB.estado='sin-cargar';DATOS.contactos=null;await bootEspacio();topbar();}catch(err){out.textContent=err.message;}finally{busy(button,false);}};}
   };
 }
 /* =====================================================================================
@@ -4395,7 +4395,7 @@ const logAntes = l => l.anterior ?? l.antes ?? '—';
 const logDespues = l => l.nuevo ?? l.despues ?? '—';
 /* Acciones del registro en palabras sencillas (el servidor guarda códigos como "rol.cambiado"). */
 const ACCION_LEGIBLE = {
-  'rol.cambiado': 'Cambió un rol', 'subcuenta.estado': 'Cambió el estado de una subcuenta', 'subcuenta.creada': 'Creó una subcuenta', 'subcuenta.conexion': 'Cambió la conexión con la cuenta', 'subcuenta.conexion.probada': 'Probó la conexión con la cuenta', 'agencia.conexion': 'Cambió la conexión de la agencia', 'agencia.conexion.probada': 'Probó la conexión de la agencia', 'agencia.conexion.quitada': 'Quitó el token de agencia',
+  'rol.cambiado': 'Cambió un rol', 'subcuenta.estado': 'Cambió el estado de una subcuenta', 'subcuenta.creada': 'Creó una subcuenta', 'subcuenta.conexion': 'Cambió la conexión con la cuenta', 'subcuenta.conexion.probada': 'Probó la conexión con la cuenta', 'agencia.conexion': 'Cambió la conexión de la agencia', 'subcuenta.cobros': 'Anotó cobros de una subcuenta', 'facturas.importadas': 'Importó facturas', 'usuario.enlace': 'Cambió el enlace de una persona con la cuenta', 'equipo.actualizado': 'Actualizó el equipo de la cuenta', 'usuario.creado': 'Agregó una persona', 'usuario.actualizado': 'Cambió los datos de una persona', 'usuario.revocado': 'Quitó el acceso a una persona', 'perfil.actualizado': 'Actualizó su perfil', 'identidad.actualizada': 'Cambió la identidad de la subcuenta', creo: 'Creó', edito: 'Editó', elimino: 'Eliminó', envio: 'Envió', firmo: 'Firmó', entro: 'Entró', salio: 'Salió', asigno: 'Asignó', exporto: 'Exportó', bloqueo: 'Bloqueó', sesion: 'Inicio de sesión', agencia: 'Cambio de la agencia', invoice: 'Facturas', report: 'Reporte mensual', contact: 'Contacto', task: 'Tarea', 'agencia.conexion.probada': 'Probó la conexión de la agencia', 'agencia.conexion.quitada': 'Quitó el token de agencia',
   'subcuenta.actualizada': 'Editó una subcuenta', 'subcuenta.cobros': 'Actualizó los cobros de una subcuenta', 'subcuenta.tipo': 'Cambió el tipo de cuenta de una subcuenta', 'productos.actualizados': 'Actualizó los productos y rubros', 'personalizacion.actualizada': 'Personalizó el tablero y los módulos', 'etiquetas.actualizadas': 'Actualizó las etiquetas del CRM', 'usuario.creado': 'Agregó a una persona',
   'usuario.editado': 'Editó a una persona', 'usuario.actualizado': 'Editó a una persona', 'usuario.revocado': 'Quitó el acceso a una persona',
   'clave.cambiada': 'Cambió una clave', 'permisos.actualizados': 'Cambió permisos', 'estado.actualizado': 'Cambió un estado',
@@ -5592,13 +5592,15 @@ V.personalizar = {
   },
   render() {
     PZ ??= pzBorrador();
-    if (!PZ_TABS.some(t => t[0] === PZ_TAB)) PZ_TAB = 'embudos';
+    /* 2.4.0 · con la subcuenta conectada los embudos son los de la cuenta: aquí no se editan otros. */
+    const pzTabs = PZ_TABS.filter(t => !(conectada() && t[0] === 'embudos'));
+    if (!pzTabs.some(t => t[0] === PZ_TAB)) PZ_TAB = pzTabs[0][0];
     const cuerpo = {embudos: () => embTab(), indicadores: () => indTab(), crm: pzCrm, modulos: pzModulos, inicio: pzTablero}[PZ_TAB]();
     const p = cuentaPerfil();
     return `<div class="pz">${head('Administración', 'Personalizar', 'Ajusta Ágora a tu negocio: las etapas de tus embudos, los indicadores (KPI) que mides y sus metas, el CRM y los módulos. Los cambios valen para toda la subcuenta.',
       `<a class="btn" href="${href('/comercial')}">${icon('trend')}Ver el ARP Comercial</a>`)}
       <div class="pz-perfil"><span class="pz-perfil-ic" aria-hidden="true">${icon('split')}</span><div><small>Tipo de cuenta</small><b>${esc(perfilTexto(p))}</b></div><p>${p ? 'Lo define la agencia al crear la subcuenta. Sirve de punto de partida para tus indicadores y tu Inicio.' : 'La agencia todavía no definió el tipo de cuenta. Mientras tanto se usan los valores de una cuenta de servicios.'}</p></div>
-      <nav class="agency-chips pz-tabs" role="tablist" aria-label="Qué personalizar">${PZ_TABS.map(([id, ic, t]) => `<button type="button" role="tab" class="agency-chip-btn ${PZ_TAB === id ? 'is-active' : ''} ${id === 'inicio' ? 'pz-tab-sec' : ''}" aria-selected="${PZ_TAB === id}" data-pz-tab="${id}">${icon(ic)}${t}</button>`).join('')}</nav>
+      <nav class="agency-chips pz-tabs" role="tablist" aria-label="Qué personalizar">${pzTabs.map(([id, ic, t]) => `<button type="button" role="tab" class="agency-chip-btn ${PZ_TAB === id ? 'is-active' : ''} ${id === 'inicio' ? 'pz-tab-sec' : ''}" aria-selected="${PZ_TAB === id}" data-pz-tab="${id}">${icon(ic)}${t}</button>`).join('')}</nav>
       <div class="pz-cuerpo" data-pz-cuerpo>${cuerpo}</div>${pzPie()}</div>`;
   },
   mounted(root) {
@@ -6203,7 +6205,7 @@ MODS.migracion = {g: 'administracion', view: 'migracion', name: 'Migración de d
   desc: 'Descarga y carga tus datos con Excel, y ajusta sus campos.', ok: () => puede('ajustes.editar')};
 V.migracion = {
   async need() {
-    if (!MIG.modulos) { const d = await agoraApi('workspace/campos'); MIG.modulos = d.modulos || []; }
+    if (!MIG.modulos) { const d = await agoraApi('workspace/campos'); MIG.modulos = (d.modulos || []).filter(m => !(conectada() && EN_VIVO.includes(m.id))); if (MIG.modulos.length && !MIG.modulos.some(m => m.id === MIG.mod)) MIG.mod = MIG.modulos[0].id; }
     if (!MIG.modulos.some(m => m.id === MIG.mod)) MIG.mod = MIG.modulos[0]?.id || 'contactos';
     await camposDe(MIG.mod);
     if (!MIG.edit || MIG.edit.mod !== MIG.mod) migEditarDesde(MIG.mod);
@@ -6497,6 +6499,7 @@ function migInformeDescargar() {
 /* ---------- Botón «Excel» en el encabezado de los módulos de datos ---------- */
 AgoraTabla.alPintar(root => {
   const mod = MIG_DE_MOD[R.mod]; if (!mod || !esAdmin() || R.view === 'migracion') return;
+  if (conectada() && EN_VIVO.includes(R.mod)) return; // 2.4.0 · con la subcuenta conectada, estos datos viven en la cuenta
   if (root.querySelector('.mg-hbtn')) return;
   const h = root.querySelector('.mod-h'); if (!h) return;
   let acts = h.querySelector(':scope > .acts'); if (!acts) { acts = document.createElement('div'); acts.className = 'acts'; h.append(acts); }
@@ -8455,6 +8458,8 @@ function teMapearExterno(ed, ext) {
 /* ---------- «Agregar manual» en el encabezado de los módulos de registros (también sin tabla) ---------- */
 AgoraTabla.alPintar(root => {
   if (typeof R === 'undefined' || !TE_MANUAL.includes(R.mod) || !tePuedeEscribir()) return;
+  if (['tareas', 'productos'].includes(R.mod)) return; // 2.4.0 · ya tienen «Nueva tarea» y «Nuevo producto»: un solo botón
+  if (conectada() && EN_VIVO.includes(R.mod)) return;
   const reg = teRegistro(null, R.mod); if (!reg || (reg === 'productos' && !teAdmin())) return;
   if (root.querySelector('.te-hbtn')) return;
   const h = root.querySelector('.mod-h'); if (!h) return;

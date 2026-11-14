@@ -6,6 +6,21 @@ Hecha el 14 de noviembre de 2026 sobre la 2.3.3, en local, con la subcuenta de p
 
 **Cómo leerla:** «Visto» = lo vi en pantalla. «Según el código» = lo leí en el programa pero no lo probé con la cuenta real.
 
+## Estado después de la 2.4.0
+
+| Problema | Estado |
+|---|---|
+| A · «Agregar manual» y «Excel» fuera de la cuenta | Corregido: con la subcuenta conectada no existen y el servidor rechaza la carga |
+| B · Dos mundos de datos | Parcial: los módulos del reporte mensual solo aparecen si hay un reporte cargado y la persona ve cifras del equipo |
+| C · Cruce de usuarios invisible | Corregido: enlace explícito, con el correo como sugerencia |
+| D · El ejecutivo veía todo el menú | Corregido: cada persona ve solo sus módulos |
+| E · Tres tableros | Parcial: Gestión Comercial desaparece sin reporte; Inicio y ARP Comercial siguen |
+| F · Dos importadores | Corregido: Ajustes solo importa el reporte mensual; lo demás va por Migración de datos |
+| G · Textos viejos o técnicos | Corregido en Ajustes, Ayuda, Auditoría, Registro y pie de página |
+| Tareas dobles | Corregido: una sola tarea, escrita en la cuenta |
+
+Pendiente de esta revisión: Bandeja, Contactos y Oportunidades al día con Ágora Mobile 1.10.14; nombres y columnas de los módulos del reporte pensados para ASOCIM; tablas anchas en el teléfono.
+
 ## Lo más importante (resumen)
 
 | N.º | Problema | Tipo | Gravedad |

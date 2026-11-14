@@ -229,9 +229,18 @@ Cada subcuenta usa **su** token (el de arriba). La billetera de la agencia (gast
 
 El token de agencia se guarda cifrado y nadie puede volver a verlo; guardar, probar o quitarlo queda en el **Registro de actividad**.
 
-### Crear los usuarios de cada subcuenta
+### Crear los usuarios de cada subcuenta y enlazarlos con la cuenta
 
-Agencia → subcuenta → **Administrar usuarios**. Roles: Admin, Supervisor, Ejecutivo y los de consulta. Los ejecutivos solo ven lo que tienen asignado en la cuenta.
+1. Entra a la subcuenta → **Administración** → **Usuarios y roles** → **Agregar persona**. Roles: Administración, Supervisión, Ejecutivo y Consulta. Cada persona ve solo los módulos que su rol permite.
+2. Si la subcuenta está conectada, la columna **«Usuario en la cuenta»** dice con quién está enlazada cada persona:
+   - **Enlazado con …** «por tener el mismo correo»: Ágora lo dedujo solo.
+   - **Sin enlazar:** nadie en la cuenta tiene ese correo. Pulsa **Opciones → Enlazar con la cuenta** y elige a la persona.
+3. Si agregaste gente nueva en la cuenta, pulsa **Actualizar equipo** para que aparezca en la lista.
+4. Un ejecutivo **sin enlazar no ve conversaciones, contactos ni oportunidades** (la app se lo avisa). Los administradores y supervisores ven toda la subcuenta aunque no estén enlazados.
+
+### Tareas
+
+Con la subcuenta conectada, **Nueva tarea** pide el contacto y la tarea queda escrita en su ficha en la cuenta. Completarla o corregirla en Ágora la cambia también allí. Las tareas creadas desde la ficha del contacto en la Bandeja aparecen en el módulo Tareas. La integración privada de la subcuenta necesita el permiso `contacts.write` (ya está en la lista del paso anterior).
 
 ---
 

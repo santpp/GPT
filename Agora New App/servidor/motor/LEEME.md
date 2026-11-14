@@ -12,3 +12,5 @@ oportunidades, embudos, ventas ganadas, tablero y consumos de la agencia.
 - Cambios respecto al original (buscar «Agora New App» en el código): `src/live-inbox.php` acepta la subcuenta,
   la persona y sus permisos que le pasa el puente, en lugar de calcularlos con las tablas de Ágora Mobile.
 - Para actualizar el motor: copiar de nuevo `src/` y `database/` desde Ágora Mobile y volver a aplicar ese cambio.
+- 2.4.0: `src/live-inbox.php` avisa al puente cuando se crea o completa una tarea desde la ficha (gancho `alActuar`),
+  y `src/GhlClient.php` tiene `updateContactTask` para corregir una tarea. Al actualizar el motor, volver a aplicar los dos.

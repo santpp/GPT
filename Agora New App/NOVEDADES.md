@@ -1,5 +1,15 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.4.0:**
+- **Cada persona ve solo sus módulos.** El menú, el inicio y el buscador muestran únicamente lo que su rol y sus permisos individuales permiten (un ejecutivo pasa de 24 entradas a 9). El servidor le envía a la pantalla los mismos permisos que aplica. Los módulos del reporte mensual (Gestión Comercial, Equipo, Facturación, Costos, Tendencias, Calidad, Configuración mensual) solo aparecen si la subcuenta tiene un reporte cargado.
+- **Enlace de cada persona con su usuario de la cuenta** (Usuarios y roles): columna «Usuario en la cuenta», opción «Enlazar con la cuenta», botón «Actualizar equipo» y, al agregar una persona, «Traer del equipo de la cuenta». Sin enlace elegido se sigue deduciendo por correo. Un ejecutivo sin enlace ve un aviso que le explica por qué no ve nada.
+- **Las tareas se escriben en la cuenta.** En una subcuenta conectada, cada tarea creada, corregida o completada en Ágora queda en la ficha del contacto en la cuenta; y las creadas desde la ficha aparecen en Tareas. Una sola tarea en los dos sitios. Por eso «Nueva tarea» pide el contacto.
+- **Sin copias locales de lo que vive en la cuenta.** Con la subcuenta conectada desaparecen «Excel» y «Agregar manual» de Contactos, Oportunidades y Tareas, esos módulos salen de Migración de datos y Personalizar ya no ofrece embudos propios. El servidor rechaza esas cargas.
+- **Menos duplicados:** un solo botón para crear en Tareas y en Productos; Ajustes queda con el reporte mensual y el estado de la subcuenta; «Registro» de convenios sale del menú (está en Auditoría); «Estudio» sale del menú de agencia; el atajo «Auditoría» sale de la barra superior; «Con convenio» ya no se titula «Contactos».
+- **Textos:** Ajustes y Ayuda sin textos de la demo ni nombres de proveedor; Auditoría y Registro muestran las acciones en palabras; el pie de página muestra el rol legible.
+- **Migración nueva y automática:** `005_enlaces.sql` (tabla `agora_user_links`). Se aplica sola al abrir la app.
+- Pruebas nuevas: `tests/permisos.py` (44), `tests/enlaces.py` (13), `tests/tareas.py` (15).
+
 **Novedades 2.3.3:**
 - **Bandeja: el botón de la ficha del contacto ya abre la ficha** (antes no hacía nada). En el teléfono reemplaza al chat y se cierra con la ×; en escritorio sale al lado.
 - Ficha y editor de contacto ordenados: oportunidad en filas, recuadros por grupo, interruptor «No contactar», campo modificado resaltado. El buscador ya no muestra dos bordes. El modo plantilla oculta la caja de texto libre.
