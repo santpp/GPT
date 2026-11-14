@@ -89,6 +89,8 @@ final class GhlClient {
     public function completeContactTask(string $contact,string $task,bool $completed):array {
         return $this->put('/contacts/'.rawurlencode($contact).'/tasks/'.rawurlencode($task).'/completed','2021-07-28',['completed'=>$completed]);
     }
+    /** Agora New App: crea un contacto nuevo en la cuenta (no modifica uno existente). */
+    public function createContact(array $payload):array {return $this->get('/contacts/','2021-07-28',$payload);}
     /** Agora New App: corrige título, detalle o fecha de una tarea del contacto. */
     public function updateContactTask(string $contact,string $task,array $payload):array {
         return $this->put('/contacts/'.rawurlencode($contact).'/tasks/'.rawurlencode($task),'2021-07-28',$payload);

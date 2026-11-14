@@ -61,6 +61,10 @@ class H(BaseHTTPRequestHandler):
         m2=re.match(r'^/conversations/([\w-]+)$',p)
         if m2 and m=='PUT':return self.out(200,{'success':True,'conversation':{'id':m2.group(1)}})
         if m2 and m=='GET':return self.out(200,next((c for c in CONVS if c['id']==m2.group(1)),{}))
+        if p=='/contacts/' and m=='POST':
+            if any((b.get('phone') and c.get('phone')==b.get('phone')) or (b.get('email') and c.get('email')==b.get('email')) for c in CONTACTS.values()):return self.out(400,{'message':'This location does not allow duplicated contacts.','meta':{'matchingField':'phone'}})
+            k='n'+__import__('uuid').uuid4().hex[:18];CONTACTS[k]={'id':k,'locationId':LOC,'contactName':b.get('name'),'firstName':b.get('firstName'),'lastName':b.get('lastName'),'email':b.get('email'),'phone':b.get('phone'),'assignedTo':b.get('assignedTo'),'tags':[],'dateAdded':'2026-11-14T10:00:00Z','customFields':[],'source':b.get('source')}
+            return self.out(201,{'contact':CONTACTS[k]})
         if p=='/contacts/' and m=='GET':return self.out(200,{'contacts':list(CONTACTS.values()),'meta':{'total':len(CONTACTS)}})
         if p=='/contacts/search' and m=='POST':
             who=None

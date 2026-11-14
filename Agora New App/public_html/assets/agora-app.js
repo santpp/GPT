@@ -4051,7 +4051,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.5.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.6.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -4395,7 +4395,7 @@ const logAntes = l => l.anterior ?? l.antes ?? '—';
 const logDespues = l => l.nuevo ?? l.despues ?? '—';
 /* Acciones del registro en palabras sencillas (el servidor guarda códigos como "rol.cambiado"). */
 const ACCION_LEGIBLE = {
-  'rol.cambiado': 'Cambió un rol', 'subcuenta.estado': 'Cambió el estado de una subcuenta', 'subcuenta.creada': 'Creó una subcuenta', 'subcuenta.conexion': 'Cambió la conexión con la cuenta', 'subcuenta.conexion.probada': 'Probó la conexión con la cuenta', 'agencia.conexion': 'Cambió la conexión de la agencia', 'subcuenta.cobros': 'Anotó cobros de una subcuenta', 'facturas.importadas': 'Importó facturas', 'usuario.enlace': 'Cambió el enlace de una persona con la cuenta', 'equipo.actualizado': 'Actualizó el equipo de la cuenta', 'usuario.creado': 'Agregó una persona', 'usuario.actualizado': 'Cambió los datos de una persona', 'usuario.revocado': 'Quitó el acceso a una persona', 'perfil.actualizado': 'Actualizó su perfil', 'identidad.actualizada': 'Cambió la identidad de la subcuenta', creo: 'Creó', edito: 'Editó', elimino: 'Eliminó', envio: 'Envió', firmo: 'Firmó', entro: 'Entró', salio: 'Salió', asigno: 'Asignó', exporto: 'Exportó', bloqueo: 'Bloqueó', sesion: 'Inicio de sesión', agencia: 'Cambio de la agencia', invoice: 'Facturas', report: 'Reporte mensual', contact: 'Contacto', task: 'Tarea', 'agencia.conexion.probada': 'Probó la conexión de la agencia', 'agencia.conexion.quitada': 'Quitó el token de agencia',
+  'rol.cambiado': 'Cambió un rol', 'subcuenta.estado': 'Cambió el estado de una subcuenta', 'subcuenta.creada': 'Creó una subcuenta', 'subcuenta.conexion': 'Cambió la conexión con la cuenta', 'subcuenta.conexion.probada': 'Probó la conexión con la cuenta', 'agencia.conexion': 'Cambió la conexión de la agencia', 'subcuenta.cobros': 'Anotó cobros de una subcuenta', 'facturas.importadas': 'Importó facturas', 'usuario.enlace': 'Cambió el enlace de una persona con la cuenta', 'contacto.creado': 'Creó un contacto', 'equipo.actualizado': 'Actualizó el equipo de la cuenta', 'usuario.creado': 'Agregó una persona', 'usuario.actualizado': 'Cambió los datos de una persona', 'usuario.revocado': 'Quitó el acceso a una persona', 'perfil.actualizado': 'Actualizó su perfil', 'identidad.actualizada': 'Cambió la identidad de la subcuenta', creo: 'Creó', edito: 'Editó', elimino: 'Eliminó', envio: 'Envió', firmo: 'Firmó', entro: 'Entró', salio: 'Salió', asigno: 'Asignó', exporto: 'Exportó', bloqueo: 'Bloqueó', sesion: 'Inicio de sesión', agencia: 'Cambio de la agencia', invoice: 'Facturas', report: 'Reporte mensual', contact: 'Contacto', task: 'Tarea', 'agencia.conexion.probada': 'Probó la conexión de la agencia', 'agencia.conexion.quitada': 'Quitó el token de agencia',
   'subcuenta.actualizada': 'Editó una subcuenta', 'subcuenta.cobros': 'Actualizó los cobros de una subcuenta', 'subcuenta.tipo': 'Cambió el tipo de cuenta de una subcuenta', 'productos.actualizados': 'Actualizó los productos y rubros', 'personalizacion.actualizada': 'Personalizó el tablero y los módulos', 'etiquetas.actualizadas': 'Actualizó las etiquetas del CRM', 'usuario.creado': 'Agregó a una persona',
   'usuario.editado': 'Editó a una persona', 'usuario.actualizado': 'Editó a una persona', 'usuario.revocado': 'Quitó el acceso a una persona',
   'clave.cambiada': 'Cambió una clave', 'permisos.actualizados': 'Cambió permisos', 'estado.actualizado': 'Cambió un estado',
@@ -5467,6 +5467,9 @@ function tbConfig() {
 }
 const tbVisible = id => { const m = TB_TARJETAS[id]?.mod; return !!m && !!MODS[m] && moduleAllowed(m) && !moduloOculto(m); };
 function tableroInicioHtml() {
+  /* 2.6.0 · un solo tablero: las cifras viven en ARP Comercial; Inicio solo lleva a él. */
+  if (MODS.comercial && moduleAllowed('comercial') && !moduloOculto('comercial'))
+    return `<section class="tb-inicio inicio-arp"><a class="inicio-arp-a" href="${href(MODS.comercial.path)}"><span class="inicio-arp-ic">${icon('pie')}</span><span class="inicio-arp-tx"><b>Así va tu cuenta</b><small>Conversaciones, leads, oportunidades y ventas de hoy, en ${esc(MODS.comercial.name)}.</small></span>${icon('chevR')}</a></section>`;
   const c = tbConfig(); if (!c.visible) return '';
   const ids = c.tarjetas.filter(tbVisible);
   if (!ids.length) return esAdmin() ? `<section class="tb-inicio is-empty"><p>No hay tarjetas para mostrar en tu tablero. <a href="${href('/personalizar')}">Elige tus tarjetas</a>.</p></section>` : '';
@@ -5593,7 +5596,7 @@ V.personalizar = {
   render() {
     PZ ??= pzBorrador();
     /* 2.4.0 · con la subcuenta conectada los embudos son los de la cuenta: aquí no se editan otros. */
-    const pzTabs = PZ_TABS.filter(t => !(conectada() && t[0] === 'embudos'));
+    const pzTabs = PZ_TABS.filter(t => !(conectada() && t[0] === 'embudos') && !(t[0] === 'inicio' && MODS.comercial && moduleAllowed('comercial')));
     if (!pzTabs.some(t => t[0] === PZ_TAB)) PZ_TAB = pzTabs[0][0];
     const cuerpo = {embudos: () => embTab(), indicadores: () => indTab(), crm: pzCrm, modulos: pzModulos, inicio: pzTablero}[PZ_TAB]();
     const p = cuentaPerfil();
@@ -7500,7 +7503,8 @@ async function kpiInicio(root) {
   const ancla = root.querySelector('.tb-inicio') || root.querySelector('.operations-heading'); if (!ancla) return;
   const epoch = NAV_EPOCH;
   const cfg = await kpiCfgCargar().catch(() => null); if (!cfg || epoch !== NAV_EPOCH || !ancla.isConnected || root.querySelector('.kpi-inicio')) return;
-  const lista = cfg.kpis.filter(k => k.activo && k.inicio); if (!lista.length) return;
+  /* 2.6.0 · solo los indicadores con meta: sin meta no hay avance que mostrar. */
+  const lista = cfg.kpis.filter(k => k.activo && k.inicio && k.meta != null && k.meta !== ''); if (!lista.length) return;
   ancla.insertAdjacentHTML('afterend', `<section class="kpi-inicio" aria-labelledby="kpi-inicio-t"><div class="tb-inicio-h"><h2 id="kpi-inicio-t">Indicadores clave<span>Tu avance contra la meta</span></h2>${esAdmin() || esSuperAdmin() ? `<a class="btn btn-sm" href="${href('/personalizar')}" data-kpi-ir>${icon('tune')}Ajustar metas</a>` : ''}</div><div class="kpi-grid">${lista.map(k => kpiTarjeta(k, null, true)).join('')}</div></section>`);
   root.querySelector('[data-kpi-ir]')?.addEventListener('click', () => { PZ_TAB = 'indicadores'; });
   const v = await kpiValores(lista).catch(() => null);
@@ -8454,6 +8458,48 @@ function teMapearExterno(ed, ext) {
   const filas = ext.filas.concat((ed.manuales || []).map(m => Object.fromEntries(cols.map(c => [c.clave, m.datos?.[c.id] ?? '']))));
   return {...ext, columnas: cols, filas};
 }
+
+/* ---------- 2.6.0 · «Nuevo contacto»: lo crea en la cuenta conectada y abre su ficha ---------- */
+function contactoNuevoModal() {
+  const requestId = 'contacto' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 8);
+  const soloMio = !!ESPACIO?.permisos?.soloAsignado, enlazado = !!ESPACIO?.enlace;
+  const s = openModal(modalHead('Nuevo contacto', 'Queda guardado en la cuenta de la subcuenta, igual que los demás.') + `<form class="bx-form" novalidate><div class="bx-grid">
+      <fieldset class="bx bx-wide"><legend>${icon('user')}Datos</legend>
+        <div class="bx-row">
+          <label class="fld"><span class="fld-l">Nombre <span class="req" aria-hidden="true">*</span></span><input name="nombre" maxlength="90" required autofocus autocomplete="off"></label>
+          <label class="fld">Apellido<input name="apellido" maxlength="90" autocomplete="off"></label>
+        </div>
+        <div class="bx-row">
+          <label class="fld">Teléfono<input name="telefono" type="tel" inputmode="tel" maxlength="40" autocomplete="off" placeholder="+584141234567"><span class="fld-hint">Con el código del país.</span></label>
+          <label class="fld">Correo<input name="correo" type="email" maxlength="190" autocomplete="off" placeholder="nombre@correo.com"></label>
+        </div>
+        ${soloMio ? '<p class="bx-help">Queda asignado a ti.</p>' : (enlazado ? '<label class="bx-check"><input type="checkbox" name="asignarme"> Asignármelo a mí</label>' : '')}
+      </fieldset></div>
+      <p class="fld-err" role="alert"></p>
+      <div class="bx-foot"><p class="bx-help">Hace falta el teléfono o el correo.</p><div class="acts"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="submit">Crear contacto</button></div></div></form>`);
+  const f = s.querySelector('form'), err = f.querySelector('.fld-err');
+  f.onsubmit = async ev => {
+    ev.preventDefault(); err.textContent = '';
+    const body = {nombre: f.nombre.value.trim(), apellido: f.apellido.value.trim(), telefono: f.telefono.value.trim(), correo: f.correo.value.trim(), asignarme: !!f.asignarme?.checked, requestId};
+    if (!body.nombre) { err.textContent = 'Escribe el nombre.'; f.nombre.focus(); return; }
+    if (!body.telefono && !body.correo) { err.textContent = 'Escribe al menos el teléfono o el correo.'; f.telefono.focus(); return; }
+    const b = f.querySelector('[type=submit]'); busy(b, true, 'Creando…');
+    try {
+      const r = await agoraApi('workspace/contactos/nuevo', {method: 'POST', body});
+      closeModal(); toast(`Contacto creado: ${r.nombre || body.nombre}.`);
+      if (ws) ws.pendingContact = r.id;
+      if (R.mod === 'contactos') repaint(); else go(MODS.contactos.path);
+    } catch (x) { busy(b, false); err.textContent = x.message; }
+  };
+}
+AgoraTabla.alPintar(root => {
+  if (typeof R === 'undefined' || R.mod !== 'contactos' || !conectada() || !tePuedeEscribir()) return;
+  if (root.querySelector('.cn-hbtn')) return;
+  const h = root.querySelector('.mod-h'); if (!h) return;
+  let acts = h.querySelector(':scope > .acts'); if (!acts) { acts = document.createElement('div'); acts.className = 'acts'; h.append(acts); }
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-cta cn-hbtn';
+  b.innerHTML = `${icon('plus')}Nuevo contacto`; acts.append(b); b.onclick = contactoNuevoModal;
+});
 
 /* ---------- «Agregar manual» en el encabezado de los módulos de registros (también sin tabla) ---------- */
 AgoraTabla.alPintar(root => {

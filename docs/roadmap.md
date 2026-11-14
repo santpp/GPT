@@ -270,6 +270,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - El repositorio se divide: `Agora Mobile/` (release 1.10.14 de nueva.agoradigital.app; el código sigue en la raíz) y `Agora New App/` (ERP 2.1.19 recibido: `public_html/`, `servidor/`). Análisis completo: `Agora New App/ANALISIS.md`. Sin Docker; MySQL.
 - Se deja de llamar «armazón». Lo de abajo es el historial de cuando lo era.
 - **2.2.0 (13 de noviembre)**: estable en MySQL; conexión con la cuenta por subcuenta (token cifrado, Location ID, «Probar conexión»); fuente Author; arreglos de Ajustes, Contactos, Gestión Comercial y logos; paquete de producción sin modo pruebas (`agora-new-app-2.2.0.zip`) y paquete de demo aparte. Siguiente: Conversaciones con el motor de Ágora Mobile.
+- **2.6.0 (14 de noviembre)**: «Nuevo contacto» escribe en la cuenta; un solo tablero de cifras (ARP Comercial), Inicio queda como entrada.
 - **2.5.0 (14 de noviembre)**: Bandeja, Contactos y Embudos al día con Ágora Mobile 1.10.14 (embudos con filtros, etapas plegables y «Mover a…»; búsqueda por teléfono y correo; responsable en cada conversación).
 - **2.4.0 (14 de noviembre)**: cada persona ve solo sus módulos (permisos verificados); enlace explícito de usuarios con la cuenta; tareas escritas en la cuenta, sin dobles; sin copias locales de lo que vive en la cuenta; duplicados y textos viejos fuera.
 - **2.3.3 (14 de noviembre)**: la ficha del contacto abre desde la Bandeja; estados de la bandeja con estilo y comprobación automática.

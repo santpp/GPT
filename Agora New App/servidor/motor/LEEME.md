@@ -14,3 +14,4 @@ oportunidades, embudos, ventas ganadas, tablero y consumos de la agencia.
 - Para actualizar el motor: copiar de nuevo `src/` y `database/` desde Ágora Mobile y volver a aplicar ese cambio.
 - 2.4.0: `src/live-inbox.php` avisa al puente cuando se crea o completa una tarea desde la ficha (gancho `alActuar`),
   y `src/GhlClient.php` tiene `updateContactTask` para corregir una tarea. Al actualizar el motor, volver a aplicar los dos.
+- 2.6.0: `src/GhlClient.php` tiene `createContact` (crea un contacto nuevo sin tocar los existentes). Volver a aplicarlo al actualizar el motor.

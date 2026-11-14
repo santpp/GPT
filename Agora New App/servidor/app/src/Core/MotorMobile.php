@@ -169,6 +169,34 @@ final class MotorMobile {
   Http::fail('Acción de tarea no disponible.',400);
  }
 
+ /**
+  * 2.6.0 · «Nuevo contacto»: lo crea en la cuenta de la subcuenta. Devuelve ['id'=>id del contacto en la cuenta].
+  * Quien solo ve «lo asignado» lo recibe asignado a su usuario de la cuenta (si no, no lo vería después).
+  */
+ public static function contactoNuevo(DB $erp,array $config,Auth $a,array $b):array{
+  $tenant=(int)$a->tenant;self::instalar($erp,$config);self::arrancar($config);
+  $nombre=Http::text($b,'nombre',90);$apellido=Http::text($b,'apellido',90,false);
+  $tel=preg_replace('/[\s().-]/','',Http::text($b,'telefono',40,false));$correo=mb_strtolower(Http::text($b,'correo',190,false));
+  if($tel===''&&$correo==='')Http::fail('Escribe al menos el teléfono o el correo del contacto.');
+  if($tel!==''&&!preg_match('/^\+?\d{7,15}$/D',$tel))Http::fail('El teléfono no es válido. Escríbelo con el código del país, por ejemplo +584141234567.');
+  if($correo!==''&&!filter_var($correo,FILTER_VALIDATE_EMAIL))Http::fail('El correo no es válido.');
+  $connection=\query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$tenant,self::AGENCIA])->fetch();
+  if(!$connection){self::sincronizar($erp,$config,$tenant);$connection=\query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$tenant,self::AGENCIA])->fetch();}
+  if(!$connection)Http::fail('Esta subcuenta todavía no está conectada con su cuenta.',409);
+  $payload=['locationId'=>(string)$connection['location_id'],'firstName'=>$nombre,'name'=>trim($nombre.' '.$apellido),'source'=>'Ágora']+($apellido!==''?['lastName'=>$apellido]:[])+($tel!==''?['phone'=>$tel]:[])+($correo!==''?['email'=>$correo]:[]);
+  $enlace=(new \Agora\Services\UserLinks($erp))->forUser($tenant,['id'=>$a->user['id'],'email'=>$a->user['email']]);
+  if($a->assignedOnly()){if(!$enlace)Http::fail('Tu usuario no está enlazado con la cuenta. Pídele a quien administra tu subcuenta que te enlace.',403);$payload['assignedTo']=$enlace['id'];}
+  elseif(($b['asignarme']??false)===true&&$enlace)$payload['assignedTo']=$enlace['id'];
+  try{$r=(new \GhlGateway())->execute($connection,fn(\GhlClient $cl):array=>$cl->createContact($payload),false);}
+  catch(\GhlCooldown $e){header('Retry-After: '.$e->retryAfter);Http::fail('La cuenta pidió esperar un momento. El contacto todavía no se creó: inténtalo otra vez.',429);}
+  catch(\GhlApiException $e){Http::fail(match(true){in_array($e->status,[401,403],true)=>'La cuenta rechazó el contacto por permisos. Revisa el permiso de escritura de contactos en la conexión.',in_array($e->status,[400,409,422],true)=>'La cuenta no aceptó el contacto. Lo más probable es que ya exista uno con ese teléfono o ese correo: búscalo en Contactos.',default=>'La cuenta no respondió bien (código '.$e->status.'). Inténtalo otra vez en un momento.'},in_array($e->status,[400,409,422],true)?409:424);}
+  $id=(string)($r['contact']['id']??'');if(!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$id))Http::fail('La cuenta no confirmó el contacto. Búscalo en Contactos antes de repetirlo.',424);
+  // La lista de contactos se guarda un minuto: se suelta para que el nuevo aparezca enseguida.
+  try{\query('DELETE FROM directory_cache WHERE connection_id=?',[$tenant]);}catch(\Throwable){}
+  $a->audit('contacto.creado','contacto',$id,['conTelefono'=>$tel!=='','conCorreo'=>$correo!=='']);
+  return ['ok'=>true,'id'=>$id,'nombre'=>$payload['name']];
+ }
+
  /** Consumos de la agencia: solo dueños (MASTER y SUPERADMIN). Token de agencia y Company ID cifrados en el motor. */
  public static function atenderConsumos(DB $erp,array $config,Auth $a,string $p,string $m):never{
   $user=$a->requireUser();

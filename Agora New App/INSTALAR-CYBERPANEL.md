@@ -238,6 +238,10 @@ El token de agencia se guarda cifrado y nadie puede volver a verlo; guardar, pro
 3. Si agregaste gente nueva en la cuenta, pulsa **Actualizar equipo** para que aparezca en la lista.
 4. Un ejecutivo **sin enlazar no ve conversaciones, contactos ni oportunidades** (la app se lo avisa). Los administradores y supervisores ven toda la subcuenta aunque no estén enlazados.
 
+### Contactos nuevos
+
+Con la subcuenta conectada, **Contactos → Nuevo contacto** lo crea en la cuenta (hace falta el teléfono o el correo). Necesita el mismo permiso `contacts.write` de la integración privada.
+
 ### Tareas
 
 Con la subcuenta conectada, **Nueva tarea** pide el contacto y la tarea queda escrita en su ficha en la cuenta. Completarla o corregirla en Ágora la cambia también allí. Las tareas creadas desde la ficha del contacto en la Bandeja aparecen en el módulo Tareas. La integración privada de la subcuenta necesita el permiso `contacts.write` (ya está en la lista del paso anterior).

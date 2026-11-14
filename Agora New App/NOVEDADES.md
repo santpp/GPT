@@ -1,5 +1,10 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.6.0:**
+- **«Nuevo contacto» escribe en la cuenta** (Contactos, con la subcuenta conectada): nombre, apellido, teléfono y correo. Hace falta el teléfono o el correo. Al crearlo se abre su ficha. El que crea un ejecutivo queda asignado a él; los demás pueden marcar «Asignármelo a mí». Si la cuenta ya tiene un contacto con ese teléfono o correo, no lo duplica y lo dice. Queda en la Auditoría.
+- **Un solo tablero de cifras: ARP Comercial.** Inicio ya no repite las tarjetas de conversaciones, oportunidades, ganadas y tareas: muestra un acceso a ARP Comercial y los módulos. «Indicadores clave» solo aparece en Inicio cuando hay al menos una meta configurada. Personalizar ya no ofrece «Pantalla de inicio».
+- Sin migraciones. Prueba nueva: `tests/contactos.py` (10).
+
 **Novedades 2.5.0:**
 - **Bandeja, Contactos y Embudos al día con Ágora Mobile 1.10.14**, conservando lo propio de esta app (recordatorios y tareas).
 - **Embudos nuevos:** filtros por etapa y por responsable, buscador por nombre, teléfono o correo, etapas plegables, tarjetas compactas y tres atajos en cada oportunidad: abrir la conversación, abrir la ficha y «Mover a…» otra etapa en un toque. En el teléfono las etapas van una debajo de otra.

@@ -10,11 +10,11 @@ Hecha el 14 de noviembre de 2026 sobre la 2.3.3, en local, con la subcuenta de p
 
 | Problema | Estado |
 |---|---|
-| A · «Agregar manual» y «Excel» fuera de la cuenta | Corregido: con la subcuenta conectada no existen y el servidor rechaza la carga |
+| A · «Agregar manual» y «Excel» fuera de la cuenta | Corregido: con la subcuenta conectada no existen y el servidor rechaza la carga. Desde 2.6.0, «Nuevo contacto» escribe en la cuenta |
 | B · Dos mundos de datos | Parcial: los módulos del reporte mensual solo aparecen si hay un reporte cargado y la persona ve cifras del equipo |
 | C · Cruce de usuarios invisible | Corregido: enlace explícito, con el correo como sugerencia |
 | D · El ejecutivo veía todo el menú | Corregido: cada persona ve solo sus módulos |
-| E · Tres tableros | Parcial: Gestión Comercial desaparece sin reporte; Inicio y ARP Comercial siguen |
+| E · Tres tableros | Corregido en 2.6.0: el único tablero de cifras es ARP Comercial; Inicio solo lleva a él; Gestión Comercial aparece solo con reporte |
 | F · Dos importadores | Corregido: Ajustes solo importa el reporte mensual; lo demás va por Migración de datos |
 | G · Textos viejos o técnicos | Corregido en Ajustes, Ayuda, Auditoría, Registro y pie de página |
 | Tareas dobles | Corregido: una sola tarea, escrita en la cuenta |

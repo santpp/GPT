@@ -6,7 +6,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.5.0'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.6.0'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -47,6 +47,8 @@ final class Api {
   if($p==='workspace/permisos'||$p==='workspace/usuarios/permisos')return $this->u->permissions($p,$m,$b);
   if($p==='workspace/branding'&&in_array($m,['GET','POST']))return $this->ag->branding($m,$b);
   if($p==='admin/maintenance'&&$m==='POST'){$this->a->manage();$this->db->run('UPDATE agora_tenants SET status=?,revision=revision+1 WHERE id=?',[($b['on']??false)?'inactiva':'activa',$this->a->tenant]);$this->a->audit('estado.actualizado','ajuste',(string)$this->a->tenant);return ['maintenance'=>(bool)($b['on']??false)];}
+  // 2.6.0 · «Nuevo contacto» escribe en la cuenta conectada.
+  if($p==='workspace/contactos/nuevo'&&$m==='POST'){$this->a->write();if(!\Agora\Core\MotorMobile::conectada($this->db,(int)$this->a->tenant))Http::fail('Esta subcuenta todavía no está conectada con su cuenta.',409);return \Agora\Core\MotorMobile::contactoNuevo($this->db,$this->config,$this->a,$b);}
   // 2.4.0 · equipo de la cuenta conectada y enlace de cada persona con su usuario de la cuenta.
   if($p==='workspace/usuarios/equipo'){
    $this->a->manage();$t=(int)$this->a->tenant;$conectada=\Agora\Core\MotorMobile::conectada($this->db,$t);
