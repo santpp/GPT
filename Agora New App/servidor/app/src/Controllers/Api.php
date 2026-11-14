@@ -6,7 +6,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.7.3'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.8.0'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -47,6 +47,8 @@ final class Api {
   if($p==='workspace/permisos'||$p==='workspace/usuarios/permisos')return $this->u->permissions($p,$m,$b);
   if($p==='workspace/branding'&&in_array($m,['GET','POST']))return $this->ag->branding($m,$b);
   if($p==='admin/maintenance'&&$m==='POST'){$this->a->manage();$this->db->run('UPDATE agora_tenants SET status=?,revision=revision+1 WHERE id=?',[($b['on']??false)?'inactiva':'activa',$this->a->tenant]);$this->a->audit('estado.actualizado','ajuste',(string)$this->a->tenant);return ['maintenance'=>(bool)($b['on']??false)];}
+  // 2.8.0 · Campañas de Meta (Ad Manager de la cuenta), solo lectura. Son cifras de la empresa: administración y supervisión.
+  if($p==='workspace/campanas'&&$m==='GET'){$this->a->financial();if($this->a->assignedOnly())Http::fail('Las campañas son de toda la empresa: tu rol no las ve.',403);return (new \Agora\Services\Campanas($this->db,$this->config,$this->a))->mes($_GET['mes']??null);}
   // 2.7.0 · Redes sociales (Social Planner de la cuenta conectada), solo lectura. Es de toda la empresa: quien solo ve lo suyo no entra.
   if($p==='workspace/redes'||str_starts_with($p,'workspace/redes/')){
    if($this->a->assignedOnly())Http::fail('Las redes sociales son de toda la empresa: tu rol no las ve.',403);

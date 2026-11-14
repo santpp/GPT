@@ -193,7 +193,7 @@ const MODS = {
   equipo: {g: 'gestion', view: 'tc_equipo', name: 'Equipo', icon: 'team', path: '/equipo', c: 'var(--mod-vino)', periodo: true,
     desc: 'Ventas, cobranza y comisiones de cada asesora.', ok: () => tableroHay('equipo')},
   publicidad: {g: 'gestion', view: 'tc_marketing', name: 'Embudo y publicidad', icon: 'rocket', path: '/publicidad', c: 'var(--mod-azul)', periodo: true,
-    desc: 'Campañas, contactos por canal y ocupación de cupos.', ok: () => tableroHay('marketing')},
+    desc: 'Campañas de Meta, contactos por canal y ocupación de cupos.', ok: () => tableroHay('marketing') || campPuede()},
   ventas: {g: 'ingresos', view: 'tc_ventas', name: 'Ventas', icon: 'trend', path: '/ventas', c: 'var(--mod-vino)', periodo: true,
     desc: 'El detalle de cada venta con todos sus montos.', ok: () => tableroHay('ventas')},
   facturacion: {g: 'ingresos', view: 'tc_facturas', name: 'Facturación', icon: 'invoice', path: '/facturacion', c: 'var(--mod-oro)', periodo: true,
@@ -4051,7 +4051,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.7.3').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.8.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -8482,19 +8482,19 @@ function teMapearExterno(ed, ext) {
    No se publica ni se listan publicaciones. Es de toda la empresa: lo ven administración y supervisión.
    ===================================================================================== */
 const REDES = {resumen: null, error: ''};
-MODS.redes = {g: 'gestion', view: 'redes', name: 'Redes sociales', icon: 'send', path: '/redes', c: 'var(--mod-azul)',
-  desc: 'Seguidores, alcance e interacción de las redes de la empresa.', ok: () => agoraReady() && conectada() && puede('datos.consultar') && !ESPACIO?.permisos?.soloAsignado};
+MODS.redes = {g: 'gestion', view: 'redes', name: 'Redes y anuncios', icon: 'send', path: '/redes', c: 'var(--mod-azul)',
+  desc: 'Cifras de las redes de la empresa y de sus campañas de Meta.', ok: () => agoraReady() && conectada() && puede('datos.consultar') && !ESPACIO?.permisos?.soloAsignado};
 const redesCambio = v => v == null || !isFinite(v) || v === 0 ? '' : `<span class="delta ${v > 0 ? 'up' : 'down'}">${v > 0 ? '↑' : '↓'} ${NI.format(Math.abs(Math.round(v)))} %</span>`;
 V.redes = {
   need: async () => {
     REDES.error = '';
-    try { REDES.resumen = await agoraApi('workspace/redes'); } catch (x) { REDES.resumen = null; REDES.error = x.message; }
+    await Promise.all([agoraApi('workspace/redes').then(r => { REDES.resumen = r; }, x => { REDES.resumen = null; REDES.error = x.message; }), campanasCargar()]);
   },
   render() {
     const r = REDES.resumen;
-    const cabeza = head('Gestión y resultados', 'Redes sociales', 'Las cifras de las redes de la empresa en los últimos 7 días, frente a los 7 anteriores.');
-    if (REDES.error) return cabeza + `<section class="panel"><p class="redes-aviso">${icon('warn')}<span>${esc(REDES.error)}</span></p><div class="form-ft" style="justify-content:flex-start"><button class="btn" type="button" data-redes-reintentar>${icon('refresh')}Reintentar</button></div></section>`;
-    if (!r) return loading('Redes sociales');
+    const cabeza = head('Gestión y resultados', 'Redes y anuncios', 'Las cifras de las redes de la empresa y de sus campañas de Meta.');
+    if (REDES.error) return cabeza + campanasHtml() + `<section class="panel mt"><p class="redes-aviso">${icon('warn')}<span>${esc(REDES.error)}</span></p><div class="form-ft" style="justify-content:flex-start"><button class="btn" type="button" data-redes-reintentar>${icon('refresh')}Reintentar</button></div></section>`;
+    if (!r) return loading('Redes y anuncios');
     const cuentas = r.cuentas || [];
     const chips = cuentas.length ? cuentas.map(c => `<li class="redes-cuenta${c.vencida ? ' is-vencida' : ''}"><span class="redes-red redes-${esc(c.plataforma)}">${esc(c.red)}</span><b>${esc(c.nombre)}</b>${c.vencida ? '<small>La conexión venció: hay que volver a conectarla en la cuenta</small>' : ''}</li>`).join('')
       : '<li class="redes-cuenta is-vacia">Todavía no hay redes conectadas en la cuenta de esta subcuenta.</li>';
@@ -8505,13 +8505,75 @@ V.redes = {
     const cifras = c ? `<div class="redes-cifras">${tile('Publicaciones', c.publicaciones, c.cambio?.publicaciones)}${tile('Impresiones', c.impresiones, c.cambio?.impresiones)}${tile('Alcance', c.alcance, c.cambio?.alcance)}${tile('Me gusta', c.meGusta)}${tile('Comentarios', c.comentarios)}${tile('Seguidores', c.seguidores)}</div>${tablaRed}`
       : `<p class="redes-nota">${esc(r.avisoCifras || (cuentas.length ? 'La cuenta todavía no da cifras de estas redes.' : 'Las cifras aparecen cuando haya redes conectadas.'))}</p>`;
     return cabeza
-      + panel('Redes conectadas', 'Se conectan y se vuelven a conectar en la cuenta de la subcuenta.', `<ul class="redes-cuentas">${chips}</ul>`)
+      + campanasHtml()
+      + `<div class="mt">${panel('Redes conectadas', 'Se conectan y se vuelven a conectar en la cuenta de la subcuenta.', `<ul class="redes-cuentas">${chips}</ul>`)}</div>`
       + `<div class="mt">${panel(c?.dias ? `Cifras de los últimos ${c.dias} días` : 'Cifras de los últimos 7 días', 'Frente a los 7 días anteriores. Lo que la cuenta informa de las redes conectadas.', cifras)}</div>`;
   },
   mounted(root) {
+    campanasMontar(root);
     root.querySelector('[data-redes-reintentar]')?.addEventListener('click', () => { REDES.resumen = null; repaint(); V.redes.need().then(repaint); });
   },
 };
+/* =====================================================================================
+   2.8.0 · Campañas de Meta (Ad Manager de la cuenta conectada), solo lectura.
+   Un mismo bloque en «Redes y anuncios» y en «Embudo y publicidad»: campañas del mes con sus cifras y el total.
+   ===================================================================================== */
+const CAMP = {mes: '', datos: null, error: '', cargando: false};
+const campPuede = () => conectada() && puede('finanzas') && !ESPACIO?.permisos?.soloAsignado;
+async function campanasCargar() {
+  if (!campPuede()) return;
+  if (!CAMP.mes) CAMP.mes = mesActualYM();
+  CAMP.cargando = true; CAMP.error = '';
+  try { CAMP.datos = await agoraApi(`workspace/campanas?mes=${encodeURIComponent(CAMP.mes)}`); }
+  catch (x) { CAMP.datos = null; CAMP.error = x.message; }
+  finally { CAMP.cargando = false; }
+}
+function campanasHtml() {
+  if (!campPuede()) return '';
+  const meses = Array.from({length: 6}, (_, i) => mesSuma(mesActualYM(), -i));
+  const sel = `<label class="fld camp-mes">Mes<select data-camp-mes>${meses.map(m => `<option value="${m}" ${m === (CAMP.mes || mesActualYM()) ? 'selected' : ''}>${esc(mesNombre(m))}</option>`).join('')}</select></label>`;
+  const d = CAMP.datos, n = v => v == null ? '—' : NI.format(v), plata = v => v == null ? '—' : usd(v), pct = v => v == null ? '—' : NF.format(v) + ' %';
+  let cuerpo;
+  if (CAMP.cargando && !d) cuerpo = '<div class="camp-sk"><span class="sk w80"></span><span class="sk w60"></span></div>';
+  else if (CAMP.error) cuerpo = `<p class="redes-aviso">${icon('warn')}<span>${esc(CAMP.error)}</span></p>`;
+  else if (!d) cuerpo = '';
+  else if (d.estado === 'permiso') cuerpo = `<p class="redes-nota">La conexión de esta subcuenta no tiene permiso para leer los anuncios. Pídele a la agencia que agregue el permiso de lectura de anuncios a la integración.</p>`;
+  else if (d.estado !== 'ok') cuerpo = `<p class="redes-nota">No hay una cuenta publicitaria de Meta conectada en la cuenta de esta subcuenta (o no respondió${d.http ? ', código ' + esc(d.http) : ''}). Se conecta en la cuenta, en el administrador de anuncios.</p>`;
+  else if (!d.campanas.length) cuerpo = `<p class="redes-nota">No hubo campañas con actividad en ${esc(mesNombre(d.mes))}.</p>`;
+  else {
+    const t = d.totales;
+    const cifra = (l, v) => `<div class="redes-cifra"><span class="redes-cifra-l">${l}</span><strong class="redes-cifra-v">${v}</strong><span class="redes-cifra-d"></span></div>`;
+    const ESTADO = {active: ['Activa', 'sc-ok'], paused: ['En pausa', 'sc-gray'], archived: ['Archivada', 'sc-gray'], deleted: ['Borrada', 'sc-gray'], with_issues: ['Con problemas', 'sc-bad'], in_process: ['En proceso', 'sc-info']};
+    cuerpo = `<div class="redes-cifras">${cifra('Inversión', plata(t.inversion))}${cifra('Resultados', n(t.resultados))}${cifra('Costo por resultado', plata(t.costoPorResultado))}${cifra('Impresiones', n(t.impresiones))}${cifra('Alcance', n(t.alcance))}${cifra('Clics · CTR', `${n(t.clics)} <small>${pct(t.ctr)}</small>`)}</div>
+      <div class="tw camp-tabla"><table data-xt="vivo"><thead><tr><th>Campaña</th><th>Estado</th><th class="n">Inversión</th><th class="n">Resultados</th><th class="n">Costo por resultado</th><th class="n">Impresiones</th><th class="n">Alcance</th><th class="n">Clics</th><th class="n">CTR</th></tr></thead><tbody>${d.campanas.map(c => {
+        const [et, tono] = ESTADO[c.estado] || [c.estado ? c.estado : '—', 'sc-gray'];
+        return `<tr><td class="wrap"><b>${esc(c.nombre)}</b></td><td><span class="sc ${tono}">${esc(et)}</span></td><td class="n">${plata(c.inversion)}</td><td class="n">${n(c.resultados)}</td><td class="n">${plata(c.costoPorResultado)}</td><td class="n">${n(c.impresiones)}</td><td class="n">${n(c.alcance)}</td><td class="n">${n(c.clics)}</td><td class="n">${pct(c.ctr)}</td></tr>`;
+      }).join('')}</tbody></table></div>
+      <p class="camp-nota">${esc(mesNombre(d.mes))}, del ${esc(d.desde.slice(8))} al ${esc(d.hasta.slice(8))}. «Resultados» son las conversiones que informa Meta (por ejemplo, formularios de clientes potenciales o mensajes iniciados), según el objetivo de cada campaña.</p>`;
+  }
+  return `<section class="panel camp-meta"><div class="panel-h"><div><h2 class="t-panel">Campañas de Meta</h2><p>Lo invertido y lo obtenido en cada campaña de Facebook e Instagram, con los datos de la cuenta publicitaria.</p></div>${sel}</div>${cuerpo}</section>`;
+}
+function campanasMontar(root) {
+  root.querySelector('[data-camp-mes]')?.addEventListener('change', async e => { CAMP.mes = e.target.value; CAMP.datos = null; repaint(); await campanasCargar(); repaint(); });
+}
+/* Embudo y publicidad: el bloque en vivo va arriba; el resto del módulo sigue saliendo del reporte mensual (si hay). */
+if (typeof V === 'object' && V.tc_marketing) {
+  const base = V.tc_marketing;
+  V.tc_marketing = {
+    need: () => Promise.allSettled([hayReporte() ? base.need() : null, campanasCargar()]),
+    render() {
+      const camp = campanasHtml();
+      if (!hayReporte() || !(puede('equipo.metricas') && puede('finanzas'))) return head('Gestión y resultados', 'Embudo y publicidad', 'Lo invertido en anuncios y lo que se obtuvo.') + (camp || '<section class="panel"><p class="empty"><b>Sin datos de publicidad</b>Esta subcuenta no tiene un reporte mensual cargado ni una cuenta publicitaria conectada.</p></section>');
+      return base.render() + (camp ? `<div class="camp-movible">${camp}</div>` : '');
+    },
+    mounted(root) {
+      base.mounted?.(root);
+      const mov = root.querySelector('.camp-movible'), cab = root.querySelector('.mod-h');
+      if (mov && cab) cab.after(mov);
+      campanasMontar(root);
+    },
+  };
+}
 /* ---------- 2.6.0 · «Nuevo contacto»: lo crea en la cuenta conectada y abre su ficha ---------- */
 function contactoNuevoModal() {
   const requestId = 'contacto' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 8);

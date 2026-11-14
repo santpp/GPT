@@ -279,3 +279,12 @@ html,body,button,input,select,textarea{font-family:var(--font-text)}
 .redes-porred li span{text-align:right;font-weight:650;font-variant-numeric:tabular-nums}
 .redes-porred li small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
 @media(max-width:600px){.redes-porred li{grid-template-columns:repeat(3,minmax(0,1fr))}.redes-porred li b{grid-column:1/-1}.redes-porred li span{text-align:left}}
+/* 2.8.0 · Campañas de Meta */
+.camp-meta .panel-h{align-items:flex-end;gap:12px;flex-wrap:wrap}
+.camp-mes{min-width:180px;margin:0}
+.camp-meta .redes-cifra-v small{font-size:13px;font-weight:600;color:var(--muted)}
+.camp-tabla{margin-top:14px;max-height:none}
+.camp-tabla td.wrap{min-width:220px;white-space:normal}
+.camp-nota{margin:10px 0 0;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.camp-sk{display:grid;gap:10px;padding:10px 0}
+.camp-movible{margin:0 0 18px}

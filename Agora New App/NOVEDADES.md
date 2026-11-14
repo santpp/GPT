@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.0:**
+- **Campañas de Meta** (solo lectura), con los datos de la cuenta publicitaria conectada en el administrador de anuncios de la cuenta, también para campañas creadas en el Administrador de anuncios de Meta. Por mes (los últimos 6): inversión, resultados, costo por resultado, impresiones, alcance, clics y CTR, en total y por campaña, con su estado (activa, en pausa…).
+- Está en **dos módulos**: **«Redes y anuncios»** (antes «Redes sociales»), arriba de las cifras de las redes, y **«Embudo y publicidad»**, arriba de lo que viene del reporte mensual. Embudo y publicidad ahora aparece también en subcuentas sin reporte, solo con las campañas.
+- Lo ven Administración y Supervisión (son cifras de la empresa). Un ejecutivo no ve la inversión.
+- Necesita el permiso `adPublishing.readonly` en la integración privada y la cuenta publicitaria de Meta conectada en la cuenta. Si falta algo, el bloque lo dice en palabras; leer campañas nunca pausa la bandeja.
+- Sin migraciones. Prueba nueva: `tests/campanas.py` (9).
+
 **Novedades 2.7.3:**
 - **Redes sociales queda solo con las cifras:** redes conectadas y cifras de los últimos 7 días frente a los 7 anteriores, en total y por red. Se quitó la lista de publicaciones (la cuenta solo informa lo publicado desde su planificador, y en Ágora se publica desde Meta Business Suite).
 - El `.htaccess` vuelve a permitir solo imágenes propias (ya no hacen falta las externas).

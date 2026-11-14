@@ -71,6 +71,10 @@ final class GhlClient {
             'fields'=>'spend,conversions,cost_per_conversion,clicks,impressions',
         ]),'2021-07-28');
     }
+    /** Agora New App 2.8.0 · lista de campañas (o conjuntos/anuncios) de Meta con sus cifras, del Ad Manager. */
+    public function adReportingList(string $location,string $from,string $to,string $type,string $listType='campaigns',?string $campaign=null):array {
+        return $this->get('/ad-publishing/facebook/reporting/list?'.http_build_query(['locationId'=>$location,'listType'=>$listType,'startDate'=>$from,'endDate'=>$to,'type'=>$type]+($campaign!==null?['campaignId'=>$campaign]:[])),'2021-07-28');
+    }
     /** One page of contacts, used only to read the total the search reports. */
     /** Búsqueda de contactos con filtros, página y orden (la que da el total real). */
     public function searchContacts(string $location,array $filters,int $page,int $limit,?string $query=null,?array $sort=null):array {
