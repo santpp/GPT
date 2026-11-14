@@ -170,7 +170,7 @@ document.addEventListener('click', e => {
    ===================================================================================== */
 const GRUPOS = {
   general: {name: 'General', slug: 'general', icon: 'pie', c: 'var(--mod-vino)', desc: 'Las cifras del día, los anuncios y la rentabilidad.'},
-  ingresos: {name: 'Ventas y facturación', slug: 'ventas', icon: 'coins', c: 'var(--brand)', desc: 'El reporte del mes, el ARP Comercial, las ventas, las facturas y el catálogo.'},
+  ingresos: {name: 'Ventas y facturación', slug: 'ventas', icon: 'coins', c: 'var(--brand)', desc: 'El reporte del mes, el Tablero comercial, las ventas, las facturas y el catálogo.'},
   clientes: {name: 'Clientes y atención', slug: 'clientes', icon: 'chat', c: 'var(--mod-azul)', desc: 'Conversaciones, contactos, oportunidades y tareas del equipo.'},
   gestion: {name: 'Gestión y resultados', slug: 'gestion', icon: 'pulse', c: 'var(--mod-oro)', desc: 'Equipo, publicidad, costos, tendencias y calidad de los datos.'},
   contratos: {name: 'Contratos', slug: 'contratos', icon: 'invoice', c: 'var(--ok-solid)', desc: 'Convenios, alumnos con convenio y su registro.'},
@@ -180,7 +180,7 @@ const MODS = {
   centro: {g: 'general', fijo: true, view: 'centro', name: 'Inicio', icon: 'home', path: '/centro', c: 'var(--brand)', desc: 'Todos los módulos de tu subcuenta, en un solo lugar.', ok: () => !!ME || agoraReady()},
   inicio: {g: 'ingresos', view: 'tc_resumen', name: 'Gestión Comercial', icon: 'trend', path: '/inicio', c: 'var(--brand)', periodo: true,
     desc: 'El reporte del mes: identidad, ventas y tendencia del año.', ok: () => tableroHay('resumen')},
-  comercial: {g: 'ingresos', view: 'ag_dashboard', ag: 'dashboard', name: 'ARP Comercial', icon: 'pie', path: '/comercial', c: 'var(--mod-vino)',
+  comercial: {g: 'ingresos', view: 'ag_dashboard', ag: 'dashboard', name: 'Tablero comercial', icon: 'pie', path: '/comercial', c: 'var(--mod-vino)',
     desc: 'Las cifras del día, los anuncios y la rentabilidad.', ok: () => agoraReady() && puede('datos.consultar')},
   bandeja: {g: 'clientes', view: 'ag_inbox', ag: 'inbox', name: 'Bandeja de conversaciones', icon: 'chat', path: '/bandeja', c: 'var(--mod-azul)',
     desc: 'Todos los canales en una sola lista.', ok: () => agoraReady() && puede('datos.consultar'), n: () => unread || null},
@@ -1306,7 +1306,7 @@ function agoraView(id, {eyebrow, title, lede, what, own = false, acts = () => ''
   };
 }
 
-agoraView('dashboard', {eyebrow: 'Operación', title: 'ARP Comercial', lede: 'Las cifras del día, la inversión en anuncios y la rentabilidad del mes.', what: 'el tablero comercial', own: true});
+agoraView('dashboard', {eyebrow: 'Operación', title: 'Tablero comercial', lede: 'Las cifras del día, la inversión en anuncios y la rentabilidad del mes.', what: 'el tablero comercial', own: true});
 agoraView('inbox', {eyebrow: 'Atención', title: 'Bandeja de conversaciones', lede: 'Todos los canales en una sola lista, con recordatorios de seguimiento.', what: 'las conversaciones'});
 agoraView('contacts', {eyebrow: 'Cartera', title: 'Contactos', lede: 'Las fichas de la subcuenta, con su historial y sus etiquetas.', what: 'los contactos'});
 agoraView('board', {eyebrow: 'Embudo', title: 'Oportunidades', lede: 'De la conexión al cierre: cada oportunidad abierta, a la vista.', what: 'las oportunidades'});
@@ -1735,7 +1735,7 @@ function responderAthena(texto) {
   }
   if (/sin leer|no leida|bandeja|conversacion|sla|respuesta/.test(q)) {
     const d = DATOS.dia;
-    if (!d) return `<p>Abre <b>ARP Comercial</b> y vuelvo a mirar las cifras del día.</p>${ir('/comercial', 'Abrir ARP Comercial')}`;
+    if (!d) return `<p>Abre el <b>Tablero comercial</b> y vuelvo a mirar las cifras del día.</p>${ir('/comercial', 'Abrir el Tablero comercial')}`;
     const peor = (d.sinLeerPorAsesor || []).slice().sort((a, b) => b.n - a.n)[0];
     return `<p>Hoy hay <b>${int(d.sinLeer)}</b> conversaciones sin leer y <b>${int(d.slaIncumplido)}</b> fuera del tiempo de respuesta.</p>
       ${peor ? `<p>Quien más acumula es ${esc(peor.nombre)}, con ${int(peor.n)}.</p>` : ''}
@@ -1743,7 +1743,7 @@ function responderAthena(texto) {
   }
   if (/anuncio|meta|ads|publicidad|gastado|invers/.test(q)) {
     const a = DATOS.ads;
-    if (!a) return `<p>Abre <b>ARP Comercial</b> para que lea la inversión en anuncios.</p>${ir('/comercial', 'Abrir ARP Comercial')}`;
+    if (!a) return `<p>Abre el <b>Tablero comercial</b> para que lea la inversión en anuncios.</p>${ir('/comercial', 'Abrir el Tablero comercial')}`;
     if (a.estado !== 'ok') return `<p>La conexión con Meta está vencida, así que no puedo darte el gasto de hoy. Hay que volver a conectarla en Ajustes.</p>${ir('/ajustes', 'Ir a Ajustes')}`;
     return `<p>Hoy llevas <b>${esc(usd(a.dia))}</b> invertidos y <b>${esc(usd(a.mes))}</b> en lo que va de ${esc(mesNombre(PERIODO).toLowerCase())}.</p>
       <ul><li>Impresiones: ${int(a.impresiones)}</li><li>Coste por conversión: ${esc(usd(a.costePorConversion))}</li></ul>${ir('/comercial', 'Ver el detalle')}`;
@@ -4051,7 +4051,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.6.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.6.2').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -5605,7 +5605,7 @@ V.personalizar = {
     const cuerpo = {embudos: () => embTab(), indicadores: () => indTab(), crm: pzCrm, modulos: pzModulos, inicio: pzTablero}[PZ_TAB]();
     const p = cuentaPerfil();
     return `<div class="pz">${head('Administración', 'Personalizar', 'Ajusta Ágora a tu negocio: las etapas de tus embudos, los indicadores (KPI) que mides y sus metas, el CRM y los módulos. Los cambios valen para toda la subcuenta.',
-      `<a class="btn" href="${href('/comercial')}">${icon('trend')}Ver el ARP Comercial</a>`)}
+      `<a class="btn" href="${href('/comercial')}">${icon('trend')}Ver el Tablero comercial</a>`)}
       <div class="pz-perfil"><span class="pz-perfil-ic" aria-hidden="true">${icon('split')}</span><div><small>Tipo de cuenta</small><b>${esc(perfilTexto(p))}</b></div><p>${p ? 'Lo define la agencia al crear la subcuenta. Sirve de punto de partida para tus indicadores y tu Inicio.' : 'La agencia todavía no definió el tipo de cuenta. Mientras tanto se usan los valores de una cuenta de servicios.'}</p></div>
       <nav class="agency-chips pz-tabs" role="tablist" aria-label="Qué personalizar">${pzTabs.map(([id, ic, t]) => `<button type="button" role="tab" class="agency-chip-btn ${PZ_TAB === id ? 'is-active' : ''} ${id === 'inicio' ? 'pz-tab-sec' : ''}" aria-selected="${PZ_TAB === id}" data-pz-tab="${id}">${icon(ic)}${t}</button>`).join('')}</nav>
       <div class="pz-cuerpo" data-pz-cuerpo>${cuerpo}</div>${pzPie()}</div>`;
@@ -5670,7 +5670,7 @@ function pzArp() {
   const sec = (id, i) => { const s = ARP_SECCIONES.find(x => x.id === id), on = !a.secciones.includes(id); return `<li class="pz-sec ${on ? 'is-on' : ''}">
       <div class="pz-item is-on"><label class="pz-check"><input type="checkbox" data-arp-on="${id}" ${on ? 'checked' : ''}><span class="pz-ic" aria-hidden="true">${icon(arpIcono(s.t))}</span><span><b>${esc(s.t)}</b><small>${on ? (s.cifras.length ? `${s.cifras.filter(c => !a.ocultas.includes(arpClave(id, c))).length} de ${s.cifras.length} cifras visibles` : 'Sección completa') : 'Oculta'}</small></span></label>${pzFlechas('data-arp-mover', id, i, orden.length, s.t)}</div>
       ${on && s.cifras.length ? `<div class="pz-cifras">${s.cifras.map(c => `<label class="pz-cifra"><input type="checkbox" data-arp-cifra="${esc(arpClave(id, c))}" ${a.ocultas.includes(arpClave(id, c)) ? '' : 'checked'}>${esc(c)}</label>`).join('')}</div>` : ''}</li>`; };
-  return `<section class="panel pf-sec">${secH('trend', 'Tablero del ARP Comercial', 'Qué secciones y qué cifras muestra el ARP, y en qué orden. Lo oculto no se borra: vuelve a aparecer al marcarlo. Los nombres y metas de tus indicadores también se ven allí.', `<button type="button" class="btn btn-sm" data-arp-defecto>${icon('refresh')}Mostrar todo</button>`)}
+  return `<section class="panel pf-sec">${secH('trend', 'Secciones del Tablero comercial', 'Qué secciones y qué cifras muestra el Tablero comercial, y en qué orden. Lo oculto no se borra: vuelve a aparecer al marcarlo. Los nombres y metas de tus indicadores también se ven allí.', `<button type="button" class="btn btn-sm" data-arp-defecto>${icon('refresh')}Mostrar todo</button>`)}
     <ol class="pz-list pz-arp">${orden.map(sec).join('')}</ol></section>`;
 }
 function pzModulos() {
@@ -7395,12 +7395,12 @@ function indTab() {
   };
   const m = IND.mes, mesNombre = (() => { try { return new Date(m.period + '-15').toLocaleDateString('es-VE', {month: 'long', year: 'numeric'}); } catch { return m.period; } })();
   const inp = (name, val, label, extra = '') => `<label class="fld">${label}<input data-mes="${name}" inputmode="decimal" value="${esc(val ?? '')}" ${extra}></label>`;
-  return `<section class="panel pf-sec">${secH('pie', 'Indicadores clave', `Lo que mides para saber si tu negocio va bien. Tu equipo los ve en el Inicio y en el ARP Comercial con su semáforo.${IND.porDefecto ? ' Estos son los sugeridos: ajústalos a tu negocio.' : ''}`, `<button type="button" class="btn btn-sm" data-kpi-nuevo ${IND.kpis.length >= 40 ? 'disabled' : ''}>${icon('plus')}Agregar indicador</button>`)}
+  return `<section class="panel pf-sec">${secH('pie', 'Indicadores clave', `Lo que mides para saber si tu negocio va bien. Tu equipo los ve en el Inicio y en el Tablero comercial con su semáforo.${IND.porDefecto ? ' Estos son los sugeridos: ajústalos a tu negocio.' : ''}`, `<button type="button" class="btn btn-sm" data-kpi-nuevo ${IND.kpis.length >= 40 ? 'disabled' : ''}>${icon('plus')}Agregar indicador</button>`)}
       <ol class="pz-list kpi-lista">${IND.kpis.map(fila).join('') || '<li class="pz-vacio">No tienes indicadores. Agrega el primero.</li>'}</ol>
       <p class="bx-help">Verde y ámbar son el % de avance contra la meta. Con «menos es mejor» (por ejemplo, el costo por lead), el avance es meta ÷ valor: si gastas menos de la meta, vas en verde.</p>
     </section>
     <div class="pz-grid">
-    <section class="panel pf-sec">${secH('check', 'Metas del mes · ' + esc(mesNombre), 'Es la misma configuración del mes que usa el ARP Comercial: lo que cambies aquí se ve allí.', `<a class="btn btn-sm" href="${href('/configuracion')}">${icon('edit')}Configuración mensual</a>`)}
+    <section class="panel pf-sec">${secH('check', 'Metas del mes · ' + esc(mesNombre), 'Es la misma configuración del mes que usa el Tablero comercial: lo que cambies aquí se ve allí.', `<a class="btn btn-sm" href="${href('/configuracion')}">${icon('edit')}Configuración mensual</a>`)}
       <div class="bx-grid kpi-mes">
         ${inp('teamGoal', m.teamGoal, 'Meta de ventas del equipo')}
         <label class="fld">Una venta se llama<input data-mes="closingWord" maxlength="30" value="${esc(m.closingWord)}" placeholder="cierres"></label>
@@ -7421,7 +7421,7 @@ function indConectar(root) {
   root.querySelectorAll('[data-kpi-on]').forEach(c => c.onchange = () => { IND.kpis[+c.dataset.kpiOn].activo = c.checked; repaint(); });
   root.querySelectorAll('[data-kpi-mover]').forEach(b => b.onclick = () => { const [i, d] = b.dataset.kpiMover.split('|').map(Number), j = i + d; if (j < 0 || j >= IND.kpis.length) return; [IND.kpis[i], IND.kpis[j]] = [IND.kpis[j], IND.kpis[i]]; repaint(); });
   root.querySelectorAll('[data-kpi-editar]').forEach(b => b.onclick = () => kpiEditar(+b.dataset.kpiEditar));
-  root.querySelectorAll('[data-kpi-quitar]').forEach(b => b.onclick = () => { const k = IND.kpis[+b.dataset.kpiQuitar]; confirmModal('¿Quitar este indicador?', `«${esc(k.nombre)}» deja de verse en el Inicio y en el ARP. Puedes volver a agregarlo cuando quieras.`, 'Quitar', async () => { IND.kpis.splice(IND.kpis.indexOf(k), 1); setTimeout(repaint, 0); }, true); });
+  root.querySelectorAll('[data-kpi-quitar]').forEach(b => b.onclick = () => { const k = IND.kpis[+b.dataset.kpiQuitar]; confirmModal('¿Quitar este indicador?', `«${esc(k.nombre)}» deja de verse en el Inicio y en el Tablero comercial. Puedes volver a agregarlo cuando quieras.`, 'Quitar', async () => { IND.kpis.splice(IND.kpis.indexOf(k), 1); setTimeout(repaint, 0); }, true); });
   root.querySelector('[data-kpi-nuevo]')?.addEventListener('click', () => kpiEditar(-1));
   const num = s => { s = String(s ?? '').trim().replace(/\s/g, ''); if (!s) return null; s = s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s; const n = Number(s); return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : NaN; };
   root.querySelectorAll('[data-mes]').forEach(i => i.oninput = () => {
@@ -7448,14 +7448,14 @@ function kpiEditar(i) {
       <fieldset class="bx"><legend>${icon('check')}Meta</legend>
         <div class="bx-row"><label class="fld">Meta<input name="meta" inputmode="decimal" value="${esc(k.meta ?? '')}" placeholder="Sin meta"></label><label class="fld">Periodo<select name="periodo">${KPI_PERIODOS.map(([v, l]) => `<option value="${v}" ${k.periodo === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
         <div class="bx-row"><label class="fld">Formato<select name="formato">${KPI_FORMATOS.map(([v, l]) => `<option value="${v}" ${k.formato === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label><label class="fld kpi-moneda" ${k.formato === 'monto' ? '' : 'hidden'}>Moneda<select name="moneda"><option value="">La de la subcuenta</option>${['USD', 'VES', 'EUR'].map(m => `<option ${k.moneda === m ? 'selected' : ''}>${m}</option>`).join('')}</select></label></div>
-        ${k.fuente === 'ventasMes' ? '<p class="bx-help">Esta meta es la meta del equipo del mes: la misma que usa el ARP Comercial.</p>' : ''}
+        ${k.fuente === 'ventasMes' ? '<p class="bx-help">Esta meta es la meta del equipo del mes: la misma que usa el Tablero comercial.</p>' : ''}
       </fieldset>
       <fieldset class="bx"><legend>${icon('tune')}Semáforo</legend>
         <div class="kpi-sentido" role="radiogroup" aria-label="Qué es mejor"><label><input type="radio" name="sentido" value="mas" ${k.sentido !== 'menos' ? 'checked' : ''}><span><b>Más es mejor</b><small>Ventas, leads, conversión…</small></span></label><label><input type="radio" name="sentido" value="menos" ${k.sentido === 'menos' ? 'checked' : ''}><span><b>Menos es mejor</b><small>Costos, tiempos, vencidas…</small></span></label></div>
         <div class="bx-row"><label class="fld">Verde desde (%)<input name="verde" inputmode="decimal" value="${esc(k.verde ?? 100)}"></label><label class="fld">Ámbar desde (%)<input name="ambar" inputmode="decimal" value="${esc(k.ambar ?? 70)}"></label></div>
       </fieldset>
       <fieldset class="bx bx-wide"><legend>${icon('eye')}Dónde se ve</legend>
-        <label class="bx-check"><input type="checkbox" name="activo" ${k.activo ? 'checked' : ''}> Activo (se ve en el ARP y en esta lista)</label>
+        <label class="bx-check"><input type="checkbox" name="activo" ${k.activo ? 'checked' : ''}> Activo (se ve en el Tablero comercial y en esta lista)</label>
         <label class="bx-check"><input type="checkbox" name="inicio" ${k.inicio ? 'checked' : ''}> Mostrarlo en el Inicio de la subcuenta, con su semáforo</label>
       </fieldset>
     </div>
@@ -8872,4 +8872,32 @@ if (AG_READY && window.AGORA_MAINTENANCE !== false) { try { AG.installMaintenanc
   }
   render();
 })();
+})();
+
+/* 2.6.2 · En el teléfono, las tablas de más de tres columnas se leen como fichas: cada fila es un bloque y cada dato
+   lleva el nombre de su columna. Aquí solo se pone ese nombre en cada celda (data-label); el cambio de forma es CSS. */
+(function tablasComoFichas() {
+  if (typeof MutationObserver === 'undefined' || typeof document === 'undefined') return;
+  const NO = '.matriz, .heat, .cfg-t, .mg-mapa, .mg-errs, .prod-t';
+  const limpio = th => { const c = th.cloneNode(true); c.querySelectorAll('.te-thm, [aria-hidden="true"], .sr-only').forEach(x => x.remove()); return (c.textContent || '').replace(/[↑↓⋮▲▼]/g, '').replace(/\s+/g, ' ').trim(); };
+  const marcar = root => {
+    root.querySelectorAll('.tw table').forEach(t => {
+      if (t.matches(NO)) return;
+      const ths = [...(t.tHead?.rows[0]?.cells || [])];
+      if (ths.length < 4) { t.classList.remove('t-fichas'); return; }
+      const nombres = ths.map(limpio);
+      t.classList.add('t-fichas');
+      [...t.tBodies, ...(t.tFoot ? [t.tFoot] : [])].forEach(b => [...b.rows].forEach(r => {
+        let i = 0;
+        [...r.cells].forEach(td => { const span = td.colSpan || 1; if (span === 1 && nombres[i] && td.getAttribute('data-label') !== nombres[i]) td.setAttribute('data-label', nombres[i]); i += span; });
+      }));
+    });
+  };
+  let pend = 0;
+  const arrancar = () => {
+    const app = document.getElementById('app'); if (!app) return false;
+    new MutationObserver(() => { if (pend) return; pend = requestAnimationFrame(() => { pend = 0; marcar(app); }); }).observe(app, {childList: true, subtree: true});
+    marcar(app); return true;
+  };
+  if (!arrancar()) document.addEventListener('DOMContentLoaded', arrancar, {once: true});
 })();

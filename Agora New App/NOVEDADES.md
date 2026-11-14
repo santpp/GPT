@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.6.2:**
+- **«ARP Comercial» pasa a llamarse «Tablero comercial»** en el menú, Inicio, Athena, Personalizar, Indicadores y la guía de uso. La dirección sigue siendo `/comercial`.
+- **El equipo de cada cuenta conectada se vuelve a leer solo, una vez al día**, con la misma tarea programada de siempre (`servidor/bin/worker.php`, cada minuto). Hasta tres subcuentas por vuelta para cuidar la cuota. El botón «Actualizar equipo» sigue para hacerlo al momento.
+- **Tablas en el teléfono:** las de más de tres columnas (Ventas, Equipo, Facturación, Costos, Usuarios, Auditoría…) se leen como fichas, una por fila, con el nombre de cada dato. Ya no hay que deslizar a los lados. En la computadora no cambian.
+- Sin migraciones.
+
 **Novedades 2.6.1:**
 - **El tablero (ARP Comercial) ya trae datos en «Operación del día», «Sin leer por asesor», «Fuente de los leads», «Leads por ejecutivo», «Eficacia» y «Anuncios».** Esas tarjetas venían en el código recibido apuntando a rutas vacías; ahora las calcula el motor con la cuenta conectada (el cálculo escrito para la línea 1.11 de Ágora Mobile). «Frente a ayer» aparece desde el segundo día. La inversión en anuncios no se muestra a quien solo ve lo suyo.
 - Cuando de verdad no hubo nada («Hoy todavía no entró ningún lead», «Nadie tiene conversaciones sin leer ahora») se dice en una frase, sin el cuadro de «Sin datos todavía».

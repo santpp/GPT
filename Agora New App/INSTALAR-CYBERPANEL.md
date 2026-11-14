@@ -177,7 +177,7 @@ END_extraHeaders
 
 ## Paso 10 · Tarea programada (cron)
 
-Envía los mensajes en cola y limpia sesiones vencidas. CyberPanel → Websites → Manage → **Cron Jobs** → añade:
+Envía los mensajes en cola, limpia sesiones vencidas y, una vez al día, vuelve a leer el equipo de cada cuenta conectada (para que las personas nuevas aparezcan en Usuarios y roles). CyberPanel → Websites → Manage → **Cron Jobs** → añade:
 
 - **Frecuencia:** cada minuto (`* * * * *`).
 - **Comando:**

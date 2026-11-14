@@ -41,4 +41,15 @@ try{
   });
   echo 'Job '.$job['id'].': '.$status.PHP_EOL;
  }
+  // 2.6.2 · el equipo de cada cuenta conectada se vuelve a leer una vez al día (personas nuevas, bajas, cambios de correo).
+  // Tres subcuentas por vuelta como máximo, para no gastar la cuota de golpe; las demás siguen en la próxima vuelta.
+  $hoy=gmdate('Y-m-d');$hechas=0;
+  try{$conectadas=$db->all('SELECT tenant_id FROM agora_ghl_connections ORDER BY tenant_id');}catch(Throwable $e){$conectadas=[];}
+  foreach($conectadas as $c){
+   if($hechas>=3)break;$t=(int)$c['tenant_id'];
+   if(($db->setting($t,'equipo.diario',null)['dia']??'')===$hoy)continue;
+   $db->saveSetting($t,'equipo.diario',['dia'=>$hoy,'estado'=>'en_curso']);$hechas++;
+   try{$r=Agora\Core\MotorMobile::sincronizar($db,$config,$t);$db->saveSetting($t,'equipo.diario',['dia'=>$hoy,'estado'=>'ok','personas'=>$r['equipo']??null]);echo 'Equipo de la subcuenta '.$t.': actualizado'.PHP_EOL;}
+   catch(Throwable $e){$db->saveSetting($t,'equipo.diario',['dia'=>$hoy,'estado'=>'error']);error_log('Agora: equipo diario de la subcuenta '.$t.' ('.get_class($e).')');}
+  }
 }finally{$db->run('SELECT RELEASE_LOCK(?)',[$lock]);}

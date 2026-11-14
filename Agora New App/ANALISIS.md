@@ -1,10 +1,10 @@
 # Agora New App · análisis del ERP 2.1.19
 
-## Estado (2.6.1 · 14 de noviembre de 2026)
+## Estado (2.6.2 · 14 de noviembre de 2026)
 
 | | |
 |---|---|
-| Paquete de producción | `agora-new-app-2.6.1.zip` (+ `.sha256`), con `tools/package.py`. Sin modo pruebas, datos sintéticos, demos ni logos de clientes |
+| Paquete de producción | `agora-new-app-2.6.2.zip` (+ `.sha256`), con `tools/package.py`. Sin modo pruebas, datos sintéticos, demos ni logos de clientes |
 | Paquete de demostración | `agora-cyberpanel-2.1.19-demo.zip` (el original, con datos inventados). Solo para enseñar |
 | Instalación | `INSTALAR-CYBERPANEL.md`, paso a paso. Cuentas de dueño solo por terminal (`servidor/bin/crear-dueno.php`) |
 | Cuenta en vivo | Conexión por subcuenta (token cifrado, Location ID, «Probar conexión»). Con conexión, bandeja, mensajes, envío, asignación, contactos, oportunidades, embudos, ganadas y tablero los atiende el **motor de Ágora Mobile 1.10.14** (`servidor/motor/`, puente `app/src/Core/MotorMobile.php`) |
@@ -32,7 +32,7 @@ Análisis del paquete `agora-cyberpanel-2.1.19.zip` (13 de noviembre de 2026). E
 **Organización:** una agencia con subcuentas. Roles: MASTER (dueño), SUPERADMIN, ADMIN, SUPERVISOR, EJECUTIVO y otros. Hay una matriz de permisos por acción (`Security/Auth.php`) y asignaciones explícitas de usuarios a subcuentas.
 
 **Módulos (22):**
-- **Ingresos:** Gestión Comercial (reporte del mes), ARP Comercial, Ventas, Facturación, Catálogo, Productos y servicios.
+- **Ingresos:** Gestión Comercial (reporte del mes), Tablero comercial, Ventas, Facturación, Catálogo, Productos y servicios.
 - **Clientes:** Bandeja de conversaciones, Contactos, Oportunidades, Tareas.
 - **Gestión:** Equipo (ventas, cobranza, comisiones), Embudo y publicidad, Costos, Tendencias, Calidad de datos.
 - **Contratos:** Contratos (convenios de pago, PDF, firma por enlace), Con convenio, Registro.
