@@ -290,3 +290,7 @@ html,body,button,input,select,textarea{font-family:var(--font-text)}
 .redes-porred li span{text-align:right;font-weight:650;font-variant-numeric:tabular-nums}
 .redes-porred li small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
 @media(max-width:600px){.redes-porred li{grid-template-columns:repeat(3,minmax(0,1fr))}.redes-porred li b{grid-column:1/-1}.redes-porred li span{text-align:left}}
+.redes-filtro{max-width:260px;margin:0 0 12px}
+.redes-grupo{display:flex;align-items:center;gap:10px;margin:18px 0 10px;font-size:14px}
+.redes-grupo:first-of-type{margin-top:4px}
+.redes-grupo small{font-size:12.5px;font-weight:500;color:var(--muted)}

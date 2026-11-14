@@ -24,7 +24,8 @@ TASKS=[]
 SOCIAL_ACCOUNTS=[{'id':'acc-fb','profileId':'fb1','name':'ASOCIM Admisiones','platform':'facebook','type':'page','isExpired':False},
  {'id':'acc-ig','profileId':'ig1','name':'@asocim','platform':'instagram','type':'business','isExpired':False},
  {'id':'acc-li','profileId':'li1','name':'ASOCIM','platform':'linkedin','type':'page','isExpired':True}]
-POSTS=[{'_id':'post-pub','summary':'Abrimos inscripciones para el diplomado de enero.','status':'published','platform':'facebook','accountIds':['acc-fb'],'displayDate':'2026-11-10T14:00:00.000Z','publishedAt':'2026-11-10T14:00:00.000Z','media':[],'type':'post','source':'composer'},
+POSTS=[{'_id':'post-ig','summary':'Así fue la graduación de la cohorte de octubre.','status':'published','platform':'instagram','accountIds':['acc-ig'],'displayDate':'2026-11-08T18:00:00.000Z','publishedAt':'2026-11-08T18:00:00.000Z','media':[{'url':'https://ejemplo.test/grad.jpg','type':'image/jpeg'}],'type':'post','source':'composer'},
+ {'_id':'post-pub','summary':'Abrimos inscripciones para el diplomado de enero.','status':'published','platform':'facebook','accountIds':['acc-fb'],'displayDate':'2026-11-10T14:00:00.000Z','publishedAt':'2026-11-10T14:00:00.000Z','media':[],'type':'post','source':'composer'},
  {'_id':'post-err','summary':'Clase abierta este sábado.','status':'failed','error':'Token de la página vencido','platform':'linkedin','accountIds':['acc-li'],'displayDate':'2026-11-12T15:00:00.000Z','media':[],'type':'post','source':'composer'}]
 def log(*a):
     with open('fake-ghl.log','a') as f:f.write(' '.join(map(str,a))+'\n')
@@ -95,6 +96,7 @@ class H(BaseHTTPRequestHandler):
         if m4 and m4.group(2)=='accounts' and m=='GET':return self.out(200,{'success':True,'statusCode':200,'message':'Fetched Accounts','results':{'accounts':SOCIAL_ACCOUNTS,'groups':[]}})
         if m4 and m4.group(2)=='posts/list' and m=='POST':
             t=b.get('type','all');items=[x for x in POSTS if t in('all','recent') or x['status']==t]
+            if b.get('accounts'):acc=set(a.strip() for a in b['accounts'].split(','));items=[x for x in items if acc & set(x['accountIds'])]
             if not b.get('fromDate') or not b.get('includeUsers'):return self.out(422,{'message':'fromDate and includeUsers are required'})
             return self.out(201,{'success':True,'statusCode':201,'message':'Fetched Posts','results':{'posts':items,'count':len(items)}})
         if m4 and m4.group(2)=='posts' and m=='POST':

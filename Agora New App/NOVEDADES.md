@@ -1,5 +1,10 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.7.2:**
+- **Redes sociales: las publicaciones se ven y se dividen por red.** La pantalla abre en «Publicadas» (antes abría en «Programadas», que suele estar vacía) y mira 90 días atrás (antes 30). Con «Todas las redes» se agrupan por red con su cantidad; el filtro «Red» deja ver solo una.
+- La pantalla explica que la cuenta solo informa lo que pasa por su planificador: lo que se sube directamente en Instagram o Facebook no aparece.
+- Las imágenes de las publicaciones ya pueden mostrarse (la regla de seguridad del sitio solo permitía imágenes propias); si una no carga, se oculta en vez de verse rota. **Cambia el `.htaccess`.**
+
 **Novedades 2.7.1:**
 - **Redes sociales queda solo para ver métricas.** Se quitaron «Nueva publicación» y «Borrar»: en Ágora no se publica ni se borra (el servidor tampoco lo acepta). Quedan las redes conectadas, las cifras de los últimos 7 días frente a los 7 anteriores (ahora también separadas por red) y la lista de publicaciones por estado.
 - **Arreglado: «La cuenta no dio las cifras de las redes».** Se le pedían a la cuenta con el identificador equivocado de cada red; ahora va el que pide la documentación. Solo se piden las redes que la cuenta puede medir.
