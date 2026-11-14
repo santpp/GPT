@@ -310,3 +310,20 @@ html,body,button,input,select,textarea{font-family:var(--font-text)}
 .diag summary{cursor:pointer;font-weight:600}
 .diag ul{margin:6px 0 0;padding-left:18px}
 .diag li{margin:2px 0;word-break:break-word}
+
+/* 2.8.3 · Arreglos de pantalla vistos en el teléfono */
+/* Estado vacío dentro de una tabla en fichas: sin línea encima del botón y con el icono en su sitio (no encima del texto). */
+table.t-fichas tr > td.empty{padding:36px 16px!important;margin:0!important;border:0!important;font-size:14px;font-weight:400;line-height:1.5;text-align:center!important}
+table.t-fichas tr:has(> td.empty){border-style:dashed}
+:root[data-xp="cuenta"] #app table.t-fichas tr > td.empty::before{content:"";display:block;width:44px;height:44px;margin:0 auto 12px;border-radius:14px;background:var(--brand-soft)}
+table.t-fichas tr > td.empty .btn{margin-top:14px}
+:root[data-xp="cuenta"] #app table.xp-cards tbody tr > td.empty{display:block;padding:36px 16px;margin:0;border:0;font-weight:400;line-height:1.5;text-align:center}
+:root[data-xp="cuenta"] #app table.xp-cards tbody tr > td.empty::before{content:"";display:block;width:44px;height:44px;max-width:none;margin:0 auto 12px;border-radius:14px;background:var(--brand-soft)}
+:root[data-xp="cuenta"] #app table.xp-cards tbody tr:has(> td.empty){border-style:dashed}
+:root[data-xp="cuenta"] #app table.xp-cards tbody tr > td.empty .btn{margin-top:14px}
+/* Filtros de una sección del tablero: en pantallas angostas ocupan todo el ancho, alineados a la izquierda. */
+@media (max-width:700px){
+  #view.ag .t-sec-row .acts{flex:1 1 100%;margin-left:0;width:100%}
+  #view.ag .t-sec-row .acts .fld{flex:1 1 140px;min-width:0}
+  #view.ag .t-sec-row .acts .fld select{width:100%;min-width:0}
+}

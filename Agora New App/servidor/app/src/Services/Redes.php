@@ -95,7 +95,7 @@ final class Redes {
   $clave='social:posts:'.substr(hash('sha256',json_encode($filtro)),0,20);
   $leida=self::guardado($c,$clave,300);
   if($leida===null){$leida=$this->leerPublicaciones($c,$filtro,$tipo);if($leida['lista'])self::guardar($c,$clave,$leida);}
-  $lista=$leida['lista'];$total=$leida['total'];
+  $lista=$leida['lista'];$total=$leida['total'];$vacia=!empty($leida['vacia']);
   $cuentas=[];foreach($todas as $x)$cuentas[$x['id']]=$x;
   $out=[];foreach(is_array($lista)?$lista:[] as $p){
    if(!is_array($p))continue;
@@ -107,7 +107,7 @@ final class Redes {
     'error'=>is_string($p['error']??null)&&$p['error']!==''?mb_substr($p['error'],0,240):null,'plataforma'=>$plat,'red'=>$plat!==''?self::nombrePlataforma($plat):'',
     'cuentas'=>array_values(array_map(fn($i)=>['id'=>$i,'nombre'=>$cuentas[$i]['nombre']??'Cuenta','red'=>$cuentas[$i]['red']??''],$ids)),'media'=>$media,'nativa'=>!in_array(strtolower((string)($p['source']??'composer')),['composer','recurring','csv',''],true)];
   }
-  $res=['tipo'=>$tipo,'red'=>$red,'desde'=>$desde,'hasta'=>$hasta,'pagina'=>$pagina,'items'=>$out,'total'=>is_numeric($total)?(int)$total:null,'hayMas'=>count($lista)>=20];
+  $res=['tipo'=>$tipo,'red'=>$red,'desde'=>$desde,'hasta'=>$hasta,'pagina'=>$pagina,'items'=>$out,'total'=>is_numeric($total)?(int)$total:null,'hayMas'=>count($lista)>=20,'cuentaVacia'=>$vacia];
   // Solo los dueños de Ágora ven cómo respondió la cuenta (sin contenido), para diagnosticar una lista vacía.
   if(in_array($this->a->requireUser()['role'],['MASTER','SUPERADMIN'],true))$res['diagnostico']=$leida['diagnostico'];
   return $res;
@@ -136,7 +136,17 @@ final class Redes {
    if($permiso)Http::fail('La conexión de esta subcuenta no tiene permiso para leer las publicaciones. Pídele a la agencia que agregue los permisos de Social Planner a la integración.',424);
    Http::fail('La cuenta no dio las publicaciones (código '.$ultimo.'). Inténtalo otra vez en un momento.',424);
   }
-  return ['lista'=>[],'total'=>0,'diagnostico'=>$diag];
+  // Último intento: nombrando todas las redes conectadas y con un año hacia atrás (algunas cuentas solo responden así).
+  $ids=array_column(array_filter($this->cuentas($c),fn($x)=>!$x['vencida']),'id');
+  if($ids&&empty($filtro['accounts'])){
+   $f=['type'=>'all','accounts'=>implode(',',$ids),'fromDate'=>gmdate('Y-m-d',strtotime('-365 days')).'T00:00:00.000Z']+$filtro;$f['type']='all';
+   try{$r=(new \GhlGateway())->execute($c,fn(\GhlClient $cl):array=>$cl->socialPosts((string)$c['location_id'],$f,'v3'),false,true);
+    [$lista,$donde]=self::listaPosts($r);if($tipo!=='all')$lista=array_values(array_filter($lista,fn($p)=>strtolower((string)($p['status']??''))===$tipo));
+    $diag[]='versión v3, todas las redes, 365 días: respondió; '.count($lista).' publicaciones';
+    if($lista)return ['lista'=>$lista,'total'=>null,'diagnostico'=>$diag];}
+   catch(\GhlCooldown $e){}catch(\GhlApiException $e){$diag[]='versión v3, todas las redes, 365 días: código '.$e->status;}
+  }
+  return ['lista'=>[],'total'=>0,'diagnostico'=>$diag,'vacia'=>true];
  }
  /** Encuentra la lista de publicaciones sin suponer el anidado: results.posts, posts, data… o la primera lista de objetos con id. */
  private static function listaPosts(array $r):array{

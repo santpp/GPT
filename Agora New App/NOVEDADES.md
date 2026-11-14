@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.3:**
+- **Campañas de Meta: diagnóstico de la cuenta real.** El detalle técnico de ASOCIM mostró que la cuenta publicitaria está registrada, pero Meta no entrega su autorización («Access Token not found», código 422) y el Ad Manager de la cuenta no tiene página conectada (404). Ahora el bloque lo dice así: **«Hay que volver a conectar la cuenta publicitaria de Meta»**, con los pasos.
+- **Publicaciones:** si la cuenta responde sin publicaciones, Ágora hace un último intento nombrando todas las redes conectadas y mirando un año atrás. Si sigue en cero, lo dice claro: la cuenta no entrega publicaciones para leer desde fuera, aunque se vean en su planificador; las cifras sí las incluyen.
+- **Pantalla (teléfono):** en «Eficacia de ventas» los filtros Embudo y Ejecutivo ocupan todo el ancho, uno al lado del otro, sin sangría; en tablas vacías (por ejemplo, Productos) el icono ya no queda encima del texto ni hay una línea que cruce el botón «Crear producto»; la pestaña de Personalizar dice **«Indicadores»** (sin «(KPI)»).
+- Sin migraciones ni cambios en `.htaccess`.
+
 **Novedades 2.8.2:**
 - **Publicaciones vacías en la cuenta real (arreglo probable):** la lista se pedía con la versión vieja de lectura, que no trae las publicaciones hechas en Meta Business Suite. Ahora se pide con la versión nueva («v3») y, si esa falla, con la vieja; si con «Publicadas» no viene nada, se prueba con «Todas» y se filtra aquí. La respuesta se lee sin suponer dónde viene la lista. Se guarda 5 minutos.
 - **Campañas de Meta: el aviso dice la causa real.** Si la cuenta no entrega la lista, Ágora pregunta además si hay cuenta publicitaria conectada y si hay totales del mes. Avisos posibles: «no hay cuenta publicitaria conectada en el administrador de anuncios» (tener Facebook e Instagram conectados para publicar no basta), «está conectada pero no entregó la lista», o solo los totales del mes si es lo único que da. Un aviso de error se vuelve a comprobar a los 2 minutos (antes, 20).

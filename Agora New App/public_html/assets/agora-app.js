@@ -4051,7 +4051,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.8.2').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.8.3').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -5575,10 +5575,10 @@ function arpPersonalizar(root) {
    04k-embudos-capi.js (embTab, indTab…); aquí solo se arma la pantalla y la barra de guardar,
    que guarda de una vez todo lo pendiente (embudos, indicadores y personalización). */
 MODS.personalizar = {g: 'administracion', view: 'personalizar', name: 'Personalizar', icon: 'palette', path: '/personalizar', c: 'var(--mod-seguridad)',
-  desc: 'Tus embudos, tus indicadores (KPI), el CRM y los módulos visibles.', ok: () => puede('ajustes.editar')};
+  desc: 'Tus embudos, tus indicadores, el CRM y los módulos visibles.', ok: () => puede('ajustes.editar')};
 { const ayuda = MODS.ayuda; delete MODS.ayuda; MODS.ayuda = ayuda; }
 let PZ_TAB = 'embudos', PZ = null, PZ_CRM = null;
-const PZ_TABS = [['embudos', 'trend', 'Embudos'], ['indicadores', 'pie', 'Indicadores (KPI)'], ['crm', 'users', 'CRM'], ['modulos', 'sidebar', 'Módulos'], ['inicio', 'home', 'Pantalla de inicio']];
+const PZ_TABS = [['embudos', 'trend', 'Embudos'], ['indicadores', 'pie', 'Indicadores'], ['crm', 'users', 'CRM'], ['modulos', 'sidebar', 'Módulos'], ['inicio', 'home', 'Pantalla de inicio']];
 function pzBorrador() {
   const c = personalCfg() || {};
   const t = tbConfig();
@@ -5604,7 +5604,7 @@ V.personalizar = {
     if (!pzTabs.some(t => t[0] === PZ_TAB)) PZ_TAB = pzTabs[0][0];
     const cuerpo = {embudos: () => embTab(), indicadores: () => indTab(), crm: pzCrm, modulos: pzModulos, inicio: pzTablero}[PZ_TAB]();
     const p = cuentaPerfil();
-    return `<div class="pz">${head('Administración', 'Personalizar', 'Ajusta Ágora a tu negocio: las etapas de tus embudos, los indicadores (KPI) que mides y sus metas, el CRM y los módulos. Los cambios valen para toda la subcuenta.',
+    return `<div class="pz">${head('Administración', 'Personalizar', 'Ajusta Ágora a tu negocio: las etapas de tus embudos, los indicadores que mides y sus metas, el CRM y los módulos. Los cambios valen para toda la subcuenta.',
       `<a class="btn" href="${href('/comercial')}">${icon('trend')}Ver el Tablero comercial</a>`)}
       <div class="pz-perfil"><span class="pz-perfil-ic" aria-hidden="true">${icon('split')}</span><div><small>Tipo de cuenta</small><b>${esc(perfilTexto(p))}</b></div><p>${p ? 'Lo define la agencia al crear la subcuenta. Sirve de punto de partida para tus indicadores y tu Inicio.' : 'La agencia todavía no definió el tipo de cuenta. Mientras tanto se usan los valores de una cuenta de servicios.'}</p></div>
       <nav class="agency-chips pz-tabs" role="tablist" aria-label="Qué personalizar">${pzTabs.map(([id, ic, t]) => `<button type="button" role="tab" class="agency-chip-btn ${PZ_TAB === id ? 'is-active' : ''} ${id === 'inicio' ? 'pz-tab-sec' : ''}" aria-selected="${PZ_TAB === id}" data-pz-tab="${id}">${icon(ic)}${t}</button>`).join('')}</nav>
@@ -7381,7 +7381,7 @@ function kpiFmt(k, v) {
 const kpiMetaTxt = k => k.meta == null || k.meta === '' ? 'Sin meta' : `Meta ${kpiFmt(k, k.meta)}${k.periodo && k.periodo !== 'mes' ? ' ' + (KPI_PERIODOS.find(p => p[0] === k.periodo)?.[1] || '').toLowerCase() : ' al mes'}`;
 /* ---------- Pestaña ---------- */
 function indTab() {
-  if (!IND) return `<section class="panel pf-sec">${secH('pie', 'Indicadores (KPI)', 'Cargando tus indicadores…')}<div class="emb-sk"><span class="sk w80"></span><span class="sk w60"></span></div><div class="pz-acts"><button type="button" class="btn btn-sm" data-ind-reintentar>${icon('refresh')}Reintentar</button></div></section>`;
+  if (!IND) return `<section class="panel pf-sec">${secH('pie', 'Indicadores', 'Cargando tus indicadores…')}<div class="emb-sk"><span class="sk w80"></span><span class="sk w60"></span></div><div class="pz-acts"><button type="button" class="btn btn-sm" data-ind-reintentar>${icon('refresh')}Reintentar</button></div></section>`;
   const v = KPI_VAL;
   const fila = (k, i) => {
     const val = kpiValor(k, v), st = kpiEstado(k, val), f = k.fuente === 'personalizado' ? `${kpiNombreFuente(k.formula?.a)} ${k.formula?.op === '/' ? '÷' : '−'} ${kpiNombreFuente(k.formula?.b)}` : kpiNombreFuente(k.fuente);
@@ -8488,7 +8488,7 @@ async function redesCargarLista(mas = false) {
   const pag = mas ? REDES.pagina + 1 : 0;
   try {
     const d = await agoraApi(`workspace/redes/publicaciones?tipo=${encodeURIComponent(REDES.tipo)}&red=${encodeURIComponent(REDES.red)}&pagina=${pag}`);
-    REDES.items = mas ? [...(REDES.items || []), ...d.items] : d.items; REDES.pagina = pag; REDES.hayMas = !!d.hayMas; REDES.total = d.total; REDES.diag = d.diagnostico || null; REDES.errorLista = '';
+    REDES.items = mas ? [...(REDES.items || []), ...d.items] : d.items; REDES.pagina = pag; REDES.hayMas = !!d.hayMas; REDES.total = d.total; REDES.diag = d.diagnostico || null; REDES.cuentaVacia = !!d.cuentaVacia; REDES.errorLista = '';
   } catch (x) { if (!mas) REDES.items = []; REDES.errorLista = x.message; }
 }
 const redesFecha = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString('es-VE', {weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}); };
@@ -8522,7 +8522,7 @@ V.redes = {
     const items = REDES.items;
     const lista = items === null ? '<div class="redes-lista"><span class="sk w80"></span><span class="sk w60"></span></div>'
       : REDES.errorLista ? `<p class="redes-aviso">${icon('warn')}<span>${esc(REDES.errorLista)}</span></p>`
-      : !items.length ? `<p class="redes-nota">${REDES.tipo === 'scheduled' ? 'No hay nada programado para los próximos 60 días.' : 'No hay publicaciones con este estado en los últimos 90 días.'} </p>${Array.isArray(REDES.diag) && REDES.diag.length ? `<details class="diag"><summary>Detalle técnico (solo dueños de Ágora)</summary><ul>${REDES.diag.map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}`
+      : !items.length ? `<p class="redes-nota">${REDES.cuentaVacia && !REDES.red ? 'La cuenta respondió sin publicaciones para leer desde Ágora, aunque en su planificador se vean. Las cifras de arriba sí las incluyen.' : REDES.tipo === 'scheduled' ? 'No hay nada programado para los próximos 60 días.' : 'No hay publicaciones con este estado en los últimos 90 días.'} </p>${Array.isArray(REDES.diag) && REDES.diag.length ? `<details class="diag"><summary>Detalle técnico (solo dueños de Ágora)</summary><ul>${REDES.diag.map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}`
       : (() => {
           const tarjeta = p => {
           const [et, tono] = REDES_ESTADO[p.estado] || [p.estado || 'Sin estado', 'sc-gray'];
@@ -8577,6 +8577,7 @@ function campanasHtml() {
   else if (CAMP.error) cuerpo = `<p class="redes-aviso">${icon('warn')}<span>${esc(CAMP.error)}</span></p>`;
   else if (!d) cuerpo = '';
   else if (d.estado === 'permiso') cuerpo = `<p class="redes-nota">La conexión de esta subcuenta no tiene permiso para leer los anuncios. Pídele a la agencia que agregue el permiso de lectura de anuncios a la integración.</p>`;
+  else if (d.estado === 'reconectar') cuerpo = `<p class="redes-nota"><b>Hay que volver a conectar la cuenta publicitaria de Meta.</b> Está registrada en la cuenta de esta subcuenta, pero su autorización de Meta venció o se perdió, así que Meta no entrega las campañas. La agencia debe entrar en la sección de anuncios de la cuenta, desconectar y volver a conectar Facebook con el usuario que administra la cuenta publicitaria, aceptando todos los permisos de anuncios. Después, las campañas aparecen aquí solas (en unos 2 minutos).</p>`;
   else if (d.estado === 'sin_integracion') cuerpo = `<p class="redes-nota">La cuenta de esta subcuenta no tiene conectada una cuenta publicitaria de Meta en su administrador de anuncios. Tener Facebook e Instagram conectados para publicar no basta: la agencia debe conectar la cuenta publicitaria en la sección de anuncios de la cuenta. Después, las campañas aparecen aquí solas.</p>`;
   else if (d.estado === 'sin_lista') cuerpo = `<p class="redes-nota">La cuenta publicitaria de Meta está conectada, pero la cuenta no entregó la lista de campañas de ${esc(mesNombre(d.mes))}${d.http ? ' (código ' + esc(d.http) + ')' : ''}. Vuelve a intentarlo en unos minutos.</p>`;
   else if (d.estado !== 'ok' && d.estado !== 'totales') cuerpo = `<p class="redes-nota">La cuenta no entregó las campañas de Meta${d.http ? ' (código ' + esc(d.http) + ')' : ''}. Revisa que la cuenta publicitaria de Meta esté conectada en la sección de anuncios de la cuenta.</p>`;

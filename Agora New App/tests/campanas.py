@@ -44,6 +44,11 @@ try:
     st,d=a.call('workspace/campanas?mes=2026-10')
     ok(st==200 and d['estado']=='sin_integracion' and d['integracion'] is False,'sin cuenta publicitaria conectada (la cuenta responde 404) se dice exactamente eso')
 finally:os.remove('/tmp/fake-ghl-sin-anuncios')
+open('/tmp/fake-ghl-token-vencido','w').close()
+try:
+    st,d=a.call('workspace/campanas?mes=2026-08')
+    ok(st==200 and d['estado']=='reconectar','si Meta no entrega el acceso de la cuenta publicitaria (422), se pide volver a conectarla')
+finally:os.remove('/tmp/fake-ghl-token-vencido')
 st,d=a.call(f'workspace/inbox?connectionId={a.ws}')
 ok(st==200,'leer las campañas no frena la bandeja')
 print(f'{n} comprobaciones')

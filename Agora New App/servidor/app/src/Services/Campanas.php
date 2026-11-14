@@ -51,7 +51,9 @@ final class Campanas {
    catch(\GhlApiException $e){$diag[]='integración de anuncios: código '.$e->status.($e->detail!==''?' ('.$e->detail.')':'');if($e->status===404)$integracion=false;if(in_array($e->status,[401,403],true)&&$estado!=='totales')$estado='permiso';}
    try{$r=$this->leer($c,fn(\GhlClient $cl):array=>$cl->adAccounts((string)$c['location_id']));$l=self::primeraLista($r);$cuentasPub=$l===null?null:count($l);$diag[]='cuentas publicitarias: respondió ('.($cuentasPub===null?'sin lista':$cuentasPub).')';}
    catch(\GhlApiException $e){$diag[]='cuentas publicitarias: código '.$e->status.($e->detail!==''?' ('.$e->detail.')':'');}
-   if($estado==='sin_conexion')$estado=$integracion===false||$cuentasPub===0?'sin_integracion':($integracion===true||$cuentasPub?'sin_lista':'sin_conexion');
+   // «Access Token not found»: la cuenta publicitaria está registrada pero su autorización de Meta venció o se perdió.
+   $sinToken=(bool)array_filter($diag,fn($l)=>str_contains($l,'código 422')&&stripos($l,'access token')!==false);
+   if($estado==='sin_conexion'||$estado==='permiso'&&$sinToken)$estado=$sinToken?'reconectar':($integracion===false||$cuentasPub===0?'sin_integracion':($integracion===true||$cuentasPub?'sin_lista':'sin_conexion'));
   }
   $campanas=array_values($campanas);
   usort($campanas,fn($a,$b)=>($b['inversion']??0)<=>($a['inversion']??0));
