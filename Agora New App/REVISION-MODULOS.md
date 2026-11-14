@@ -19,7 +19,7 @@ Hecha el 14 de noviembre de 2026 sobre la 2.3.3, en local, con la subcuenta de p
 | G · Textos viejos o técnicos | Corregido en Ajustes, Ayuda, Auditoría, Registro y pie de página |
 | Tareas dobles | Corregido: una sola tarea, escrita en la cuenta |
 
-Pendiente de esta revisión: Bandeja, Contactos y Oportunidades al día con Ágora Mobile 1.10.14; nombres y columnas de los módulos del reporte pensados para ASOCIM; tablas anchas en el teléfono.
+Hecho en 2.5.0: Bandeja, Contactos y Oportunidades al día con Ágora Mobile 1.10.14. Pendiente de esta revisión: nombres y columnas de los módulos del reporte pensados para ASOCIM; tablas anchas en el teléfono.
 
 ## Lo más importante (resumen)
 

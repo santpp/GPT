@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.5.0:**
+- **Bandeja, Contactos y Embudos al día con Ágora Mobile 1.10.14**, conservando lo propio de esta app (recordatorios y tareas).
+- **Embudos nuevos:** filtros por etapa y por responsable, buscador por nombre, teléfono o correo, etapas plegables, tarjetas compactas y tres atajos en cada oportunidad: abrir la conversación, abrir la ficha y «Mover a…» otra etapa en un toque. En el teléfono las etapas van una debajo de otra.
+- **Bandeja:** se busca también por teléfono y correo (un teléfono se entiende aunque lleve espacios, guiones o paréntesis); cada conversación muestra el canal con su color y, a quien ve toda la subcuenta, el responsable o «Sin asignar»; el historial ya no salta cuando cambia el alto del cuadro de respuesta.
+- **Contactos:** botón «Ver más» para seguir la lista, textos «asignados a ti», y la ficha se abre directa desde una oportunidad.
+- Sin migraciones. `agora-modulos.js` lleva ahora las funciones de Contactos y Embudos de Ágora Mobile 1.10.14 tal cual, y los cambios de la Bandeja aplicados a mano.
+
 **Novedades 2.4.0:**
 - **Cada persona ve solo sus módulos.** El menú, el inicio y el buscador muestran únicamente lo que su rol y sus permisos individuales permiten (un ejecutivo pasa de 24 entradas a 9). El servidor le envía a la pantalla los mismos permisos que aplica. Los módulos del reporte mensual (Gestión Comercial, Equipo, Facturación, Costos, Tendencias, Calidad, Configuración mensual) solo aparecen si la subcuenta tiene un reporte cargado.
 - **Enlace de cada persona con su usuario de la cuenta** (Usuarios y roles): columna «Usuario en la cuenta», opción «Enlazar con la cuenta», botón «Actualizar equipo» y, al agregar una persona, «Traer del equipo de la cuenta». Sin enlace elegido se sigue deduciendo por correo. Un ejecutivo sin enlace ve un aviso que le explica por qué no ve nada.

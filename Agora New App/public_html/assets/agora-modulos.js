@@ -25,6 +25,8 @@
     },
     /** Filtro de la bandeja que otra pantalla pide al abrirla (por ejemplo, «sin respuesta» desde el tablero). */
     pendingFilter: null,
+    /** Contacto cuya ficha debe abrirse al entrar en Contactos (por ejemplo, desde una oportunidad). */
+    pendingContact: null,
     get connections() {
       return connections;
     },
@@ -110,6 +112,8 @@
     return symbol() + " " + grouped({ minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(Number(value));
   }
   var symbol = () => workspace.currency() === "EUR" ? "€" : "US$";
+  /** Si lo escrito parece un teléfono, lo deja sin espacios, guiones ni paréntesis; si no, no lo toca. */
+  var searchText = (raw) => { const value = String(raw ?? "").trim(); return /^[+\d\s().-]+$/.test(value) && (value.match(/\d/g) || []).length >= 5 ? value.replace(/[\s().-]/g, "") : value; };
 
   // agora/won-alert.js
   var esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -974,7 +978,7 @@
       const read = data.readAt ? new Date(data.readAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "";
       const feedback = $("#dashboard-feedback");
       feedback.hidden = false;
-      feedback.textContent = `${data.restricted ? "Tus cifras" : "Cifras de la cuenta"} · ${nowLabel()}${read ? ` · actualizado a las ${read}` : ""}`;
+      feedback.textContent = `${data.restricted ? "Tu día" : "Cifras de la cuenta"} · ${nowLabel()}${read ? ` · actualizado a las ${read}` : ""}`;
       const unread = data.conversations?.unread ?? 0;
       const unlinked = unlinkedNote();
       restricted = data.restricted === true;
@@ -1752,7 +1756,7 @@
         if (visible.length && !listEl.dataset.painted) setTimeout(() => {
           listEl.dataset.painted = "1";
         }, 1200);
-        $("#live-list").innerHTML = visible.map((c) => `<button class="conversation-item live-conversation ${selected?.id === c.id ? "selected" : ""}${recordatorios.has(c.id) ? " con-rec" : ""}" data-live-id="${esc7(c.id)}" aria-label="Abrir conversación de ${esc7(name(c))}" aria-pressed="${selected?.id === c.id}"><span class="avatar">${esc7(initials(c))}</span><span class="conversation-info"><header><strong>${esc7(name(c))}</strong><time title="${esc7(date(c.lastMessageDate))}">${esc7(when(c.lastMessageDate))}</time></header><p>${esc7(c.lastMessageBody || "Sin vista previa")}</p><footer><span class="channel">${channel(c.lastMessageType)}</span>${recordatorioDe(c.id) ? `<span class="rec-chip" title="Recordatorio de seguimiento">${esc7(cuandoTexto(recordatorioDe(c.id).at))}</span>` : ""}${filter === "waiting" && stamp(c) ? `<span class="waiting${Date.now() - stamp(c) > 36e5 ? " late" : ""}">Espera ${waited(c)}</span>` : ""}${Number(c.unreadCount) > 0 ? `<b class="unread">${Number(c.unreadCount)}<span class="sr-only"> pendientes</span></b>` : ""}</footer></span></button>`).join("") || (listLoading ? skeleton("list", 7) : '<p class="empty">No hay conversaciones con este filtro.</p>');
+        $("#live-list").innerHTML = visible.map((c) => `<button class="conversation-item live-conversation ${selected?.id === c.id ? "selected" : ""}${recordatorios.has(c.id) ? " con-rec" : ""}" data-live-id="${esc7(c.id)}" aria-label="Abrir conversación de ${esc7(name(c))}" aria-pressed="${selected?.id === c.id}"><span class="avatar">${esc7(initials(c))}</span><span class="conversation-info"><header><strong>${esc7(name(c))}</strong><time title="${esc7(date(c.lastMessageDate))}">${esc7(when(c.lastMessageDate))}</time></header><p>${esc7(c.lastMessageBody || "Sin vista previa")}</p><footer><span class="channel">${channelChip(c.lastMessageType)}</span>${recordatorioDe(c.id) ? `<span class="rec-chip" title="Recordatorio de seguimiento">${esc7(cuandoTexto(recordatorioDe(c.id).at))}</span>` : ""}${filter === "waiting" && stamp(c) ? `<span class="waiting${Date.now() - stamp(c) > 36e5 ? " late" : ""}">Espera ${waited(c)}</span>` : ""}${Number(c.unreadCount) > 0 ? `<b class="unread">${Number(c.unreadCount)}<span class="sr-only"> pendientes</span></b>` : ""}</footer>${team ? `<small class="live-assignee${c.assignedTo ? "" : " none"}">${c.assignedTo ? `Responsable: ${esc7(team[c.assignedTo] || "otra persona del equipo")}` : "Sin asignar"}</small>` : ""}</span></button>`).join("") || (listLoading ? skeleton("list", 7) : '<p class="empty">No hay conversaciones con este filtro.</p>');
         if (hasMore) $("#live-list").insertAdjacentHTML("beforeend", `<button id="live-more" class="live-more"${loadingMore ? " disabled" : ""}>${loadingMore ? "Cargando…" : "Cargar más conversaciones"}</button>`);
         container.querySelectorAll("[data-live-id]").forEach((b) => b.onclick = () => open(conversations.find((c) => c.id === b.dataset.liveId)));
         const more = $("#live-more");
@@ -2150,7 +2154,7 @@
         if (editor.open) return (editor.pipelines ? opportunityForm({ pipelines: editor.pipelines.pipelines, assignees: editor.pipelines.assignees, opportunity: editor.open === "new" ? null : items2.find((item) => item.id === editor.open) || null }) : '<span class="muted">Cargando embudos…</span>') + (editor.notice ? `<span class="muted">${esc7(editor.notice)}</span>` : "");
         const add = canEdit ? '<button class="live-opportunity-new" data-new-opportunity>+ Nueva oportunidad</button>' : "";
         const notice = editor.notice ? `<span class="muted">${esc7(editor.notice)}</span>` : "";
-        if (!items2.length || !opportunities.active) return `<span class="muted">${opportunities.restricted ? "Sin oportunidades asignadas a tu usuario." : "Este contacto no tiene oportunidades."}</span>${add}${notice}`;
+        if (!items2.length || !opportunities.active) return `<span class="muted">${opportunities.restricted ? "Sin oportunidades asignadas a ti." : "Este contacto no tiene oportunidades."}</span>${add}${notice}`;
         const others = items2.filter((item) => item.id !== opportunities.active.id);
         return opportunityCard(opportunities.active, canEdit) + (others.length ? `<details class="live-opportunity-all"><summary>Ver todas las oportunidades (${items2.length})</summary>${others.map((item) => opportunityCard(item, canEdit)).join("")}</details>` : "") + (opportunities.partial ? '<span class="muted">Se muestran las oportunidades más recientes de este contacto.</span>' : "") + add + notice;
       }, activitySection = function(activity) {
@@ -2180,15 +2184,18 @@
         list();
         layout.classList.add("chat-open");
         layout.classList.remove("contact-open");
-        $("#live-messages").innerHTML = `<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">${UI_ICONS.back}</button><span class="avatar">${esc7(initials(c))}</span><div><h2>${esc7(name(c))}</h2><p>${channel(c.lastMessageType)}</p></div>${canWin() ? '<button id="live-won" class="won-button" title="¿Venta ganada?" aria-label="¿Venta ganada?"><span aria-hidden="true">✓</span><span class="won-long">¿Venta ganada?</span><span class="won-short">¿Ganada?</span><span class="sr-only">¿Venta ganada?</span></button>' : ""}<button id="live-recordar" class="rec-button" title="Recordatorio de seguimiento" aria-label="Recordatorio de seguimiento"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.5 1.5M9 2.5h6"/></svg></span><span class="rec-text">Recordar</span></button><button id="live-assign" class="assign-button" hidden title="Asignar la conversación" aria-label="Asignar la conversación"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20c.7-3.6 3.2-5.5 6.5-5.5s5.8 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg></span><span class="assign-text">Asignar</span></button><button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">${UI_ICONS.expand}</button><button id="live-contact-toggle" aria-label="Ver ficha del contacto" title="Ver ficha del contacto">${UI_ICONS.contact}</button></header><div id="live-rec" class="live-rec" role="status" hidden></div><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
+        $("#live-messages").innerHTML = `<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">${UI_ICONS.back}</button><span class="avatar">${esc7(initials(c))}</span><div><h2>${esc7(name(c))}</h2><p>${channelChip(c.lastMessageType)}</p></div>${canWin() ? '<button id="live-won" class="won-button" title="¿Venta ganada?" aria-label="¿Venta ganada?"><span aria-hidden="true">✓</span><span class="won-long">¿Venta ganada?</span><span class="won-short">¿Ganada?</span><span class="sr-only">¿Venta ganada?</span></button>' : ""}<button id="live-recordar" class="rec-button" title="Recordatorio de seguimiento" aria-label="Recordatorio de seguimiento"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.5 1.5M9 2.5h6"/></svg></span><span class="rec-text">Recordar</span></button><button id="live-assign" class="assign-button" hidden title="Asignar la conversación" aria-label="Asignar la conversación"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20c.7-3.6 3.2-5.5 6.5-5.5s5.8 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg></span><span class="assign-text">Asignar</span></button><button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">${UI_ICONS.expand}</button><button id="live-contact-toggle" aria-label="Ver ficha del contacto" title="Ver ficha del contacto">${UI_ICONS.contact}</button></header><div id="live-rec" class="live-rec" role="status" hidden></div><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
         {
           const log = $("#live-log");
-          let stick = true;
+          let stick = true, lastHeight = log.clientHeight;
+          // Si el cuadro cambia de alto (un aviso, el teclado), el navegador mueve el desplazamiento solo: eso no es la persona subiendo.
           log.addEventListener("scroll", () => {
+            if (log.clientHeight !== lastHeight) return;
             stick = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
           }, { passive: true });
           if ("ResizeObserver" in window) new ResizeObserver(() => {
             if (stick && messages.size) log.scrollTop = log.scrollHeight;
+            lastHeight = log.clientHeight;
           }).observe(log);
         }
         $("#live-back").onclick = () => {
@@ -2260,7 +2267,7 @@
       const me = await request2("me");
       const { items } = await request2("workspace/connections");
       if (!active()) return;
-      container.innerHTML = `<div class="live-toolbar"><p id="live-feedback" class="live-feedback" role="status"></p><label>Mostrar<select id="live-limit" aria-label="Cantidad de conversaciones"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label></div><p id="live-auto-status" class="live-auto-status" role="status" hidden></p><div class="live-inbox-layout"><section class="live-sidebar" aria-label="Lista de conversaciones"><label class="search"><span aria-hidden="true">⌕</span><input id="live-search" type="search" placeholder="Buscar nombre o mensaje" aria-label="Buscar en conversaciones cargadas"></label><div class="tabs"><button data-live-filter="all" class="active" aria-pressed="true">Todas</button><button data-live-filter="unread" aria-pressed="false">No leídas</button><button data-live-filter="waiting" aria-pressed="false" title="Conversaciones donde lo último lo escribió el cliente">Sin respuesta</button><button data-live-filter="mine" aria-pressed="false" id="live-filter-mine" hidden>Mías</button><span class="live-channel-filters" id="live-channel-filters"></span><span id="live-count"></span></div><div id="live-list"></div></section><section id="live-messages" aria-label="Conversación"><p class="empty">Selecciona una conversación para consultar su historial.</p></section><aside id="live-contact-panel" class="live-contact-panel" aria-label="Ficha del contacto"></aside></div>`;
+      container.innerHTML = `<div class="live-toolbar"><p id="live-feedback" class="live-feedback" role="status"></p><label>Mostrar<select id="live-limit" aria-label="Cantidad de conversaciones"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></label></div><p id="live-auto-status" class="live-auto-status" role="status" hidden></p><div class="live-inbox-layout"><section class="live-sidebar" aria-label="Lista de conversaciones"><label class="search"><span aria-hidden="true">⌕</span><input id="live-search" type="search" placeholder="Buscar nombre, teléfono, correo o mensaje" aria-label="Buscar en conversaciones cargadas"></label><div class="tabs"><button data-live-filter="all" class="active" aria-pressed="true">Todas</button><button data-live-filter="unread" aria-pressed="false">No leídas</button><button data-live-filter="waiting" aria-pressed="false" title="Conversaciones donde lo último lo escribió el cliente">Sin respuesta</button><button data-live-filter="mine" aria-pressed="false" id="live-filter-mine" hidden>Mías</button><span class="live-channel-filters" id="live-channel-filters"></span><span id="live-count"></span></div><div id="live-list"></div></section><section id="live-messages" aria-label="Conversación"><p class="empty">Selecciona una conversación para consultar su historial.</p></section><aside id="live-contact-panel" class="live-contact-panel" aria-label="Ficha del contacto"></aside></div>`;
       const $ = (s) => container.querySelector(s), limit = $("#live-limit"), feedback = $("#live-feedback"), layout = $(".live-inbox-layout");
       const mineButton = $("#live-filter-mine");
       if (mineButton && me?.user?.identity_type === "external") mineButton.hidden = false;
@@ -2346,7 +2353,7 @@
         }
         await sync(true);
       }
-      let generation = 0, chatGeneration = 0, conversations = [], selected = null, filter = "all", nextCursor = null, hasMore = false, loadingMore = false, pulseToken = null, pulseTimer = null, messages = /* @__PURE__ */ new Map(), cursor = null, chatChannel = null, chatChannels = null, channelFilter = "", searchTerm = "", searchTimer = null, channelNames = {}, templates = { open: false, items: null, configured: true, error: "", chosen: "", values: {}, sending: false, notice: "", generation: -1 };
+      let team = null, generation = 0, chatGeneration = 0, conversations = [], selected = null, filter = "all", nextCursor = null, hasMore = false, loadingMore = false, pulseToken = null, pulseTimer = null, messages = /* @__PURE__ */ new Map(), cursor = null, chatChannel = null, chatChannels = null, channelFilter = "", searchTerm = "", searchTimer = null, channelNames = {}, templates = { open: false, items: null, configured: true, error: "", chosen: "", values: {}, sending: false, notice: "", generation: -1 };
       if (["waiting", "unread", "mine"].includes(workspace.pendingFilter)) {
         filter = workspace.pendingFilter;
         workspace.pendingFilter = null;
@@ -2445,6 +2452,9 @@
         SMS: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.8h16a1.2 1.2 0 0 1 1.2 1.2v9.6a1.2 1.2 0 0 1-1.2 1.2H9.2L4.6 20.4V16.8H4A1.2 1.2 0 0 1 2.8 15.6V6A1.2 1.2 0 0 1 4 4.8Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="8.4" cy="10.8" r="1.1" fill="currentColor"/><circle cx="12" cy="10.8" r="1.1" fill="currentColor"/><circle cx="15.6" cy="10.8" r="1.1" fill="currentColor"/></svg>',
         Email: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.8" y="5" width="18.4" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="m3.4 6.6 8.6 6 8.6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>'
       };
+      // El canal por el que llegó la persona, claro de un vistazo: marca y nombre en el color de la red.
+      const CHANNEL_KEY = { TYPE_WHATSAPP: "WhatsApp", TYPE_INSTAGRAM: "IG", TYPE_INSTAGRAM_COMMENT: "IG", TYPE_FACEBOOK: "FB", TYPE_FACEBOOK_COMMENT: "FB", TYPE_SMS: "SMS", TYPE_EMAIL: "Email" };
+      const channelChip = (type) => { const key = CHANNEL_KEY[type] || ""; return `<span class="channel-chip${key ? " ch-" + key : ""}">${key ? `<span class="live-channel-mark" aria-hidden="true">${channelMarks[key] || ""}</span>` : ""}${esc7(channel(type))}</span>`; };
       const CHANNEL_REASONS = { needs_phone: "Este contacto no tiene teléfono en su ficha.", needs_email: "Este contacto no tiene correo en su ficha.", needs_thread: "Sólo se puede responder por aquí si el contacto escribió primero." };
       const commentTypes = { TYPE_INSTAGRAM_COMMENT: "Instagram", TYPE_FACEBOOK_COMMENT: "Facebook" };
       const threadChannel = (c) => sendChannels[c.lastMessageType] ? [{ type: sendChannels[c.lastMessageType], label: commentTypes[c.lastMessageType] ? "Mensaje directo en " + commentTypes[c.lastMessageType] : channel(c.lastMessageType), needsSubject: sendChannels[c.lastMessageType] === "Email" }] : [];
@@ -2904,6 +2914,7 @@
           pause = Math.max(pause, Number(data.state?.request_not_before) || 0);
           conversations = data.items;
           limit.value = String(data.limit || 20);
+          team = data.team && typeof data.team === "object" ? data.team : null;
           if (data.reminders && typeof data.reminders === "object") {
             recordatorios.clear();
             for (const [id, r] of Object.entries(data.reminders)) recordatorios.set(id, r);
@@ -2952,7 +2963,7 @@
           }
           window.dispatchEvent(new CustomEvent("agora:unread", { detail: Number(data.unread) || 0 }));
           const scope = [filter === "unread" ? "no leídas" : filter === "mine" ? "mías" : filter === "waiting" ? "sin respuesta" : null, channelNames[channelFilter], searchTerm ? `«${searchTerm}»` : null].filter(Boolean).join(" · ");
-          feedback.textContent = data.items.length ? `${data.items.length} de ${data.total} conversaciones${scope ? " · " + scope : ""}${data.partial ? " · ventana parcial" : ""}` : scope ? `Ninguna conversación con este filtro (${scope}).` : "Esta cuenta todavía no tiene conversaciones.";
+          feedback.textContent = data.items.length ? `${data.items.length} de ${data.total} conversaciones${scope ? " · " + scope : ""}${data.partial ? " · las más recientes" : ""}` : scope ? `Ninguna conversación con este filtro (${scope}).` : "Esta cuenta todavía no tiene conversaciones.";
           if (data.stale) feedback.textContent += data.reason === "paused" ? ` · Mostrando la última lista, de ${date(data.syncedAt)}; la consulta está en espera.` : ` · Mostrando la última lista, de ${date(data.syncedAt)}; no se pudo leer la cuenta ahora.`;
           if (unavailable) feedback.textContent = unavailable;
           return changed;
@@ -2964,7 +2975,7 @@
       }
       $("#live-search").oninput = (event) => {
         clearTimeout(searchTimer);
-        const value = event.target.value.trim();
+        const value = searchText(event.target.value);
         searchTimer = setTimeout(() => {
           if (value === searchTerm) return;
           searchTerm = value;
@@ -3046,170 +3057,161 @@
     return data;
   }
   var DETAILS = [["email", "Correo"], ["phone", "Teléfono"], ["companyName", "Empresa"], ["website", "Sitio web"], ["address", "Dirección"], ["country", "País"], ["timezone", "Zona horaria"], ["source", "Fuente"], ["dateOfBirth", "Fecha de nacimiento"], ["assignedName", "Responsable"]];
-  async function renderContacts(container) {
-    const instance = /* @__PURE__ */ Symbol();
-    container.agoraViewInstance = instance;
-    const active = () => container.agoraViewInstance === instance && container.dataset.view === "contacts";
-    const connection = workspace.current();
-    if (!connection) {
-      container.innerHTML = `<p class="empty">${esc8(workspace.noAccountText("contactos"))}</p>`;
-      return;
-    }
-    container.innerHTML = `<div class="records-layout" id="records-layout">
-   <div class="records-list">
-    <div class="live-toolbar"><label class="search"><span aria-hidden="true">⌕</span><input id="contact-search" type="search" placeholder="Buscar por nombre, correo o teléfono" aria-label="Buscar contactos"></label></div>
-    <p id="contact-feedback" class="live-feedback" role="status"></p>
-    <div id="contact-results" role="list">${skeleton("list", 7)}</div>
-   </div>
-   <section class="records-record" id="contact-record" aria-live="polite"><p class="empty">Elige una persona de la lista para ver y editar su ficha.</p></section>
-  </div>`;
-    const $ = (s) => container.querySelector(s);
-    const layout = $("#records-layout");
-    let timer3 = null, generation = 0, selected = null;
-    function rows2(items) {
-      return items.map((c) => `<button class="record-row${c.id === selected ? " selected" : ""}" data-contact="${esc8(c.id)}" role="listitem">
-      <span class="avatar olive">${esc8(initials2(c.name))}</span>
-      <span class="record-row-text"><strong>${esc8(c.name)}</strong><small>${esc8(c.email || c.phone || c.companyName || "Sin datos de contacto")}</small>${asList4(c.tags).length ? `<span class="record-row-tags">${c.tags.slice(0, 3).map((t) => `<span class="tag">${esc8(t)}</span>`).join("")}</span>` : ""}</span>
-    </button>`).join("");
-    }
-    const loadTags = () => request3(`workspace/tags?connectionId=${encodeURIComponent(connection)}`).then((r) => asList4(r.items));
-    async function load(search = "", after = "") {
-      const version = ++generation;
-      $("#contact-feedback").textContent = "";
-      if (!$("#contact-results").children.length || $("#contact-results .sk-wrap")) $("#contact-results").innerHTML = skeleton("list", 7);
-      try {
-        const data = await request3(`workspace/contacts?connectionId=${encodeURIComponent(connection)}${search ? "&query=" + encodeURIComponent(search) : ""}${after ? "&cursor="+encodeURIComponent(after):""}`);
-        if (!active() || version !== generation) return;
-        $("#contact-feedback").textContent = data.total ? `${data.total} contacto${data.total === 1 ? "" : "s"}${data.restricted ? " asignados a tu usuario" : ""}${data.partial ? " · página de hasta 100 registros" : ""}` : search ? "Ningún contacto coincide con esa búsqueda." : "Esta cuenta todavía no tiene contactos.";
-        $("#contact-results").innerHTML = rows2(asList4(data.items))+(data.hasMore?'<button class="btn" id="contacts-next" type="button">Página siguiente</button>':'');
-        $("#contacts-next")?.addEventListener("click",()=>load(search,data.nextCursor));
-        bindRows();
-      } catch (error) {
-        if (!active() || version !== generation) return;
-        $("#contact-feedback").textContent = friendly(error);
-        $("#contact-results").innerHTML = "";
-        if (error.status === 401) window.dispatchEvent(new Event("agora:logout"));
-      }
-    }
-    function bindRows() {
-      container.querySelectorAll("[data-contact]").forEach((button) => button.onclick = () => open(button.dataset.contact));
-    }
-    let record = null, editing = false, tags = { added: [], dropped: [] };
-    const canWrite = () => {
-      const c = workspace.me?.user?.capabilities || {};
-      return c.viewConversations !== false && c.sendMessages !== false;
-    };
-    async function open(contactId) {
-      selected = contactId;
-      editing = false;
-      record = null;
-      layout.classList.add("record-open");
-      container.querySelectorAll("[data-contact]").forEach((b) => b.classList.toggle("selected", b.dataset.contact === contactId));
-      $("#contact-record").innerHTML = '<p class="empty">Abriendo la ficha…</p>';
-      try {
-        const data = await request3(`workspace/record?connectionId=${encodeURIComponent(connection)}&contactId=${encodeURIComponent(contactId)}`);
-        if (!active() || selected !== contactId) return;
-        record = data;
-        show2();
-      } catch (error) {
-        if (!active() || selected !== contactId) return;
-        $("#contact-record").innerHTML = `<p class="empty">${esc8(friendly(error))}</p>`;
-        if (error.status === 401) window.dispatchEvent(new Event("agora:logout"));
-      }
-    }
-    function show2() {
-      const panel2 = $("#contact-record");
-      const contact = record.contact;
-      if (editing) {
-        panel2.innerHTML = contactForm(contact, asList4(record.fields), asList4(record.assignees));
-        tags = bindTagEditor(panel2, contact, loadTags);
-        bindEditorExtras(panel2, contact, tags, () => {
-          editing = false;
-          show2();
-        });
-        panel2.querySelector("#live-contact-form").onsubmit = save2;
-        return;
-      }
-      const details = DETAILS.map(([key, label]) => contact[key] ? `<div><span>${esc8(label)}</span><strong>${esc8(contact[key])}</strong></div>` : "").join("") || "<div><span>Sin datos</span><strong>Esta ficha está vacía.</strong></div>";
-      const filled2 = asList4(contact.customFields).filter((field) => field.value !== "" && field.value !== null && field.value !== void 0);
-      const custom = filled2.length ? groupByFolder(filled2, asList4(record.fields)).map((g) => `<div class="folder-title">${esc8(g.title)}</div>` + g.items.map((field) => `<div><span>${esc8(field.name || asList4(record.fields).find((d) => d.id === field.id)?.name || "Campo personalizado")}</span><strong>${esc8(Array.isArray(field.values) && field.values.length ? field.values.join(", ") : field.value)}</strong></div>`).join("")).join("") : "<div><span>Campos personalizados</span><strong>Sin valores todavía.</strong></div>";
-      panel2.innerHTML = `<header class="record-header">
-      <button class="mobile-back" id="record-back" aria-label="Volver a la lista">←</button>
-      <span class="avatar olive">${esc8(initials2(contact.name))}</span>
-      <div><h2>${esc8(contact.name)}</h2><p>${esc8(contact.email || contact.phone || "Sin datos de contacto")}</p></div>
-      <div class="record-actions">${canWrite() ? '<button class="primary" id="record-message">Enviar mensaje</button>' : ""}${record.canEdit ? '<button class="secondary" id="record-edit">Editar ficha</button>' : ""}</div>
-     </header>
-     ${contact.dnd ? '<p class="record-flag">Marcado como no contactar.</p>' : ""}
-     <div class="record-columns">
-      <div><div class="section-label">Datos</div><div class="live-profile-details">${details}</div></div>
-      <div><div class="section-label">Campos personalizados</div><div class="live-profile-fields">${custom}</div>
-       <div class="section-label">Etiquetas</div><div class="live-profile-tags">${asList4(contact.tags).length ? contact.tags.map((t) => `<span class="tag">${esc8(t)}</span>`).join("") : '<span class="muted">Sin etiquetas</span>'}</div></div>
+  async function renderContacts(container){
+    /* Ágora Mobile 1.10.14 · nombres de este paquete */
+    const esc=esc8,initials=initials2,asList=asList4,request=request3;
+    const instance=Symbol();container.agoraViewInstance=instance;
+    const active=()=>container.agoraViewInstance===instance&&container.dataset.view==='contacts';
+    const connection=workspace.current();
+    if(!connection){container.innerHTML=`<p class="empty">${esc(workspace.noAccountText('contactos'))}</p>`;return}
+    container.innerHTML=`<div class="records-layout" id="records-layout">
+     <div class="records-list">
+      <div class="live-toolbar"><label class="search"><span aria-hidden="true">⌕</span><input id="contact-search" type="search" placeholder="Buscar por nombre, correo o teléfono" aria-label="Buscar contactos"></label></div>
+      <p id="contact-feedback" class="live-feedback" role="status"></p>
+      <div id="contact-results" role="list">${skeleton('list',7)}</div>
      </div>
-     <p id="record-status" class="live-feedback" role="status"></p>`;
-      panel2.querySelector("#record-back").onclick = () => {
-        layout.classList.remove("record-open");
-      };
-      const edit2 = panel2.querySelector("#record-edit");
-      if (edit2) edit2.onclick = () => {
-        editing = true;
-        show2();
-      };
-      const write = panel2.querySelector("#record-message");
-      if (write) write.onclick = async () => {
-        write.disabled = true;
-        const status = panel2.querySelector("#record-status");
-        status.textContent = "Abriendo la conversación…";
-        try {
-          const { conversation } = await request3(`workspace/contact-conversation?connectionId=${encodeURIComponent(connection)}`, "POST", { contactId: selected });
-          if (!active()) return;
-          window.dispatchEvent(new CustomEvent("agora:open-conversation", { detail: conversation }));
-        } catch (error) {
-          status.textContent = friendly(error);
-          write.disabled = false;
-        }
-      };
+     <section class="records-record" id="contact-record" aria-live="polite"><p class="empty">Elige una persona de la lista para ver y editar su ficha.</p></section>
+    </div>`;
+    const $=s=>container.querySelector(s);
+    const layout=$('#records-layout');
+    let timer=null,generation=0,selected=null;
+
+    function rows(items){
+      return items.map(c=>`<button class="record-row${c.id===selected?' selected':''}" data-contact="${esc(c.id)}" role="listitem">
+        <span class="avatar olive">${esc(initials(c.name))}</span>
+        <span class="record-row-text"><strong>${esc(c.name)}</strong><small>${esc(c.email||c.phone||c.companyName||'Sin datos de contacto')}</small>${asList(c.tags).length?`<span class="record-row-tags">${c.tags.slice(0,3).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</span>`:''}</span>
+      </button>`).join('');
     }
-    async function save2(event) {
-      event.preventDefault();
-      const form = event.target, status = form.querySelector("#live-contact-status"), button = form.querySelector("#live-save-contact");
-      const fields = readContactForm(form, record.contact);
-      if (Object.keys(fields).length === 0 && !tags.added.length && !tags.dropped.length) {
-        status.textContent = "No has cambiado nada todavía.";
+
+    const loadTags=()=>request(`workspace/tags?connectionId=${encodeURIComponent(connection)}`).then(r=>asList(r.items));
+    let shown=[],page=1;
+    const describe=(data,search)=>{
+      if(!data.total)return search?'Ningún contacto coincide con esa búsqueda.':(data.restricted?'Todavía no tienes contactos asignados.':'Esta cuenta todavía no tiene contactos.');
+      const n=data.total,word=`${n} contacto${n===1?'':'s'}`;
+      if(data.restricted&&data.exact)return `${word} asignado${n===1?'':'s'} a ti${search?' que coinciden':''}${shown.length<n?` · se muestran ${shown.length}, los más recientes primero`:''}`;
+      if(data.restricted)return `${word} tuyo${n===1?'':'s'} entre los más recientes de la cuenta`;
+      return `${word}${data.partial?' · se muestran los más recientes':''}`;
+    };
+    function paint(data,search){
+      $('#contact-feedback').textContent=describe(data,search);
+      $('#contact-results').innerHTML=rows(shown)+(data.hasMore?'<button type="button" class="live-more" id="contact-more">Ver más</button>':'');
+      bindRows();
+      const more=$('#contact-more');
+      if(more)more.onclick=()=>{more.disabled=true;more.textContent='Cargando…';load(search,page+1)};
+    }
+    async function load(search='',next=1){
+      const version=++generation;
+      if(next===1){$('#contact-feedback').textContent='';if(!$('#contact-results').children.length||$('#contact-results .sk-wrap'))$('#contact-results').innerHTML=skeleton('list',7);}
+      try{
+        const data=await request(`workspace/contacts?connectionId=${encodeURIComponent(connection)}${search?'&query='+encodeURIComponent(search):''}${next>1?'&page='+next:''}`);
+        if(!active()||version!==generation)return;
+        const items=asList(data.items);
+        if(next===1)shown=items;else{const seen=new Set(shown.map(c=>c.id));shown=shown.concat(items.filter(c=>!seen.has(c.id)))}
+        page=next;
+        paint(data,search);
+      }catch(error){
+        if(!active()||version!==generation)return;
+        $('#contact-feedback').textContent=friendly(error);
+        if(next===1)$('#contact-results').innerHTML='';
+        else{const more=$('#contact-more');if(more){more.disabled=false;more.textContent='Ver más'}}
+        if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
+      }
+    }
+
+    function bindRows(){
+      container.querySelectorAll('[data-contact]').forEach(button=>button.onclick=()=>open(button.dataset.contact));
+    }
+
+    let record=null,editing=false,tags={added:[],dropped:[]};
+    const canWrite=()=>{const c=workspace.me?.user?.capabilities||{};return c.viewConversations!==false&&c.sendMessages!==false};
+
+    async function open(contactId){
+      selected=contactId;editing=false;record=null;
+      layout.classList.add('record-open');
+      container.querySelectorAll('[data-contact]').forEach(b=>b.classList.toggle('selected',b.dataset.contact===contactId));
+      const panel=$('#contact-record');panel.classList.remove('opening');void panel.offsetWidth;panel.classList.add('opening');
+      $('#contact-record').innerHTML='<p class="empty">Abriendo la ficha…</p>';
+      try{
+        const data=await request(`workspace/record?connectionId=${encodeURIComponent(connection)}&contactId=${encodeURIComponent(contactId)}`);
+        if(!active()||selected!==contactId)return;
+        record=data;show();
+      }catch(error){
+        if(!active()||selected!==contactId)return;
+        $('#contact-record').innerHTML=`<p class="empty">${esc(friendly(error))}</p>`;
+        if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
+      }
+    }
+
+    function show(){
+      const panel=$('#contact-record');
+      const contact=record.contact;
+      if(editing){
+        panel.innerHTML=contactForm(contact,asList(record.fields),asList(record.assignees));
+        tags=bindTagEditor(panel,contact,loadTags);
+        bindEditorExtras(panel,contact,tags,()=>{editing=false;show()});
+        panel.querySelector('#live-contact-form').onsubmit=save;
         return;
       }
-      button.disabled = true;
-      status.textContent = "Guardando la ficha…";
-      try {
-        await request3(
-          `workspace/record?connectionId=${encodeURIComponent(connection)}&contactId=${encodeURIComponent(selected)}`,
-          "POST",
-          { fields, addTags: tags.added, removeTags: tags.dropped, requestId: crypto.randomUUID().replace(/-/g, "") }
-        );
-        const fresh = await request3(`workspace/record?connectionId=${encodeURIComponent(connection)}&contactId=${encodeURIComponent(selected)}&refresh=1`);
-        if (!active()) return;
-        record = fresh;
-        editing = false;
-        show2();
-        const row = container.querySelector(`[data-contact="${CSS.escape(selected)}"] strong`);
-        if (row) row.textContent = fresh.contact.name;
-      } catch (error) {
-        if (!active()) return;
-        status.textContent = friendly(error);
-        if (error.status === 401) window.dispatchEvent(new Event("agora:logout"));
-      } finally {
-        if (active()) button.disabled = false;
-      }
+      const details=DETAILS.map(([key,label])=>contact[key]?`<div><span>${esc(label)}</span><strong>${esc(contact[key])}</strong></div>`:'').join('')
+        ||'<div><span>Sin datos</span><strong>Esta ficha está vacía.</strong></div>';
+      const filled=asList(contact.customFields).filter(field=>field.value!==''&&field.value!==null&&field.value!==undefined);
+      const custom=filled.length?groupByFolder(filled,asList(record.fields)).map(g=>`<div class="folder-title">${esc(g.title)}</div>`+g.items
+        .map(field=>`<div><span>${esc(field.name||asList(record.fields).find(d=>d.id===field.id)?.name||'Campo personalizado')}</span><strong>${esc(Array.isArray(field.values)&&field.values.length?field.values.join(', '):field.value)}</strong></div>`).join('')).join('')
+        :'<div><span>Campos personalizados</span><strong>Sin valores todavía.</strong></div>';
+      panel.innerHTML=`<header class="record-header">
+        <button class="mobile-back" id="record-back" aria-label="Volver a la lista">←</button>
+        <span class="avatar olive">${esc(initials(contact.name))}</span>
+        <div><h2>${esc(contact.name)}</h2><p>${esc(contact.email||contact.phone||'Sin datos de contacto')}</p></div>
+        <div class="record-actions">${canWrite()?'<button class="primary" id="record-message">Enviar mensaje</button>':''}${record.canEdit?'<button class="secondary" id="record-edit">Editar ficha</button>':''}</div>
+       </header>
+       ${contact.dnd?'<p class="record-flag">Marcado como no contactar.</p>':''}
+       <div class="record-columns">
+        <div><div class="section-label">Datos</div><div class="live-profile-details">${details}</div></div>
+        <div><div class="section-label">Campos personalizados</div><div class="live-profile-fields">${custom}</div>
+         <div class="section-label">Etiquetas</div><div class="live-profile-tags">${asList(contact.tags).length?contact.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join(''):'<span class="muted">Sin etiquetas</span>'}</div></div>
+       </div>
+       <p id="record-status" class="live-feedback" role="status"></p>`;
+      panel.querySelector('#record-back').onclick=()=>{layout.classList.remove('record-open')};
+      const edit=panel.querySelector('#record-edit');
+      if(edit)edit.onclick=()=>{editing=true;show()};
+      const write=panel.querySelector('#record-message');
+      if(write)write.onclick=async()=>{
+        write.disabled=true;const status=panel.querySelector('#record-status');status.textContent='Abriendo la conversación…';
+        try{
+          const {conversation}=await request(`workspace/contact-conversation?connectionId=${encodeURIComponent(connection)}`,'POST',{contactId:selected});
+          if(!active())return;
+          // La bandeja la abre al cargar, aunque no esté entre las últimas.
+          window.dispatchEvent(new CustomEvent('agora:open-conversation',{detail:conversation}));
+        }catch(error){status.textContent=friendly(error);write.disabled=false}
+      };
     }
-    $("#contact-search").oninput = (e) => {
-      clearTimeout(timer3);
-      const value = e.target.value.trim();
-      timer3 = setTimeout(() => load(value), 450);
-    };
-    container.agoraLiveDispose = () => {
-      clearTimeout(timer3);
-      container.agoraViewInstance = null;
-    };
+
+    async function save(event){
+      event.preventDefault();
+      const form=event.target,status=form.querySelector('#live-contact-status'),button=form.querySelector('#live-save-contact');
+      const fields=readContactForm(form,record.contact);
+      if(Object.keys(fields).length===0&&!tags.added.length&&!tags.dropped.length){status.textContent='No has cambiado nada todavía.';return}
+      button.disabled=true;status.textContent='Guardando la ficha…';
+      try{
+        await request(`workspace/record?connectionId=${encodeURIComponent(connection)}&contactId=${encodeURIComponent(selected)}`,'POST',
+          {fields,addTags:tags.added,removeTags:tags.dropped,requestId:crypto.randomUUID().replace(/-/g,'')});
+        const fresh=await request(`workspace/record?connectionId=${encodeURIComponent(connection)}&contactId=${encodeURIComponent(selected)}&refresh=1`);
+        if(!active())return;
+        record=fresh;editing=false;show();
+        const row=container.querySelector(`[data-contact="${CSS.escape(selected)}"] strong`);
+        if(row)row.textContent=fresh.contact.name;
+      }catch(error){
+        if(!active())return;
+        status.textContent=friendly(error);
+        if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
+      }finally{if(active())button.disabled=false}
+    }
+
+    // The term is only sent once typing settles, so a search costs one read.
+    $('#contact-search').oninput=e=>{clearTimeout(timer);const value=searchText(e.target.value);timer=setTimeout(()=>load(value),450)};
+    container.agoraLiveDispose=()=>{clearTimeout(timer);container.agoraViewInstance=null};
     await load();
+    if(workspace.pendingContact){const id=workspace.pendingContact;workspace.pendingContact=null;open(id)}
   }
 
   // agora/won.js
@@ -3328,119 +3330,189 @@
     if (!r.ok) throw Object.assign(Error((data.error || "Error de conexión") + (data.retryAfter ? ` Espera ${data.retryAfter} segundos.` : "")), { status: r.status, code: data.code });
     return data;
   }
-  async function renderFunnels(container) {
-    const instance = /* @__PURE__ */ Symbol();
-    container.agoraViewInstance = instance;
-    const active = () => container.agoraViewInstance === instance && container.dataset.view === "board";
-    const connection = workspace.current();
-    if (!connection) {
-      container.innerHTML = `<p class="empty">${esc10(workspace.noAccountText("oportunidades"))}</p>`;
-      return;
+  async function renderFunnels(container){
+    /* Ágora Mobile 1.10.14 · nombres de este paquete */
+    const esc=esc10,asList=asList5,request=request5;
+    const norm=t=>String(t??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+    const instance=Symbol();container.agoraViewInstance=instance;
+    const active=()=>container.agoraViewInstance===instance&&container.dataset.view==='board';
+    const connection=workspace.current();
+    if(!connection){container.innerHTML=`<p class="empty">${esc(workspace.noAccountText('oportunidades'))}</p>`;return}
+    container.innerHTML=skeleton('cards',6);
+    let generation=0,pipeline='',csrf='',board=null,directory=null,editing=null,notice='';
+
+    try{csrf=(await request('me')).csrf||''}catch{}
+
+    // Filtros y búsqueda de esta pantalla (sólo en el navegador, sobre las oportunidades ya cargadas).
+    const ui={q:'',who:'',stage:'',collapsed:new Set(),move:null};
+    const digits=t=>String(t??'').replace(/\D/g,'');
+    /** Nombre, correo o teléfono: sin importar mayúsculas, acentos ni cómo esté escrito el número. */
+    const matches=(item,q)=>{
+      const text=norm(q);if(!text)return true;
+      if(norm([item.name,item.contactName,item.contactEmail,item.assignedName].join(' ')).includes(text))return true;
+      const d=digits(q);return d.length>=5&&digits(item.contactPhone).includes(d.replace(/^0+/,''));
+    };
+    const visibleItems=stage=>asList(stage.items).filter(item=>matches(item,ui.q)&&(!ui.who||(ui.who==='none'?!item.assignedName:item.assignedName===ui.who)));
+    const ICONS={chat:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',person:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.4 7-5.4s6.2 1.8 7 5.4"/></svg>',move:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>',chevron:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>'};
+    function card(item,canEdit,stages){
+      const sub=[item.contactName&&norm(item.contactName)!==norm(item.name)?item.contactName:null,item.assignedName].filter(Boolean);
+      const stageMenu=ui.move===item.id?`<div class="board-move" role="menu" aria-label="Mover a">${stages.filter(st=>st.id&&st.id!==item.pipelineStageId).map(st=>`<button type="button" role="menuitem" data-move-to="${esc(st.id)}" data-opp="${esc(item.id)}">${esc(st.name)}</button>`).join('')||'<span class="muted">No hay otra etapa.</span>'}</div>`:'';
+      return `<article class="board-card2"${canEdit?` data-edit-opportunity="${esc(item.id)}" tabindex="0" role="button" aria-label="Editar ${esc(item.name)}"`:''}>
+        <div class="board-card2-top"><h3>${esc(item.name)}</h3>${amount(item.monetaryValue)?`<strong>${esc(amount(item.monetaryValue))}</strong>`:''}</div>
+        ${sub.length?`<p class="board-card2-sub">${sub.map(esc).join(' · ')}</p>`:''}
+        <div class="board-card2-acts">
+         ${item.contactId?`<button type="button" class="board-ic" data-open-chat="${esc(item.contactId)}" aria-label="Abrir la conversación">${ICONS.chat}<span>Conversación</span></button><button type="button" class="board-ic" data-open-contact="${esc(item.contactId)}" aria-label="Abrir la ficha del contacto">${ICONS.person}<span>Ficha</span></button>`:''}
+         ${canEdit&&item.pipelineStageId?`<button type="button" class="board-ic" data-move="${esc(item.id)}" aria-haspopup="menu" aria-expanded="${ui.move===item.id}" aria-label="Mover a otra etapa">${ICONS.move}<span>Mover a…</span></button>`:''}
+        </div>${stageMenu}</article>`;
     }
-    container.innerHTML = skeleton("cards", 6);
-    let generation = 0, pipeline = "", csrf2 = "", board = null, directory = null, editing = null, notice = "";
-    try {
-      csrf2 = (await request5("me")).csrf || "";
-    } catch {
-    }
-    function card(item, canEdit) {
-      return `<div class="card board-card"><h3>${esc10(item.name)}</h3>${item.contactName ? `<p>${esc10(item.contactName)}</p>` : ""}${amount(item.monetaryValue) ? `<strong>${esc10(amount(item.monetaryValue))}</strong>` : ""}${item.assignedName ? `<span class="tag">${esc10(item.assignedName)}</span>` : ""}${canEdit ? `<button class="live-opportunity-edit" data-edit-opportunity="${esc10(item.id)}">Editar</button>` : ""}</div>`;
-    }
-    function show2() {
-      const data = board;
-      const note = data.total ? `${data.total} oportunidad${data.total === 1 ? "" : "es"} abierta${data.total === 1 ? "" : "s"}${data.restricted ? " asignadas a tu usuario" : ""}${data.partial ? " · se muestran las más recientes" : ""}` : data.restricted ? "No tienes oportunidades abiertas asignadas en este embudo." : "Este embudo no tiene oportunidades abiertas.";
-      const canEdit = data.canEdit === true;
-      const cards2 = asList5(data.stages).flatMap((stage) => asList5(stage.items));
-      const panel2 = editing ? `<section class="board-editor">${directory ? opportunityForm({ pipelines: directory.pipelines, assignees: directory.assignees, opportunity: cards2.find((item) => item.id === editing) || null }) : '<span class="muted">Cargando embudos…</span>'}</section>` : "";
-      container.innerHTML = `<div class="live-toolbar"><label>Embudo<select id="board-pipeline" aria-label="Embudo">${data.pipelines.map((p) => `<option value="${esc10(p.id)}"${p.id === data.pipelineId ? " selected" : ""}>${esc10(p.name)}</option>`).join("")}</select></label></div><p class="live-feedback" role="status">${esc10(note)}${notice ? " · " + esc10(notice) : ""}</p>${panel2}<div class="kanban">${data.stages.map((stage) => `<div class="board-column"><h2>${esc10(stage.name)}</h2><p class="board-total">${stage.total} · ${esc10(amount(stage.value) ?? "0")}</p>${stage.items.map((item) => card(item, canEdit)).join("") || '<p class="board-empty">Sin oportunidades</p>'}</div>`).join("")}</div>`;
-      container.querySelector("#board-pipeline").onchange = (e) => load(e.target.value);
-      container.querySelectorAll("[data-edit-opportunity]").forEach((button) => button.onclick = () => edit2(button.dataset.editOpportunity));
-      const form = container.querySelector(".opportunity-form");
-      if (form) {
-        if (directory) bindPipelineChoice(form, directory.pipelines);
-        form.querySelector("[data-cancel]").onclick = () => {
-          editing = null;
-          notice = "";
-          show2();
-        };
-        form.onsubmit = (event) => {
-          event.preventDefault();
-          save2(form);
-        };
-        form.scrollIntoView({ block: "nearest" });
+
+    function show(){
+      const data=board;
+      const note=data.total
+        ? `${data.total} oportunidad${data.total===1?'':'es'} abierta${data.total===1?'':'s'}${data.restricted?' asignadas a ti':''}${data.partial?' · las más recientes':''}`
+        : (data.restricted?'No tienes oportunidades abiertas asignadas en este embudo.':'Este embudo no tiene oportunidades abiertas.');
+      const canEdit=data.canEdit===true;
+      const cards=asList(data.stages).flatMap(stage=>asList(stage.items));
+      const panel=editing
+        ? `<section class="board-editor">${directory
+            ? opportunityForm({pipelines:directory.pipelines,assignees:directory.assignees,opportunity:cards.find(item=>item.id===editing)||null})
+            : '<span class="muted">Cargando embudos…</span>'}</section>`
+        : '';
+      const allItems=cards;
+      const who=[...new Set(allItems.map(i=>i.assignedName).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+      const hasUnassigned=allItems.some(i=>!i.assignedName);
+      const filtered=ui.q||ui.who;
+      const counted=data.stages.map(stage=>({stage,items:visibleItems(stage)}));
+      // «Etapa»: todas, o sólo la elegida.
+      if(ui.stage&&!counted.some(x=>String(x.stage.id??'none')===ui.stage))ui.stage='';
+      const shown=ui.stage?counted.filter(x=>String(x.stage.id??'none')===ui.stage):counted;
+      const shownTotal=counted.reduce((n,x)=>n+x.items.length,0);
+      const whoOptions=who.length+(hasUnassigned&&who.length?1:0)>1;
+      container.innerHTML=`<div class="live-toolbar board-selects"><label>Embudo<select id="board-pipeline">${data.pipelines.map(p=>`<option value="${esc(p.id)}"${p.id===data.pipelineId?' selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
+        ${whoOptions?`<label>Responsable<select id="board-who"><option value="">Todos</option>${who.map(n=>`<option value="${esc(n)}"${ui.who===n?' selected':''}>${esc(n)}</option>`).join('')}${hasUnassigned?`<option value="none"${ui.who==='none'?' selected':''}>Sin responsable</option>`:''}</select></label>`:''}
+        <label>Etapa<select id="board-stage"><option value="">Todas las etapas · ${shownTotal}</option>${counted.map(({stage,items})=>{const k=String(stage.id??'none');return `<option value="${esc(k)}"${ui.stage===k?' selected':''}>${esc(stage.name)} · ${items.length}</option>`}).join('')}</select></label></div>
+       <div class="board-tools"><label class="search board-search"><span aria-hidden="true">⌕</span><input id="board-search" type="search" inputmode="search" autocomplete="off" placeholder="Buscar por nombre, teléfono o correo" value="${esc(ui.q)}" aria-label="Buscar oportunidades"></label>
+        ${filtered||ui.stage?'<button type="button" class="board-clear" id="board-clear">Quitar filtros</button>':''}</div>
+       <p class="live-feedback" role="status">${esc(filtered?`${shownTotal} de ${allItems.length} oportunidades`:note)}${notice?' · '+esc(notice):''}</p>${panel}
+       <div class="kanban">${shown.map(({stage,items})=>{const key=String(stage.id??'none'),closed=ui.collapsed.has(key)&&!ui.stage;return `<section class="board-column${closed?' collapsed':''}" id="stage-${esc(key)}"><button type="button" class="board-stage-h" data-toggle="${esc(key)}" aria-expanded="${!closed}"><span class="board-stage-name">${esc(stage.name)}</span><span class="board-stage-meta">${items.length}${filtered?'':` · ${esc(amount(stage.value)??'0')}`}</span>${ICONS.chevron}</button><div class="board-stage-body">${items.map(item=>card(item,canEdit,data.stages)).join('')||`<p class="board-empty">${filtered?'Nada coincide':'Sin oportunidades'}</p>`}</div></section>`}).join('')}</div>`;
+      const rerender=()=>{const at=container.querySelector('#board-search')===document.activeElement;show();if(at){const i=container.querySelector('#board-search');i.focus();i.setSelectionRange(i.value.length,i.value.length)}};
+      let searchTimer=null;
+      container.querySelector('#board-search').oninput=e=>{clearTimeout(searchTimer);const v=e.target.value;searchTimer=setTimeout(()=>{ui.q=v;rerender()},180)};
+      const whoSelect=container.querySelector('#board-who');if(whoSelect)whoSelect.onchange=e=>{ui.who=e.target.value;show()};
+      container.querySelector('#board-stage').onchange=e=>{ui.stage=e.target.value;show()};
+      const clear=container.querySelector('#board-clear');if(clear)clear.onclick=()=>{ui.q='';ui.who='';ui.stage='';show()};
+      container.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{const k=b.dataset.toggle;ui.collapsed.has(k)?ui.collapsed.delete(k):ui.collapsed.add(k);show()});
+      container.querySelectorAll('[data-edit-opportunity]').forEach(el=>{
+        const open=()=>edit(el.dataset.editOpportunity);
+        el.onclick=e=>{if(e.target.closest('button,a,.board-move'))return;open()};
+        el.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target===el){e.preventDefault();open()}};
+      });
+      container.querySelectorAll('[data-move]').forEach(b=>b.onclick=e=>{e.stopPropagation();ui.move=ui.move===b.dataset.move?null:b.dataset.move;show()});
+      container.querySelectorAll('[data-move-to]').forEach(b=>b.onclick=e=>{e.stopPropagation();move(b.dataset.opp,b.dataset.moveTo)});
+      container.querySelectorAll('[data-open-chat]').forEach(b=>b.onclick=e=>{e.stopPropagation();openChat(b.dataset.openChat,b)});
+      container.querySelectorAll('[data-open-contact]').forEach(b=>b.onclick=e=>{e.stopPropagation();workspace.pendingContact=b.dataset.openContact;window.dispatchEvent(new CustomEvent('agora:goto',{detail:{view:'contacts'}}))});
+      container.querySelector('#board-pipeline').onchange=e=>load(e.target.value);
+      const form=container.querySelector('.opportunity-form');
+      if(form){
+        if(directory)bindPipelineChoice(form,directory.pipelines);
+        form.querySelector('[data-cancel]').onclick=()=>{editing=null;notice='';show()};
+        form.onsubmit=event=>{event.preventDefault();save(form)};
+        form.scrollIntoView({block:'nearest'});
       }
     }
-    async function edit2(id) {
-      editing = id;
-      notice = "";
-      show2();
-      if (!directory) {
-        try {
-          directory = await request5(`workspace/pipelines?connectionId=${encodeURIComponent(connection)}`);
-        } catch (error) {
-          editing = null;
-          notice = friendly(error);
-        }
-        if (!active()) return;
-        show2();
+
+    // Moving a card, changing its value, its status or who answers for it all go
+    // through the same form, because the account writes them together.
+    async function edit(id){
+      editing=id;notice='';show();
+      if(!directory){
+        try{directory=await request(`workspace/pipelines?connectionId=${encodeURIComponent(connection)}`)}
+        catch(error){editing=null;notice=friendly(error)}
+        if(!active())return;
+        show();
       }
     }
-    async function save2(form) {
-      const cards2 = asList5(board.stages).flatMap((stage) => asList5(stage.items));
-      const target = cards2.find((item) => item.id === editing) || null;
-      const payload = readOpportunityForm(form, target);
-      const status = form.querySelector("[data-status]"), button = form.querySelector("[data-save]");
-      if (Object.keys(payload).length === 0) {
-        status.textContent = "No has cambiado nada en la oportunidad.";
-        return;
+
+    /** Mover de etapa en un toque: sólo cambia la etapa, con la misma protección contra repetir la acción. */
+    async function move(id,stageId){
+      ui.move=null;const target=asList(board.stages).flatMap(st=>asList(st.items)).find(i=>i.id===id);
+      const stageName=asList(board.stages).find(st=>st.id===stageId)?.name??'esa etapa';
+      notice='Moviendo…';show();
+      const payload={pipelineStageId:stageId};
+      const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(id+JSON.stringify(payload)));
+      const storageKey='agora-opportunity:'+id+':'+Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+      const requestId=sessionStorage.getItem(storageKey)||crypto.randomUUID().replace(/-/g,'');sessionStorage.setItem(storageKey,requestId);
+      try{
+        await request(`workspace/opportunity/edit?connectionId=${encodeURIComponent(connection)}&opportunityId=${encodeURIComponent(id)}`,'POST',csrf,{...payload,requestId});
+        sessionStorage.removeItem(storageKey);window.dispatchEvent(new Event('agora:opportunity-edited'));
+        if(!active())return;notice=`${target?.name??'La oportunidad'} pasó a «${stageName}».`;await load(pipeline);
+      }catch(error){
+        if(error.code)sessionStorage.removeItem(storageKey);
+        if(!active())return;notice=friendly(error);show();
+        if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
       }
-      button.disabled = true;
-      status.textContent = "Guardando la oportunidad…";
-      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(editing + JSON.stringify(payload)));
-      const storageKey = "agora-opportunity:" + editing + ":" + Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
-      const requestId = sessionStorage.getItem(storageKey) || crypto.randomUUID().replace(/-/g, "");
-      sessionStorage.setItem(storageKey, requestId);
-      try {
-        await request5(`workspace/opportunity/edit?connectionId=${encodeURIComponent(connection)}&opportunityId=${encodeURIComponent(editing)}`, "POST", csrf2, { ...payload, requestId });
+    }
+    async function openChat(contactId,button){
+      button.disabled=true;
+      try{
+        const {conversation}=await request(`workspace/contact-conversation?connectionId=${encodeURIComponent(connection)}`,'POST',csrf,{contactId});
+        window.dispatchEvent(new CustomEvent('agora:open-conversation',{detail:conversation}));
+      }catch(error){button.disabled=false;if(active()){notice=friendly(error);show()}}
+    }
+
+    async function save(form){
+      const cards=asList(board.stages).flatMap(stage=>asList(stage.items));
+      const target=cards.find(item=>item.id===editing)||null;
+      const payload=readOpportunityForm(form,target);
+      const status=form.querySelector('[data-status]'),button=form.querySelector('[data-save]');
+      if(Object.keys(payload).length===0){status.textContent='No has cambiado nada en la oportunidad.';return}
+      button.disabled=true;status.textContent='Guardando la oportunidad…';
+      // One key per content, so a retry cannot apply the same change twice.
+      const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(editing+JSON.stringify(payload)));
+      const storageKey='agora-opportunity:'+editing+':'+Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+      const requestId=sessionStorage.getItem(storageKey)||crypto.randomUUID().replace(/-/g,'');
+      sessionStorage.setItem(storageKey,requestId);
+      try{
+        await request(`workspace/opportunity/edit?connectionId=${encodeURIComponent(connection)}&opportunityId=${encodeURIComponent(editing)}`,'POST',csrf,{...payload,requestId});
         sessionStorage.removeItem(storageKey);
-        window.dispatchEvent(new Event("agora:opportunity-edited"));
-        if (!active()) return;
-        editing = null;
-        notice = "Oportunidad guardada.";
+        window.dispatchEvent(new Event('agora:opportunity-edited'));
+        if(!active())return;
+        editing=null;notice='Oportunidad guardada.';
         await load(pipeline);
-      } catch (error) {
-        if (["action_rejected", "invalid_opportunity_name", "invalid_opportunity_value", "unknown_pipeline", "unknown_stage", "unknown_assignee", "assignee_forbidden", "invalid_status", "nothing_to_change", "action_forbidden"].includes(error.code)) sessionStorage.removeItem(storageKey);
-        if (!active()) return;
-        const failed = container.querySelector("[data-status]");
-        if (failed) failed.textContent = friendly(error);
-        const retry = container.querySelector("[data-save]");
-        if (retry) retry.disabled = false;
-        if (error.status === 401) window.dispatchEvent(new Event("agora:logout"));
+      }catch(error){
+        if(['action_rejected','invalid_opportunity_name','invalid_opportunity_value','unknown_pipeline','unknown_stage','unknown_assignee','assignee_forbidden','invalid_status','nothing_to_change','action_forbidden'].includes(error.code))sessionStorage.removeItem(storageKey);
+        if(!active())return;
+        const failed=container.querySelector('[data-status]');
+        if(failed)failed.textContent=friendly(error);
+        const retry=container.querySelector('[data-save]');if(retry)retry.disabled=false;
+        if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
       }
     }
-    async function load(selected = "") {
-      const version = ++generation;
-      try {
-        const data = await request5(`workspace/board?connectionId=${encodeURIComponent(connection)}${selected ? "&pipelineId=" + encodeURIComponent(selected) : ""}`);
-        if (!active() || version !== generation) return;
-        if (data.unavailable === "pipelines") {
-          container.innerHTML = '<p class="empty">No se pudieron consultar los embudos de esta cuenta.<br>Revisa el permiso de oportunidades y vuelve a entrar.</p>';
+
+    async function load(selected=''){
+      const version=++generation;
+      try{
+        const data=await request(`workspace/board?connectionId=${encodeURIComponent(connection)}${selected?'&pipelineId='+encodeURIComponent(selected):''}`);
+        if(!active()||version!==generation)return;
+        if(data.unavailable==='pipelines'){
+          container.innerHTML='<p class="empty">No se pudieron consultar los embudos de esta cuenta.<br>Revisa el permiso de oportunidades y vuelve a entrar.</p>';
           return;
         }
-        pipeline = data.pipelineId || "";
-        board = data;
-        show2();
-      } catch (error) {
-        if (!active() || version !== generation) return;
-        container.innerHTML = `<p class="empty">${esc10(friendly(error))}</p>`;
-        if (error.status === 401) window.dispatchEvent(new Event("agora:logout"));
+        pipeline=data.pipelineId||'';
+        board=data;
+        show();
+      }catch(error){
+        if(!active()||version!==generation)return;
+        container.innerHTML=`<p class="empty">${esc(friendly(error))}</p>`;
+        if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
       }
     }
-    container.agoraLiveDispose = () => {
-      container.agoraViewInstance = null;
-    };
+
+    container.agoraLiveDispose=()=>{container.agoraViewInstance=null};
     await load(pipeline);
   }
+
+  /** Oportunidades tiene dos pestañas: los embudos (lo de siempre) y las ventas ganadas. */
   async function renderBoard(container) {
     const instance = /* @__PURE__ */ Symbol();
     container.agoraViewInstance = instance;
