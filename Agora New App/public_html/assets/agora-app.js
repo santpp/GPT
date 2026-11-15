@@ -224,7 +224,7 @@ const MODS = {
     desc: 'El manual de uso del sistema.', ok: () => agoraReady() || !!ME},
 };
 /** Los módulos a los que llega quien entró, en el orden de los grupos. */
-const ALL = () => Object.keys(GRUPOS).flatMap(g => Object.keys(MODS).filter(k => MODS[k].g === g && !MODS[k].dentro && !moduloOculto(k) && moduleAllowed(k)));
+const ALL = () => Object.keys(GRUPOS).flatMap(g => Object.keys(MODS).filter(k => MODS[k].g === g && !MODS[k].dentro && (esSuperAdmin() || !moduloOculto(k)) && moduleAllowed(k)));
 /* 2.1.17: un módulo que vive dentro de otro (Catálogo dentro de Productos y servicios) marca a su padre en el menú. */
 const modMenu = () => MODS[R?.mod]?.dentro || R?.mod;
 /** Los 6 módulos principales con sus submódulos (Inicio va aparte: es fijo). */
@@ -236,7 +236,8 @@ const hayReporte = () => !!ESPACIO?.hayReporte;
 const conectada = () => !!ESPACIO?.conectada;
 /** Módulos cuyos datos se leen y escriben en la cuenta cuando la subcuenta está conectada. */
 const EN_VIVO = ['contactos', 'oportunidades', 'tareas'];
-const moduleAllowed = id => { try { return !!MODS[id]?.ok(); } catch { return false; } };
+/* 2.8.6 · Los dueños de Ágora (Master y Superadmin) ven todos los módulos, sin importar permisos, reporte cargado ni módulos apagados. */
+const moduleAllowed = id => { if (MODS[id] && esSuperAdmin()) return true; try { return !!MODS[id]?.ok(); } catch { return false; } };
 const moduleCaption = id => moduleAllowed(id) ? MODS[id].desc : 'Acceso restringido para tu rol · Consulta al administrador.';
 const homeMod = () => ALL()[0] || null;
 /* Nombre del módulo de agencia que antes se llamaba "Gobierno de agencia" (2.1.7). Cambiarlo aquí lo cambia en todo el panel. */
@@ -337,7 +338,7 @@ function render(focus) {
   const v = V[R.view];
   if (!v) { paint(failed('Esta pantalla no existe.')); return; }
   if (R.mod && !MODS[R.mod].ok()) { paint(noAccess()); return; }
-  if (R.mod && moduloOculto(R.mod)) { paint(moduloApagado()); return; }
+  if (R.mod && moduloOculto(R.mod) && !esSuperAdmin()) { paint(moduloApagado()); return; }
   try { paint(v.render(), true); } catch (err) { paint(failed('No se pudo mostrar el módulo. Vuelve a intentarlo.')); return; }
   if (v.need) {
     v.need().then(() => { if (gen === GEN && !SWITCHING) { topbar(); paint(R.mod && !moduleAllowed(R.mod) ? noAccess() : v.render()); } })
@@ -1494,7 +1495,7 @@ function launcherFrame(mode, content) {
   if (!agency) return `<div class="launch-layout launch-no-rail"><div class="launch-content">${content}</div></div>`;
   const name = ME?.nombre || AGORA_ME?.user?.name || 'Mi cuenta';
   const groupIcons = {general:'home',ingresos:'invoice',clientes:'users',gestion:'pie',contratos:'receipt',administracion:'gear'};
-  return `<div class="launch-layout"><aside class="launch-rail" aria-label="Navegación de ${agency ? 'Agencia' : 'subcuenta'}"><div class="launch-brand launch-brand-logo" aria-label="Ágora Digital App">${LOGO}</div><p class="launch-rail-label">${agency ? 'Agencia' : esc(ws?.name() || 'Mi subcuenta')}</p><nav class="launch-primary"><a class="${R.view==='agencia'?'is-current':''}" href="${href(agency ? '/agencia' : '/centro')}" ${R.view==='agencia'?'aria-current="page"':''}>${icon(agency ? 'users' : 'home')}${agency ? 'Subcuentas' : 'Inicio de subcuenta'}</a>${!agency && esSuperAdmin() ? `<button type="button" data-agency-return>${icon('users')}Ir a subcuentas</button>` : ''}${agency ? '' : Object.entries(GRUPOS).map(([id,g]) => `<button type="button" data-launch-group="group-${id}">${icon(groupIcons[id])}${esc(g.name)}</button>`).join('')}</nav><div class="launch-system"><p class="launch-rail-label">${AG_GOB_NOMBRE}</p><a href="${href('/agencia/control')}" ${R.view==='agencyControl'?'aria-current="page"':''}>${icon('pie')}Resumen</a><a href="${href('/agencia/usuarios')}" ${R.view==='agencyTeam'?'aria-current="page"':''}>${icon('team')}Gestión de usuarios</a><a href="${href('/agencia/actividad')}" ${R.view==='agencyActivity'?'aria-current="page"':''}>${icon('shield')}Registro de actividad</a><a href="${href('/agencia/consumos')}" ${R.view==='agencyConsumos'?'aria-current="page"':''}>${icon('wallet')}Consumos</a>${!agency ? `<p class="launch-rail-label">Mi espacio</p><a href="${href('/ajustes')}">${icon('gear')}Ajustes</a><a href="${href('/ayuda')}">${icon('info')}Ayuda</a>` : ''}</div><a class="launch-person" href="${href('/perfil')}" ${R.view==='perfil'?'aria-current="page"':''}><span class="launch-avatar">${personalAvatar()}</span><span><b>${esc(name)}</b><small>${esSuperAdmin() ? (esMaster() ? 'Master · Dueño' : 'Superadmin de Agencia') : 'Mi perfil y cuenta'}</small></span>${icon('chevR')}</a></aside><div class="launch-content">${content}</div></div>`;
+  return `<div class="launch-layout"><aside class="launch-rail" aria-label="Navegación de ${agency ? 'Agencia' : 'subcuenta'}"><div class="launch-brand launch-brand-logo" aria-label="Ágora Digital App">${LOGO}</div><p class="launch-rail-label">${agency ? 'Agencia' : esc(ws?.name() || 'Mi subcuenta')}</p><nav class="launch-primary"><a class="${R.view==='agencia'?'is-current':''}" href="${href(agency ? '/agencia' : '/centro')}" ${R.view==='agencia'?'aria-current="page"':''}>${icon(agency ? 'users' : 'home')}${agency ? 'Subcuentas' : 'Inicio de subcuenta'}</a>${!agency && esSuperAdmin() ? `<button type="button" data-agency-return>${icon('users')}Ir a subcuentas</button>` : ''}${agency ? '' : Object.entries(GRUPOS).map(([id,g]) => `<button type="button" data-launch-group="group-${id}">${icon(groupIcons[id])}${esc(g.name)}</button>`).join('')}</nav><div class="launch-system"><p class="launch-rail-label">${AG_GOB_NOMBRE}</p><a href="${href('/agencia/control')}" ${R.view==='agencyControl'?'aria-current="page"':''}>${icon('pie')}Resumen</a><a href="${href('/agencia/usuarios')}" ${R.view==='agencyTeam'?'aria-current="page"':''}>${icon('team')}Gestión de usuarios</a><a href="${href('/agencia/actividad')}" ${R.view==='agencyActivity'?'aria-current="page"':''}>${icon('shield')}Registro de actividad</a><a href="${href('/agencia/consumos')}" ${R.view==='agencyConsumos'?'aria-current="page"':''}>${icon('wallet')}Consumos</a><span class="launch-soon" aria-disabled="true" title="Próximamente">${icon('spark')}Estudio<em>Próximamente</em></span>${!agency ? `<p class="launch-rail-label">Mi espacio</p><a href="${href('/ajustes')}">${icon('gear')}Ajustes</a><a href="${href('/ayuda')}">${icon('info')}Ayuda</a>` : ''}</div><a class="launch-person" href="${href('/perfil')}" ${R.view==='perfil'?'aria-current="page"':''}><span class="launch-avatar">${personalAvatar()}</span><span><b>${esc(name)}</b><small>${esSuperAdmin() ? (esMaster() ? 'Master · Dueño' : 'Superadmin de Agencia') : 'Mi perfil y cuenta'}</small></span>${icon('chevR')}</a></aside><div class="launch-content">${content}</div></div>`;
 }
 document.addEventListener('click', e => {
   const button = e.target.closest('[data-launch-group]');
@@ -4051,7 +4052,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.8.5').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.8.6').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -5677,7 +5678,7 @@ function pzModulos() {
   const grupos = Object.keys(GRUPOS).map(g => [g, Object.keys(MODS).filter(k => MODS[k].g === g && !MODS[k].fijo)]).filter(([, ids]) => ids.length);
   return `<section class="panel pf-sec">${secH('sidebar', 'Módulos de la subcuenta', 'Apaga lo que tu negocio no usa: desaparece del menú, del Inicio y de la búsqueda. Personalizar, Usuarios, Ajustes y Ayuda siempre quedan encendidos.')}
     <div class="pz-mods">${grupos.map(([g, ids]) => `<div class="pz-mod-g"><p class="pz-l"><span class="mdm-ic" style="--c:${GRUPOS[g].c}">${icon(GRUPOS[g].icon)}</span>${esc(GRUPOS[g].name)}</p>
-      ${ids.map(id => { const fijo = MODULOS_FIJOS.includes(id), on = fijo || !PZ.modulos.ocultos.includes(id); return `<label class="pz-mod ${on ? 'is-on' : ''}"><span><b>${esc(MODS[id].name)}</b><small>${esc(MODS[id].desc)}</small></span><span class="pz-sw"><input type="checkbox" role="switch" data-mod-on="${id}" ${on ? 'checked' : ''} ${fijo ? 'disabled' : ''}><i aria-hidden="true"></i></span></label>`; }).join('')}</div>`).join('')}</div></section>`;
+      ${ids.map(id => { const fijo = MODULOS_FIJOS.includes(id), on = fijo || !PZ.modulos.ocultos.includes(id); return `<label class="pz-mod ${on ? 'is-on' : ''}"><span><b>${esc(MODS[id].name)}</b><small>${esc(MODS[id].desc)}</small></span><span class="pz-sw"><input type="checkbox" role="switch" data-mod-on="${id}" ${on ? 'checked' : ''} ${fijo ? 'disabled' : ''}><i aria-hidden="true"></i></span></label>`; }).join('')}${g === 'administracion' ? `<div class="pz-mod is-soon" aria-disabled="true"><span><b>Estudio <em class="soon-chip">Próximamente</em></b><small>Textos del panel, importaciones y borradores con IA. Aún no se puede encender.</small></span><span class="pz-sw"><input type="checkbox" role="switch" disabled aria-label="Estudio, próximamente"><i aria-hidden="true"></i></span></div>` : ''}</div>`).join('')}</div></section>`;
 }
 function pzCrm() {
   if (!agoraReady()) return `<section class="panel"><p class="empty"><b>El CRM no está disponible</b>Esta subcuenta todavía no tiene la operación comercial activa.</p></section>`;
@@ -6888,6 +6889,11 @@ function vgRefrescar() {
   else vgVigilar(true);
 }
 
+/* ---------- 2.8.6 · Estudio: «Próximamente» (riel de agencia, herramientas y Personalizar). La ruta muestra el aviso. ---------- */
+if (typeof V === 'object' && V.agencyStudio) {
+  const proximamente = {need: async () => {}, mounted() {}, render: () => launcherFrame('agencia', head('Herramientas de Agencia', 'Estudio', 'Textos del panel, importaciones y borradores con IA.') + `<section class="panel"><p class="empty"><b>Próximamente</b>Estudio todavía no está disponible. Avisaremos cuando se pueda usar.<br><a class="btn btn-cta" href="${href('/agencia/control')}">${icon('chevR')}Volver a la agencia</a></p></section>`)};
+  V.agencyStudio = proximamente; if (V.agencyTexts) V.agencyTexts = proximamente;
+}
 /* ---------- 2.8.4 · Tarjetas a elección en una vista (como editar los widgets de un tablero) ----------
    Cada persona elige qué tarjetas ver y en qué orden; se guarda en el servidor (la sigue en cualquier equipo).
    La administración puede guardar su elección como la vista por defecto del equipo. Sin elección: la del equipo o la de fábrica. */
@@ -8843,7 +8849,7 @@ V.agencyControl = {
       + `<section class="ag-tools" aria-labelledby="ag-tools-h"><h2 id="ag-tools-h" class="launch-section-label">Herramientas del equipo</h2><div class="ag-tools-grid">
           ${herramienta('/agencia/usuarios', 'team', 'Gestión de usuarios', 'Quién de tu equipo administra la agencia y a qué subcuentas entra.')}
           ${herramienta('/agencia/actividad', 'shield', 'Registro de actividad', 'Todo lo que se ha hecho, con fecha, hora y responsable.')}
-          ${herramienta('/agencia/estudio-ia', 'spark', 'Estudio', 'Textos del panel, importaciones y borradores con IA.')}
+          <div class="ag-tool is-soon" aria-disabled="true"><span class="ag-tool-ic" aria-hidden="true">${icon('spark')}</span><span class="ag-tool-tx"><b>Estudio <em class="soon-chip">Próximamente</em></b><small>Textos del panel, importaciones y borradores con IA.</small></span></div>
         </div></section>`);
   },
   mounted(root) {

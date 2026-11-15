@@ -1,5 +1,10 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.6:**
+- **Los dueños de Ágora (Master y Superadmin) ven todos los módulos** de cualquier subcuenta, sin importar permisos, si hay reporte mensual cargado o si la subcuenta apagó módulos en Personalizar. El resto de las personas sigue viendo solo lo suyo.
+- **Estudio vuelve como «Próximamente»:** en el menú de agencia, en «Herramientas del equipo» y en Personalizar → Módulos (con el interruptor bloqueado). Si alguien abre su dirección, ve el aviso de «Próximamente».
+- Personalizar → Módulos ya mostraba todos los módulos de la subcuenta (26 más Inicio); se suma Estudio.
+
 **Novedades 2.8.5:**
 - **«Editar tarjetas» sin tope:** se pueden poner a la vista todas las tarjetas del catálogo (hoy 14), no solo 8.
 - **«Registro» vuelve al menú de Contratos.** En la 2.4.0 salió del menú diciendo que estaba dentro de Auditoría, pero Auditoría no tenía ningún enlace a él: solo se llegaba escribiendo la dirección. Además ahora muestra **solo lo que pasa con los convenios** (antes repetía toda la bitácora de Auditoría, con ajustes y «Sin nombre»).
