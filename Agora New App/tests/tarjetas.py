@@ -45,4 +45,10 @@ ok(e.call('workspace/preferencias?vista=../x')[0] in (400,422),'una vista con no
 st,d=e.call('workspace/preferencias','PUT',{'vista':'ventas','tarjetas':None})
 ok(st==200 and d['mia'] is None,'«Volver a la vista del equipo» borra la elección propia')
 a.call('workspace/preferencias','PUT',{'vista':'ventas','tarjetas':None,'equipo':True})
+# 2.8.5 · «Registro» (Contratos) muestra solo lo que pasa con convenios; Auditoría, todo.
+st,d=a.call('registro')
+ok(st==200 and all(x['modulo']=='contract' for x in d['items']),'«Registro» muestra solo movimientos de convenios')
+st,d2=a.call('workspace/auditoria')
+ok(st==200 and len({x['modulo'] for x in d2['items']})>1,'«Auditoría» sigue mostrando todo')
+ok(e.call('registro')[0]==403,'un ejecutivo no ve el registro')
 print(f'{n} comprobaciones')

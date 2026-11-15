@@ -54,8 +54,10 @@ final class Agency {
  /** Tipo de cuenta (2.1.16): servicios, producto, cobro recurrente… null = sin definir. */
  private function perfil(int $id):?array{$p=$this->db->setting($id,'cuenta.perfil',null);return is_array($p)?$p:null;}
  private function paleta(int $id):?array{$p=$this->db->setting($id,'ui.paleta',null);return is_array($p)&&isset($p['principal'],$p['acento'])?$p:null;}
- public function audit(bool $agency):array{
+ /** $modulo: solo los movimientos de ese módulo (2.8.5: «Registro» muestra solo convenios, no toda la bitácora). */
+ public function audit(bool $agency,?string $modulo=null):array{
   $agency?$this->auth->agency():$this->auth->financial();$args=[];$where=$agency?'tenant_id IS NULL':'tenant_id=?';if(!$agency)$args[]=$this->auth->tenant;
+  if($modulo!==null){$where.=' AND module=?';$args[]=$modulo;}
   if($agency&&$this->auth->user['role']!=='MASTER'){$where.=' AND actor_id=?';$args[]=$this->auth->user['id'];}
   if(isset($_GET['period'])){$period=Http::period($_GET['period']);$where.=' AND created_at>=? AND created_at<DATE_ADD(?,INTERVAL 1 MONTH)';$args[]=$period.'-01';$args[]=$period.'-01';}
   $cursor=max(0,(int)($_GET['cursor']??0));if($cursor){$where.=' AND id<?';$args[]=$cursor;}

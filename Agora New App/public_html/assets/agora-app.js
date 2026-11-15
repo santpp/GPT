@@ -211,7 +211,7 @@ const MODS = {
   conConvenio: {g: 'contratos', view: 'contactos', name: 'Con convenio', icon: 'user', path: '/con-convenio', c: 'var(--mod-oro)',
     desc: 'Personas con convenio y búsqueda en la cartera.', ok: () => can('ver') && puede('datos.consultar'), n: () => DATA.contratos ? clientes().length : null},
   registro: {g: 'contratos', view: 'registro', name: 'Registro', icon: 'history', path: '/registro', c: 'var(--mod-oro)',
-    desc: 'Todo lo que pasa con los convenios, con su hora.', dentro: 'auditoria', ok: () => puede('auditoria.ver')},
+    desc: 'Todo lo que pasa con los convenios, con su hora.', ok: () => puede('auditoria.ver')},
   auditoria: {g: 'administracion', view: 'auditoria', name: 'Auditoría', icon: 'shield', path: '/auditoria', c: 'var(--mod-seguridad)', periodo: true,
     desc: 'Quién tocó qué contacto, cuándo y desde dónde.', ok: () => puede('auditoria.ver')},
   configuracion: {g: 'administracion', view: 'tc_configuracion', name: 'Configuración mensual', icon: 'edit', path: '/configuracion', c: 'var(--mod-azul)', periodo: true,
@@ -4051,7 +4051,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.8.4').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.8.5').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -6912,12 +6912,12 @@ function tarjEditar(vista, catalogo, defecto, titulo, alGuardar) {
   const pintar = () => {
     const resto = Object.keys(catalogo).filter(id => !sel.includes(id));
     const fila = (id, on, i) => { const x = catalogo[id]; return `<li class="pz-item ${on ? 'is-on' : ''}"><label class="pz-check"><input type="checkbox" data-tarj="${id}" ${on ? 'checked' : ''}><span class="pz-ic" aria-hidden="true">${icon(x.ic)}</span><span><b>${esc(x.t)}</b><small>${esc(x.d)}</small></span></label>${on ? pzFlechas('data-tarj-mover', id, i, sel.length, x.t) : ''}</li>`; };
-    caja.innerHTML = `<p class="pz-l">A la vista · ${sel.length} de 8 · usa las flechas para ordenar</p>
+    caja.innerHTML = `<p class="pz-l">A la vista · ${sel.length} de ${Object.keys(catalogo).length} · usa las flechas para ordenar</p>
       <ol class="pz-list">${sel.map((id, i) => fila(id, true, i)).join('') || '<li class="pz-vacio">No elegiste tarjetas: la vista se mostrará sin cifras arriba.</li>'}</ol>
       <p class="pz-l">Disponibles</p><ul class="pz-list">${resto.map(id => fila(id, false, 0)).join('') || '<li class="pz-vacio">Ya están todas a la vista.</li>'}</ul>`;
     caja.querySelectorAll('[data-tarj]').forEach(c => c.onchange = () => {
       const id = c.dataset.tarj;
-      if (c.checked) { if (sel.length >= 8) { c.checked = false; s.querySelector('.fld-err').textContent = 'Caben hasta 8 tarjetas. Quita una para agregar otra.'; return; } sel.push(id); }
+      if (c.checked) sel.push(id);
       else sel = sel.filter(x => x !== id);
       s.querySelector('.fld-err').textContent = ''; pintar();
     });

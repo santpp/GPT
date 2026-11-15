@@ -1,5 +1,10 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.5:**
+- **«Editar tarjetas» sin tope:** se pueden poner a la vista todas las tarjetas del catálogo (hoy 14), no solo 8.
+- **«Registro» vuelve al menú de Contratos.** En la 2.4.0 salió del menú diciendo que estaba dentro de Auditoría, pero Auditoría no tenía ningún enlace a él: solo se llegaba escribiendo la dirección. Además ahora muestra **solo lo que pasa con los convenios** (antes repetía toda la bitácora de Auditoría, con ajustes y «Sin nombre»).
+- Revisión contra el ERP recibido (2.1.19): no se borró ningún módulo (eran 26 y ahora son 27, con «Redes y anuncios»). Lo que cambió es cuándo aparecen: el menú oculta lo que el rol no puede usar y los módulos del reporte mensual solo aparecen con un reporte cargado.
+
 **Novedades 2.8.4:**
 - **Ventas registradas: «Editar tarjetas»**, como editar los widgets de un tablero. Cada persona elige qué cifras ver arriba (hasta 8) y en qué orden. Su elección se guarda en el servidor y la acompaña en cualquier equipo.
 - 14 tarjetas para elegir: Ventas del mes, Vendido, Cobrado en el mes, Por cobrar en el mes, Cobros vencidos, Ticket promedio, Ingreso recurrente al mes, Ventas recurrentes, Pagos y ventas únicas, Ventas pagadas, Clientes, Quien más vendió, Lo más vendido y Ventas por completar.
