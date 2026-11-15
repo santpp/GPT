@@ -344,3 +344,14 @@ table.t-fichas tr > td.empty .btn{margin-top:14px}
 .launch-soon em,.soon-chip{margin-left:auto;font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:.02em;padding:2px 8px;border-radius:999px;background:var(--fill-3,#eef0f3);color:var(--muted)}
 .soon-chip{margin-left:6px;vertical-align:middle}
 .ag-tool.is-soon,.pz-mod.is-soon{opacity:.7;cursor:default}
+
+/* 2.8.7 · Resumen de hoy: botón «Elegir cifras» */
+.inicio-resumen-acc{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:600px){.inicio-resumen-h{flex-wrap:wrap;gap:8px}.inicio-resumen-acc{width:100%;justify-content:space-between}}
+@media (min-width:601px){
+  .inicio-resumen-c{padding:14px 16px 12px}
+  .inicio-resumen-c + .inicio-resumen-c{padding-left:16px;border-left:0}
+  .inicio-resumen-c:nth-child(3n+1){padding-left:0}
+  .inicio-resumen-c:not(:nth-child(3n+1)){border-left:1px solid var(--line)}
+  .inicio-resumen-c:nth-child(n+4){border-top:1px solid var(--line)}
+}

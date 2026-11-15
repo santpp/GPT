@@ -337,7 +337,7 @@ function render(focus) {
   const gen = ++GEN;
   const v = V[R.view];
   if (!v) { paint(failed('Esta pantalla no existe.')); return; }
-  if (R.mod && !MODS[R.mod].ok()) { paint(noAccess()); return; }
+  if (R.mod && !moduleAllowed(R.mod)) { paint(noAccess()); return; }
   if (R.mod && moduloOculto(R.mod) && !esSuperAdmin()) { paint(moduloApagado()); return; }
   try { paint(v.render(), true); } catch (err) { paint(failed('No se pudo mostrar el módulo. Vuelve a intentarlo.')); return; }
   if (v.need) {
@@ -1077,7 +1077,7 @@ function openCmd(initial = '') {
     const acc = [
       ...(can('editar') ? [{g: 'Acciones', i: 'plus', t: 'Nuevo convenio', d: 'Elige el contacto y arma el plan de pago', go: '/contratos/nuevo'},
         {g: 'Acciones', i: 'search', t: 'Buscar en la cartera', d: 'Contactos de la subcuenta, para crear un convenio', fn: () => { state.contactos.tab = 'agora'; go('/con-convenio'); }}] : []),
-      ...(MODS.tareas.ok() ? [{g: 'Acciones', i: 'check', t: 'Nueva tarea', d: 'Para ti o para alguien del equipo', fn: () => { go('/tareas'); setTimeout(() => tareaModal(), 260); }}] : []),
+      ...(moduleAllowed('tareas') ? [{g: 'Acciones', i: 'check', t: 'Nueva tarea', d: 'Para ti o para alguien del equipo', fn: () => { go('/tareas'); setTimeout(() => tareaModal(), 260); }}] : []),
       {g: 'Acciones', i: 'athena', t: 'Preguntarle a Athena', d: 'Resume tus cifras del sistema', fn: () => abrirAthena()},
       ...(agoraReady() ? [{g: 'Acciones', i: 'coins', t: 'Ventas ganadas', d: 'Completar las que están sin monto', fn: () => { if (ws) ws.pendingOppTab = 'won'; go('/oportunidades'); }}] : []),
 
@@ -1773,7 +1773,7 @@ window.addEventListener('agora:won-alert', e => { wonPendientes = Number(e.detai
 window.addEventListener('agora:goto', e => {
   const d = e.detail || {};
   const mod = AG_TO_MOD[d.view];
-  if (!mod || !MODS[mod]?.ok()) return;
+  if (!mod || !moduleAllowed(mod)) return;
   if (ws) ws.pendingFilter = d.filter || null;
   closeAll(); go(MODS[mod].path);
 });
@@ -4052,7 +4052,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.8.6').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.8.7').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -5263,7 +5263,7 @@ let PROD_F = {cobro: '', rubro: '', q: ''};
 MODS.productos = {g: 'ingresos', view: 'productos', name: 'Productos y servicios', icon: 'wallet', path: '/productos', c: 'var(--mod-oro)',
   desc: 'Tus rubros y productos, con su forma de cobro.', ok: () => (!!ME || agoraReady()) && puede('datos.consultar')};
 V.productos = {
-  need: () => Promise.all([cargarCatalogo(), MODS.catalogo?.ok() && typeof cargarTablero === 'function' ? cargarTablero().catch(() => null) : null]),
+  need: () => Promise.all([cargarCatalogo(), moduleAllowed('catalogo') && typeof cargarTablero === 'function' ? cargarTablero().catch(() => null) : null]),
   render() {
     if (!CATALOGO) return loading('Productos y servicios');
     const {rubros, productos, canEdit} = CATALOGO;
@@ -5324,7 +5324,7 @@ V.productos = {
 if (MODS.catalogo) MODS.catalogo.dentro = 'productos';
 const catalogoReporte = () => { try { return (typeof TB !== 'undefined' && TB.estado === 'listo' && TB.api?.catalogoFilas?.()) || []; } catch (e) { return []; } };
 function prodPestanas(actual) {
-  const hayCat = MODS.catalogo && MODS.catalogo.ok() && !moduloOculto('catalogo');
+  const hayCat = MODS.catalogo && moduleAllowed('catalogo') && (esSuperAdmin() || !moduloOculto('catalogo'));
   if (!hayCat) return '';
   const t = (id, ico, txt, sub) => `<a class="prod-tab ${actual === id ? 'is-on' : ''}" href="${href(MODS[id].path)}" ${actual === id ? 'aria-current="page"' : ''}>${icon(ico)}<span><b>${esc(txt)}</b><small>${esc(sub)}</small></span></a>`;
   return `<nav class="prod-tabs" aria-label="Productos y servicios">${t('productos', 'wallet', 'Productos y servicios', 'Rubros, precios y forma de cobro')}${t('catalogo', 'receipt', 'Catálogo', 'Programas del reporte mensual')}</nav>`;
@@ -5471,9 +5471,8 @@ function tableroInicioHtml() {
   /* 2.6.1 · un solo tablero: Inicio muestra el resumen de hoy (tres cifras reales) y lleva a ARP Comercial. */
   if (MODS.comercial && moduleAllowed('comercial') && !moduloOculto('comercial')) {
     const mio = !!ESPACIO?.permisos?.soloAsignado;
-    const cifra = (k, t) => `<div class="inicio-resumen-c" data-ir="${k}"><span class="inicio-resumen-l">${t}</span><strong class="inicio-resumen-v"><span class="sk w40"></span></strong><span class="inicio-resumen-d"><span class="sk w60"></span></span></div>`;
-    return `<section class="tb-inicio inicio-resumen" aria-labelledby="inicio-resumen-t"><header class="inicio-resumen-h"><h2 id="inicio-resumen-t">${mio ? 'Lo tuyo hoy' : 'Resumen de hoy'}</h2><a class="inicio-resumen-ver" href="${href(MODS.comercial.path)}">Ver el tablero completo${icon('chevR')}</a></header>
-      <div class="inicio-resumen-g">${cifra('sinleer', 'Conversaciones sin leer')}${cifra('espera', 'Esperando respuesta')}${cifra('opp', 'Oportunidades abiertas')}</div></section>`;
+    return `<section class="tb-inicio inicio-resumen" aria-labelledby="inicio-resumen-t"><header class="inicio-resumen-h"><h2 id="inicio-resumen-t">${mio ? 'Lo tuyo hoy' : 'Resumen de hoy'}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-ir-editar>${icon('gear')}Elegir cifras</button><a class="inicio-resumen-ver" href="${href(MODS.comercial.path)}">Ver el tablero completo${icon('chevR')}</a></span></header>
+      <div class="inicio-resumen-g">${iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO))}</div></section>`;
   }
   const c = tbConfig(); if (!c.visible) return '';
   const ids = c.tarjetas.filter(tbVisible);
@@ -6942,6 +6941,23 @@ function tarjEditar(vista, catalogo, defecto, titulo, alGuardar) {
     catch (x) { busy(b, false); s.querySelector('.fld-err').textContent = x.message; }
   };
 }
+/* 2.8.7 · Cifras a elegir en «Resumen de hoy» del Inicio (fuente: lo que se pide a la cuenta). */
+const iniN = x => x == null ? '—' : NI.format(x);
+const INI_TARJETAS = {
+  sinleer: {t: 'Conversaciones sin leer', ic: 'bell', fuente: 'dash', d: 'Las que nadie ha abierto todavía.', f: d => [iniN(d.conversations?.unread), d.conversations?.total != null ? `de ${iniN(d.conversations.total)} conversaciones` : '']},
+  espera: {t: 'Esperando respuesta', ic: 'clock', fuente: 'dash', d: 'Conversaciones donde el cliente escribió último.', f: d => [iniN(d.conversations?.waiting), 'el cliente escribió último']},
+  opp: {t: 'Oportunidades abiertas', ic: 'trend', fuente: 'dash', d: 'Negocios en curso y el dinero en juego.', f: d => [iniN(d.opportunities?.count), d.opportunities?.value != null ? `${d.opportunities.sampled ? 'al menos ' : ''}${usd(d.opportunities.value)} en juego` : '']},
+  conversaciones: {t: 'Conversaciones', ic: 'chat', fuente: 'dash', d: 'Todas las conversaciones de la bandeja.', f: d => [iniN(d.conversations?.total), `${iniN(d.conversations?.unread)} sin leer`]},
+  contactos: {t: 'Contactos', ic: 'users', fuente: 'dash', d: 'Fichas en la cuenta.', f: d => [iniN(d.contacts), 'fichas en la cuenta']},
+  leadsHoy: {t: 'Leads de hoy', ic: 'spark', fuente: 'dash', d: 'Contactos nuevos que entraron hoy.', f: d => [iniN(d.leads?.today), d.leads?.mine != null && d.leads?.linked ? `${iniN(d.leads.mine)} asignados a ti` : 'entraron hoy']},
+  conversacionesDia: {t: 'Conversaciones del día', ic: 'chat', fuente: 'dia', d: 'Conversaciones con movimiento hoy.', f: d => [iniN(d.conversacionesDia), `${iniN(d.atendidas)} atendidas`]},
+  respuesta: {t: 'Tiempo de respuesta', ic: 'clock', fuente: 'dia', d: 'Lo que tarda en promedio la primera respuesta.', f: d => [d.slaPromedio || '—', d.slaMetaTexto ? `meta: ${d.slaMetaTexto}` : 'promedio de hoy']},
+  fueraTiempo: {t: 'Fuera de tiempo', ic: 'warn', fuente: 'dia', d: 'Conversaciones que pasaron la meta de respuesta.', f: d => [iniN(d.slaIncumplido), d.slaIncumplidoAyer != null ? `ayer: ${iniN(d.slaIncumplidoAyer)}` : '']},
+  tareas: {t: 'Tareas pendientes', ic: 'check', fuente: 'tareas', d: 'Seguimientos por hacer.', f: d => { const n = d.resumen?.pendientes; return [iniN(n), n ? 'por hacer' : 'nada pendiente']; }},
+  ganadas: {t: 'Ventas ganadas del mes', ic: 'coins', fuente: 'won', d: 'Oportunidades ganadas este mes y su valor.', f: d => [iniN(d.totals?.count), `${usd(d.totals?.sum || 0)} en total`]},
+};
+const INI_DEFECTO = ['sinleer', 'espera', 'opp'];
+const iniCifras = ids => ids.length ? ids.map(id => `<div class="inicio-resumen-c" data-ir="${id}"><span class="inicio-resumen-l">${esc(INI_TARJETAS[id].t)}</span><strong class="inicio-resumen-v"><span class="sk w40"></span></strong><span class="inicio-resumen-d"><span class="sk w60"></span></span></div>`).join('') : '<p class="inicio-resumen-x">No elegiste cifras. Usa «Elegir cifras» para agregar alguna.</p>';
 /* Catálogo de tarjetas de Ventas registradas: cada una se calcula con las ventas del mes que ya están en pantalla. */
 const vgSuma = (items, fn) => items.reduce((o, v) => { const n = Number(fn(v)) || 0; if (n) o[v.moneda || 'USD'] = (o[v.moneda || 'USD'] || 0) + n; return o; }, {});
 const vgTop = (items, k) => { const m = new Map(); items.forEach(v => { const n = (typeof k === 'function' ? k(v) : v[k]) || ''; if (n) m.set(n, (m.get(n) || 0) + 1); }); return [...m.entries()].sort((a, b) => b[1] - a[1])[0] || null; };
@@ -7588,18 +7604,33 @@ async function kpiInicio(root) {
   const box = root.querySelector('.kpi-inicio .kpi-grid'); if (!box || epoch !== NAV_EPOCH) return;
   box.innerHTML = lista.map(k => kpiTarjeta(k, kpiValor(k, v || {}), false)).join('');
 }
-/** 2.6.1 · llena el resumen de hoy del Inicio con las cifras del tablero (la misma lectura, guardada un minuto). */
+/** 2.6.1 · llena el resumen de hoy del Inicio con las cifras del tablero (la misma lectura, guardada un minuto).
+    2.8.7 · cada persona elige qué cifras ver («Elegir cifras»); solo se pide a la cuenta lo que hace falta. */
 async function inicioResumen(root) {
   const box = root?.querySelector('.inicio-resumen'); if (!box || !ws?.current()) return;
-  const epoch = NAV_EPOCH; let d = null;
-  try { d = await agoraApi(`workspace/dashboard?connectionId=${encodeURIComponent(ws.current())}`); } catch { d = null; }
+  const epoch = NAV_EPOCH;
+  box.querySelector('[data-ir-editar]')?.addEventListener('click', () => tarjEditar('inicio', INI_TARJETAS, INI_DEFECTO, 'Resumen de hoy', () => { if (root.isConnected) { box.querySelector('.inicio-resumen-g').innerHTML = iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO)); inicioResumenLlenar(box, epoch); } }));
+  if (!TARJ.inicio?.cargado) { await tarjCargar('inicio'); if (epoch !== NAV_EPOCH || !box.isConnected) return; box.querySelector('.inicio-resumen-g').innerHTML = iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO)); }
+  inicioResumenLlenar(box, epoch);
+}
+async function inicioResumenLlenar(box, epoch) {
+  const ids = tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO); if (!ids.length) return;
+  const cid = encodeURIComponent(ws.current()), fuentes = new Set(ids.map(id => INI_TARJETAS[id].fuente)), intento = p => p.then(v => v, () => null);
+  const [dash, dia, tareas, won] = await Promise.all([
+    fuentes.has('dash') ? intento(agoraApi(`workspace/dashboard?connectionId=${cid}`)) : null,
+    fuentes.has('dia') ? intento(agoraApi(`workspace/dia?connectionId=${cid}`)) : null,
+    fuentes.has('tareas') ? intento(agoraApi('workspace/tareas')) : null,
+    fuentes.has('won') ? intento(agoraApi(`workspace/won?connectionId=${cid}`)) : null,
+  ]);
   if (epoch !== NAV_EPOCH || !box.isConnected) return;
-  const pon = (k, v, det) => { const c = box.querySelector(`[data-ir="${k}"]`); if (!c) return; c.querySelector('.inicio-resumen-v').textContent = v; c.querySelector('.inicio-resumen-d').textContent = det; };
-  if (!d) { box.querySelector('.inicio-resumen-g').innerHTML = '<p class="inicio-resumen-x">No se pudieron leer las cifras de hoy. Ábrelas en el tablero completo.</p>'; return; }
-  const c = d.conversations || {}, o = d.opportunities || {}, nf = x => x == null ? '—' : NI.format(x);
-  pon('sinleer', nf(c.unread), c.total != null ? `de ${nf(c.total)} conversaciones` : '');
-  pon('espera', nf(c.waiting), 'el cliente escribió último');
-  pon('opp', nf(o.count), o.value != null ? `${o.sampled ? 'al menos ' : ''}${usd(o.value)} en juego` : '');
+  const datos = {dash, dia, tareas, won};
+  if (!Object.values(datos).some(Boolean)) { box.querySelector('.inicio-resumen-g').innerHTML = '<p class="inicio-resumen-x">No se pudieron leer las cifras de hoy. Ábrelas en el tablero completo.</p>'; return; }
+  ids.forEach(id => {
+    const c = box.querySelector(`[data-ir="${id}"]`); if (!c) return;
+    const x = INI_TARJETAS[id], d = datos[x.fuente]; let v = ['—', 'Sin dato por ahora'];
+    if (d) { try { v = x.f(d); } catch { v = ['—', '']; } }
+    c.querySelector('.inicio-resumen-v').textContent = v[0]; c.querySelector('.inicio-resumen-d').textContent = v[1] || '';
+  });
 }
 if (V.centro) { const montar = V.centro.mounted; V.centro.mounted = function (root) { montar?.call(this, root); inicioResumen(root); kpiInicio(root); }; }
 /* ---------- ARP Comercial: nombre propio y chip de meta (capa sobre agora-modulos.js) ---------- */

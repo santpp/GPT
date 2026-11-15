@@ -45,6 +45,10 @@ ok(e.call('workspace/preferencias?vista=../x')[0] in (400,422),'una vista con no
 st,d=e.call('workspace/preferencias','PUT',{'vista':'ventas','tarjetas':None})
 ok(st==200 and d['mia'] is None,'«Volver a la vista del equipo» borra la elección propia')
 a.call('workspace/preferencias','PUT',{'vista':'ventas','tarjetas':None,'equipo':True})
+# 2.8.7 · «Resumen de hoy» del Inicio usa la misma preferencia, con su propia vista.
+st,d=e.call('workspace/preferencias','PUT',{'vista':'inicio','tarjetas':['tareas','respuesta']})
+ok(st==200 and d['mia']['tarjetas']==['tareas','respuesta'] and e.call('workspace/preferencias?vista=ventas')[1]['mia'] is None,'el Resumen de hoy guarda su elección aparte de Ventas')
+e.call('workspace/preferencias','PUT',{'vista':'inicio','tarjetas':None})
 # 2.8.5 · «Registro» (Contratos) muestra solo lo que pasa con convenios; Auditoría, todo.
 st,d=a.call('registro')
 ok(st==200 and all(x['modulo']=='contract' for x in d['items']),'«Registro» muestra solo movimientos de convenios')

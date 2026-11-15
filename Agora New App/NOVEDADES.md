@@ -1,5 +1,10 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.7:**
+- **Arreglado: «Acceso restringido» para los dueños de Ágora** al abrir un módulo del reporte (por ejemplo, Gestión Comercial) en una subcuenta sin reporte cargado. La 2.8.6 los mostraba en el menú, pero al abrirlos la pantalla volvía a mirar solo el permiso del rol. Ahora todo el sistema usa la misma regla (también el buscador, los atajos y la pestaña Catálogo).
+- **«Resumen de hoy» del Inicio: «Elegir cifras».** Cada persona elige qué cifras ver y en qué orden, entre 11: sin leer, esperando respuesta, oportunidades abiertas, conversaciones, contactos, leads de hoy, conversaciones del día, tiempo de respuesta, fuera de tiempo, tareas pendientes y ventas ganadas del mes. La administración puede fijar la vista del equipo. Solo se le pide a la cuenta lo que se va a mostrar.
+- En escritorio, el resumen ordena las cifras de tres en tres, con líneas parejas.
+
 **Novedades 2.8.6:**
 - **Los dueños de Ágora (Master y Superadmin) ven todos los módulos** de cualquier subcuenta, sin importar permisos, si hay reporte mensual cargado o si la subcuenta apagó módulos en Personalizar. El resto de las personas sigue viendo solo lo suyo.
 - **Estudio vuelve como «Próximamente»:** en el menú de agencia, en «Herramientas del equipo» y en Personalizar → Módulos (con el interruptor bloqueado). Si alguien abre su dirección, ve el aviso de «Próximamente».
