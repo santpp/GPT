@@ -4058,7 +4058,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.8.15').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.8.16').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -6956,20 +6956,23 @@ function tarjEditar(vista, catalogo, defecto, titulo, alGuardar) {
 /* 2.8.7 · Cifras a elegir en «Resumen de hoy» del Inicio (fuente: lo que se pide a la cuenta). */
 const iniN = x => x == null ? '—' : NI.format(x);
 const INI_TARJETAS = {
-  sinleer: {t: 'Conversaciones sin leer', ic: 'bell', fuente: 'dash', d: 'Las que nadie ha abierto todavía.', f: d => [iniN(d.conversations?.unread), d.conversations?.total != null ? `de ${iniN(d.conversations.total)} conversaciones` : '']},
-  espera: {t: 'Esperando respuesta', ic: 'clock', fuente: 'dash', d: 'Conversaciones donde el cliente escribió último.', f: d => [iniN(d.conversations?.waiting), 'el cliente escribió último']},
-  opp: {t: 'Oportunidades abiertas', ic: 'trend', fuente: 'dash', d: 'Negocios en curso y el dinero en juego.', f: d => [iniN(d.opportunities?.count), d.opportunities?.value != null ? `${d.opportunities.sampled ? 'al menos ' : ''}${usd(d.opportunities.value)} en juego` : '']},
-  conversaciones: {t: 'Conversaciones', ic: 'chat', fuente: 'dash', d: 'Todas las conversaciones de la bandeja.', f: d => [iniN(d.conversations?.total), `${iniN(d.conversations?.unread)} sin leer`]},
-  contactos: {t: 'Contactos', ic: 'users', fuente: 'dash', d: 'Fichas en la cuenta.', f: d => [iniN(d.contacts), 'fichas en la cuenta']},
-  leadsHoy: {t: 'Leads de hoy', ic: 'spark', fuente: 'dash', d: 'Contactos nuevos que entraron hoy.', f: d => [iniN(d.leads?.today), d.leads?.mine != null && d.leads?.linked ? `${iniN(d.leads.mine)} asignados a ti` : 'entraron hoy']},
-  conversacionesDia: {t: 'Conversaciones del día', ic: 'chat', fuente: 'dia', d: 'Conversaciones con movimiento hoy.', f: d => [iniN(d.conversacionesDia), `${iniN(d.atendidas)} atendidas`]},
-  respuesta: {t: 'Tiempo de respuesta', ic: 'clock', fuente: 'dia', d: 'Lo que tarda en promedio la primera respuesta.', f: d => [d.slaPromedio || '—', d.slaMetaTexto ? `meta: ${d.slaMetaTexto}` : 'promedio de hoy']},
-  fueraTiempo: {t: 'Fuera de tiempo', ic: 'warn', fuente: 'dia', d: 'Conversaciones que pasaron la meta de respuesta.', f: d => [iniN(d.slaIncumplido), d.slaIncumplidoAyer != null ? `ayer: ${iniN(d.slaIncumplidoAyer)}` : '']},
-  tareas: {t: 'Tareas pendientes', ic: 'check', fuente: 'tareas', d: 'Seguimientos por hacer.', f: d => { const n = d.resumen?.pendientes; return [iniN(n), n ? 'por hacer' : 'nada pendiente']; }},
-  ganadas: {t: 'Ventas ganadas del mes', ic: 'coins', fuente: 'won', d: 'Oportunidades ganadas este mes y su valor.', f: d => [iniN(d.totals?.count), `${usd(d.totals?.sum || 0)} en total`]},
+  sinleer: {ir: {mod: 'bandeja', filtro: 'unread', ayuda: 'Abrir la bandeja con las sin leer'}, t: 'Conversaciones sin leer', ic: 'bell', fuente: 'dash', d: 'Las que nadie ha abierto todavía.', f: d => [iniN(d.conversations?.unread), d.conversations?.total != null ? `de ${iniN(d.conversations.total)} conversaciones` : '']},
+  espera: {ir: {mod: 'bandeja', filtro: 'waiting', ayuda: 'Abrir la bandeja con las que esperan respuesta'}, t: 'Esperando respuesta', ic: 'clock', fuente: 'dash', d: 'Conversaciones donde el cliente escribió último.', f: d => [iniN(d.conversations?.waiting), 'el cliente escribió último']},
+  opp: {ir: {mod: 'oportunidades', ayuda: 'Abrir las oportunidades'}, t: 'Oportunidades abiertas', ic: 'trend', fuente: 'dash', d: 'Negocios en curso y el dinero en juego.', f: d => [iniN(d.opportunities?.count), d.opportunities?.value != null ? `${d.opportunities.sampled ? 'al menos ' : ''}${usd(d.opportunities.value)} en juego` : '']},
+  conversaciones: {ir: {mod: 'bandeja', ayuda: 'Abrir la bandeja'}, t: 'Conversaciones', ic: 'chat', fuente: 'dash', d: 'Todas las conversaciones de la bandeja.', f: d => [iniN(d.conversations?.total), `${iniN(d.conversations?.unread)} sin leer`]},
+  contactos: {ir: {mod: 'contactos', ayuda: 'Abrir los contactos'}, t: 'Contactos', ic: 'users', fuente: 'dash', d: 'Fichas en la cuenta.', f: d => [iniN(d.contacts), 'fichas en la cuenta']},
+  leadsHoy: {ir: {mod: 'comercial', ayuda: 'Ver de dónde vienen y a quién se asignaron'}, t: 'Leads de hoy', ic: 'spark', fuente: 'dash', d: 'Contactos nuevos que entraron hoy.', f: d => [iniN(d.leads?.today), d.leads?.mine != null && d.leads?.linked ? `${iniN(d.leads.mine)} asignados a ti` : 'entraron hoy']},
+  conversacionesDia: {ir: {mod: 'comercial', ayuda: 'Ver la operación del día'}, t: 'Conversaciones del día', ic: 'chat', fuente: 'dia', d: 'Conversaciones con movimiento hoy.', f: d => [iniN(d.conversacionesDia), `${iniN(d.atendidas)} atendidas`]},
+  respuesta: {ir: {mod: 'comercial', ayuda: 'Ver los tiempos de respuesta por asesor'}, t: 'Tiempo de respuesta', ic: 'clock', fuente: 'dia', d: 'Lo que tarda en promedio la primera respuesta.', f: d => [d.slaPromedio || '—', d.slaMetaTexto ? `meta: ${d.slaMetaTexto}` : 'promedio de hoy']},
+  fueraTiempo: {ir: {mod: 'bandeja', filtro: 'waiting', ayuda: 'Abrir la bandeja con las que esperan respuesta'}, t: 'Fuera de tiempo', ic: 'warn', fuente: 'dia', d: 'Conversaciones que pasaron la meta de respuesta.', f: d => [iniN(d.slaIncumplido), d.slaIncumplidoAyer != null ? `ayer: ${iniN(d.slaIncumplidoAyer)}` : '']},
+  tareas: {ir: {mod: 'tareas', ayuda: 'Abrir las tareas'}, t: 'Tareas pendientes', ic: 'check', fuente: 'tareas', d: 'Seguimientos por hacer.', f: d => { const n = d.resumen?.pendientes; return [iniN(n), n ? 'por hacer' : 'nada pendiente']; }},
+  ganadas: {ir: {mod: 'oportunidades', pestana: 'won', ayuda: 'Abrir las ventas ganadas'}, t: 'Ventas ganadas del mes', ic: 'coins', fuente: 'won', d: 'Oportunidades ganadas este mes y su valor.', f: d => [iniN(d.totals?.count), `${usd(d.totals?.sum || 0)} en total`]},
 };
 const INI_DEFECTO = ['sinleer', 'espera', 'opp'];
-const iniCifras = ids => ids.length ? ids.map(id => `<div class="inicio-resumen-c" data-ir="${id}"><span class="inicio-resumen-l">${esc(INI_TARJETAS[id].t)}</span><strong class="inicio-resumen-v"><span class="sk w40"></span></strong><span class="inicio-resumen-d"><span class="sk w60"></span></span></div>`).join('') : '<p class="inicio-resumen-x">No elegiste cifras. Usa «Elegir cifras» para agregar alguna.</p>';
+/* 2.8.16 · cada cifra lleva a su módulo (con el filtro puesto cuando el módulo lo admite), si la persona puede abrirlo. */
+const iniDestino = id => { const r = INI_TARJETAS[id]?.ir; return r && MODS[r.mod] && moduleAllowed(r.mod) ? r : null; };
+const iniCifras = ids => ids.length ? ids.map(id => { const r = iniDestino(id), dentro = `<span class="inicio-resumen-l">${esc(INI_TARJETAS[id].t)}${r ? icon('chevR') : ''}</span><strong class="inicio-resumen-v"><span class="sk w40"></span></strong><span class="inicio-resumen-d"><span class="sk w60"></span></span>`;
+  return r ? `<a class="inicio-resumen-c is-link" data-ir="${id}" data-ir-go="${id}" href="${href(MODS[r.mod].path)}" title="${esc(r.ayuda)}" aria-label="${esc(INI_TARJETAS[id].t)}: ${esc(r.ayuda)}">${dentro}</a>` : `<div class="inicio-resumen-c" data-ir="${id}">${dentro}</div>`; }).join('') : '<p class="inicio-resumen-x">No elegiste cifras. Usa «Elegir cifras» para agregar alguna.</p>';
 /* Catálogo de tarjetas de Ventas registradas: cada una se calcula con las ventas del mes que ya están en pantalla. */
 const vgSuma = (items, fn) => items.reduce((o, v) => { const n = Number(fn(v)) || 0; if (n) o[v.moneda || 'USD'] = (o[v.moneda || 'USD'] || 0) + n; return o; }, {});
 const vgTop = (items, k) => { const m = new Map(); items.forEach(v => { const n = (typeof k === 'function' ? k(v) : v[k]) || ''; if (n) m.set(n, (m.get(n) || 0) + 1); }); return [...m.entries()].sort((a, b) => b[1] - a[1])[0] || null; };
@@ -7969,6 +7972,19 @@ async function kpiInicio(root) {
 async function inicioResumen(root) {
   const box = root?.querySelector('.inicio-resumen'); if (!box || !ws?.current()) return;
   const epoch = NAV_EPOCH;
+  box.addEventListener('click', e => {
+    const a = e.target.closest('[data-ir-go]'); if (!a || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    const r = iniDestino(a.dataset.irGo); if (!r) return; e.preventDefault();
+    if (ws) { if (r.filtro) ws.pendingFilter = r.filtro; if (r.pestana) ws.pendingOppTab = r.pestana; }
+    go(MODS[r.mod].path);
+    // La bandeja se dibuja dos veces al entrar (cargando y con datos): el filtro se vuelve a poner cuando ya está lista.
+    if (r.filtro) { const fin = Date.now() + 6000; const poner = () => {
+      if (R?.mod !== r.mod || Date.now() > fin) return;
+      const btn = document.querySelector(`#view [data-live-filter="${r.filtro}"]`), act = document.querySelector('#view [data-live-filter][aria-pressed="true"]');
+      if (btn && act?.dataset.liveFilter === 'all') btn.click();
+      setTimeout(poner, 300);
+    }; setTimeout(poner, 300); }
+  });
   box.querySelector('[data-ir-editar]')?.addEventListener('click', () => tarjEditar('inicio', INI_TARJETAS, INI_DEFECTO, 'Resumen de hoy', () => { if (root.isConnected) { box.querySelector('.inicio-resumen-g').innerHTML = iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO)); inicioResumenLlenar(box, epoch); } }));
   if (!TARJ.inicio?.cargado) { await tarjCargar('inicio'); if (epoch !== NAV_EPOCH || !box.isConnected) return; box.querySelector('.inicio-resumen-g').innerHTML = iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO)); }
   inicioResumenLlenar(box, epoch);

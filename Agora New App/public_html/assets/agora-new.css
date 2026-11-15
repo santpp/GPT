@@ -417,3 +417,12 @@ table.t-fichas tr > td.empty .btn{margin-top:14px}
 .vt-leyenda span{display:inline-flex;align-items:center;gap:6px}.vt-leyenda small{margin-left:auto;font-size:12px}
 @media (max-width:600px){.vt-cmp{grid-template-columns:minmax(0,1fr)}.vt-cmp>div+div{padding-left:0;border-left:0;border-top:1px solid var(--line)}.vt-cmp>div{padding:10px 0}.vt-leyenda small{margin-left:0;width:100%}}
 @media (max-width:600px){.vt-ax{font-size:19px}.vt-meta-t{font-size:19px}.vt-pt{stroke-width:3}}
+
+/* 2.8.16 · Resumen de hoy: cada cifra lleva a su módulo */
+a.inicio-resumen-c{color:inherit;text-decoration:none;transition:background .15s}
+a.inicio-resumen-c:hover{background:var(--fill-3,#f3f4f6)}
+a.inicio-resumen-c:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+a.inicio-resumen-c .inicio-resumen-l{display:inline-flex;align-items:center;gap:4px}
+a.inicio-resumen-c .inicio-resumen-l .ic{width:14px;height:14px;opacity:.45;transition:transform .15s,opacity .15s}
+a.inicio-resumen-c:hover .inicio-resumen-l .ic{opacity:.9;transform:translateX(2px)}
+@media (max-width:600px){a.inicio-resumen-c{border-radius:10px}}

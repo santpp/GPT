@@ -1,5 +1,8 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.16:**
+- **Resumen de hoy (Inicio): cada cifra lleva a su detalle.** Sin leer → Bandeja con «No leídas»; Esperando respuesta y Fuera de tiempo → Bandeja con «Sin respuesta»; Conversaciones → Bandeja; Oportunidades abiertas → Oportunidades; Ventas ganadas del mes → Oportunidades, pestaña «Ganadas»; Contactos → Contactos; Tareas pendientes → Tareas; Leads de hoy, Conversaciones del día y Tiempo de respuesta → Tablero comercial (abre en «Hoy», con fuentes, asesores y tiempos). Si la persona no tiene permiso para el módulo, la cifra no es un enlace.
+
 **Novedades 2.8.15:**
 - **Las ventas cargadas por Excel ya tienen su plan de cobros**, sin editarlas una por una. Decisión: las cuotas con fecha anterior a hoy quedan **pagadas** (las ventas venían «al día»); las que vienen, **pendientes**.
   - Las que ya están: reciben el plan solas la primera vez que se leen las ventas (una sola vez; no se vuelven a tocar).
