@@ -52,8 +52,35 @@ final class Ventas {
  private function todas():array{
   $args=[$this->auth->tenant];$sql="SELECT uid,data,version FROM agora_records WHERE tenant_id=? AND kind='venta'";
   if($this->auth->assignedOnly()){$sql.=' AND owner_id=?';$args[]=$this->auth->user['id'];}
-  $out=[];foreach($this->db->all($sql.' ORDER BY seq DESC LIMIT 3000',$args) as $r){$d=json_decode($r['data'],true);if(!is_array($d))continue;$d['id']=$r['uid'];$d['version']=(int)$r['version'];$d['estado']=self::estadoDe($d);$out[]=$d;}
+  $out=[];foreach($this->db->all($sql.' ORDER BY seq DESC LIMIT 3000',$args) as $r){
+   $d=json_decode($r['data'],true);if(!is_array($d))continue;
+   // 2.8.15: una venta importada por Excel sin plan de cobros recibe el suyo una sola vez (cuotas ya pasadas = pagadas).
+   if(!array_key_exists('plan',$d)){
+    $d=self::planImportada($d,gmdate('Y-m-d'));unset($d['version']);
+    $this->db->run("UPDATE agora_records SET data=?,status=?,version=version+1,updated_at=UTC_TIMESTAMP() WHERE tenant_id=? AND kind='venta' AND uid=? AND version=?",[DB::json($d),$d['estado'],$this->auth->tenant,$r['uid'],(int)$r['version']]);
+    $r['version']=(int)$r['version']+1;
+   }
+   $d['id']=$r['uid'];$d['version']=(int)$r['version'];$d['estado']=self::estadoDe($d);$out[]=$d;}
   return $out;
+ }
+ /**
+  * 2.8.15 · Plan de cobros de una venta que llegó por Excel (Migración), con la misma regla que una venta registrada.
+  * Decisión del usuario: las cuotas con fecha anterior a hoy se dan por pagadas (las ventas venían «al día»).
+  */
+ public static function planImportada(array $d,string $hoy):array{
+  $cobro=in_array($d['cobro']??'',self::COBROS,true)?$d['cobro']:'unico';
+  $monto=is_numeric($d['monto']??null)?round((float)$d['monto'],2):0.0;
+  $fv=fn($x)=>is_string($x)&&preg_match('/^\d{4}-\d{2}-\d{2}$/D',$x)?$x:null;
+  $inicio=$fv($d['fechaInicio']??null)??$fv($d['fecha']??null)??$hoy;
+  $frec=in_array($d['frecuencia']??'',self::FRECUENCIAS,true)?$d['frecuencia']:null;
+  $q=is_numeric($d['cuotas']??null)&&(int)$d['cuotas']>0?(int)$d['cuotas']:null;
+  if($cobro==='recurrente'){$frec??='mensual';$cuotas=$q;}elseif($cobro==='unico'){$cuotas=$q??1;if($cuotas>1)$frec??='mensual';}else{$cuotas=1;$frec=null;}
+  $plan=$monto>0?self::plan($cobro,$monto,(string)($frec??'mensual'),$cobro==='recurrente'?($cuotas??self::SIN_FIN):$cuotas,$inicio,null):[];
+  foreach($plan as &$c)if($c['fecha']<$hoy)$c=['estado'=>'pagado','pagadoEn'=>$c['fecha'].'T12:00:00Z','pagadoPor'=>'Importación (venía al día)']+$c;unset($c);
+  $d['cobro']=$cobro;$d['monto']=$monto;$d['frecuencia']=$frec;$d['cuotas']=$cuotas;$d['fechaInicio']=$inicio;$d['moneda']=$d['moneda']??'USD';
+  $d['plan']=$plan;$d['total']=round(array_sum(array_column($plan,'monto')),2);$d['sinFin']=$cobro==='recurrente'&&$cuotas===null;$d['planOrigen']='importacion';
+  $d['estado']=self::estadoDe($d);
+  return $d;
  }
  public function listar():array{
   $mes=isset($_GET['mes'])&&$_GET['mes']!==''?Http::period($_GET['mes']):null;
@@ -156,7 +183,7 @@ final class Ventas {
    $plan=$v['plan'];foreach($plan as &$c)if(isset($pagados[$c['n']]))$c=array_replace($c,['estado'=>'pagado','pagadoEn'=>$pagados[$c['n']]['pagadoEn']??null,'pagadoPor'=>$pagados[$c['n']]['pagadoPor']??null]);unset($c);
    $venta['plan']=$plan;$venta['total']=$v['total'];$venta['sinFin']=$v['sinFin'];
    $venta['editada']=gmdate('c');$venta['editadaPor']=$this->auth->user['name']??'';$venta['estado']=self::estadoDe($venta);
-   $this->records->save('venta',$id,$venta,($venta['cliente']['nombre']??'').' · '.$venta['producto'],$venta['estado'],substr($venta['fecha'],0,7),$v['vendedorId']);
+   $this->records->save('venta',$id,$venta,($venta['cliente']['nombre']??'').' · '.$venta['producto'],$venta['estado'],substr($venta['fecha'],0,7),$v['vendedorId']??($row['owner_id']!==null?(int)$row['owner_id']:null));
    // La oportunidad y el contacto siguen a la venta: no puede quedar un dato distinto en cada módulo.
    $opId=(string)($venta['oportunidadId']??'');
    if($opId!==''){try{$opRow=$this->records->get('opportunity',$opId,true);$this->actualizarOportunidad($opRow,$this->records->payload($opRow),$venta,$v['vendedorId']);}catch(\Agora\Core\HttpError $e){if($e->getCode()!==404)throw $e;}}
@@ -251,8 +278,9 @@ final class Ventas {
   if($fechaVenta>gmdate('Y-m-d',strtotime('+1 day')))Http::fail('La fecha de la venta no puede ser futura.');
   $dia=$b['diaCobro']??null;$diaCobro=($dia===null||$dia==='')?null:Http::integer($dia,1,28);
   // Vendedor: por defecto el dueño de la oportunidad; cambiarlo requiere supervisar.
-  $vid=isset($b['vendedorId'])&&$b['vendedorId']!==''&&$b['vendedorId']!==null?Http::integer($b['vendedorId'],1,PHP_INT_MAX):$ownerActual;
-  if($vid!==$ownerActual&&!$this->administra())Http::fail('Solo supervisión o administración puede cambiar el vendedor.',403);
+  // 2.8.15: una venta importada con el vendedor escrito lo conserva si no se elige otro (no se toma a quien la importó).
+  $vid=isset($b['vendedorId'])&&$b['vendedorId']!==''&&$b['vendedorId']!==null?Http::integer($b['vendedorId'],1,PHP_INT_MAX):($antes&&empty($antes['vendedorId'])?0:$ownerActual);
+  if($vid!==$ownerActual&&$vid!==0&&!$this->administra())Http::fail('Solo supervisión o administración puede cambiar el vendedor.',403);
   // 2.8.14: venta importada sin usuario vendedor: se conserva el nombre tal como vino.
   $vendedorTexto=null;
   if($vid===0&&$antes){$vendedorTexto=mb_substr(trim((string)($b['vendedor']??$antes['vendedor']??'')),0,120);}

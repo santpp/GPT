@@ -400,7 +400,9 @@ final class Migracion {
    if(is_array($old['cliente']??null)&&is_string($data['cliente']??null))$data['cliente']=['nombre'=>$data['cliente']]+$old['cliente'];
    elseif(is_string($data['cliente']??null)&&$data['cliente']!=='')$data['cliente']=['nombre'=>$data['cliente'],'documento'=>(string)($data['documento']??''),'correo'=>(string)($data['correo']??''),'telefono'=>(string)($data['telefono']??''),'direccion'=>'','empresa'=>''];
    foreach(['fecha','cliente','monto'] as $k)if(!isset($data[$k])||$data[$k]===''){$falla($titulo[$k]??$k,'Es obligatorio.');return;}
-   $label=trim(($data['cliente']['nombre']??'').' '.($data['documento']??'').' '.($data['correo']??''));$status=(string)($data['cobro']??'');$period=substr((string)$data['fecha'],0,7);
+   // 2.8.15: la venta importada nace con su plan de cobros (cuotas ya pasadas = pagadas); al actualizar, se rehace solo si no tenía.
+   if(!array_key_exists('plan',$data)||!$old)$data=\Agora\Controllers\Ventas::planImportada($data,gmdate('Y-m-d'));
+   $label=trim(($data['cliente']['nombre']??'').' '.($data['documento']??'').' '.($data['correo']??''));$status=(string)($data['estado']??$data['cobro']??'');$period=substr((string)$data['fecha'],0,7);
   }
   if($cf)$data['customFields']=self::mezclarCf($data['customFields']??null,$cf);
   $uid??=bin2hex(random_bytes(12));$data['id']=$uid;

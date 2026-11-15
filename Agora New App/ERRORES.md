@@ -47,6 +47,8 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 44 | Facturación vacía («todavía no tiene reportes») en ASOCIM TESTS. | Solo leía el reporte mensual. | 2.8.11: sin reporte se arma con el plan de cobros de las ventas registradas. | Arreglado |
 | 45 | Catálogo, Tendencias, Calidad de datos y Configuración mensual decían «todavía no tiene reportes». | Solo leían el reporte mensual. | 2.8.12: versión sin reporte con ventas registradas, catálogo y configuración del mes. | Arreglado |
 | 46 | «Editar venta · No se pudo abrir el formulario · Falta la oportunidad» en ventas de ASOCIM TESTS. | Las 71 ventas entraron por Excel (Migración): sin oportunidad, con producto y vendedor escritos y sin plan de cobros; el formulario exigía oportunidad, producto del catálogo y vendedor usuario. | 2.8.14: se editan sin oportunidad, con producto y vendedor escritos; al guardar se arma el plan de cobros. | Arreglado |
+| 47 | Ventas importadas por Excel con «Cobrado» y «Por cobrar» en US$ 0 y Facturación vacía. | La importación no armaba el plan de cobros. | 2.8.15: plan automático (pasado = pagado, decisión del usuario), para las existentes y las nuevas. | Arreglado |
+| 48 | Al editar una venta importada, el vendedor cambiaba a quien la importó. | La venta queda a nombre de quien importa y el formulario tomaba ese usuario como vendedor. | 2.8.15: se conserva el vendedor escrito si no se elige otro. Lo encontró la prueba nueva. | Arreglado |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 
@@ -61,13 +63,13 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | N.º | Qué falta | Por qué importa |
 |---|---|---|
 | 11 | Probar las escrituras con la cuenta real: enviar un mensaje, asignar una conversación, editar un contacto, mover y crear una oportunidad, marcar ganada, crear, corregir y completar una tarea, crear un contacto nuevo, abrir Redes y anuncios y ver sus cifras, y ver las campañas de Meta del mes. | Las atiende el mismo código de Ágora Mobile 1.10.14, pero en esta app solo se probaron contra una cuenta simulada; desde el entorno de desarrollo no hay salida a la cuenta real. |
-| 12 | Confirmar el error 2 en tests después de subir la 2.8.14. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
+| 12 | Confirmar el error 2 en tests después de subir la 2.8.15. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
 | 13 | Cabeceras de seguridad en OpenLiteSpeed. | OpenLiteSpeed no aplica las líneas `Header` del `.htaccess`; van en el vHost (paso 9 de la guía). |
 | 14 | (Resuelto en 2.5.0) La bandeja usaba el código de una versión anterior de Ágora Mobile. | Bandeja, Contactos y Embudos ya llevan lo de la 1.10.14. |
 
 ## Cómo comprobar la versión instalada
 
-- `https://TU-DOMINIO/api/health` debe decir `"version":"2.8.14"`.
+- `https://TU-DOMINIO/api/health` debe decir `"version":"2.8.15"`.
 - `https://TU-DOMINIO/version.json` debe decir lo mismo.
 - Si una pantalla se ve rara tras actualizar: recarga una vez. Si sigue, en Chrome toca el icono a la izquierda de la dirección → Configuración del sitio → Borrar datos, y vuelve a entrar.
 

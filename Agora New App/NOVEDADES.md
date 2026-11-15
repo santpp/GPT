@@ -1,5 +1,13 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.15:**
+- **Las ventas cargadas por Excel ya tienen su plan de cobros**, sin editarlas una por una. Decisión: las cuotas con fecha anterior a hoy quedan **pagadas** (las ventas venían «al día»); las que vienen, **pendientes**.
+  - Las que ya están: reciben el plan solas la primera vez que se leen las ventas (una sola vez; no se vuelven a tocar).
+  - Las que se importen desde ahora: nacen con su plan.
+  - Con eso cuentan en Cobrado, Por cobrar, Facturación, Tendencias y Gestión Comercial.
+- **Arreglado:** al editar una venta importada, el vendedor escrito («como vino del Excel») se cambiaba sin avisar por la persona que hizo la importación. Ahora se conserva salvo que elijas otro.
+- Prueba nueva: `tests/ventas-importadas.py` (9).
+
 **Novedades 2.8.14:**
 - **Arreglado: «Editar venta» decía «Falta la oportunidad»** en las ventas cargadas por Excel (Migración de datos). Ahora se editan sin oportunidad:
   - El producto queda **escrito tal como vino** (por ejemplo «CIPRO»), con la opción de enlazarlo a uno del catálogo si existe.
