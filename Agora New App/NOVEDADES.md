@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.8:**
+- **Gestión Comercial ya muestra datos sin reporte mensual.** Antes solo leía el reporte que se importa en Ajustes; sin él decía «Esta subcuenta todavía no tiene reportes», aunque hubiera ventas registradas. Ahora, si no hay reporte, arma el mes con las **ventas registradas**: tarjetas a elección (las mismas 14 de Ventas, con su propia elección), **por vendedor** (ventas, vendido, recurrente al mes y ticket promedio), **por forma de cobro** y **por producto o servicio**. Avisa si hay oportunidades ganadas sin su venta completada.
+- Con un reporte cargado, Gestión Comercial sigue mostrando el reporte.
+
 **Novedades 2.8.7:**
 - **Arreglado: «Acceso restringido» para los dueños de Ágora** al abrir un módulo del reporte (por ejemplo, Gestión Comercial) en una subcuenta sin reporte cargado. La 2.8.6 los mostraba en el menú, pero al abrirlos la pantalla volvía a mirar solo el permiso del rol. Ahora todo el sistema usa la misma regla (también el buscador, los atajos y la pestaña Catálogo).
 - **«Resumen de hoy» del Inicio: «Elegir cifras».** Cada persona elige qué cifras ver y en qué orden, entre 11: sin leer, esperando respuesta, oportunidades abiertas, conversaciones, contactos, leads de hoy, conversaciones del día, tiempo de respuesta, fuera de tiempo, tareas pendientes y ventas ganadas del mes. La administración puede fijar la vista del equipo. Solo se le pide a la cuenta lo que se va a mostrar.

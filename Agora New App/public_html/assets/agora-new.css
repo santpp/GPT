@@ -355,3 +355,17 @@ table.t-fichas tr > td.empty .btn{margin-top:14px}
   .inicio-resumen-c:not(:nth-child(3n+1)){border-left:1px solid var(--line)}
   .inicio-resumen-c:nth-child(n+4){border-top:1px solid var(--line)}
 }
+
+/* 2.8.8 · Gestión Comercial con las ventas registradas */
+.gc-aviso{display:flex;gap:10px;align-items:flex-start;margin:0 0 14px;padding:12px 14px;border-radius:14px;background:var(--fill-3,#f1f2f5);font-size:13.5px;line-height:1.5;color:var(--ink-2,var(--muted))}
+.gc-aviso .ic{flex:none;width:18px;height:18px;margin-top:1px;color:var(--brand)}
+.gc-aviso.is-warn{background:color-mix(in srgb,var(--warn,#f59e0b) 12%,transparent)}
+.gc-aviso.is-warn .ic{color:var(--warn,#b45309)}
+.gc-cols{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;margin-top:16px}
+@media (max-width:900px){.gc-cols{grid-template-columns:minmax(0,1fr)}}
+.gc-barra{display:block;height:4px;margin-top:6px;border-radius:4px;background:var(--fill-3,#eef0f3);max-width:220px}
+.gc-barra i{display:block;height:100%;border-radius:4px;background:var(--brand)}
+.gc-formas{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.gc-formas li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:12px 14px;border:1px solid var(--line);border-radius:12px}
+.gc-formas li b{font:700 20px/1.1 var(--font-display);text-align:right}
+.gc-formas li small{grid-column:1/-1;color:var(--muted);font-size:12.5px}
