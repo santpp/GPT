@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.13:**
+- **Tablero comercial: sección «Ventas del mes y del año»**, con las dos gráficas del reporte de Gestión Comercial:
+  - **Ventas del mes:** lo vendido en el mes, la diferencia con el mismo mes del año anterior, cuánto falta para la meta (de Configuración mensual) y la línea de los últimos 6 meses con el año anterior punteado y la meta.
+  - **Tendencia del año:** el año actual contra el anterior mes a mes, meses por encima del año anterior, mejor mes, mes más bajo y promedio mensual.
+- Cada mes sale del **reporte mensual** si lo trae; si no, de **lo vendido** en las ventas registradas. Al pie se indica qué meses salen de cada fuente.
+- Solo la ve quien ve cifras del equipo (administración, supervisión y dueños). Se puede ocultar o mover en Personalizar → Secciones del Tablero comercial.
+
 **Novedades 2.8.12:** ya no queda ningún módulo con «Esta subcuenta todavía no tiene reportes».
 - **Tendencias sin reporte:** las ventas registradas de los últimos 12 meses: gráfico de lo vendido por mes y tabla mes a mes (ventas, recurrentes, vendido, a cobrar y cobrado). Tarjetas a elección: vendido y ventas frente al mes anterior, promedio de 12 meses, mejor mes y cobrado.
 - **Calidad de datos sin reporte:** 9 revisiones sobre las ventas registradas y el catálogo (ganadas sin venta completada, cobros vencidos hace más de 30 días, ventas sin plan de cobros, montos en cero, ventas sin vendedor, un documento con nombres distintos, clientes sin documento o sin correo ni teléfono, productos sin precio), con cuántos casos y ejemplos. Primero lo que hay que corregir.

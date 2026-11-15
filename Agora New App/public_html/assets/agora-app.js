@@ -3855,6 +3855,8 @@ return {
   catalogoFilas: () => ((D.catalog && D.catalog.rows) || []).map(r => ({codigo: String(r[0] || ''), nombre: String(r[1] || ''), mensual: typeof r[2] === 'number' ? r[2] : null, duracion: String(r[3] || '')})),
   hayReporte: ym => !!REPS[String(ym)],
   acomodar() { placeThumbs(document); },
+  /* 2.8.13: ventas por mes de un año, según el histórico del reporte (null donde no hay dato). */
+  ventasDelAnio: y => MES.map((_, i) => { const v = hv(y, i).v; return typeof v === 'number' ? v / 100 : null; }), // el reporte guarda céntimos
   mesLargo: () => `${MES[P].toLowerCase()} de ${DY}`,
   claveConfig: () => cfgKey(P),
   /* El mes lo manda la barra superior: se acomoda sin repintar (el panel ya repinta). */
@@ -4056,7 +4058,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.8.12').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.8.13').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -4946,6 +4948,7 @@ const arpTile = (texto, cls) => `<span class="${cls}" aria-hidden="true">${icon(
 /** Pone el esqueleto de la agencia sobre lo que acaba de pintar un módulo ARP. Es idempotente. */
 function arpEsqueleto(root) {
   if (!root || !root.classList?.contains('ag')) return;
+  vtInyectar(root);
   arpPersonalizar(root);
   // Cabeceras de sección: icono + título + ayuda (igual que secH en la agencia).
   root.querySelectorAll('.t-sec-row:not([data-arp])').forEach(row => {
@@ -5531,6 +5534,7 @@ if (V.centro) V.centro.mounted = root => { tableroLlenar(root); };
 /* ---------- ARP Comercial a la medida ---------- */
 const ARP_SECCIONES = [
   {id: 'dia', t: 'Tu día', re: /^tu d[ií]a/i, cifras: ['Leads de hoy', 'Conversaciones', 'Sin leer', 'Esperando respuesta', 'Contactos', 'Oportunidades abiertas']},
+  {id: 'ventasAnio', t: 'Ventas del mes y del año', re: /^ventas del mes y del a/i, cifras: ['Ventas del mes', 'Tendencia del año']},
   {id: 'operacion', t: 'Operación del día', re: /^operaci[oó]n del d[ií]a/i, cifras: ['Tiempo de respuesta promedio (SLA)', 'Sin leer ahora', 'Leads del día', 'Primera respuesta más lenta', 'Conversaciones atendidas', 'Sin leer por asesor', 'Fuente de los leads', 'Leads por ejecutivo']},
   {id: 'anuncios', t: 'Inversión en anuncios', re: /^inversi[oó]n en anuncios/i, cifras: ['Invertido en el mes', 'Impresiones', 'Coste por conversión', 'Coste por lead', 'Retorno por cada 100', 'Campañas por gasto']},
   {id: 'embudo', t: 'Embudo por etapa', re: /^embudo por etapa/i, cifras: []},
@@ -7242,6 +7246,82 @@ function ctVivoHtml() {
   const filas = prods.map(p => { const l = de(p); return {p, l, act: l.filter(activa).length, mensual: l.filter(v => v.cobro === 'recurrente' && activa(v)).reduce((t, v) => t + (Number(v.monto) || 0) * (FREC_MES[v.frecuencia] || 1), 0)}; }).sort((a, b) => b.l.length - a.l.length);
   return `<section class="panel pf-sec">${secH('receipt', 'Catálogo con lo inscrito', 'Cada producto o servicio con sus ventas registradas: cuántas en total, cuántas siguen activas y lo que suman al mes.')}
     <div class="tw"><table data-xt="vivo"><thead><tr><th>Producto o servicio</th><th>Rubro</th><th>Cobro</th><th class="n">Precio</th><th class="n">Ventas</th><th class="n">Activas</th><th class="n">Recurrente al mes</th></tr></thead><tbody>${filas.map(x => `<tr><td class="wrap"><b>${esc(x.p.nombre)}</b>${x.p.activo === false ? ' <span class="sc sc-gray">Pausado</span>' : ''}</td><td>${esc(rubro(x.p.rubroId))}</td><td><span class="sc ${COBRO_P[x.p.cobro]?.[1] || 'sc-gray'}">${esc(COBRO_P[x.p.cobro]?.[0] || '—')}</span></td><td class="n">${esc(precioTexto(x.p))}</td><td class="n">${int(x.l.length)}</td><td class="n">${int(x.act)}</td><td class="n">${x.mensual ? esc(usd(x.mensual)) : '—'}</td></tr>`).join('')}</tbody></table></div></section>`;
+}
+/* ---------- 2.8.13 · Tablero comercial: «Ventas del mes y del año» ----------
+   Cada mes sale del reporte mensual si lo trae; si no, de lo vendido en las ventas registradas. La meta, de Configuración mensual.
+   Solo para quien ve cifras del equipo. */
+const VT = {carga: null, t: 0, datos: null};
+const vtPuede = () => esSuperAdmin() || (puede('equipo.metricas') && puede('finanzas'));
+async function vtCargar() {
+  if (VT.datos && Date.now() - VT.t < 60000) return VT.datos;
+  if (VT.carga) return VT.carga;
+  VT.carga = (async () => {
+    const ym = mesActualYM(), y = Number(ym.slice(0, 4));
+    await Promise.all([cargarTablero().catch(() => null), faCargar(), mesCfgCargar(ym, true)]);
+    const rep = TB.estado === 'listo' && TB.api?.ventasDelAnio ? {[y]: TB.api.ventasDelAnio(y), [y - 1]: TB.api.ventasDelAnio(y - 1)} : {};
+    const reg = {}; (FA.datos?.items || []).forEach(v => { const k = String(v.fecha).slice(0, 7); reg[k] = (reg[k] || 0) + (Number(v.monto) || 0); });
+    const fuente = {reporte: [], registradas: []};
+    const valor = (yy, m) => { const k = `${yy}-${String(m + 1).padStart(2, '0')}`; if (k > ym) return null; const r = rep[yy]?.[m]; if (r != null) { fuente.reporte.push(k); return r; } if (reg[k] != null) { fuente.registradas.push(k); return reg[k]; } return null; };
+    const anio = yy => Array.from({length: 12}, (_, m) => valor(yy, m));
+    VT.datos = {ym, y, act: anio(y), ant: anio(y - 1), meta: mesCfg('teamGoal'), fuente}; VT.t = Date.now();
+    return VT.datos;
+  })().finally(() => { VT.carga = null; });
+  return VT.carga;
+}
+/** Gráfica de líneas: año actual (línea con área), año anterior (punteada) y meta (raya). */
+function vtGrafica({labels, values, prev, meta, alto = 260}) {
+  const W = 620, H = alto, L = 58, R = 18, T = 22, B = 36, iw = W - L - R, ih = H - T - B;
+  const todos = [...values, ...prev, meta].filter(v => typeof v === 'number');
+  if (!todos.length) return '<p class="empty"><b>Sin datos para graficar</b>Aparecen al registrar ventas o cargar el reporte.</p>';
+  const tope = Math.max(...todos) * 1.15 || 1, paso = Math.pow(10, Math.floor(Math.log10(tope))) * (tope / Math.pow(10, Math.floor(Math.log10(tope))) > 5 ? 2 : tope / Math.pow(10, Math.floor(Math.log10(tope))) > 2 ? 1 : .5), max = Math.ceil(tope / paso) * paso;
+  const x = i => L + (labels.length === 1 ? iw / 2 : i * iw / (labels.length - 1)), y = v => T + ih - (v / max) * ih;
+  const k = v => v >= 1000 ? `${new Intl.NumberFormat('es-VE', {maximumFractionDigits: 1}).format(v / 1000)} mil` : NI.format(Math.round(v));
+  let g = '';
+  for (let v = 0; v <= max + 1e-9; v += paso) g += `<line class="vt-grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text class="vt-ax" x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${k(v)}</text>`;
+  labels.forEach((l, i) => { g += `<text class="vt-ax" x="${x(i)}" y="${H - 10}" text-anchor="middle">${esc(l)}</text>`; });
+  const tramo = arr => { const out = []; let cur = []; arr.forEach((v, i) => { if (typeof v === 'number') cur.push([x(i), y(v)]); else if (cur.length) { out.push(cur); cur = []; } }); if (cur.length) out.push(cur); return out; };
+  tramo(prev).forEach(t => { g += `<polyline class="vt-prev" points="${t.map(p => p.join(',')).join(' ')}"/>`; });
+  tramo(values).forEach(t => { if (t.length > 1) g += `<polygon class="vt-area" points="${t[0][0]},${y(0)} ${t.map(p => p.join(',')).join(' ')} ${t.at(-1)[0]},${y(0)}"/>`; g += `<polyline class="vt-line" points="${t.map(p => p.join(',')).join(' ')}"/>`; });
+  if (typeof meta === 'number' && meta > 0) g += `<line class="vt-meta" x1="${L}" x2="${W - R}" y1="${y(meta)}" y2="${y(meta)}"/><text class="vt-meta-t" x="${L + 6}" y="${y(meta) - 7}">Meta del mes</text>`;
+  const ult = values.reduce((n, v, i) => typeof v === 'number' ? i : n, -1);
+  values.forEach((v, i) => { if (typeof v === 'number') g += `<circle class="vt-pt ${i === ult ? 'is-last' : ''}" cx="${x(i)}" cy="${y(v)}" r="${i === ult ? 6 : 4.5}"><title>${esc(labels[i])}: ${esc(usd(v))}${typeof prev[i] === 'number' ? ` · año anterior ${esc(usd(prev[i]))}` : ''}</title></circle>`; });
+  return `<svg class="vt-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(labels.map((l, i) => `${l}: ${typeof values[i] === 'number' ? usd(values[i]) : 'sin dato'}`).join(', '))}">${g}</svg>`;
+}
+const vtMesCorto = m => mesNombre(`2000-${String(m + 1).padStart(2, '0')}`).slice(0, 3);
+function vtFuenteTxt(f) {
+  const et = k => `${vtMesCorto(Number(k.slice(5, 7)) - 1).toLowerCase()} ${k.slice(2, 4)}`, abs = k => Number(k.slice(0, 4)) * 12 + Number(k.slice(5, 7));
+  const rangos = l => { const o = [...new Set(l)].sort(), out = []; o.forEach(k => { const r = out.at(-1); if (r && abs(k) === abs(r[1]) + 1) r[1] = k; else out.push([k, k]); }); return out.map(([a, b]) => a === b ? et(a) : `${et(a)} a ${et(b)}`).join(', '); };
+  const p = [f.reporte.length ? `reporte mensual (${rangos(f.reporte)})` : '', f.registradas.length ? `ventas registradas (${rangos(f.registradas)})` : ''].filter(Boolean);
+  return p.length ? 'Fuente: ' + p.join(' y ') + '.' : '';
+}
+function vtHtml(d) {
+  const m = Number(d.ym.slice(5, 7)) - 1, mesL = mesNombre(d.ym).split(' ')[0].toLowerCase();
+  const v = d.act[m], va = d.ant[m], meta = d.meta;
+  const seis = Array.from({length: 6}, (_, i) => { const a = d.y * 12 + m - 5 + i, yy = Math.floor(a / 12), mm = a % 12; const arr = yy === d.y ? d.act : yy === d.y - 1 ? d.ant : []; return {l: vtMesCorto(mm), v: arr[mm] ?? null, p: yy === d.y ? d.ant[mm] ?? null : null}; });
+  const dif = typeof v === 'number' && typeof va === 'number' ? v - va : null, falta = typeof meta === 'number' && meta > 0 ? meta - (v || 0) : null;
+  const frase = [dif != null ? `<span class="${dif >= 0 ? 'up' : 'down'}">${dif >= 0 ? '+' : '−'}${esc(usd(Math.abs(dif)))}</span> respecto a ${mesL} de ${d.y - 1}.` : `Sin datos de ${mesL} de ${d.y - 1} para comparar.`, falta == null ? 'Sin meta cargada en Configuración mensual.' : falta > 0 ? `Faltan <b>${esc(usd(falta))}</b> para alcanzar la meta del mes.` : `Meta del mes cumplida por <b>${esc(usd(-falta))}</b>.`].join(' ');
+  const mesPanel = `<section class="panel vt-panel"><div class="panel-h"><div><h2 class="t-panel">Ventas del mes</h2><p>Lo vendido en ${mesL} frente al año anterior y a la meta.</p></div></div><div class="vt-main">
+    <div class="vt-txt"><p class="vt-label">Ventas de ${mesL} de ${d.y}</p><p class="vt-big">${typeof v === 'number' ? esc(usd(v)) : '—'}</p><p class="vt-sent">${frase}</p>
+      <dl class="vt-cmp"><div><dt><i class="vt-sw is-act"></i>${esc(mesNombre(d.ym))}</dt><dd class="vt-cmp-t">Ventas de cada mes</dd></div><div><dt><i class="vt-sw is-prev"></i>${esc(mesNombre(d.ym).replace(String(d.y), String(d.y - 1)))}</dt><dd>${typeof va === 'number' ? esc(usd(va)) : '—'}</dd></div><div><dt><i class="vt-sw is-meta"></i>Meta del mes</dt><dd>${typeof meta === 'number' && meta > 0 ? esc(usd(meta)) : '—'}</dd></div></dl></div>
+    <div class="vt-c">${vtGrafica({labels: seis.map(x => x.l), values: seis.map(x => x.v), prev: seis.map(x => x.p), meta})}</div></div></section>`;
+  const meses = d.act.slice(0, m + 1).map((x, i) => ({i, v: x, p: d.ant[i]})).filter(x => typeof x.v === 'number');
+  const comp = meses.filter(x => typeof x.p === 'number'), arriba = comp.filter(x => x.v > x.p).length;
+  const mejor = meses.reduce((a, x) => !a || x.v > a.v ? x : a, null), bajo = meses.reduce((a, x) => !a || x.v < a.v ? x : a, null);
+  const prom = meses.length ? meses.reduce((t, x) => t + x.v, 0) / meses.length : null;
+  const anioPanel = `<section class="panel vt-panel"><div class="panel-h"><div><h2 class="t-panel">Tendencia del año</h2><p>${d.y} mes a mes, frente a ${d.y - 1}.</p></div></div><div class="vt-main">
+    <div class="vt-txt">${comp.length ? `<p class="vt-label">Meses con ventas por encima de ${d.y - 1}</p><p class="vt-big">${int(arriba)} de ${int(comp.length)}</p>` : `<p class="vt-label">Meses con ventas en ${d.y}</p><p class="vt-big">${int(meses.length)}</p>`}
+      <p class="vt-sent">${mejor ? `El mejor mes fue <b>${esc(mesNombre(`${d.y}-${String(mejor.i + 1).padStart(2, '0')}`).split(' ')[0].toLowerCase())}</b>${bajo && bajo.i !== mejor.i ? ` y el más bajo, <b>${esc(mesNombre(`${d.y}-${String(bajo.i + 1).padStart(2, '0')}`).split(' ')[0].toLowerCase())}</b>` : ''}.` : 'Todavía no hay ventas este año.'}</p>
+      <dl class="vt-cmp"><div><dt>Mejor mes</dt><dd>${mejor ? esc(usd(mejor.v)) : '—'}</dd></div><div><dt>Mes más bajo</dt><dd>${bajo ? esc(usd(bajo.v)) : '—'}</dd></div><div><dt>Promedio mensual</dt><dd>${prom != null ? esc(usd(prom)) : '—'}</dd></div></dl></div>
+    <div class="vt-c">${vtGrafica({labels: Array.from({length: 12}, (_, i) => vtMesCorto(i)), values: d.act, prev: d.ant, meta: null})}<div class="vt-leyenda"><span><i class="vt-sw is-act"></i>${d.y}</span><span><i class="vt-sw is-prev"></i>${d.y - 1}</span><small>${esc(vtFuenteTxt(d.fuente))}</small></div></div></div></section>`;
+  return mesPanel + anioPanel;
+}
+function vtInyectar(root) {
+  if (R?.view !== 'ag_dashboard' || !vtPuede()) return;
+  const body = root.querySelector('#dashboard-body'); if (!body || body.querySelector('[data-vt]') || !body.querySelector('.t-sec-row, .t-sec')) return;
+  const sec = document.createElement('div'); sec.dataset.vt = '1'; sec.className = 'vt-sec';
+  sec.innerHTML = `<div class="t-sec-row"><div><h2 class="t-sec">Ventas del mes y del año</h2><p>Del reporte mensual cuando lo trae; si no, de las ventas registradas.</p></div></div><div class="vt-cuerpo"><section class="panel"><span class="sk w80"></span><span class="sk w60"></span></section></div>`;
+  body.append(sec);
+  vtCargar().then(d => { const c = sec.querySelector('.vt-cuerpo'); if (c && sec.isConnected) c.innerHTML = vtHtml(d); }).catch(() => { const c = sec.querySelector('.vt-cuerpo'); if (c) c.innerHTML = '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas</b>Vuelve a abrir el tablero en un momento.</p></section>'; });
 }
 var TB_VIVO = {
   configuracion: {need: () => Promise.all([vgCargar().catch(() => null)]).then(() => mesCfgCargar(null, true)), render: cfVivoHtml, montar: cfVivoMontar},

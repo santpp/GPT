@@ -391,3 +391,29 @@ table.t-fichas tr > td.empty .btn{margin-top:14px}
 @media (max-width:900px){.cf-campos{grid-template-columns:minmax(0,1fr)}}
 .cf-monto{display:flex;align-items:center;gap:8px}.cf-monto>span{font-weight:650;color:var(--muted)}.cf-monto input{flex:1;min-width:0}
 .fld-h{display:block;margin-top:6px;font-size:12.5px;line-height:1.45;color:var(--muted)}
+
+/* 2.8.13 · Tablero comercial: Ventas del mes y del año */
+.vt-cuerpo{display:grid;gap:16px}
+.vt-main{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;align-items:center}
+@media (max-width:900px){.vt-main{grid-template-columns:minmax(0,1fr)}}
+.vt-label{margin:0;color:var(--muted);font-weight:600}
+.vt-big{margin:6px 0 10px;font:800 clamp(30px,4.4vw,48px)/1.05 var(--font-display);letter-spacing:-.02em;color:var(--ink)}
+.vt-sent{margin:0 0 16px;font-size:14.5px;line-height:1.55;color:var(--ink-2,var(--muted))}
+.vt-sent .up{color:var(--ok,#16a34a);font-weight:650}.vt-sent .down{color:var(--bad,#dc2626);font-weight:650}
+.vt-cmp{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-top:1px solid var(--line)}
+.vt-cmp>div{padding:12px 12px 0 0}.vt-cmp>div+div{padding-left:12px;border-left:1px solid var(--line)}
+.vt-cmp dt{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}.vt-cmp dd{margin:4px 0 0;font-weight:700;font-size:16px}
+.vt-cmp-t{font-weight:500!important;font-size:13px!important;color:var(--muted)}
+.vt-sw{display:inline-block;width:20px;height:0;border-top:3px solid var(--brand)}
+.vt-sw.is-prev{border-top:2px dashed #9a9aa3}.vt-sw.is-meta{border-top:2px dashed var(--ink)}
+.vt-chart{width:100%;height:auto;display:block}
+.vt-grid{stroke:var(--line);stroke-dasharray:3 4}.vt-ax{font-size:11px;fill:var(--muted)}
+.vt-line{fill:none;stroke:var(--brand);stroke-width:2.5;stroke-linejoin:round}
+.vt-area{fill:color-mix(in srgb,var(--brand) 10%,transparent)}
+.vt-prev{fill:none;stroke:#9a9aa3;stroke-width:2;stroke-dasharray:5 5}
+.vt-meta{stroke:var(--ink);stroke-width:2;stroke-dasharray:6 5}.vt-meta-t{font-size:12px;font-weight:650;fill:var(--ink)}
+.vt-pt{fill:var(--surface,#fff);stroke:var(--brand);stroke-width:2.5}.vt-pt.is-last{fill:var(--brand)}
+.vt-leyenda{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;margin-top:6px;font-size:13px;color:var(--muted)}
+.vt-leyenda span{display:inline-flex;align-items:center;gap:6px}.vt-leyenda small{margin-left:auto;font-size:12px}
+@media (max-width:600px){.vt-cmp{grid-template-columns:minmax(0,1fr)}.vt-cmp>div+div{padding-left:0;border-left:0;border-top:1px solid var(--line)}.vt-cmp>div{padding:10px 0}.vt-leyenda small{margin-left:0;width:100%}}
+@media (max-width:600px){.vt-ax{font-size:19px}.vt-meta-t{font-size:19px}.vt-pt{stroke-width:3}}
