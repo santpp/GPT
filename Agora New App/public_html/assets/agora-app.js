@@ -2966,11 +2966,11 @@ var TB = {
    esconden los que ese reporte no trae (facturación, costos, calidad de datos). */
 function tableroHay(id) {
   if (!ME && !AGORA_ME) return false;
-  if (id === 'configuracion') return puede('ajustes.editar') && hayReporte();
   if (id === 'ventas') return puede('datos.consultar') && (tableroCan('ver.ventas') || tableroCan('ver.ventas.propias'));
   /* Los módulos del reporte mensual solo existen si la subcuenta tiene un reporte cargado y la persona ve cifras del equipo.
      2.8.9: Gestión Comercial, Equipo y Costos se arman sin reporte (ventas registradas y cuenta), así que se ofrecen igual. */
-  if (['resumen', 'equipo', 'costos', 'facturas'].includes(id)) return puede('equipo.metricas') && puede('finanzas');
+  if (['resumen', 'equipo', 'costos', 'facturas', 'tendencias', 'calidad', 'catalogo'].includes(id)) return puede('equipo.metricas') && puede('finanzas');
+  if (id === 'configuracion') return puede('ajustes.editar');
   return puede('equipo.metricas') && puede('finanzas') && hayReporte();
 }
 const enTablero = () => R && typeof R.view === 'string' && R.view.indexOf('tc_') === 0;
@@ -4056,7 +4056,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.8.11').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.8.12').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -5331,7 +5331,7 @@ function prodPestanas(actual) {
   const hayCat = MODS.catalogo && moduleAllowed('catalogo') && (esSuperAdmin() || !moduloOculto('catalogo'));
   if (!hayCat) return '';
   const t = (id, ico, txt, sub) => `<a class="prod-tab ${actual === id ? 'is-on' : ''}" href="${href(MODS[id].path)}" ${actual === id ? 'aria-current="page"' : ''}>${icon(ico)}<span><b>${esc(txt)}</b><small>${esc(sub)}</small></span></a>`;
-  return `<nav class="prod-tabs" aria-label="Productos y servicios">${t('productos', 'wallet', 'Productos y servicios', 'Rubros, precios y forma de cobro')}${t('catalogo', 'receipt', 'Catálogo', 'Programas del reporte mensual')}</nav>`;
+  return `<nav class="prod-tabs" aria-label="Productos y servicios">${t('productos', 'wallet', 'Productos y servicios', 'Rubros, precios y forma de cobro')}${t('catalogo', 'receipt', 'Catálogo', 'Programas y lo inscrito en cada uno')}</nav>`;
 }
 if (V.tc_catalogo) { const r0 = V.tc_catalogo.render; V.tc_catalogo.render = function () { return prodPestanas('catalogo') + r0.call(this); }; }
 function programasAProductos() {
@@ -6984,7 +6984,7 @@ const VG_TARJETAS = {
 const VG_TARJ_DEFECTO = ['cantidad', 'vendido', 'cobrado', 'porCobrar'];
 /* ---------- 2.8.8 · Gestión Comercial sin reporte mensual: el mes con las ventas registradas en Ágora ----------
    Con un reporte cargado se sigue viendo el reporte. Las tarjetas son las de Ventas registradas, con su propia elección (vista «gestion»). */
-const GC_DEFECTO = ['cantidad', 'vendido', 'mensual', 'ticket', 'cobrado', 'porCobrar'];
+const GC_DEFECTO = ['cantidad', 'vendido', 'meta', 'mensual', 'ticket', 'cobrado', 'porCobrar'];
 function gcVivoHtml() {
   const d = VG.datos, mes = mesNombre(VG.mes || PERIODO);
   const acts = `<button class="btn" type="button" data-gc-tarjetas>${icon('gear')}Editar tarjetas</button><a class="btn" href="${href(MODS.ventas?.path || '/ventas')}">${icon('receipt')}Ver las ventas</a>`;
@@ -7058,22 +7058,23 @@ async function eqVivoNeed() {
 }
 /* ---------- 2.8.9 · Costos sin reporte mensual: la inversión en Meta del mes frente a lo vendido ---------- */
 const coInv = () => CAMP.datos?.estado === 'ok' || CAMP.datos?.estado === 'totales' ? CAMP.datos.totales?.inversion ?? null : null;
+var coInvTotal = coInv;
 const coDiv = (a, b) => a != null && b ? a / b : null;
 const coVendido = () => { const o = vgSuma(VG.datos?.items || [], v => v.monto); return o.USD ?? Object.values(o)[0] ?? 0; };
 const CO_TARJETAS = {
-  inversion: {t: 'Inversión en Meta', ic: 'coins', d: 'Lo invertido en campañas de Facebook e Instagram en el mes.', f: () => { const i = coInv(); return ['', i == null ? '—' : esc(usd(i)), i == null ? 'La cuenta publicitaria no lo informó' : 'según la cuenta publicitaria']; }},
-  costoVenta: {t: 'Costo por venta', ic: 'receipt', d: 'Inversión en Meta dividida entre las ventas registradas del mes.', f: () => { const n = (VG.datos?.items || []).length, c = coDiv(coInv(), n); return ['', c == null ? '—' : esc(usd(c)), `${int(n)} ventas registradas`]; }},
-  costoGanada: {t: 'Costo por oportunidad ganada', ic: 'check', d: 'Inversión en Meta dividida entre las ganadas del mes en la cuenta.', f: () => { const n = EQ.won?.totals?.count || 0, c = coDiv(coInv(), n); return ['', c == null ? '—' : esc(usd(c)), `${int(n)} ${n === 1 ? 'ganada' : 'ganadas'} en la cuenta`]; }},
+  inversion: {t: 'Inversión en anuncios', ic: 'coins', d: 'Lo invertido en Meta en el mes, más lo cargado a mano en Configuración mensual.', f: () => { const i = coInv(); return ['', i == null ? '—' : esc(usd(i)), i == null ? 'La cuenta publicitaria no lo informó' : 'según la cuenta publicitaria']; }},
+  costoVenta: {t: 'Costo por venta', ic: 'receipt', d: 'Inversión en anuncios dividida entre las ventas registradas del mes.', f: () => { const n = (VG.datos?.items || []).length, c = coDiv(coInvTotal(), n); return ['', c == null ? '—' : esc(usd(c)), `${int(n)} ventas registradas`]; }},
+  costoGanada: {t: 'Costo por oportunidad ganada', ic: 'check', d: 'Inversión en anuncios dividida entre las ganadas del mes en la cuenta.', f: () => { if (!EQ.won) return ['', '—', 'La cuenta no informó las ganadas']; const n = EQ.won?.totals?.count || 0, c = coDiv(coInvTotal(), n); return ['', c == null ? '—' : esc(usd(c)), `${int(n)} ${n === 1 ? 'ganada' : 'ganadas'} en la cuenta`]; }},
   costoResultado: {t: 'Costo por resultado', ic: 'trend', d: 'Lo que informa Meta: inversión entre resultados (formularios, mensajes…).', f: () => { const t = CAMP.datos?.totales || {}; return ['', t.costoPorResultado == null ? '—' : esc(usd(t.costoPorResultado)), t.resultados == null ? 'Sin resultados informados' : `${int(t.resultados)} resultados`]; }},
-  retorno: {t: 'Retorno de la inversión', ic: 'spark', d: 'Cuánto se vendió por cada dólar invertido en Meta.', f: () => { const r = coDiv(coVendido(), coInv()); return [r != null && r >= 1 ? 'is-ok' : r != null ? 'is-warn' : '', r == null ? '—' : `${NF.format(Math.round(r * 100) / 100)}×`, r == null ? 'Falta la inversión o las ventas' : `US$ ${NF.format(Math.round(r * 100) / 100)} vendidos por cada US$ 1`]; }},
+  retorno: {t: 'Retorno de la inversión', ic: 'spark', d: 'Cuánto se vendió por cada dólar invertido en anuncios.', f: () => { const r = coDiv(coVendido(), coInvTotal()); return [r != null && r >= 1 ? 'is-ok' : r != null ? 'is-warn' : '', r == null ? '—' : `${NF.format(Math.round(r * 100) / 100)}×`, r == null ? 'Falta la inversión o las ventas' : `US$ ${NF.format(Math.round(r * 100) / 100)} vendidos por cada US$ 1`]; }},
   vendido: {t: 'Vendido', ic: 'wallet', d: 'Primer cobro o valor de las ventas registradas del mes.', f: () => ['is-ok', esc(vgPorMoneda(vgSuma(VG.datos?.items || [], v => v.monto))), `${int((VG.datos?.items || []).length)} ventas`]},
   clics: {t: 'Clics y CTR', ic: 'chat', d: 'Clics en los anuncios y porcentaje sobre las impresiones.', f: () => { const t = CAMP.datos?.totales || {}; return ['', t.clics == null ? '—' : int(t.clics), t.ctr == null ? '' : `CTR ${NF.format(t.ctr)} %`]; }},
 };
 const CO_DEFECTO = ['inversion', 'costoVenta', 'costoGanada', 'retorno'];
 function coVivoHtml() {
   const mes = mesNombre(VG.mes || PERIODO);
-  const cabeza = head('Gestión comercial', 'Costos', `Lo invertido en anuncios en ${esc(mes)} frente a lo que se vendió.`, `<button class="btn" type="button" data-co-tarjetas>${icon('gear')}Editar tarjetas</button>`);
-  const extra = `<p class="camp-nota">La inversión sale de la cuenta publicitaria de Meta conectada en la cuenta; las ventas, de las ventas registradas en Ágora. Otros costos (sueldos, comisiones, herramientas) solo aparecen con un reporte mensual.</p>`;
+  const cabeza = head('Gestión comercial', 'Costos', `Lo invertido en anuncios y los costos de ${esc(mes)} frente a lo que se vendió.`, `<button class="btn" type="button" data-co-tarjetas>${icon('gear')}Editar tarjetas</button>`);
+  const extra = `<p class="camp-nota">La inversión sale de la cuenta publicitaria de Meta y de lo cargado en Configuración mensual; las ventas, de las ventas registradas en Ágora. Los costos fijos (sueldos, alquiler, herramientas) se cargan en Configuración mensual.</p>`;
   const camp = campPuede() ? `<div class="mt costos-vivo">${campanasHtml().replace(/<label class="fld camp-mes">[\s\S]*?<\/label>/, '')}</div>` : `<section class="panel mt"><p class="redes-nota">${conectada() ? 'Tu rol no ve la inversión en anuncios.' : 'Esta subcuenta no está conectada con su cuenta: sin ella no hay inversión en anuncios que mostrar.'}</p></section>`;
   return cabeza + vivoTarjetas('costos', CO_TARJETAS, CO_DEFECTO, [], mes) + extra + camp;
 }
@@ -7081,7 +7082,7 @@ async function coVivoNeed() {
   await vgCargar().catch(() => null);
   CAMP.mes = VG.mes || mesActualYM(); CAMP.datos = null;
   const cid = ws?.current(), vivo = conectada() && cid;
-  const [, , won] = await Promise.all([tarjCargar('costos'), campanasCargar(), vivo ? agoraApi(`workspace/won?connectionId=${encodeURIComponent(cid)}`).catch(() => null) : null]);
+  const [, , won] = await Promise.all([tarjCargar('costos'), campanasCargar(), mesCfgCargar(VG.mes, true), vivo ? agoraApi(`workspace/won?connectionId=${encodeURIComponent(cid)}`).catch(() => null) : null]);
   EQ.won = won;
 }
 /* ---------- 2.8.11 · Facturación sin reporte mensual: los cobros de las ventas registradas ----------
@@ -7130,10 +7131,126 @@ function faVivoMontar(root) {
     catch (x) { busy(b, false); toast(x.message); }
   });
 }
+/* ---------- 2.8.12 · Configuración mensual sin reporte: meta del mes, inversión fuera de la cuenta y costos fijos ----------
+   Se guarda en la misma configuración del mes que lee el Tablero comercial (workspace/board-month). */
+const MESCFG = {datos: null, mes: ''};
+async function mesCfgCargar(ym, force) {
+  ym = ym || VG.mes || PERIODO;
+  if (!force && MESCFG.datos && MESCFG.mes === ym) return MESCFG.datos;
+  try { MESCFG.datos = await agoraApi('workspace/board-month?period=' + encodeURIComponent(ym)); MESCFG.mes = ym; } catch { MESCFG.datos = null; }
+  return MESCFG.datos;
+}
+const mesCfg = k => { const v = MESCFG.datos?.settings?.[k]; return v == null || v === '' ? null : Number(v); };
+function cfVivoHtml() {
+  const ym = VG.mes || PERIODO, mes = mesNombre(ym), d = MESCFG.datos, puedeEd = !!d?.canEdit;
+  const cabeza = head('Administración', 'Configuración mensual', `Las cifras de ${esc(mes)} que no están en ninguna otra parte: la meta, lo invertido fuera de la cuenta y los costos fijos.`);
+  if (!d) return cabeza + '<section class="panel"><p class="empty"><b>No se pudo leer la configuración del mes</b>Vuelve a intentarlo en un momento.</p></section>';
+  const campo = (k, t, ayuda) => `<label class="fld"><span class="fld-l">${t}</span><span class="cf-monto"><span>US$</span><input name="${k}" type="number" inputmode="decimal" min="0" step="0.01" value="${mesCfg(k) ?? ''}" placeholder="Sin definir" ${puedeEd ? '' : 'disabled'}></span><small class="fld-h">${ayuda}</small></label>`;
+  return cabeza + `<form class="panel pf-sec cf-form" data-cf-form>${secH('gear', 'Cifras de ' + esc(mes), puedeEd ? 'Se usan en Gestión Comercial, Costos y el Tablero comercial. Deja vacío lo que no aplique.' : 'Solo la administración puede cambiarlas.')}
+    <div class="cf-campos">${campo('teamGoal', 'Meta de ventas del mes', 'Lo que el equipo quiere vender en el mes. El Tablero comercial y Gestión Comercial muestran el avance.')}
+    ${campo('otherAds', 'Inversión en anuncios fuera de la cuenta', 'Lo pautado que la cuenta no informa: Google, otras redes o Meta mientras la cuenta publicitaria no esté conectada. Se suma a la inversión de Meta en Costos.')}
+    ${campo('fixedCosts', 'Costos fijos del mes', 'Sueldos, alquiler, herramientas… Costos los suma para dar el costo total.')}</div>
+    <p class="fld-err" role="alert"></p>${puedeEd ? `<div class="form-ft"><button class="btn btn-cta" type="submit">Guardar ${esc(mes)}</button></div>` : ''}</form>`;
+}
+function cfVivoMontar(root) {
+  const f = root?.querySelector('[data-cf-form]'); if (!f) return;
+  f.onsubmit = async e => {
+    e.preventDefault(); const b = f.querySelector('[type=submit]'); if (!b) return; busy(b, true, 'Guardando…');
+    const ym = VG.mes || PERIODO, base = {...(MESCFG.datos?.settings || {})};
+    for (const k of ['teamGoal', 'otherAds', 'fixedCosts']) { const v = f.elements[k].value.trim(); base[k] = v === '' ? null : Math.max(0, Number(v)); if (v !== '' && !isFinite(Number(v))) { busy(b, false); f.querySelector('.fld-err').textContent = 'Revisa los montos: solo números.'; return; } }
+    try { await agoraApi('workspace/board-month?period=' + encodeURIComponent(ym), {method: 'POST', body: {...base, period: ym}}); await mesCfgCargar(ym, true); if (typeof TABLERO_DATOS !== 'undefined') TABLERO_DATOS = null; repaint(); toast('Cifras del mes guardadas.'); }
+    catch (x) { busy(b, false); f.querySelector('.fld-err').textContent = x.message; }
+  };
+}
+/* Meta del mes como tarjeta (Ventas registradas y Gestión Comercial). */
+VG_TARJETAS.meta = {t: 'Meta del mes', ic: 'trend', d: 'Avance de lo vendido frente a la meta de Configuración mensual.', f: (d, r) => { const g = mesCfg('teamGoal'), v = (r.vendido || {}).USD ?? Object.values(r.vendido || {})[0] ?? 0; return g ? [v >= g ? 'is-ok' : '', `${Math.round(100 * v / g)} %`, `${esc(usd(v))} de ${esc(usd(g))}`] : ['', '—', 'Sin meta en Configuración mensual']; }};
+/* Costos: suma lo invertido fuera de la cuenta y los costos fijos de Configuración mensual. */
+{
+  const metaInv = coInv;
+  coInvTotal = () => { const m = metaInv(), o = mesCfg('otherAds'); return m == null && o == null ? null : (m || 0) + (o || 0); };
+  CO_TARJETAS.inversion.f = () => { const m = metaInv(), o = mesCfg('otherAds'), t = coInvTotal(); return ['', t == null ? '—' : esc(usd(t)), t == null ? 'Ni la cuenta publicitaria ni Configuración mensual la informan' : m != null && o ? `Meta ${esc(usd(m))} + otras ${esc(usd(o))}` : m != null ? 'según la cuenta publicitaria' : 'cargada en Configuración mensual']; };
+  CO_TARJETAS.fijos = {t: 'Costos fijos', ic: 'wallet', d: 'Los costos fijos del mes cargados en Configuración mensual.', f: () => { const c = mesCfg('fixedCosts'); return ['', c == null ? '—' : esc(usd(c)), c == null ? 'Cárgalos en Configuración mensual' : 'del mes']; }};
+  CO_TARJETAS.total = {t: 'Costo total', ic: 'coins', d: 'Inversión en anuncios más costos fijos.', f: () => { const i = coInvTotal(), c = mesCfg('fixedCosts'); return ['', i == null && c == null ? '—' : esc(usd((i || 0) + (c || 0))), 'anuncios + costos fijos']; }};
+  CO_TARJETAS.costoVentaTotal = {t: 'Costo total por venta', ic: 'receipt', d: 'Costo total del mes dividido entre las ventas registradas.', f: () => { const i = coInvTotal(), c = mesCfg('fixedCosts'), n = (VG.datos?.items || []).length; return ['', (i != null || c != null) && n ? esc(usd(((i || 0) + (c || 0)) / n)) : '—', `${int(n)} ventas registradas`]; }};
+}
+/* ---------- 2.8.12 · Tendencias sin reporte: las ventas registradas mes a mes (últimos 12 meses) ---------- */
+function tdMeses() {
+  const fin = VG.mes || PERIODO, out = [];
+  for (let i = 11; i >= 0; i--) out.push(mesSuma(fin, -i));
+  const items = FA.datos?.items || [];
+  return out.map(ym => {
+    const l = items.filter(v => String(v.fecha).slice(0, 7) === ym), cuotas = items.flatMap(v => (v.plan || []).filter(c => String(c.fecha).slice(0, 7) === ym));
+    return {ym, n: l.length, vendido: l.reduce((t, v) => t + (Number(v.monto) || 0), 0), recurrentes: l.filter(v => v.cobro === 'recurrente').length,
+      aCobrar: cuotas.reduce((t, c) => t + (Number(c.monto) || 0), 0), cobrado: cuotas.filter(c => c.estado === 'pagado').reduce((t, c) => t + (Number(c.monto) || 0), 0)};
+  });
+}
+const tdCambio = (a, b) => b ? Math.round(100 * (a - b) / b) : null;
+const TD_TARJETAS = {
+  vendido: {t: 'Vendido en el mes', ic: 'coins', d: 'Lo vendido en el mes frente al mes anterior.', f: m => { const [a, b] = [m.at(-1), m.at(-2)], c = tdCambio(a.vendido, b?.vendido); return [c != null && c >= 0 ? 'is-ok' : c != null ? 'is-warn' : '', esc(usd(a.vendido)), c == null ? 'Sin mes anterior para comparar' : `${c >= 0 ? '↑' : '↓'} ${Math.abs(c)} % frente a ${esc(mesNombre(b.ym))}`]; }},
+  ventas: {t: 'Ventas del mes', ic: 'receipt', d: 'Cantidad de ventas frente al mes anterior.', f: m => { const [a, b] = [m.at(-1), m.at(-2)], c = tdCambio(a.n, b?.n); return ['', int(a.n), c == null ? 'Sin mes anterior para comparar' : `${c >= 0 ? '↑' : '↓'} ${Math.abs(c)} % frente al mes anterior`]; }},
+  promedio: {t: 'Promedio de 12 meses', ic: 'trend', d: 'Lo vendido en promedio por mes, en los últimos 12.', f: m => { const con = m.filter(x => x.n); return ['', con.length ? esc(usd(con.reduce((t, x) => t + x.vendido, 0) / con.length)) : '—', `${int(con.length)} ${con.length === 1 ? 'mes con ventas' : 'meses con ventas'}`]; }},
+  mejor: {t: 'Mejor mes', ic: 'spark', d: 'El mes con más vendido de los últimos 12.', f: m => { const x = [...m].sort((a, b) => b.vendido - a.vendido)[0]; return ['is-ok', x?.vendido ? esc(mesNombre(x.ym)) : '—', x?.vendido ? `${esc(usd(x.vendido))} · ${int(x.n)} ventas` : 'Sin ventas']; }},
+  cobro: {t: 'Cobrado en el mes', ic: 'check', d: 'Lo cobrado de lo que tocaba cobrar en el mes.', f: m => { const a = m.at(-1); return ['', esc(usd(a.cobrado)), a.aCobrar ? `${Math.round(100 * a.cobrado / a.aCobrar)} % de ${esc(usd(a.aCobrar))}` : 'Nada por cobrar']; }},
+};
+const TD_DEFECTO = ['vendido', 'ventas', 'promedio', 'mejor'];
+function tdVivoHtml() {
+  const mes = mesNombre(VG.mes || PERIODO);
+  const cabeza = head('Gestión comercial', 'Tendencias', `Cómo se mueven las ventas en los 12 meses hasta ${esc(mes)}.`, `<button class="btn" type="button" data-td-tarjetas>${icon('gear')}Editar tarjetas</button>`);
+  if (!FA.datos) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas</b>Vuelve a intentarlo en un momento.</p></section>';
+  const m = tdMeses(), max = Math.max(1, ...m.map(x => x.vendido));
+  const barras = `<div class="td-barras" role="img" aria-label="Vendido por mes">${m.map(x => `<div class="td-b ${x.ym === m.at(-1).ym ? 'is-on' : ''}"><span class="td-v">${x.vendido ? esc(usd(x.vendido).replace(/,00$/, '')) : ''}</span><i style="height:${Math.max(2, Math.round(100 * x.vendido / max))}%"></i><small>${esc(mesNombre(x.ym).slice(0, 3))}</small></div>`).join('')}</div>`;
+  const tabla = `<div class="tw"><table data-xt="vivo"><thead><tr><th>Mes</th><th class="n">Ventas</th><th class="n">Recurrentes</th><th class="n">Vendido</th><th class="n">A cobrar</th><th class="n">Cobrado</th></tr></thead><tbody>${[...m].reverse().map(x => `<tr><td><b>${esc(mesNombre(x.ym))}</b></td><td class="n">${int(x.n)}</td><td class="n">${int(x.recurrentes)}</td><td class="n">${esc(usd(x.vendido))}</td><td class="n">${esc(usd(x.aCobrar))}</td><td class="n">${esc(usd(x.cobrado))}</td></tr>`).join('')}</tbody></table></div>`;
+  return cabeza + vivoTarjetas('tendencias', TD_TARJETAS, TD_DEFECTO, [m], mes) + `<section class="panel pf-sec">${secH('trend', 'Vendido por mes', 'Primer cobro o valor de las ventas registradas de cada mes.')}${barras}</section><section class="panel pf-sec mt">${secH('receipt', 'Mes a mes', 'Ventas, lo que tocaba cobrar y lo cobrado.')}${tabla}</section>`;
+}
+/* ---------- 2.8.12 · Calidad de datos sin reporte: lo que conviene corregir en las ventas registradas ---------- */
+function caRevisiones() {
+  const items = FA.datos?.items || [], hoy = vgHoy(), hace30 = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10), nom = v => v.cliente?.nombre || 'Sin nombre';
+  const porDoc = new Map(); items.forEach(v => { const d = String(v.cliente?.documento || '').trim(); if (!d) return; if (!porDoc.has(d)) porDoc.set(d, new Set()); porDoc.get(d).add(norm(nom(v))); });
+  const docsRaros = [...porDoc.entries()].filter(([, s]) => s.size > 1).map(([d]) => d);
+  const productos = CATALOGO?.productos || [];
+  return [
+    {id: 'pend', g: 'alta', t: 'Oportunidades ganadas sin venta completada', d: 'No cuentan en ventas ni en cobros hasta completar su formulario.', l: (VG.datos?.pendientes || []).map(p => p.name)},
+    {id: 'venc30', g: 'alta', t: 'Cobros vencidos hace más de 30 días', d: 'O se cobraron y falta marcarlos, o hay que gestionarlos.', l: items.filter(v => (v.plan || []).some(c => c.estado !== 'pagado' && String(c.fecha) < hace30)).map(nom)},
+    {id: 'sinPlan', g: 'alta', t: 'Ventas sin plan de cobros', d: 'Sin plan no aparecen en Facturación.', l: items.filter(v => !(v.plan || []).length).map(nom)},
+    {id: 'monto0', g: 'media', t: 'Ventas con monto en cero', d: 'Bajan el ticket promedio y lo vendido.', l: items.filter(v => !(Number(v.monto) > 0)).map(nom)},
+    {id: 'sinVend', g: 'media', t: 'Ventas sin vendedor', d: 'No cuentan para nadie en Equipo.', l: items.filter(v => !String(v.vendedor || '').trim()).map(nom)},
+    {id: 'docDup', g: 'media', t: 'Un mismo documento con nombres distintos', d: 'Puede ser un cliente cargado dos veces o un documento mal escrito.', l: docsRaros},
+    {id: 'sinDoc', g: 'baja', t: 'Clientes sin documento', d: 'Sin documento no se detectan clientes repetidos.', l: items.filter(v => !String(v.cliente?.documento || '').trim()).map(nom)},
+    {id: 'sinContacto', g: 'baja', t: 'Clientes sin correo ni teléfono', d: 'No se les puede avisar de un cobro.', l: items.filter(v => !v.cliente?.correo && !v.cliente?.telefono).map(nom)},
+    {id: 'sinPrecio', g: 'baja', t: 'Productos activos sin precio', d: 'Al registrar una venta habrá que escribir el monto a mano.', l: productos.filter(x => x.activo !== false && !(Number(x.precio) > 0)).map(x => x.nombre)},
+  ].map(r => ({...r, n: r.l.length})).sort((a, b) => (b.n > 0) - (a.n > 0) || ['alta', 'media', 'baja'].indexOf(a.g) - ['alta', 'media', 'baja'].indexOf(b.g));
+}
+function caVivoHtml() {
+  const cabeza = head('Gestión comercial', 'Calidad de datos', 'Lo que conviene corregir en las ventas registradas y el catálogo antes de cerrar números.');
+  if (!FA.datos) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas</b>Vuelve a intentarlo en un momento.</p></section>';
+  const r = caRevisiones(), mal = r.filter(x => x.n), total = (FA.datos.items || []).length;
+  const G = {alta: ['Importante', 'sc-bad'], media: ['Conviene', 'sc-warn'], baja: ['Menor', 'sc-gray']};
+  const resumen = `<section class="ag-resumen-grid vg-kpis"><div class="ag-resumen ${mal.length ? '' : 'is-ok'}"><span class="ag-resumen-ic" aria-hidden="true">${icon('check')}</span><span class="ag-resumen-t">Revisiones en orden</span><strong class="ag-resumen-v">${int(r.length - mal.length)}<small> de ${int(r.length)}</small></strong><span class="ag-resumen-d">${int(total)} ventas revisadas</span></div>
+    <div class="ag-resumen ${mal.some(x => x.g === 'alta') ? 'is-warn' : ''}"><span class="ag-resumen-ic" aria-hidden="true">${icon('warn')}</span><span class="ag-resumen-t">Importantes por corregir</span><strong class="ag-resumen-v">${int(mal.filter(x => x.g === 'alta').reduce((t, x) => t + x.n, 0))}</strong><span class="ag-resumen-d">casos</span></div>
+    <div class="ag-resumen"><span class="ag-resumen-ic" aria-hidden="true">${icon('info')}</span><span class="ag-resumen-t">Otros por revisar</span><strong class="ag-resumen-v">${int(mal.filter(x => x.g !== 'alta').reduce((t, x) => t + x.n, 0))}</strong><span class="ag-resumen-d">casos</span></div></section>`;
+  const lista = `<ul class="ca-lista">${r.map(x => `<li class="${x.n ? '' : 'is-ok'}"><span class="ca-n">${x.n ? int(x.n) : icon('check')}</span><span class="ca-t"><b>${esc(x.t)}</b><small>${esc(x.d)}</small>${x.n ? `<small class="ca-ej">${esc([...new Set(x.l)].slice(0, 5).join(' · '))}${x.n > 5 ? ' …' : ''}</small>` : ''}</span>${x.n ? `<span class="sc ${G[x.g][1]}">${G[x.g][0]}</span>` : '<span class="sc sc-ok">En orden</span>'}</li>`).join('')}</ul>`;
+  return cabeza + resumen + `<section class="panel pf-sec">${secH('shield', 'Revisiones', 'Se corrigen en Ventas (editar la venta) o en Productos y servicios.', `<a class="btn btn-sm" href="${href(MODS.ventas?.path || '/ventas')}">${icon('receipt')}Ir a Ventas</a>`)}${lista}</section>`;
+}
+/* ---------- 2.8.12 · Catálogo sin reporte: los productos y servicios con lo inscrito en cada uno ---------- */
+function ctVivoHtml() {
+  const cat = CATALOGO, ventas = FA.datos?.items || [];
+  if (!cat) return '<section class="panel"><p class="empty"><b>No se pudo leer el catálogo</b>Vuelve a intentarlo en un momento.</p></section>';
+  const prods = cat.productos || [], rubro = id => (cat.rubros || []).find(r => r.id === id)?.nombre || 'Sin rubro', hoy = vgHoy();
+  if (!prods.length) return `<section class="panel"><p class="empty"><b>Todavía no hay productos</b>Créalos en la pestaña «Productos y servicios»; aquí verás cuántos clientes tiene cada uno.</p></section>`;
+  const de = p => ventas.filter(v => v.productoId ? v.productoId === p.id : norm(v.producto) === norm(p.nombre));
+  const activa = v => v.sinFin ? v.estado !== 'pagada' : (v.plan || []).some(c => c.estado !== 'pagado' && String(c.fecha) >= hoy.slice(0, 7));
+  const filas = prods.map(p => { const l = de(p); return {p, l, act: l.filter(activa).length, mensual: l.filter(v => v.cobro === 'recurrente' && activa(v)).reduce((t, v) => t + (Number(v.monto) || 0) * (FREC_MES[v.frecuencia] || 1), 0)}; }).sort((a, b) => b.l.length - a.l.length);
+  return `<section class="panel pf-sec">${secH('receipt', 'Catálogo con lo inscrito', 'Cada producto o servicio con sus ventas registradas: cuántas en total, cuántas siguen activas y lo que suman al mes.')}
+    <div class="tw"><table data-xt="vivo"><thead><tr><th>Producto o servicio</th><th>Rubro</th><th>Cobro</th><th class="n">Precio</th><th class="n">Ventas</th><th class="n">Activas</th><th class="n">Recurrente al mes</th></tr></thead><tbody>${filas.map(x => `<tr><td class="wrap"><b>${esc(x.p.nombre)}</b>${x.p.activo === false ? ' <span class="sc sc-gray">Pausado</span>' : ''}</td><td>${esc(rubro(x.p.rubroId))}</td><td><span class="sc ${COBRO_P[x.p.cobro]?.[1] || 'sc-gray'}">${esc(COBRO_P[x.p.cobro]?.[0] || '—')}</span></td><td class="n">${esc(precioTexto(x.p))}</td><td class="n">${int(x.l.length)}</td><td class="n">${int(x.act)}</td><td class="n">${x.mensual ? esc(usd(x.mensual)) : '—'}</td></tr>`).join('')}</tbody></table></div></section>`;
+}
 var TB_VIVO = {
+  configuracion: {need: () => Promise.all([vgCargar().catch(() => null)]).then(() => mesCfgCargar(null, true)), render: cfVivoHtml, montar: cfVivoMontar},
+  tendencias: {need: () => Promise.all([vgCargar().catch(() => null), faCargar(), tarjCargar('tendencias')]), render: tdVivoHtml, montar: r => r?.querySelector('[data-td-tarjetas]')?.addEventListener('click', () => tarjEditar('tendencias', TD_TARJETAS, TD_DEFECTO, 'Tendencias', repaint))},
+  calidad: {need: () => Promise.all([vgCargar().catch(() => null), faCargar(), cargarCatalogo().catch(() => null)]), render: caVivoHtml, montar() {}},
+  catalogo: {need: () => Promise.all([faCargar(), cargarCatalogo().catch(() => null)]), render: ctVivoHtml, montar() {}},
   facturas: {need: () => Promise.all([faCargar(), tarjCargar('facturas'), vgCargar().catch(() => null)]), render: faVivoHtml, montar: faVivoMontar},
   costos: {need: coVivoNeed, render: coVivoHtml, montar: r => r?.querySelector('[data-co-tarjetas]')?.addEventListener('click', () => tarjEditar('costos', CO_TARJETAS, CO_DEFECTO, 'Costos', repaint))},
-  resumen: {need: () => Promise.all([vgCargar().catch(() => null), tarjCargar('gestion')]), render: () => gcVivoHtml(), montar: r => gcVivoMontar(r)},
+  resumen: {need: () => Promise.all([vgCargar().catch(() => null), tarjCargar('gestion')]).then(() => mesCfgCargar(VG.mes, true)), render: () => gcVivoHtml(), montar: r => gcVivoMontar(r)},
   equipo: {need: eqVivoNeed, render: eqVivoHtml, montar: r => r?.querySelector('[data-eq-tarjetas]')?.addEventListener('click', () => tarjEditar('equipo', EQ_TARJETAS, EQ_DEFECTO, 'Equipo', repaint))},
 };
 /* ---------- 3. Ventas → pestaña "Ventas registradas" ---------- */

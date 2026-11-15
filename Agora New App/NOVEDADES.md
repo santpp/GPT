@@ -1,5 +1,13 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.12:** ya no queda ningún módulo con «Esta subcuenta todavía no tiene reportes».
+- **Tendencias sin reporte:** las ventas registradas de los últimos 12 meses: gráfico de lo vendido por mes y tabla mes a mes (ventas, recurrentes, vendido, a cobrar y cobrado). Tarjetas a elección: vendido y ventas frente al mes anterior, promedio de 12 meses, mejor mes y cobrado.
+- **Calidad de datos sin reporte:** 9 revisiones sobre las ventas registradas y el catálogo (ganadas sin venta completada, cobros vencidos hace más de 30 días, ventas sin plan de cobros, montos en cero, ventas sin vendedor, un documento con nombres distintos, clientes sin documento o sin correo ni teléfono, productos sin precio), con cuántos casos y ejemplos. Primero lo que hay que corregir.
+- **Catálogo sin reporte:** cada producto o servicio con sus ventas, las que siguen activas y lo recurrente al mes.
+- **Configuración mensual sin reporte:** meta de ventas del mes, inversión en anuncios fuera de la cuenta (Google, otras redes o Meta mientras no esté conectada) y costos fijos. Se guarda en la misma configuración que lee el Tablero comercial.
+- **Costos** suma la inversión cargada a mano a la de Meta («Inversión en anuncios») y tiene tarjetas nuevas: costos fijos, costo total y costo total por venta. **Gestión Comercial** y Ventas tienen la tarjeta «Meta del mes».
+- Estos cuatro módulos aparecen en el menú sin reporte. Con reporte, todo sigue mostrando el reporte.
+
 **Novedades 2.8.11:**
 - **Facturación sin reporte mensual:** sale del plan de cobros de las ventas registradas (también de las de meses anteriores, como las recurrentes). Muestra los **cobros del mes** (fecha, cliente, producto, cuota, monto y estado: pagado, pendiente o vencido) y los **atrasados de meses anteriores**, con «Marcar pagado» para quien puede editar. Tarjetas a elección: a cobrar en el mes, cobrado, pendiente, vencido, avance de cobro, clientes con deuda y próximo cobro.
 - Facturación aparece en el menú aunque no haya reporte. Con un reporte cargado, sigue mostrando el reporte (y el bloque de cobros por recibir de siempre).
