@@ -44,6 +44,7 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 41 | Dueña de Ágora: «Gestión Comercial · Acceso restringido» en ASOCIM TESTS, y a veces el módulo no salía en la lista. | La 2.8.6 cambió la regla del menú, pero la apertura de pantalla y otros cuatro sitios seguían usando el permiso del rol (sin reporte cargado, sin acceso). La prueba local no lo vio porque ASOCIM local tiene reporte. | 2.8.7: una sola regla en todo el sistema; probado como dueña en una subcuenta con reporte y otra sin reporte, abriendo los 26 módulos. | Arreglado |
 | 42 | Gestión Comercial vacía («todavía no tiene reportes») con 71 ventas registradas en ASOCIM TESTS. | Gestión Comercial solo leía el reporte mensual importado; las ventas registradas en Ágora son otra fuente. | 2.8.8: sin reporte, se arma con las ventas registradas (tarjetas, por vendedor, por forma de cobro y por producto). | Arreglado |
 | 43 | Equipo y Costos vacíos («todavía no tiene reportes») en ASOCIM TESTS. | Igual que el 42: solo leían el reporte mensual. | 2.8.9: sin reporte se arman con las ventas registradas, la cuenta y las campañas de Meta; aparecen en el menú sin reporte. | Arreglado |
+| 44 | Facturación vacía («todavía no tiene reportes») en ASOCIM TESTS. | Solo leía el reporte mensual. | 2.8.11: sin reporte se arma con el plan de cobros de las ventas registradas. | Arreglado |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 
@@ -58,13 +59,13 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | N.º | Qué falta | Por qué importa |
 |---|---|---|
 | 11 | Probar las escrituras con la cuenta real: enviar un mensaje, asignar una conversación, editar un contacto, mover y crear una oportunidad, marcar ganada, crear, corregir y completar una tarea, crear un contacto nuevo, abrir Redes y anuncios y ver sus cifras, y ver las campañas de Meta del mes. | Las atiende el mismo código de Ágora Mobile 1.10.14, pero en esta app solo se probaron contra una cuenta simulada; desde el entorno de desarrollo no hay salida a la cuenta real. |
-| 12 | Confirmar el error 2 en tests después de subir la 2.8.10. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
+| 12 | Confirmar el error 2 en tests después de subir la 2.8.11. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
 | 13 | Cabeceras de seguridad en OpenLiteSpeed. | OpenLiteSpeed no aplica las líneas `Header` del `.htaccess`; van en el vHost (paso 9 de la guía). |
 | 14 | (Resuelto en 2.5.0) La bandeja usaba el código de una versión anterior de Ágora Mobile. | Bandeja, Contactos y Embudos ya llevan lo de la 1.10.14. |
 
 ## Cómo comprobar la versión instalada
 
-- `https://TU-DOMINIO/api/health` debe decir `"version":"2.8.10"`.
+- `https://TU-DOMINIO/api/health` debe decir `"version":"2.8.11"`.
 - `https://TU-DOMINIO/version.json` debe decir lo mismo.
 - Si una pantalla se ve rara tras actualizar: recarga una vez. Si sigue, en Chrome toca el icono a la izquierda de la dirección → Configuración del sitio → Borrar datos, y vuelve a entrar.
 

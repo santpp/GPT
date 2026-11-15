@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.11:**
+- **Facturación sin reporte mensual:** sale del plan de cobros de las ventas registradas (también de las de meses anteriores, como las recurrentes). Muestra los **cobros del mes** (fecha, cliente, producto, cuota, monto y estado: pagado, pendiente o vencido) y los **atrasados de meses anteriores**, con «Marcar pagado» para quien puede editar. Tarjetas a elección: a cobrar en el mes, cobrado, pendiente, vencido, avance de cobro, clientes con deuda y próximo cobro.
+- Facturación aparece en el menú aunque no haya reporte. Con un reporte cargado, sigue mostrando el reporte (y el bloque de cobros por recibir de siempre).
+
 **Novedades 2.8.10:**
 - Se quitó el aviso «Esta subcuenta no tiene reporte mensual cargado…» de Gestión Comercial, Equipo y Costos.
 

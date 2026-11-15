@@ -2970,7 +2970,7 @@ function tableroHay(id) {
   if (id === 'ventas') return puede('datos.consultar') && (tableroCan('ver.ventas') || tableroCan('ver.ventas.propias'));
   /* Los módulos del reporte mensual solo existen si la subcuenta tiene un reporte cargado y la persona ve cifras del equipo.
      2.8.9: Gestión Comercial, Equipo y Costos se arman sin reporte (ventas registradas y cuenta), así que se ofrecen igual. */
-  if (['resumen', 'equipo', 'costos'].includes(id)) return puede('equipo.metricas') && puede('finanzas');
+  if (['resumen', 'equipo', 'costos', 'facturas'].includes(id)) return puede('equipo.metricas') && puede('finanzas');
   return puede('equipo.metricas') && puede('finanzas') && hayReporte();
 }
 const enTablero = () => R && typeof R.view === 'string' && R.view.indexOf('tc_') === 0;
@@ -4056,7 +4056,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.8.10').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.8.11').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -7084,7 +7084,54 @@ async function coVivoNeed() {
   const [, , won] = await Promise.all([tarjCargar('costos'), campanasCargar(), vivo ? agoraApi(`workspace/won?connectionId=${encodeURIComponent(cid)}`).catch(() => null) : null]);
   EQ.won = won;
 }
+/* ---------- 2.8.11 · Facturación sin reporte mensual: los cobros de las ventas registradas ----------
+   Toma el plan de cobros de todas las ventas (también las de meses anteriores, como las recurrentes) y muestra lo que toca cobrar en el mes. */
+const FA = {datos: null, t: 0};
+async function faCargar(force) {
+  if (!force && FA.datos && Date.now() - FA.t < 30000) return FA.datos;
+  try { FA.datos = await agoraApi('workspace/ventas'); FA.t = Date.now(); } catch { FA.datos = null; }
+  return FA.datos;
+}
+function faCobros(ym) {
+  const hoy = vgHoy(), todos = [];
+  (FA.datos?.items || []).forEach(v => (v.plan || []).forEach(c => todos.push({v, c, venc: c.estado !== 'pagado' && String(c.fecha) < hoy})));
+  return {mes: todos.filter(x => String(x.c.fecha).slice(0, 7) === ym).sort((a, b) => String(a.c.fecha).localeCompare(String(b.c.fecha))),
+    atrasados: todos.filter(x => x.venc && String(x.c.fecha).slice(0, 7) < ym).sort((a, b) => String(a.c.fecha).localeCompare(String(b.c.fecha)))};
+}
+const faSuma = l => vgPorMoneda(l.reduce((o, x) => { const m = x.v.moneda || 'USD'; o[m] = (o[m] || 0) + (Number(x.c.monto) || 0); return o; }, {}));
+const faNum = l => l.reduce((t, x) => t + (Number(x.c.monto) || 0), 0);
+const FA_TARJETAS = {
+  aCobrar: {t: 'A cobrar en el mes', ic: 'receipt', d: 'Todos los cobros que vencen en el mes.', f: (m) => ['', esc(faSuma(m.mes)), `${int(m.mes.length)} ${m.mes.length === 1 ? 'cobro' : 'cobros'}`]},
+  cobrado: {t: 'Cobrado', ic: 'check', d: 'Cobros del mes marcados como pagados.', f: (m) => { const l = m.mes.filter(x => x.c.estado === 'pagado'); return ['is-ok', esc(faSuma(l)), `${int(l.length)} ${l.length === 1 ? 'cobro' : 'cobros'}`]; }},
+  pendiente: {t: 'Pendiente', ic: 'clock', d: 'Cobros del mes que todavía no se pagan.', f: (m) => { const l = m.mes.filter(x => x.c.estado !== 'pagado'); return ['', esc(faSuma(l)), `${int(l.length)} ${l.length === 1 ? 'cobro' : 'cobros'}`]; }},
+  vencido: {t: 'Vencido', ic: 'warn', d: 'Lo atrasado: del mes y de meses anteriores.', f: (m) => { const l = [...m.atrasados, ...m.mes.filter(x => x.venc)]; return [l.length ? 'is-warn' : '', esc(faSuma(l)), l.length ? `${int(l.length)} ${l.length === 1 ? 'cobro atrasado' : 'cobros atrasados'}` : 'Nada vencido']; }},
+  avance: {t: 'Avance de cobro', ic: 'trend', d: 'Qué parte de lo que toca cobrar en el mes ya se cobró.', f: (m) => { const t = faNum(m.mes), c = faNum(m.mes.filter(x => x.c.estado === 'pagado')); return [t && c / t >= .8 ? 'is-ok' : '', t ? `${Math.round(100 * c / t)} %` : '—', 'de lo que toca en el mes']; }},
+  clientes: {t: 'Clientes con deuda', ic: 'users', d: 'Clientes con al menos un cobro vencido.', f: (m) => { const n = new Set([...m.atrasados, ...m.mes.filter(x => x.venc)].map(x => norm(x.v.cliente?.documento || x.v.cliente?.nombre || x.v.id))).size; return [n ? 'is-warn' : '', int(n), n ? 'con cobros atrasados' : 'Todos al día']; }},
+  proximo: {t: 'Próximo cobro', ic: 'clock', d: 'El siguiente cobro pendiente que vence.', f: (m) => { const x = m.mes.find(y => y.c.estado !== 'pagado' && !y.venc); return ['', x ? esc(vgMonto(x.c.monto, x.v.moneda)) : '—', x ? `${esc(vgFecha(x.c.fecha).slice(0, 5))} · ${esc(x.v.cliente?.nombre || '')}` : 'Nada pendiente en el mes']; }},
+};
+const FA_DEFECTO = ['aCobrar', 'cobrado', 'pendiente', 'vencido'];
+function faVivoHtml() {
+  const ym = VG.mes || PERIODO, mes = mesNombre(ym), puedeEd = !!FA.datos?.canEdit;
+  const cabeza = head('Gestión comercial', 'Facturación', `Lo que toca cobrar en ${esc(mes)} según el plan de cobros de cada venta, y lo que está atrasado.`, `<button class="btn" type="button" data-fa-tarjetas>${icon('gear')}Editar tarjetas</button>`);
+  if (!FA.datos) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer los cobros</b>Vuelve a intentarlo en un momento.</p></section>';
+  const m = faCobros(ym), kpis = vivoTarjetas('facturas', FA_TARJETAS, FA_DEFECTO, [m], mes);
+  const estado = x => x.c.estado === 'pagado' ? '<span class="sc sc-ok">Pagado</span>' : x.venc ? '<span class="sc sc-warn">Vencido</span>' : '<span class="sc sc-gray">Pendiente</span>';
+  const fila = x => `<tr><td>${esc(vgFecha(x.c.fecha))}</td><td class="wrap"><span class="who-cell"><b>${esc(x.v.cliente?.nombre || '—')}</b><small>${esc(x.v.cliente?.documento || '')}</small></span></td><td class="wrap"><span class="who-cell"><b>${esc(x.v.producto || '')}</b><small>${esc(x.v.vendedor ? 'vende ' + x.v.vendedor : '')}</small></span></td><td class="n">${x.v.sinFin ? `Cobro ${int(x.c.n)}` : `${int(x.c.n)} de ${int((x.v.plan || []).length)}`}</td><td class="n">${esc(vgMonto(x.c.monto, x.v.moneda))}</td><td>${estado(x)}</td><td class="n">${puedeEd && x.c.estado !== 'pagado' ? `<button class="btn btn-sm btn-tint" type="button" data-fa-pagar="${esc(x.v.id)}" data-n="${esc(x.c.n)}">Marcar pagado</button>` : ''}</td></tr>`;
+  const tabla = l => `<div class="tw"><table data-xt="vivo"><thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th class="n">Cuota</th><th class="n">Monto</th><th>Estado</th><th></th></tr></thead><tbody>${l.map(fila).join('')}</tbody></table></div>`;
+  const cobrosMes = m.mes.length ? tabla(m.mes) : `<p class="empty"><b>No hay cobros que venzan en ${esc(mes)}</b>Los cobros salen del plan de cada venta registrada.</p>`;
+  const atras = m.atrasados.length ? `<section class="panel pf-sec mt">${secH('warn', 'Atrasados de meses anteriores', `${int(m.atrasados.length)} ${m.atrasados.length === 1 ? 'cobro' : 'cobros'} · ${esc(faSuma(m.atrasados))}`)}${tabla(m.atrasados)}</section>` : '';
+  return cabeza + kpis + `<section class="panel pf-sec">${secH('receipt', 'Cobros de ' + esc(mes), `${int(m.mes.length)} ${m.mes.length === 1 ? 'cobro' : 'cobros'} · ${esc(faSuma(m.mes))}`)}${cobrosMes}</section>` + atras;
+}
+function faVivoMontar(root) {
+  root?.querySelector('[data-fa-tarjetas]')?.addEventListener('click', () => tarjEditar('facturas', FA_TARJETAS, FA_DEFECTO, 'Facturación', repaint));
+  root?.querySelectorAll('[data-fa-pagar]').forEach(b => b.onclick = async () => {
+    busy(b, true, '');
+    try { await agoraApi('workspace/ventas/cobro', {method: 'POST', body: {ventaId: b.dataset.faPagar, n: +b.dataset.n, pagado: true}}); if (typeof vgInvalidar === 'function') vgInvalidar(); await faCargar(true); repaint(); toast('Cobro marcado como pagado.'); }
+    catch (x) { busy(b, false); toast(x.message); }
+  });
+}
 var TB_VIVO = {
+  facturas: {need: () => Promise.all([faCargar(), tarjCargar('facturas'), vgCargar().catch(() => null)]), render: faVivoHtml, montar: faVivoMontar},
   costos: {need: coVivoNeed, render: coVivoHtml, montar: r => r?.querySelector('[data-co-tarjetas]')?.addEventListener('click', () => tarjEditar('costos', CO_TARJETAS, CO_DEFECTO, 'Costos', repaint))},
   resumen: {need: () => Promise.all([vgCargar().catch(() => null), tarjCargar('gestion')]), render: () => gcVivoHtml(), montar: r => gcVivoMontar(r)},
   equipo: {need: eqVivoNeed, render: eqVivoHtml, montar: r => r?.querySelector('[data-eq-tarjetas]')?.addEventListener('click', () => tarjEditar('equipo', EQ_TARJETAS, EQ_DEFECTO, 'Equipo', repaint))},
@@ -7185,6 +7232,7 @@ if (typeof V === 'object' && V.tc_facturas) {
     render() { return base.render(); },
     mounted(root) {
       base.mounted?.(root);
+      if (TB.estado === 'sin-datos') return; // 2.8.11: sin reporte, Facturación ya muestra todos los cobros
       const p = VG.datos?.proximos || [], cab = root.querySelector('.mod-h');
       if (!p.length || !cab || root.querySelector('.vg-fact')) return;
       const sec = document.createElement('section'); sec.className = 'panel pf-sec vg-fact';
