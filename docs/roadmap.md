@@ -270,6 +270,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - El repositorio se divide: `Agora Mobile/` (release 1.10.14 de nueva.agoradigital.app; el código sigue en la raíz) y `Agora New App/` (ERP 2.1.19 recibido: `public_html/`, `servidor/`). Análisis completo: `Agora New App/ANALISIS.md`. Sin Docker; MySQL.
 - Se deja de llamar «armazón». Lo de abajo es el historial de cuando lo era.
 - **2.2.0 (13 de noviembre)**: estable en MySQL; conexión con la cuenta por subcuenta (token cifrado, Location ID, «Probar conexión»); fuente Author; arreglos de Ajustes, Contactos, Gestión Comercial y logos; paquete de producción sin modo pruebas (`agora-new-app-2.2.0.zip`) y paquete de demo aparte. Siguiente: Conversaciones con el motor de Ágora Mobile.
+- **2.8.10 (15 de noviembre)**: sin el aviso de «no tiene reporte mensual» en Gestión Comercial, Equipo y Costos.
 - **2.8.9 (15 de noviembre)**: Equipo y Costos sin reporte (ventas registradas, cuenta y campañas de Meta); los tres módulos aparecen sin reporte.
 - **2.8.8 (15 de noviembre)**: Gestión Comercial sin reporte se arma con las ventas registradas.
 - **2.8.7 (15 de noviembre)**: arreglo del «Acceso restringido» de los dueños; «Elegir cifras» en Resumen de hoy.

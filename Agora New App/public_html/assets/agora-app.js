@@ -4056,7 +4056,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.8.9').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.8.10').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -6989,13 +6989,12 @@ function gcVivoHtml() {
   const d = VG.datos, mes = mesNombre(VG.mes || PERIODO);
   const acts = `<button class="btn" type="button" data-gc-tarjetas>${icon('gear')}Editar tarjetas</button><a class="btn" href="${href(MODS.ventas?.path || '/ventas')}">${icon('receipt')}Ver las ventas</a>`;
   const cabeza = head('Gestión comercial', 'Gestión Comercial', `Cómo va ${esc(mes)}: lo vendido, quién lo vendió y qué se vendió.`, acts);
-  const aviso = `<p class="gc-aviso">${icon('info')}<span>Esta subcuenta no tiene reporte mensual cargado, así que estas cifras salen de las <b>ventas registradas</b> en Ágora (las que se completan al ganar una oportunidad).${puede('ajustes.editar') ? ` Si cargas un reporte en <a href="${href('/ajustes')}">Ajustes</a>, aquí se verá el reporte.` : ''}</span></p>`;
-  if (!d) return cabeza + aviso + '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas del mes</b>Vuelve a intentarlo en un momento.</p></section>';
+  if (!d) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas del mes</b>Vuelve a intentarlo en un momento.</p></section>';
   const r = d.resumen || {}, items = d.items || [];
   const tarjeta = (cls, ic, t, val, det) => `<div class="ag-resumen ${cls}"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span><strong class="ag-resumen-v">${val}</strong><span class="ag-resumen-d">${det}</span></div>`;
   const elegidas = tarjElegidas('gestion', VG_TARJETAS, GC_DEFECTO);
   const kpis = elegidas.length ? `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">${elegidas.map(id => { const x = VG_TARJETAS[id]; let v; try { v = x.f(d, r, mes); } catch { v = ['', '—', '']; } return tarjeta(v[0], x.ic, esc(x.t), v[1], v[2]); }).join('')}</section>` : '';
-  if (!items.length) return cabeza + aviso + kpis + `<section class="panel"><p class="empty"><b>Todavía no hay ventas registradas en ${esc(mes)}</b>Cuando se gane una oportunidad y se complete su venta, aparece aquí.</p></section>`;
+  if (!items.length) return cabeza + kpis + `<section class="panel"><p class="empty"><b>Todavía no hay ventas registradas en ${esc(mes)}</b>Cuando se gane una oportunidad y se complete su venta, aparece aquí.</p></section>`;
   const grupo = k => { const m = new Map(); items.forEach(v => { const n = v[k] || (k === 'vendedor' ? 'Sin vendedor' : 'Sin nombre'); if (!m.has(n)) m.set(n, []); m.get(n).push(v); }); return [...m.entries()].map(([n, l]) => ({n, l, total: l.reduce((t, v) => t + (Number(v.monto) || 0), 0)})).sort((a, b) => b.l.length - a.l.length || b.total - a.total); };
   const mensual = l => vgPorMoneda(vgSuma(l.filter(v => v.cobro === 'recurrente'), v => (Number(v.monto) || 0) * (FREC_MES[v.frecuencia] || 1)));
   const barra = (n, max) => `<span class="gc-barra" aria-hidden="true"><i style="width:${Math.max(4, Math.round(100 * n / Math.max(max, 1)))}%"></i></span>`;
@@ -7006,7 +7005,7 @@ function gcVivoHtml() {
   const cobros = [['recurrente', 'Recurrente'], ['unico', 'Pago único'], ['venta', 'Venta única']].map(([k, t]) => [t, items.filter(v => v.cobro === k)]).filter(([, l]) => l.length);
   const formas = `<ul class="gc-formas">${cobros.map(([t, l]) => `<li><span>${esc(t)}</span><b>${int(l.length)}</b><small>${esc(vgPorMoneda(vgSuma(l, v => v.monto)))}</small></li>`).join('')}</ul>`;
   const pend = (d.pendientes || []).length ? `<p class="gc-aviso is-warn">${icon('warn')}<span>${d.pendientes.length === 1 ? 'Hay una oportunidad ganada' : `Hay ${int(d.pendientes.length)} oportunidades ganadas`} sin su venta completada: no cuentan aquí hasta completarla en <a href="${href(MODS.ventas?.path || '/ventas')}">Ventas</a>.</span></p>` : '';
-  return cabeza + aviso + pend + kpis
+  return cabeza + pend + kpis
     + `<div class="gc-cols"><section class="panel pf-sec">${secH('team', 'Por vendedor', `Quién vendió en ${esc(mes)}, de más a menos ventas.`)}${tablaVend}</section>
        <section class="panel pf-sec">${secH('wallet', 'Por forma de cobro', 'Cuántas ventas y cuánto, según cómo se cobran.')}${formas}</section></div>`
     + `<section class="panel pf-sec mt">${secH('receipt', 'Por producto o servicio', 'Lo que más se vendió en el mes.')}${tablaProd}</section>`;
@@ -7037,19 +7036,18 @@ const EQ_TARJETAS = {
   leadsHoy: {t: 'Leads de hoy', ic: 'spark', d: 'Contactos nuevos que entraron hoy.', f: () => EQ.dia ? ['', int(EQ.dia.leads || 0), EQ.dia.leadsAyer != null ? `ayer: ${int(EQ.dia.leadsAyer)}` : ''] : ['', '—', 'La cuenta no lo informó']},
 };
 const EQ_DEFECTO = ['personas', 'vendedor', 'ganadasCuenta', 'sinLeer'];
-const vivoAviso = () => `<p class="gc-aviso">${icon('info')}<span>Esta subcuenta no tiene reporte mensual cargado, así que estas cifras salen de las <b>ventas registradas</b> en Ágora y de la cuenta.${puede('ajustes.editar') ? ` Si cargas un reporte en <a href="${href('/ajustes')}">Ajustes</a>, aquí se verá el reporte.` : ''}</span></p>`;
 const vivoTarjetas = (vista, catalogo, defecto, args, mes) => { const ids = tarjElegidas(vista, catalogo, defecto); return ids.length ? `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">${ids.map(id => { const x = catalogo[id]; let v; try { v = x.f(...args); } catch { v = ['', '—', '']; } return `<div class="ag-resumen ${v[0]}"><span class="ag-resumen-ic" aria-hidden="true">${icon(x.ic)}</span><span class="ag-resumen-t">${esc(x.t)}</span><strong class="ag-resumen-v">${v[1]}</strong><span class="ag-resumen-d">${v[2] || ''}</span></div>`; }).join('')}</section>` : ''; };
 function eqVivoHtml() {
   const mes = mesNombre(VG.mes || PERIODO);
   const acts = `<button class="btn" type="button" data-eq-tarjetas>${icon('gear')}Editar tarjetas</button>`;
   const cabeza = head('Gestión comercial', 'Equipo', `Cómo le va a cada persona en ${esc(mes)}: lo que vendió, lo que ganó en la cuenta y lo que tiene pendiente.`, acts);
   const filas = eqFilas(), hayCuenta = !!(EQ.won || EQ.dia);
-  if (!filas.length) return cabeza + vivoAviso() + vivoTarjetas('equipo', EQ_TARJETAS, EQ_DEFECTO, [], mes) + `<section class="panel"><p class="empty"><b>Todavía no hay actividad del equipo en ${esc(mes)}</b>Cuando haya ventas registradas u oportunidades ganadas, cada persona aparece aquí.</p></section>`;
+  if (!filas.length) return cabeza + vivoTarjetas('equipo', EQ_TARJETAS, EQ_DEFECTO, [], mes) + `<section class="panel"><p class="empty"><b>Todavía no hay actividad del equipo en ${esc(mes)}</b>Cuando haya ventas registradas u oportunidades ganadas, cada persona aparece aquí.</p></section>`;
   const max = Math.max(1, ...filas.map(f => f.ventas.length));
   const mensual = l => vgPorMoneda(vgSuma(l.filter(v => v.cobro === 'recurrente'), v => (Number(v.monto) || 0) * (FREC_MES[v.frecuencia] || 1)));
   const tabla = `<div class="tw"><table data-xt="vivo"><thead><tr><th>Persona</th><th class="n">Ventas</th><th class="n">Vendido</th><th class="n">Recurrente al mes</th>${EQ.won ? '<th class="n">Ganadas en la cuenta</th>' : ''}${EQ.dia ? '<th class="n">Leads de hoy</th><th class="n">Sin leer ahora</th>' : ''}</tr></thead><tbody>${filas.map(f => `<tr><td><b>${esc(f.n)}</b><span class="gc-barra" aria-hidden="true"><i style="width:${Math.max(4, Math.round(100 * f.ventas.length / max))}%"></i></span></td><td class="n">${int(f.ventas.length)}</td><td class="n">${f.ventas.length ? esc(vgPorMoneda(vgSuma(f.ventas, v => v.monto))) : '—'}</td><td class="n">${f.ventas.some(v => v.cobro === 'recurrente') ? esc(mensual(f.ventas)) : '—'}</td>${EQ.won ? `<td class="n">${f.ganadas ? `${int(f.ganadas)} · ${esc(usd(f.ganadoValor))}` : '—'}</td>` : ''}${EQ.dia ? `<td class="n">${int(f.leads)}</td><td class="n">${f.sinLeer ? `<span class="sc sc-warn">${int(f.sinLeer)}</span>` : '0'}</td>` : ''}</tr>`).join('')}</tbody></table></div>`;
   const nota = `<p class="camp-nota">«Ventas», «Vendido» y «Recurrente al mes» salen de las ventas registradas en Ágora.${EQ.won ? ' «Ganadas en la cuenta» son las oportunidades ganadas del mes.' : ''}${EQ.dia ? ' «Leads de hoy» y «Sin leer ahora» son de este momento.' : ''}${hayCuenta ? '' : ' Esta subcuenta no está conectada con su cuenta, por eso no se ven ganadas, leads ni conversaciones.'}</p>`;
-  return cabeza + vivoAviso() + vivoTarjetas('equipo', EQ_TARJETAS, EQ_DEFECTO, [], mes) + `<section class="panel pf-sec">${secH('team', 'Por persona', `Ordenado por ventas registradas en ${esc(mes)}.`)}${tabla}${nota}</section>`;
+  return cabeza + vivoTarjetas('equipo', EQ_TARJETAS, EQ_DEFECTO, [], mes) + `<section class="panel pf-sec">${secH('team', 'Por persona', `Ordenado por ventas registradas en ${esc(mes)}.`)}${tabla}${nota}</section>`;
 }
 async function eqVivoNeed() {
   const cid = ws?.current(), c = cid ? encodeURIComponent(cid) : '', vivo = conectada() && c;
@@ -7077,7 +7075,7 @@ function coVivoHtml() {
   const cabeza = head('Gestión comercial', 'Costos', `Lo invertido en anuncios en ${esc(mes)} frente a lo que se vendió.`, `<button class="btn" type="button" data-co-tarjetas>${icon('gear')}Editar tarjetas</button>`);
   const extra = `<p class="camp-nota">La inversión sale de la cuenta publicitaria de Meta conectada en la cuenta; las ventas, de las ventas registradas en Ágora. Otros costos (sueldos, comisiones, herramientas) solo aparecen con un reporte mensual.</p>`;
   const camp = campPuede() ? `<div class="mt costos-vivo">${campanasHtml().replace(/<label class="fld camp-mes">[\s\S]*?<\/label>/, '')}</div>` : `<section class="panel mt"><p class="redes-nota">${conectada() ? 'Tu rol no ve la inversión en anuncios.' : 'Esta subcuenta no está conectada con su cuenta: sin ella no hay inversión en anuncios que mostrar.'}</p></section>`;
-  return cabeza + vivoAviso() + vivoTarjetas('costos', CO_TARJETAS, CO_DEFECTO, [], mes) + extra + camp;
+  return cabeza + vivoTarjetas('costos', CO_TARJETAS, CO_DEFECTO, [], mes) + extra + camp;
 }
 async function coVivoNeed() {
   await vgCargar().catch(() => null);
