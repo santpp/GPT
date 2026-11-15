@@ -18,3 +18,4 @@ oportunidades, embudos, ventas ganadas, tablero y consumos de la agencia.
 - 2.6.1: `src/OperationsReport.php` (de la línea 1.11 de Ágora Mobile) y su bloque de rutas `workspace/dia|eficacia|ads` en `src/live-inbox.php`. La tabla `daily_metrics` la crea el puente al instalar el motor.
 - 2.7.0–2.7.1: `src/GhlClient.php` tiene los métodos `social*` de solo lectura (cuentas, publicaciones y cifras) y `src/GhlGateway.php::execute` acepta `$soft` (un 4xx de una lectura opcional no pausa la subcuenta). Volver a aplicarlos al actualizar el motor.
 - 2.8.0: `src/GhlClient.php` tiene `adReportingList` (lista de campañas de Meta del administrador de anuncios). Volver a aplicarlo al actualizar el motor.
+- 2.8.17 · `ContactDirectory::recientes()` y parámetro `since`/`tz` en `GET /api/workspace/contacts` (live-inbox.php): contactos dados de alta hoy, en 7 o en 30 días (filtro `dateAdded` range de la búsqueda de contactos).

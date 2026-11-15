@@ -1,5 +1,10 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.17:**
+- **Facturación: filtros.** Estado del cobro (Todos · Pagados · Pendientes · Vencidos, con su cantidad), búsqueda por cliente, documento o producto, vendedor y producto. Los filtros afectan también a las tarjetas (por ejemplo, lo cobrado de una vendedora). «Quitar filtros» vuelve a todo.
+- **Contactos: filtro «Entraron»** (Todos · Entraron hoy · 7 días · 30 días), por fecha de alta en la cuenta y en la hora del dispositivo, del más nuevo al más viejo. Quien solo ve lo suyo ve solo los suyos. Se recuerda mientras dure la sesión.
+- **Resumen de hoy:** «Leads de hoy» ahora abre Contactos con «Entraron hoy» puesto.
+
 **Novedades 2.8.16:**
 - **Resumen de hoy (Inicio): cada cifra lleva a su detalle.** Sin leer → Bandeja con «No leídas»; Esperando respuesta y Fuera de tiempo → Bandeja con «Sin respuesta»; Conversaciones → Bandeja; Oportunidades abiertas → Oportunidades; Ventas ganadas del mes → Oportunidades, pestaña «Ganadas»; Contactos → Contactos; Tareas pendientes → Tareas; Leads de hoy, Conversaciones del día y Tiempo de respuesta → Tablero comercial (abre en «Hoy», con fuentes, asesores y tiempos). Si la persona no tiene permiso para el módulo, la cifra no es un enlace.
 

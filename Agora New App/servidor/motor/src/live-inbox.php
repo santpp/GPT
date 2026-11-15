@@ -317,7 +317,10 @@ if($path==='/api/workspace/contacts'&&$method==='GET'){
     $search=$_GET['query']??null;
     if($search!==null&&(!is_string($search)||mb_strlen($search)>100))respond(['error'=>'Búsqueda demasiado larga'],422);
     $page=filter_var($_GET['page']??1,FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>40]])?:1;
-    try{respond((new ContactDirectory())->get($connection,$search,$membership,($_GET['refresh']??'')==='1',$page));}
+    // Agora New App 2.8.17: «Entraron» hoy / 7 días / 30 días (fecha de alta en la cuenta, en la zona del dispositivo).
+    $since=in_array($_GET['since']??'',['hoy','7d','30d'],true)?$_GET['since']:null;
+    $zone=is_string($_GET['tz']??null)&&in_array($_GET['tz'],DateTimeZone::listIdentifiers(),true)?$_GET['tz']:'UTC';
+    try{respond($since?(new ContactDirectory())->recientes($connection,$search,$membership,$since,$zone,$page):(new ContactDirectory())->get($connection,$search,$membership,($_GET['refresh']??'')==='1',$page));}
     catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La lista está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
     catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la lista de contactos. Revisa el permiso de contactos.','code'=>'contacts_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'La lista recibida no tiene el formato esperado.','code'=>'contacts_invalid_response'],424);}

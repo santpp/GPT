@@ -426,3 +426,12 @@ a.inicio-resumen-c .inicio-resumen-l{display:inline-flex;align-items:center;gap:
 a.inicio-resumen-c .inicio-resumen-l .ic{width:14px;height:14px;opacity:.45;transition:transform .15s,opacity .15s}
 a.inicio-resumen-c:hover .inicio-resumen-l .ic{opacity:.9;transform:translateX(2px)}
 @media (max-width:600px){a.inicio-resumen-c{border-radius:10px}}
+
+/* 2.8.17 · filtros de Facturación y de Contactos */
+.fa-filtros{display:grid;gap:12px;margin-bottom:16px}
+.fa-fila{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.fa-fila .fld{margin:0}.fa-fila .grow{flex:1 1 240px}.fa-fila select{min-width:170px}
+@media (max-width:600px){.fa-fila .fld,.fa-fila select{width:100%;min-width:0}}
+.contact-since{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
+#view .contact-since .agency-chip-btn{background:var(--surface,#fff);border:1px solid var(--line);color:var(--ink)}
+#view .contact-since .agency-chip-btn.is-active{background:var(--brand);border-color:var(--brand);color:var(--brand-ink,#fff)}

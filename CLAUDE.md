@@ -34,7 +34,7 @@ Léelo entero antes de tocar nada. Es el resumen de cómo trabajamos y de lo que
 ## Estructura del repositorio
 
 - **Raíz** (`src/`, `public/`, `database/`, `tests/`, `deploy/`): **Ágora Mobile** (Ágora 1.x), en producción en nueva.agoradigital.app. Última: **1.10.14**. Paquete en `Agora Mobile/agora-update-1.10.14.zip` (+ `.sha256`, `manual-vendedores.pdf`). PHP 8.3 sin framework, módulos ES en el navegador, `public/router.php`, `src/live-inbox.php`, pasarela `GhlGateway` (20 consultas cada 10 s, 50 000 al día), `TokenVault` (sodium, XChaCha20). Diseño: `docs/DESIGN.md`, `tests/design-tokens.py`.
-- **`Agora New App/`**: el **ERP** (no llamarlo «armazón»). Hoy en pruebas en **tests.agoradigital.app** (CyberPanel + OpenLiteSpeed). Versión actual: **2.8.16**.
+- **`Agora New App/`**: el **ERP** (no llamarlo «armazón»). Hoy en pruebas en **tests.agoradigital.app** (CyberPanel + OpenLiteSpeed). Versión actual: **2.8.17**.
 - `docs/roadmap.md`: historial de versiones de ambos.
 
 ## Agora New App (ERP) · cómo está hecho
@@ -69,6 +69,7 @@ Léelo entero antes de tocar nada. Es el resumen de cómo trabajamos y de lo que
 - **Estudio** (agencia): «Próximamente» en el riel, en Herramientas del equipo y en Personalizar → Módulos; la ruta `/agencia/estudio-ia` muestra el aviso (el código viejo sigue en el archivo, sin usarse).
 - **Tablero comercial · «Ventas del mes y del año» (2.8.13)**: `vtInyectar` (se llama desde `arpEsqueleto`), sección `ventasAnio` en `ARP_SECCIONES`. Mes a mes: reporte (`TB.api.ventasDelAnio`, el reporte guarda **céntimos**, se divide entre 100) y, si no, lo vendido en ventas registradas; meta = `teamGoal`. Solo para quien ve cifras del equipo (decisión del usuario).
 - **Ventas importadas por Excel** (Migración): sin `oportunidadId`, sin `productoId` (producto escrito), vendedor escrito (owner null) y **sin plan de cobros**. Desde 2.8.14 se editan igual (`Ventas::contexto` con `sinOportunidad`, `leer` acepta producto y vendedor escritos); desde 2.8.15 el plan se arma solo (`Ventas::planImportada`: al leer las ventas, una vez, y al importar); **decisión del usuario: cuotas anteriores a hoy = pagadas**. Prueba: `tests/ventas-importadas.py`.
+- **Filtros (2.8.17)**: Facturación sin reporte (`FA.f`: estado/q/vendedor/producto, afectan tarjetas y tablas). Contactos «Entraron» hoy/7d/30d: `ContactDirectory::recientes` (motor, filtro `dateAdded` range + `tz`), parámetro `since` en `workspace/contacts`, estado en `workspace.contactSince` (agora-modulos). La cuenta simulada pone fechas de alta de hoy, 5, 20 y 60 días.
 - **Siguiente posible**: bajar de campaña a conjuntos/anuncios; campañas de Google; módulos del reporte para empresas que no son ASOCIM (el usuario debe decir cuáles y qué miden).
 - Ágora Mobile V2.1: resumen diario o semanal y cabeceras de seguridad (OpenLiteSpeed ignora `Header` en `.htaccess`). Pendiente de decidir: límite de intentos de contraseña por correo y Capacitor 6.2.3. En espera: plantillas de WhatsApp (falta el identificador de la cuenta de WhatsApp Business). Futuro lejano: módulo de inventario.
 - Registro de errores y su estado: `Agora New App/ERRORES.md`. Revisión por módulos: `Agora New App/REVISION-MODULOS.md`. Guía de instalación: `Agora New App/INSTALAR-CYBERPANEL.md`.

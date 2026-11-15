@@ -9,7 +9,7 @@ LOC='LOCasocim000000001'
 NOW=int(time.time()*1000)
 USERS=[{'id':'u-admin','name':'Valentina Castillo','firstName':'Valentina','lastName':'Castillo','email':'admin.asocim@agora.test','roles':{'type':'account','role':'admin'},'permissions':{}},
        {'id':'u-paola','name':'Paola Rojas','firstName':'Paola','lastName':'Rojas','email':'ejecutivo1.asocim@agora.test','roles':{'type':'account','role':'user'},'permissions':{'conversationsEnabled':True,'contactsEnabled':True,'opportunitiesEnabled':True}}]
-CONTACTS={f'k{i}':{'id':f'k{i}','locationId':LOC,'contactName':n,'firstName':n.split()[0],'lastName':n.split()[1],'email':f'{n.split()[0].lower()}@ejemplo.test','phone':f'+58414000000{i}','assignedTo':a,'tags':['cliente'],'dateAdded':'2026-11-10T10:00:00Z','customFields':[]}
+CONTACTS={f'k{i}':{'id':f'k{i}','locationId':LOC,'contactName':n,'firstName':n.split()[0],'lastName':n.split()[1],'email':f'{n.split()[0].lower()}@ejemplo.test','phone':f'+58414000000{i}','assignedTo':a,'tags':['cliente'],'dateAdded':(__import__('datetime').datetime.utcnow()-__import__('datetime').timedelta(days=[0,5,20,60][i])).strftime('%Y-%m-%dT%H:%M:%SZ'),'customFields':[]}
           for i,(n,a) in enumerate([('Lucía Fernández','u-paola'),('Marcos Ortega','u-admin'),('Camila Reyes','u-paola'),('Pedro Navarro',None)])}
 CONVS=[{'id':f'c{i}','locationId':LOC,'contactId':k,'contactName':c['contactName'],'fullName':c['contactName'],'phone':c['phone'],'email':c['email'],'lastMessageType':'TYPE_WHATSAPP' if i%2==0 else 'TYPE_SMS',
         'lastMessageBody':['Hola, ¿tienen cupo el sábado?','Gracias, quedo atento','¿Cuánto cuesta el plan anual?','Buenas tardes'][i],'lastMessageDate':NOW-i*600000,'lastMessageDirection':'inbound','unreadCount':[2,0,1,0][i],
@@ -77,6 +77,11 @@ class H(BaseHTTPRequestHandler):
             for f in b.get('filters',[]):
                 if f.get('field')=='assignedTo':who=f['value'][0] if isinstance(f['value'],list) else f['value']
             items=[c for c in CONTACTS.values() if who is None or c['assignedTo']==who]
+            for f in b.get('filters',[]):
+                if f.get('field')=='dateAdded' and f.get('operator')=='range':
+                    gt=f['value'].get('gt','');lt=f['value'].get('lt','9999')
+                    items=[c for c in items if gt<=c.get('dateAdded','')<lt]
+            items.sort(key=lambda c:c.get('dateAdded',''),reverse=True)
             return self.out(200,{'contacts':items,'total':len(items)})
         m2=re.match(r'^/contacts/([\w-]+)$',p)
         if m2 and m2.group(1) in CONTACTS:

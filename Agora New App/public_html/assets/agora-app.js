@@ -4058,7 +4058,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.8.16').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.8.17').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -6961,7 +6961,7 @@ const INI_TARJETAS = {
   opp: {ir: {mod: 'oportunidades', ayuda: 'Abrir las oportunidades'}, t: 'Oportunidades abiertas', ic: 'trend', fuente: 'dash', d: 'Negocios en curso y el dinero en juego.', f: d => [iniN(d.opportunities?.count), d.opportunities?.value != null ? `${d.opportunities.sampled ? 'al menos ' : ''}${usd(d.opportunities.value)} en juego` : '']},
   conversaciones: {ir: {mod: 'bandeja', ayuda: 'Abrir la bandeja'}, t: 'Conversaciones', ic: 'chat', fuente: 'dash', d: 'Todas las conversaciones de la bandeja.', f: d => [iniN(d.conversations?.total), `${iniN(d.conversations?.unread)} sin leer`]},
   contactos: {ir: {mod: 'contactos', ayuda: 'Abrir los contactos'}, t: 'Contactos', ic: 'users', fuente: 'dash', d: 'Fichas en la cuenta.', f: d => [iniN(d.contacts), 'fichas en la cuenta']},
-  leadsHoy: {ir: {mod: 'comercial', ayuda: 'Ver de dónde vienen y a quién se asignaron'}, t: 'Leads de hoy', ic: 'spark', fuente: 'dash', d: 'Contactos nuevos que entraron hoy.', f: d => [iniN(d.leads?.today), d.leads?.mine != null && d.leads?.linked ? `${iniN(d.leads.mine)} asignados a ti` : 'entraron hoy']},
+  leadsHoy: {ir: {mod: 'contactos', since: 'hoy', ayuda: 'Ver los contactos que entraron hoy'}, t: 'Leads de hoy', ic: 'spark', fuente: 'dash', d: 'Contactos nuevos que entraron hoy.', f: d => [iniN(d.leads?.today), d.leads?.mine != null && d.leads?.linked ? `${iniN(d.leads.mine)} asignados a ti` : 'entraron hoy']},
   conversacionesDia: {ir: {mod: 'comercial', ayuda: 'Ver la operación del día'}, t: 'Conversaciones del día', ic: 'chat', fuente: 'dia', d: 'Conversaciones con movimiento hoy.', f: d => [iniN(d.conversacionesDia), `${iniN(d.atendidas)} atendidas`]},
   respuesta: {ir: {mod: 'comercial', ayuda: 'Ver los tiempos de respuesta por asesor'}, t: 'Tiempo de respuesta', ic: 'clock', fuente: 'dia', d: 'Lo que tarda en promedio la primera respuesta.', f: d => [d.slaPromedio || '—', d.slaMetaTexto ? `meta: ${d.slaMetaTexto}` : 'promedio de hoy']},
   fueraTiempo: {ir: {mod: 'bandeja', filtro: 'waiting', ayuda: 'Abrir la bandeja con las que esperan respuesta'}, t: 'Fuera de tiempo', ic: 'warn', fuente: 'dia', d: 'Conversaciones que pasaron la meta de respuesta.', f: d => [iniN(d.slaIncumplido), d.slaIncumplidoAyer != null ? `ayer: ${iniN(d.slaIncumplidoAyer)}` : '']},
@@ -7098,15 +7098,20 @@ async function coVivoNeed() {
 }
 /* ---------- 2.8.11 · Facturación sin reporte mensual: los cobros de las ventas registradas ----------
    Toma el plan de cobros de todas las ventas (también las de meses anteriores, como las recurrentes) y muestra lo que toca cobrar en el mes. */
-const FA = {datos: null, t: 0};
+const FA = {datos: null, t: 0, f: {estado: '', q: '', vendedor: '', producto: ''}, qt: 0};
 async function faCargar(force) {
   if (!force && FA.datos && Date.now() - FA.t < 30000) return FA.datos;
   try { FA.datos = await agoraApi('workspace/ventas'); FA.t = Date.now(); } catch { FA.datos = null; }
   return FA.datos;
 }
-function faCobros(ym) {
+/* 2.8.17 · filtros de Facturación: estado del cobro, búsqueda, vendedor y producto (afectan tarjetas y tablas). */
+const faEstadoDe = x => x.c.estado === 'pagado' ? 'pagado' : x.venc ? 'vencido' : 'pendiente';
+const faPasa = (x, sinEstado) => { const f = FA.f, q = norm(f.q || '');
+  return (sinEstado || !f.estado || faEstadoDe(x) === f.estado) && (!f.vendedor || (x.v.vendedor || 'Sin vendedor') === f.vendedor) && (!f.producto || (x.v.producto || '') === f.producto)
+    && (!q || norm(`${x.v.cliente?.nombre || ''} ${x.v.cliente?.documento || ''} ${x.v.producto || ''} ${x.v.vendedor || ''}`).includes(q)); };
+function faCobros(ym, {crudo = false, sinEstado = false} = {}) {
   const hoy = vgHoy(), todos = [];
-  (FA.datos?.items || []).forEach(v => (v.plan || []).forEach(c => todos.push({v, c, venc: c.estado !== 'pagado' && String(c.fecha) < hoy})));
+  (FA.datos?.items || []).forEach(v => (v.plan || []).forEach(c => { const x = {v, c, venc: c.estado !== 'pagado' && String(c.fecha) < hoy}; if (crudo || faPasa(x, sinEstado)) todos.push(x); }));
   return {mes: todos.filter(x => String(x.c.fecha).slice(0, 7) === ym).sort((a, b) => String(a.c.fecha).localeCompare(String(b.c.fecha))),
     atrasados: todos.filter(x => x.venc && String(x.c.fecha).slice(0, 7) < ym).sort((a, b) => String(a.c.fecha).localeCompare(String(b.c.fecha)))};
 }
@@ -7127,14 +7132,31 @@ function faVivoHtml() {
   const cabeza = head('Gestión comercial', 'Facturación', `Lo que toca cobrar en ${esc(mes)} según el plan de cobros de cada venta, y lo que está atrasado.`, `<button class="btn" type="button" data-fa-tarjetas>${icon('gear')}Editar tarjetas</button>`);
   if (!FA.datos) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer los cobros</b>Vuelve a intentarlo en un momento.</p></section>';
   const m = faCobros(ym), kpis = vivoTarjetas('facturas', FA_TARJETAS, FA_DEFECTO, [m], mes);
+  const base = faCobros(ym, {sinEstado: true}), crudo = faCobros(ym, {crudo: true}), f = FA.f;
+  const cuenta = k => base.mes.filter(x => faEstadoDe(x) === k).length + (k === 'vencido' ? base.atrasados.length : 0);
+  const chip = (k, t, n) => `<button type="button" class="agency-chip-btn ${f.estado === k ? 'is-active' : ''}" data-fa-f="${k}" aria-pressed="${f.estado === k}">${t}${n != null ? ` · ${int(n)}` : ''}</button>`;
+  const opciones = (l, sel, todos) => `<option value="">${todos}</option>` + [...new Set(l)].filter(Boolean).sort((a, b) => a.localeCompare(b)).map(x => `<option value="${esc(x)}" ${x === sel ? 'selected' : ''}>${esc(x)}</option>`).join('');
+  const todosC = [...crudo.mes, ...crudo.atrasados], hayFiltro = f.estado || f.q || f.vendedor || f.producto;
+  const filtros = `<section class="panel fa-filtros" aria-label="Filtros de cobros">
+    <div class="agency-chips" role="group" aria-label="Estado del cobro">${chip('', 'Todos', base.mes.length + base.atrasados.length)}${chip('pagado', 'Pagados', cuenta('pagado'))}${chip('pendiente', 'Pendientes', cuenta('pendiente'))}${chip('vencido', 'Vencidos', cuenta('vencido'))}</div>
+    <div class="fa-fila"><label class="fld grow"><span class="sr-only">Buscar</span><span class="search-in">${icon('search')}<input type="search" data-fa-q value="${esc(f.q)}" placeholder="Cliente, documento o producto" autocomplete="off"></span></label>
+      <label class="fld"><span class="sr-only">Vendedor</span><select data-fa-vend>${opciones(todosC.map(x => x.v.vendedor || 'Sin vendedor'), f.vendedor, 'Todos los vendedores')}</select></label>
+      <label class="fld"><span class="sr-only">Producto</span><select data-fa-prod>${opciones(todosC.map(x => x.v.producto), f.producto, 'Todos los productos')}</select></label>
+      ${hayFiltro ? `<button type="button" class="btn btn-sm" data-fa-limpiar>${icon('plus')}Quitar filtros</button>` : ''}</div></section>`;
   const estado = x => x.c.estado === 'pagado' ? '<span class="sc sc-ok">Pagado</span>' : x.venc ? '<span class="sc sc-warn">Vencido</span>' : '<span class="sc sc-gray">Pendiente</span>';
   const fila = x => `<tr><td>${esc(vgFecha(x.c.fecha))}</td><td class="wrap"><span class="who-cell"><b>${esc(x.v.cliente?.nombre || '—')}</b><small>${esc(x.v.cliente?.documento || '')}</small></span></td><td class="wrap"><span class="who-cell"><b>${esc(x.v.producto || '')}</b><small>${esc(x.v.vendedor ? 'vende ' + x.v.vendedor : '')}</small></span></td><td class="n">${x.v.sinFin ? `Cobro ${int(x.c.n)}` : `${int(x.c.n)} de ${int((x.v.plan || []).length)}`}</td><td class="n">${esc(vgMonto(x.c.monto, x.v.moneda))}</td><td>${estado(x)}</td><td class="n">${puedeEd && x.c.estado !== 'pagado' ? `<button class="btn btn-sm btn-tint" type="button" data-fa-pagar="${esc(x.v.id)}" data-n="${esc(x.c.n)}">Marcar pagado</button>` : ''}</td></tr>`;
   const tabla = l => `<div class="tw"><table data-xt="vivo"><thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th class="n">Cuota</th><th class="n">Monto</th><th>Estado</th><th></th></tr></thead><tbody>${l.map(fila).join('')}</tbody></table></div>`;
-  const cobrosMes = m.mes.length ? tabla(m.mes) : `<p class="empty"><b>No hay cobros que venzan en ${esc(mes)}</b>Los cobros salen del plan de cada venta registrada.</p>`;
+  const cobrosMes = m.mes.length ? tabla(m.mes) : hayFiltro ? `<p class="empty"><b>Ningún cobro de ${esc(mes)} coincide con los filtros</b>Prueba con otro estado, vendedor o producto, o quita los filtros.</p>` : `<p class="empty"><b>No hay cobros que venzan en ${esc(mes)}</b>Los cobros salen del plan de cada venta registrada.</p>`;
   const atras = m.atrasados.length ? `<section class="panel pf-sec mt">${secH('warn', 'Atrasados de meses anteriores', `${int(m.atrasados.length)} ${m.atrasados.length === 1 ? 'cobro' : 'cobros'} · ${esc(faSuma(m.atrasados))}`)}${tabla(m.atrasados)}</section>` : '';
-  return cabeza + kpis + `<section class="panel pf-sec">${secH('receipt', 'Cobros de ' + esc(mes), `${int(m.mes.length)} ${m.mes.length === 1 ? 'cobro' : 'cobros'} · ${esc(faSuma(m.mes))}`)}${cobrosMes}</section>` + atras;
+  return cabeza + filtros + kpis + `<section class="panel pf-sec">${secH('receipt', 'Cobros de ' + esc(mes), `${int(m.mes.length)} ${m.mes.length === 1 ? 'cobro' : 'cobros'} · ${esc(faSuma(m.mes))}`)}${cobrosMes}</section>` + atras;
 }
 function faVivoMontar(root) {
+  root?.querySelectorAll('[data-fa-f]').forEach(b => b.onclick = () => { FA.f.estado = b.dataset.faF; repaint(); });
+  root?.querySelector('[data-fa-vend]')?.addEventListener('change', e => { FA.f.vendedor = e.target.value; repaint(); });
+  root?.querySelector('[data-fa-prod]')?.addEventListener('change', e => { FA.f.producto = e.target.value; repaint(); });
+  root?.querySelector('[data-fa-limpiar]')?.addEventListener('click', () => { FA.f = {estado: '', q: '', vendedor: '', producto: ''}; repaint(); });
+  const qi = root?.querySelector('[data-fa-q]');
+  if (qi) qi.oninput = () => { FA.f.q = qi.value; clearTimeout(FA.qt); FA.qt = setTimeout(() => { repaint(); const n = $('[data-fa-q]'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); };
   root?.querySelector('[data-fa-tarjetas]')?.addEventListener('click', () => tarjEditar('facturas', FA_TARJETAS, FA_DEFECTO, 'Facturación', repaint));
   root?.querySelectorAll('[data-fa-pagar]').forEach(b => b.onclick = async () => {
     busy(b, true, '');
@@ -7975,7 +7997,7 @@ async function inicioResumen(root) {
   box.addEventListener('click', e => {
     const a = e.target.closest('[data-ir-go]'); if (!a || e.ctrlKey || e.metaKey || e.shiftKey) return;
     const r = iniDestino(a.dataset.irGo); if (!r) return; e.preventDefault();
-    if (ws) { if (r.filtro) ws.pendingFilter = r.filtro; if (r.pestana) ws.pendingOppTab = r.pestana; }
+    if (ws) { if (r.filtro) ws.pendingFilter = r.filtro; if (r.pestana) ws.pendingOppTab = r.pestana; if (r.since) ws.contactSince = r.since; }
     go(MODS[r.mod].path);
     // La bandeja se dibuja dos veces al entrar (cargando y con datos): el filtro se vuelve a poner cuando ya está lista.
     if (r.filtro) { const fin = Date.now() + 6000; const poner = () => {

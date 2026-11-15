@@ -3067,6 +3067,7 @@
     container.innerHTML=`<div class="records-layout" id="records-layout">
      <div class="records-list">
       <div class="live-toolbar"><label class="search"><span aria-hidden="true">⌕</span><input id="contact-search" type="search" placeholder="Buscar por nombre, correo o teléfono" aria-label="Buscar contactos"></label></div>
+      <div class="agency-chips contact-since" role="group" aria-label="Entraron">${[['','Todos'],['hoy','Entraron hoy'],['7d','7 días'],['30d','30 días']].map(([k,t])=>`<button type="button" class="agency-chip-btn${(workspace.contactSince||'')===k?' is-active':''}" aria-pressed="${(workspace.contactSince||'')===k}" data-since="${k}">${t}</button>`).join('')}</div>
       <p id="contact-feedback" class="live-feedback" role="status"></p>
       <div id="contact-results" role="list">${skeleton('list',7)}</div>
      </div>
@@ -3085,7 +3086,11 @@
 
     const loadTags=()=>request(`workspace/tags?connectionId=${encodeURIComponent(connection)}`).then(r=>asList(r.items));
     let shown=[],page=1;
+    /* Agora New App 2.8.17: filtro «Entraron» (fecha de alta en la cuenta). Se recuerda mientras dure la sesión. */
+    const SINCE_TXT={hoy:'hoy',['7d']:'en los últimos 7 días',['30d']:'en los últimos 30 días'};
     const describe=(data,search)=>{
+      const since=workspace.contactSince||'';
+      if(since){const n=data.total||0;if(!n)return search?`Nadie que coincida entró ${SINCE_TXT[since]}.`:`Nadie entró ${SINCE_TXT[since]}${data.restricted?' asignado a ti':''}.`;return `${n} contacto${n===1?'':'s'} entr${n===1?'ó':'aron'} ${SINCE_TXT[since]}${data.restricted?' (asignados a ti)':''}${shown.length<n?` · se muestran ${shown.length}, los más nuevos primero`:''}`;}
       if(!data.total)return search?'Ningún contacto coincide con esa búsqueda.':(data.restricted?'Todavía no tienes contactos asignados.':'Esta cuenta todavía no tiene contactos.');
       const n=data.total,word=`${n} contacto${n===1?'':'s'}`;
       if(data.restricted&&data.exact)return `${word} asignado${n===1?'':'s'} a ti${search?' que coinciden':''}${shown.length<n?` · se muestran ${shown.length}, los más recientes primero`:''}`;
@@ -3103,7 +3108,8 @@
       const version=++generation;
       if(next===1){$('#contact-feedback').textContent='';if(!$('#contact-results').children.length||$('#contact-results .sk-wrap'))$('#contact-results').innerHTML=skeleton('list',7);}
       try{
-        const data=await request(`workspace/contacts?connectionId=${encodeURIComponent(connection)}${search?'&query='+encodeURIComponent(search):''}${next>1?'&page='+next:''}`);
+        const since=workspace.contactSince||'';let tz='UTC';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}catch{}
+        const data=await request(`workspace/contacts?connectionId=${encodeURIComponent(connection)}${search?'&query='+encodeURIComponent(search):''}${next>1?'&page='+next:''}${since?'&since='+since+'&tz='+encodeURIComponent(tz):''}`);
         if(!active()||version!==generation)return;
         const items=asList(data.items);
         if(next===1)shown=items;else{const seen=new Set(shown.map(c=>c.id));shown=shown.concat(items.filter(c=>!seen.has(c.id)))}
@@ -3209,6 +3215,7 @@
 
     // The term is only sent once typing settles, so a search costs one read.
     $('#contact-search').oninput=e=>{clearTimeout(timer);const value=searchText(e.target.value);timer=setTimeout(()=>load(value),450)};
+    container.querySelectorAll('[data-since]').forEach(b=>b.onclick=()=>{workspace.contactSince=b.dataset.since||null;container.querySelectorAll('[data-since]').forEach(n=>{const on=n===b;n.classList.toggle('is-active',on);n.setAttribute('aria-pressed',String(on))});load(searchText($('#contact-search').value))});
     container.agoraLiveDispose=()=>{clearTimeout(timer);container.agoraViewInstance=null};
     await load();
     if(workspace.pendingContact){const id=workspace.pendingContact;workspace.pendingContact=null;open(id)}

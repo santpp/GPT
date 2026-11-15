@@ -52,4 +52,12 @@ st,d4=e.call('workspace/contactos/nuevo','POST',{'nombre':'Lead','apellido':'Pro
 ok(st==200 and cuenta(d4['id'])['assignedTo']=='u-paola','el contacto que crea un ejecutivo queda asignado a él')
 ok(e2.call('workspace/contactos/nuevo','POST',{'nombre':'X','correo':f'x{int(time.time())}@ejemplo.test','requestId':uuid.uuid4().hex})[0]==403,'un ejecutivo sin enlace con la cuenta no puede crear contactos')
 ok(c.call('workspace/contactos/nuevo','POST',{'nombre':'X','correo':f'y{int(time.time())}@ejemplo.test','requestId':uuid.uuid4().hex})[0]==403,'el rol de consulta no puede crear contactos')
+# 2.8.17 · filtro «Entraron» (fecha de alta en la cuenta)
+nombres=lambda d:{x['name'] for x in d.get('items',[])}
+st,d=a.call(f'workspace/contacts?connectionId={cid}&since=hoy&tz=UTC')
+ok(st==200 and nombres(d)=={'Lucía Fernández'} and d.get('since')=='hoy','«Entraron hoy» trae solo los contactos dados de alta hoy')
+st,d=a.call(f'workspace/contacts?connectionId={cid}&since=30d&tz=UTC')
+ok(st==200 and nombres(d)>={'Lucía Fernández','Marcos Ortega','Camila Reyes'} and 'Pedro Navarro' not in nombres(d),'«30 días» deja fuera a los de hace más tiempo')
+st,d=e.call(f'workspace/contacts?connectionId={cid}&since=30d&tz=UTC')
+ok(st==200 and d.get('restricted') and all(x['assignedTo']=='u-paola' for x in d['items']),'un ejecutivo ve solo sus contactos también con el filtro')
 print(f'{n} comprobaciones')
