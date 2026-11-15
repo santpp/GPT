@@ -2968,7 +2968,9 @@ function tableroHay(id) {
   if (!ME && !AGORA_ME) return false;
   if (id === 'configuracion') return puede('ajustes.editar') && hayReporte();
   if (id === 'ventas') return puede('datos.consultar') && (tableroCan('ver.ventas') || tableroCan('ver.ventas.propias'));
-  /* Los módulos del reporte mensual solo existen si la subcuenta tiene un reporte cargado y la persona ve cifras del equipo. */
+  /* Los módulos del reporte mensual solo existen si la subcuenta tiene un reporte cargado y la persona ve cifras del equipo.
+     2.8.9: Gestión Comercial, Equipo y Costos se arman sin reporte (ventas registradas y cuenta), así que se ofrecen igual. */
+  if (['resumen', 'equipo', 'costos'].includes(id)) return puede('equipo.metricas') && puede('finanzas');
   return puede('equipo.metricas') && puede('finanzas') && hayReporte();
 }
 const enTablero = () => R && typeof R.view === 'string' && R.view.indexOf('tc_') === 0;
@@ -3050,9 +3052,10 @@ async function cargarTablero() {
 TB_MODS.forEach(id => {
   const inicio = id === 'resumen';
   V[tbVista(id)] = {
-    need: () => inicio ? Promise.all([cargarTablero(), cargarResumen().catch(() => null)]).then(r => TB.estado === 'sin-datos' ? Promise.all([vgCargar().catch(() => null), tarjCargar('gestion')]).then(() => r) : r) : cargarTablero(), // Agora New App: el resumen es solo de la dueña; sin él, el módulo abre igual
+    // Agora New App: el resumen es solo de la dueña; sin él, el módulo abre igual. 2.8.8/2.8.9: sin reporte, Gestión Comercial y Equipo se arman con datos vivos (TB_VIVO).
+    need: () => (inicio ? Promise.all([cargarTablero(), cargarResumen().catch(() => null)]) : cargarTablero()).then(r => TB.estado === 'sin-datos' && TB_VIVO[id] ? TB_VIVO[id].need().then(() => r) : r),
     render() {
-      if (TB.estado === 'sin-datos' && inicio) return gcVivoHtml(); // 2.8.8: sin reporte, Gestión Comercial se arma con las ventas registradas
+      if (TB.estado === 'sin-datos' && TB_VIVO[id]) return TB_VIVO[id].render();
       if (TB.estado === 'sin-datos') return head('Gestión comercial', esc(MODS[R.mod]?.name || 'Reporte'))+'<section class="panel"><p class="empty"><b>Esta subcuenta todavía no tiene reportes</b>Administración puede importar un reporte JSON desde Ajustes.</p><a class="btn" href="'+href('/ajustes')+'">Abrir Ajustes</a></section>';
       if (TB.estado === 'error') return failed(TB.error);
       if (TB.estado !== 'listo') return loading();
@@ -3061,7 +3064,7 @@ TB_MODS.forEach(id => {
       const html = TB.api.V[id].render();
       return inicio ? html.replace('<!--identidad-del-espacio-->', '') : html;
     },
-    mounted(root) { if (TB.estado === 'listo') TB.api.acomodar(); else if (inicio && TB.estado === 'sin-datos') gcVivoMontar(root); },
+    mounted(root) { if (TB.estado === 'listo') TB.api.acomodar(); else if (TB.estado === 'sin-datos' && TB_VIVO[id]) TB_VIVO[id].montar(root); },
   };
 });
 
@@ -4053,7 +4056,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.8.8').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.8.9').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -7011,6 +7014,83 @@ function gcVivoHtml() {
 function gcVivoMontar(root) {
   root?.querySelector('[data-gc-tarjetas]')?.addEventListener('click', () => tarjEditar('gestion', VG_TARJETAS, GC_DEFECTO, 'Gestión Comercial', repaint));
 }
+/* ---------- 2.8.9 · Equipo sin reporte mensual: cada persona con sus ventas registradas y lo que dice la cuenta ---------- */
+const EQ = {dia: null, won: null};
+const eqNorm = x => norm(String(x || '').trim());
+function eqFilas() {
+  const filas = new Map(), fila = n => { const k = eqNorm(n) || 'sin vendedor'; if (!filas.has(k)) filas.set(k, {n: n || 'Sin vendedor', ventas: [], ganadas: 0, ganadoValor: 0, leads: 0, sinLeer: 0}); return filas.get(k); };
+  (VG.datos?.items || []).forEach(v => fila(v.vendedor).ventas.push(v));
+  (EQ.won?.bySeller || []).forEach(x => { const f = fila(x.name); f.ganadas += Number(x.count) || 0; f.ganadoValor += Number(x.sum) || 0; });
+  (EQ.dia?.leadsPorUsuario || []).forEach(x => { fila(x.nombre).leads += Number(x.n) || 0; });
+  (EQ.dia?.sinLeerPorAsesor || []).forEach(x => { fila(x.nombre).sinLeer += Number(x.n) || 0; });
+  return [...filas.values()].sort((a, b) => b.ventas.length - a.ventas.length || b.ganadas - a.ganadas || b.sinLeer - a.sinLeer || a.n.localeCompare(b.n));
+}
+const EQ_TARJETAS = {
+  personas: {t: 'Personas con actividad', ic: 'team', d: 'Quiénes vendieron, ganaron oportunidades o tienen conversaciones en el mes.', f: () => { const l = eqFilas().filter(f => f.n !== 'Sin vendedor'); return ['', int(l.length), 'en el mes']; }},
+  vendedor: {t: 'Quien más vendió', ic: 'coins', d: 'La persona con más ventas registradas en el mes.', f: () => { const f = eqFilas().find(x => x.ventas.length); return ['is-ok', f ? esc(f.n) : '—', f ? `${int(f.ventas.length)} ${f.ventas.length === 1 ? 'venta' : 'ventas'} · ${esc(vgPorMoneda(vgSuma(f.ventas, v => v.monto)))}` : 'Sin ventas registradas']; }},
+  ventas: {t: 'Ventas registradas', ic: 'receipt', d: 'Ventas del mes de todo el equipo.', f: () => { const l = VG.datos?.items || []; return ['', int(l.length), esc(vgPorMoneda(vgSuma(l, v => v.monto)))]; }},
+  promedio: {t: 'Ventas por persona', ic: 'trend', d: 'Ventas registradas divididas entre quienes vendieron.', f: () => { const l = eqFilas().filter(f => f.ventas.length && f.n !== 'Sin vendedor'); const n = (VG.datos?.items || []).length; return ['', l.length ? NF.format(n / l.length) : '—', `${int(l.length)} ${l.length === 1 ? 'persona vendió' : 'personas vendieron'}`]; }},
+  ganadasCuenta: {t: 'Ganadas en la cuenta', ic: 'check', d: 'Oportunidades ganadas en el mes según la cuenta.', f: () => EQ.won ? ['', int(EQ.won.totals?.count || 0), `${usd(EQ.won.totals?.sum || 0)} en total`] : ['', '—', 'La cuenta no lo informó']},
+  porCompletar: {t: 'Ventas por completar', ic: 'warn', d: 'Ganadas a las que les falta el formulario de venta.', f: () => { const n = (VG.datos?.pendientes || []).length; return [n ? 'is-warn' : '', int(n), n ? 'Falta el formulario de venta' : 'Todo completo']; }},
+  sinLeer: {t: 'Sin leer ahora', ic: 'bell', d: 'Conversaciones sin leer del equipo en este momento.', f: () => EQ.dia ? [EQ.dia.sinLeer ? 'is-warn' : '', int(EQ.dia.sinLeer || 0), EQ.dia.sinLeerAyer != null ? `ayer: ${int(EQ.dia.sinLeerAyer)}` : ''] : ['', '—', 'La cuenta no lo informó']},
+  respuesta: {t: 'Tiempo de respuesta', ic: 'clock', d: 'Lo que tarda el equipo en responder, en promedio.', f: () => EQ.dia ? ['', esc(EQ.dia.slaPromedio || '—'), EQ.dia.slaMetaTexto ? `meta: ${esc(EQ.dia.slaMetaTexto)}` : 'promedio'] : ['', '—', 'La cuenta no lo informó']},
+  leadsHoy: {t: 'Leads de hoy', ic: 'spark', d: 'Contactos nuevos que entraron hoy.', f: () => EQ.dia ? ['', int(EQ.dia.leads || 0), EQ.dia.leadsAyer != null ? `ayer: ${int(EQ.dia.leadsAyer)}` : ''] : ['', '—', 'La cuenta no lo informó']},
+};
+const EQ_DEFECTO = ['personas', 'vendedor', 'ganadasCuenta', 'sinLeer'];
+const vivoAviso = () => `<p class="gc-aviso">${icon('info')}<span>Esta subcuenta no tiene reporte mensual cargado, así que estas cifras salen de las <b>ventas registradas</b> en Ágora y de la cuenta.${puede('ajustes.editar') ? ` Si cargas un reporte en <a href="${href('/ajustes')}">Ajustes</a>, aquí se verá el reporte.` : ''}</span></p>`;
+const vivoTarjetas = (vista, catalogo, defecto, args, mes) => { const ids = tarjElegidas(vista, catalogo, defecto); return ids.length ? `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">${ids.map(id => { const x = catalogo[id]; let v; try { v = x.f(...args); } catch { v = ['', '—', '']; } return `<div class="ag-resumen ${v[0]}"><span class="ag-resumen-ic" aria-hidden="true">${icon(x.ic)}</span><span class="ag-resumen-t">${esc(x.t)}</span><strong class="ag-resumen-v">${v[1]}</strong><span class="ag-resumen-d">${v[2] || ''}</span></div>`; }).join('')}</section>` : ''; };
+function eqVivoHtml() {
+  const mes = mesNombre(VG.mes || PERIODO);
+  const acts = `<button class="btn" type="button" data-eq-tarjetas>${icon('gear')}Editar tarjetas</button>`;
+  const cabeza = head('Gestión comercial', 'Equipo', `Cómo le va a cada persona en ${esc(mes)}: lo que vendió, lo que ganó en la cuenta y lo que tiene pendiente.`, acts);
+  const filas = eqFilas(), hayCuenta = !!(EQ.won || EQ.dia);
+  if (!filas.length) return cabeza + vivoAviso() + vivoTarjetas('equipo', EQ_TARJETAS, EQ_DEFECTO, [], mes) + `<section class="panel"><p class="empty"><b>Todavía no hay actividad del equipo en ${esc(mes)}</b>Cuando haya ventas registradas u oportunidades ganadas, cada persona aparece aquí.</p></section>`;
+  const max = Math.max(1, ...filas.map(f => f.ventas.length));
+  const mensual = l => vgPorMoneda(vgSuma(l.filter(v => v.cobro === 'recurrente'), v => (Number(v.monto) || 0) * (FREC_MES[v.frecuencia] || 1)));
+  const tabla = `<div class="tw"><table data-xt="vivo"><thead><tr><th>Persona</th><th class="n">Ventas</th><th class="n">Vendido</th><th class="n">Recurrente al mes</th>${EQ.won ? '<th class="n">Ganadas en la cuenta</th>' : ''}${EQ.dia ? '<th class="n">Leads de hoy</th><th class="n">Sin leer ahora</th>' : ''}</tr></thead><tbody>${filas.map(f => `<tr><td><b>${esc(f.n)}</b><span class="gc-barra" aria-hidden="true"><i style="width:${Math.max(4, Math.round(100 * f.ventas.length / max))}%"></i></span></td><td class="n">${int(f.ventas.length)}</td><td class="n">${f.ventas.length ? esc(vgPorMoneda(vgSuma(f.ventas, v => v.monto))) : '—'}</td><td class="n">${f.ventas.some(v => v.cobro === 'recurrente') ? esc(mensual(f.ventas)) : '—'}</td>${EQ.won ? `<td class="n">${f.ganadas ? `${int(f.ganadas)} · ${esc(usd(f.ganadoValor))}` : '—'}</td>` : ''}${EQ.dia ? `<td class="n">${int(f.leads)}</td><td class="n">${f.sinLeer ? `<span class="sc sc-warn">${int(f.sinLeer)}</span>` : '0'}</td>` : ''}</tr>`).join('')}</tbody></table></div>`;
+  const nota = `<p class="camp-nota">«Ventas», «Vendido» y «Recurrente al mes» salen de las ventas registradas en Ágora.${EQ.won ? ' «Ganadas en la cuenta» son las oportunidades ganadas del mes.' : ''}${EQ.dia ? ' «Leads de hoy» y «Sin leer ahora» son de este momento.' : ''}${hayCuenta ? '' : ' Esta subcuenta no está conectada con su cuenta, por eso no se ven ganadas, leads ni conversaciones.'}</p>`;
+  return cabeza + vivoAviso() + vivoTarjetas('equipo', EQ_TARJETAS, EQ_DEFECTO, [], mes) + `<section class="panel pf-sec">${secH('team', 'Por persona', `Ordenado por ventas registradas en ${esc(mes)}.`)}${tabla}${nota}</section>`;
+}
+async function eqVivoNeed() {
+  const cid = ws?.current(), c = cid ? encodeURIComponent(cid) : '', vivo = conectada() && c;
+  const [, , dia, won] = await Promise.all([vgCargar().catch(() => null), tarjCargar('equipo'),
+    vivo ? agoraApi(`workspace/dia?connectionId=${c}`).catch(() => null) : null,
+    vivo ? agoraApi(`workspace/won?connectionId=${c}`).catch(() => null) : null]);
+  EQ.dia = dia; EQ.won = won;
+}
+/* ---------- 2.8.9 · Costos sin reporte mensual: la inversión en Meta del mes frente a lo vendido ---------- */
+const coInv = () => CAMP.datos?.estado === 'ok' || CAMP.datos?.estado === 'totales' ? CAMP.datos.totales?.inversion ?? null : null;
+const coDiv = (a, b) => a != null && b ? a / b : null;
+const coVendido = () => { const o = vgSuma(VG.datos?.items || [], v => v.monto); return o.USD ?? Object.values(o)[0] ?? 0; };
+const CO_TARJETAS = {
+  inversion: {t: 'Inversión en Meta', ic: 'coins', d: 'Lo invertido en campañas de Facebook e Instagram en el mes.', f: () => { const i = coInv(); return ['', i == null ? '—' : esc(usd(i)), i == null ? 'La cuenta publicitaria no lo informó' : 'según la cuenta publicitaria']; }},
+  costoVenta: {t: 'Costo por venta', ic: 'receipt', d: 'Inversión en Meta dividida entre las ventas registradas del mes.', f: () => { const n = (VG.datos?.items || []).length, c = coDiv(coInv(), n); return ['', c == null ? '—' : esc(usd(c)), `${int(n)} ventas registradas`]; }},
+  costoGanada: {t: 'Costo por oportunidad ganada', ic: 'check', d: 'Inversión en Meta dividida entre las ganadas del mes en la cuenta.', f: () => { const n = EQ.won?.totals?.count || 0, c = coDiv(coInv(), n); return ['', c == null ? '—' : esc(usd(c)), `${int(n)} ${n === 1 ? 'ganada' : 'ganadas'} en la cuenta`]; }},
+  costoResultado: {t: 'Costo por resultado', ic: 'trend', d: 'Lo que informa Meta: inversión entre resultados (formularios, mensajes…).', f: () => { const t = CAMP.datos?.totales || {}; return ['', t.costoPorResultado == null ? '—' : esc(usd(t.costoPorResultado)), t.resultados == null ? 'Sin resultados informados' : `${int(t.resultados)} resultados`]; }},
+  retorno: {t: 'Retorno de la inversión', ic: 'spark', d: 'Cuánto se vendió por cada dólar invertido en Meta.', f: () => { const r = coDiv(coVendido(), coInv()); return [r != null && r >= 1 ? 'is-ok' : r != null ? 'is-warn' : '', r == null ? '—' : `${NF.format(Math.round(r * 100) / 100)}×`, r == null ? 'Falta la inversión o las ventas' : `US$ ${NF.format(Math.round(r * 100) / 100)} vendidos por cada US$ 1`]; }},
+  vendido: {t: 'Vendido', ic: 'wallet', d: 'Primer cobro o valor de las ventas registradas del mes.', f: () => ['is-ok', esc(vgPorMoneda(vgSuma(VG.datos?.items || [], v => v.monto))), `${int((VG.datos?.items || []).length)} ventas`]},
+  clics: {t: 'Clics y CTR', ic: 'chat', d: 'Clics en los anuncios y porcentaje sobre las impresiones.', f: () => { const t = CAMP.datos?.totales || {}; return ['', t.clics == null ? '—' : int(t.clics), t.ctr == null ? '' : `CTR ${NF.format(t.ctr)} %`]; }},
+};
+const CO_DEFECTO = ['inversion', 'costoVenta', 'costoGanada', 'retorno'];
+function coVivoHtml() {
+  const mes = mesNombre(VG.mes || PERIODO);
+  const cabeza = head('Gestión comercial', 'Costos', `Lo invertido en anuncios en ${esc(mes)} frente a lo que se vendió.`, `<button class="btn" type="button" data-co-tarjetas>${icon('gear')}Editar tarjetas</button>`);
+  const extra = `<p class="camp-nota">La inversión sale de la cuenta publicitaria de Meta conectada en la cuenta; las ventas, de las ventas registradas en Ágora. Otros costos (sueldos, comisiones, herramientas) solo aparecen con un reporte mensual.</p>`;
+  const camp = campPuede() ? `<div class="mt costos-vivo">${campanasHtml().replace(/<label class="fld camp-mes">[\s\S]*?<\/label>/, '')}</div>` : `<section class="panel mt"><p class="redes-nota">${conectada() ? 'Tu rol no ve la inversión en anuncios.' : 'Esta subcuenta no está conectada con su cuenta: sin ella no hay inversión en anuncios que mostrar.'}</p></section>`;
+  return cabeza + vivoAviso() + vivoTarjetas('costos', CO_TARJETAS, CO_DEFECTO, [], mes) + extra + camp;
+}
+async function coVivoNeed() {
+  await vgCargar().catch(() => null);
+  CAMP.mes = VG.mes || mesActualYM(); CAMP.datos = null;
+  const cid = ws?.current(), vivo = conectada() && cid;
+  const [, , won] = await Promise.all([tarjCargar('costos'), campanasCargar(), vivo ? agoraApi(`workspace/won?connectionId=${encodeURIComponent(cid)}`).catch(() => null) : null]);
+  EQ.won = won;
+}
+var TB_VIVO = {
+  costos: {need: coVivoNeed, render: coVivoHtml, montar: r => r?.querySelector('[data-co-tarjetas]')?.addEventListener('click', () => tarjEditar('costos', CO_TARJETAS, CO_DEFECTO, 'Costos', repaint))},
+  resumen: {need: () => Promise.all([vgCargar().catch(() => null), tarjCargar('gestion')]), render: () => gcVivoHtml(), montar: r => gcVivoMontar(r)},
+  equipo: {need: eqVivoNeed, render: eqVivoHtml, montar: r => r?.querySelector('[data-eq-tarjetas]')?.addEventListener('click', () => tarjEditar('equipo', EQ_TARJETAS, EQ_DEFECTO, 'Equipo', repaint))},
+};
 /* ---------- 3. Ventas → pestaña "Ventas registradas" ---------- */
 function vgDetalle(id) {
   const v = VG.datos?.items?.find(x => x.id === id); if (!v) return;

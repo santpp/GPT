@@ -1,5 +1,10 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.9:**
+- **Equipo sin reporte mensual:** cada persona con sus ventas registradas (ventas, vendido, recurrente al mes) y lo que dice la cuenta (oportunidades ganadas del mes, leads de hoy y conversaciones sin leer ahora). Tarjetas a elección: personas con actividad, quien más vendió, ventas registradas, ventas por persona, ganadas en la cuenta, ventas por completar, sin leer ahora, tiempo de respuesta y leads de hoy.
+- **Costos sin reporte mensual:** la inversión en Meta del mes frente a lo vendido: costo por venta, costo por oportunidad ganada, costo por resultado, retorno de la inversión, clics y CTR, más el detalle de las campañas. Otros costos (sueldos, comisiones, herramientas) siguen necesitando el reporte.
+- **Gestión Comercial, Equipo y Costos ya aparecen en el menú aunque no haya reporte** (para quien ve cifras del equipo). Con un reporte cargado, los tres siguen mostrando el reporte.
+
 **Novedades 2.8.8:**
 - **Gestión Comercial ya muestra datos sin reporte mensual.** Antes solo leía el reporte que se importa en Ajustes; sin él decía «Esta subcuenta todavía no tiene reportes», aunque hubiera ventas registradas. Ahora, si no hay reporte, arma el mes con las **ventas registradas**: tarjetas a elección (las mismas 14 de Ventas, con su propia elección), **por vendedor** (ventas, vendido, recurrente al mes y ticket promedio), **por forma de cobro** y **por producto o servicio**. Avisa si hay oportunidades ganadas sin su venta completada.
 - Con un reporte cargado, Gestión Comercial sigue mostrando el reporte.
