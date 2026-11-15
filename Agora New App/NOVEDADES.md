@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.14:**
+- **Arreglado: «Editar venta» decía «Falta la oportunidad»** en las ventas cargadas por Excel (Migración de datos). Ahora se editan sin oportunidad:
+  - El producto queda **escrito tal como vino** (por ejemplo «CIPRO»), con la opción de enlazarlo a uno del catálogo si existe.
+  - El vendedor se conserva **como vino del Excel** si no es un usuario de Ágora; se puede cambiar por uno del equipo.
+  - Si no tenía fecha de inicio de cobros, se usa la fecha de la venta.
+  - Al guardar se arma su **plan de cobros**, así la venta empieza a contar en Cobrado, Por cobrar y Facturación.
+
 **Novedades 2.8.13:**
 - **Tablero comercial: sección «Ventas del mes y del año»**, con las dos gráficas del reporte de Gestión Comercial:
   - **Ventas del mes:** lo vendido en el mes, la diferencia con el mismo mes del año anterior, cuánto falta para la meta (de Configuración mensual) y la línea de los últimos 6 meses con el año anterior punteado y la meta.

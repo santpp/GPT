@@ -87,6 +87,15 @@ final class Ventas {
   $ventaId=(string)($_GET['ventaId']??'');$venta=null;
   if($ventaId!==''){$venta=$this->records->payload($this->records->get('venta',$ventaId));$opId=(string)($venta['oportunidadId']??'');}
   else $opId=(string)($_GET['oportunidadId']??'');
+  // 2.8.14: una venta cargada por Excel (Migración) puede no tener oportunidad: el formulario se arma con sus propios datos.
+  if($venta&&!preg_match(self::ID,$opId)){
+   $catalogo=$this->db->setting((int)$this->auth->tenant,'catalogo.productos',['rubros'=>[],'productos'=>[]]);
+   $own=$this->db->one("SELECT owner_id FROM agora_records WHERE tenant_id=? AND kind='venta' AND uid=?",[$this->auth->tenant,$ventaId]);
+   $op=['id'=>'','name'=>'','contactName'=>(string)($venta['cliente']['nombre']??''),'monetaryValue'=>(float)($venta['monto']??0),'ownerId'=>$own&&$own['owner_id']!==null?(int)$own['owner_id']:null];
+   return ['oportunidad'=>$op,'contacto'=>null,'venta'=>$venta,'sinOportunidad'=>true,'catalogo'=>['rubros'=>$catalogo['rubros']??[],'productos'=>$catalogo['productos']??[]],
+    'perfil'=>$this->db->setting((int)$this->auth->tenant,'cuenta.perfil',null),'vendedores'=>$this->vendedores(),'yo'=>(int)$this->auth->user['id'],
+    'canEdit'=>$this->puedeEscribir(),'puedeCambiarVendedor'=>$this->administra()];
+  }
   if(!preg_match(self::ID,$opId))Http::fail('Falta la oportunidad.');
   $op=$this->records->payload($this->records->get('opportunity',$opId));
   if(!$venta&&!empty($op['ventaId'])){try{$venta=$this->records->payload($this->records->get('venta',(string)$op['ventaId']));}catch(\Throwable){$venta=null;}}
@@ -214,7 +223,12 @@ final class Ventas {
   if($cliente['correo']!==''&&!filter_var($cliente['correo'],FILTER_VALIDATE_EMAIL))Http::fail('Revisa el correo del cliente.');
   if($cliente['telefono']!==''&&!preg_match('/^[0-9+() .-]{7,40}$/D',$cliente['telefono']))Http::fail('Revisa el teléfono del cliente.');
   // Producto: tiene que existir en el catálogo de ESTA subcuenta.
-  $pid=Http::text($b,'productoId',40);$prod=null;foreach($catalogo['productos']??[] as $p)if(($p['id']??'')===$pid)$prod=$p;
+  $pid=($antes&&empty($antes['productoId']))?Http::text($b,'productoId',40,false):Http::text($b,'productoId',40);$prod=null;foreach($catalogo['productos']??[] as $p)if(($p['id']??'')===$pid)$prod=$p;
+  // 2.8.14: una venta que llegó por Excel con el producto escrito (sin catálogo) se puede editar sin enlazarlo.
+  if(!$prod&&$pid===''&&$antes&&empty($antes['productoId'])){
+   $nom=trim((string)($b['producto']??$antes['producto']??''));if(mb_strlen($nom)<2)Http::fail('Escribe el producto o elige uno del catálogo.');
+   $prod=['id'=>'','nombre'=>mb_substr($nom,0,190),'codigo'=>'','rubroId'=>'','cobro'=>(string)($b['cobro']??$antes['cobro']??'unico'),'moneda'=>(string)($b['moneda']??$antes['moneda']??'USD'),'frecuencia'=>$antes['frecuencia']??'mensual'];
+  }
   if(!$prod)Http::fail('Ese producto no está en el catálogo de esta subcuenta.');
   if(($prod['activo']??true)===false&&($antes['productoId']??'')!==$pid)Http::fail('Ese producto está pausado. Actívalo en Productos y servicios.');
   $rubro='';foreach($catalogo['rubros']??[] as $r)if(($r['id']??'')===($prod['rubroId']??''))$rubro=(string)$r['nombre'];
@@ -239,18 +253,21 @@ final class Ventas {
   // Vendedor: por defecto el dueño de la oportunidad; cambiarlo requiere supervisar.
   $vid=isset($b['vendedorId'])&&$b['vendedorId']!==''&&$b['vendedorId']!==null?Http::integer($b['vendedorId'],1,PHP_INT_MAX):$ownerActual;
   if($vid!==$ownerActual&&!$this->administra())Http::fail('Solo supervisión o administración puede cambiar el vendedor.',403);
-  if(!$this->db->one('SELECT id FROM agora_users WHERE id=? AND local_tenant_id=?',[$vid,$this->auth->tenant]))Http::fail('El vendedor no pertenece a esta subcuenta.');
+  // 2.8.14: venta importada sin usuario vendedor: se conserva el nombre tal como vino.
+  $vendedorTexto=null;
+  if($vid===0&&$antes){$vendedorTexto=mb_substr(trim((string)($b['vendedor']??$antes['vendedor']??'')),0,120);}
+  elseif(!$this->db->one('SELECT id FROM agora_users WHERE id=? AND local_tenant_id=?',[$vid,$this->auth->tenant]))Http::fail('El vendedor no pertenece a esta subcuenta.');
   // Campos personalizados (los define Ajustes → Campos para 'ventas').
   $cf=$b['customFields']??[];if(!is_array($cf)||!array_is_list($cf)||count($cf)>40)Http::fail('Hasta 40 campos personalizados.');
   $custom=[];foreach($cf as $x){if(!is_array($x))Http::fail('Campo personalizado inválido.');$k=Http::text($x,'clave',60);if(!preg_match('/^[A-Za-z0-9_.-]{1,60}$/D',$k))Http::fail('Clave de campo inválida.');$val=$x['valor']??'';if(is_bool($val))$val=$val?'Sí':'No';if(!is_scalar($val)&&$val!==null)Http::fail('Valor inválido en '.$k.'.');$custom[$k]=['clave'=>$k,'nombre'=>Http::text($x,'nombre',80,false)?:$k,'valor'=>mb_substr(trim((string)$val),0,1000)];}
   $custom=array_values($custom);
   $plan=self::plan($cobro,$monto,(string)$frecuencia,$cobro==='recurrente'?($cuotas??self::SIN_FIN):$cuotas,$inicio,$diaCobro);
   $total=round(array_sum(array_column($plan,'monto')),2);
-  return ['fechaVenta'=>$fechaVenta,'vendedorId'=>$vid,'plan'=>$plan,'total'=>$total,'sinFin'=>$cobro==='recurrente'&&$cuotas===null,
+  return ['fechaVenta'=>$fechaVenta,'vendedorId'=>$vid?:null,'plan'=>$plan,'total'=>$total,'sinFin'=>$cobro==='recurrente'&&$cuotas===null,
    'datos'=>['cliente'=>$cliente,'documento'=>$cliente['documento'],'correo'=>$cliente['correo'],'telefono'=>$cliente['telefono'],
     'productoId'=>$pid,'producto'=>(string)$prod['nombre'],'codigo'=>(string)($prod['codigo']??''),'rubro'=>$rubro,'cantidad'=>$cantidad,
     'monto'=>$monto,'moneda'=>$moneda,'cobro'=>$cobro,'frecuencia'=>$frecuencia,'cuotas'=>$cuotas,'fechaInicio'=>$inicio,'diaCobro'=>$diaCobro,
-    'vendedorId'=>$vid,'vendedor'=>$this->nombreDe($vid),'notas'=>Http::text($b,'notas',2000,false),'customFields'=>$custom]];
+    'vendedorId'=>$vid?:null,'vendedor'=>$vendedorTexto??$this->nombreDe($vid),'notas'=>Http::text($b,'notas',2000,false),'customFields'=>$custom]];
  }
 
  /**

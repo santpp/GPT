@@ -4058,7 +4058,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.8.13').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.8.14').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -6689,13 +6689,15 @@ async function vgAbrir(oportunidadId, {nueva = false, ventaId = null} = {}) {
 function vgFormulario(s, ctx, campos, {ventaId, nueva, alGuardar}) {
   const op = ctx.oportunidad || {}, ct = ctx.contacto || {}, v = ctx.venta, perfil = ctx.perfil || ESPACIO?.perfil || {};
   const productos = (ctx.catalogo?.productos || []).filter(p => p.activo !== false || p.id === v?.productoId);
+  const libre = !!(v && !v.productoId); // 2.8.14: venta cargada por Excel con el producto escrito (sin catálogo)
+  const sinVend = !!(v && !v.vendedorId); // 2.8.14: venta cargada por Excel con el vendedor escrito (sin usuario)
   const rubros = ctx.catalogo?.rubros || [];
   const borr = (!v && VG.borrador[op.id]) || null;
   const prodPorNombre = productos.find(p => norm(op.name || '').includes(norm(p.nombre)));
   const p0 = v ? productos.find(p => p.id === v.productoId) : (prodPorNombre || productos[0]);
   const c = v?.cliente || {nombre: ct.name || [ct.firstName, ct.lastName].filter(Boolean).join(' ') || op.contactName || '', documento: ct.documento || '', correo: ct.email || '', telefono: ct.phone || '', direccion: [ct.address1, ct.city].filter(Boolean).join(', '), empresa: ct.companyName || ''};
   const valorOp = Number(op.monetaryValue) > 1 ? Number(op.monetaryValue) : 0;
-  const ini = v || {cobro: p0?.cobro || 'recurrente', monto: p0 && !(valorOp && !prodPorNombre) ? p0.precio : (valorOp || p0?.precio || ''), moneda: p0?.moneda || ESPACIO?.moneda || 'USD', frecuencia: p0?.frecuencia || perfil.frecuencia || 'mensual', cuotas: p0?.cobro === 'recurrente' ? p0?.duracion : 1, cantidad: 1, fechaInicio: vgHoy(), diaCobro: perfil.diaCobro || '', vendedorId: op.ownerId || ctx.yo, notas: '', fecha: vgHoy()};
+  const ini = v ? {...v, fechaInicio: v.fechaInicio || v.fecha, frecuencia: v.frecuencia || 'mensual', cantidad: v.cantidad || 1} : {cobro: p0?.cobro || 'recurrente', monto: p0 && !(valorOp && !prodPorNombre) ? p0.precio : (valorOp || p0?.precio || ''), moneda: p0?.moneda || ESPACIO?.moneda || 'USD', frecuencia: p0?.frecuencia || perfil.frecuencia || 'mensual', cuotas: p0?.cobro === 'recurrente' ? p0?.duracion : 1, cantidad: 1, fechaInicio: vgHoy(), diaCobro: perfil.diaCobro || '', vendedorId: op.ownerId || ctx.yo, notas: '', fecha: vgHoy()};
   const cf = Object.fromEntries((Array.isArray(v?.customFields) ? v.customFields : []).map(x => [x.clave ?? x.id, x.valor ?? x.value]));   // 2.1.17: también acepta {id,value} de Migración
   const grupos = [...rubros.map(r => [r.nombre, productos.filter(p => p.rubroId === r.id)]), ['Sin rubro', productos.filter(p => !rubros.some(r => r.id === p.rubroId))]].filter(([, l]) => l.length);
   const opcionesProd = grupos.map(([g, l]) => `<optgroup label="${esc(g)}">${l.map(p => `<option value="${esc(p.id)}" ${p.id === p0?.id ? 'selected' : ''}>${esc(p.nombre)}${p.codigo ? ' · ' + esc(p.codigo) : ''}</option>`).join('')}</optgroup>`).join('');
@@ -6723,14 +6725,16 @@ function vgFormulario(s, ctx, campos, {ventaId, nueva, alGuardar}) {
     <section class="vg-paso-c" data-paso="1" hidden>
       <div class="bx-grid">
         <fieldset class="bx"><legend>${icon('wallet')}Producto o servicio</legend>
-          ${productos.length ? `<label class="fld"><span class="fld-l">Producto <span class="req" aria-hidden="true">*</span></span><select name="productoId" required>${opcionesProd}</select><small class="vg-err" data-err="productoId"></small></label>
+          ${libre ? `<label class="fld"><span class="fld-l">Producto <span class="req" aria-hidden="true">*</span></span><input name="producto" maxlength="190" value="${esc(v.producto || '')}"><small class="fld-h">Esta venta llegó por Excel con el producto escrito. Puedes dejarlo así o enlazarlo a uno del catálogo.</small><small class="vg-err" data-err="productoId"></small></label>
+          ${productos.length ? `<label class="fld"><span class="fld-l">Enlazar al catálogo (opcional)</span><select name="productoId"><option value="" selected>No enlazar · dejar «${esc(v.producto || 'el producto escrito')}»</option>${opcionesProd.replace(/ selected/g, '')}</select></label>` : ''}
+          <div class="vg-prod" data-prod-info></div>` : productos.length ? `<label class="fld"><span class="fld-l">Producto <span class="req" aria-hidden="true">*</span></span><select name="productoId" required>${opcionesProd}</select><small class="vg-err" data-err="productoId"></small></label>
           <div class="vg-prod" data-prod-info></div>` : `<p class="empty"><b>Tu catálogo está vacío</b>Crea el producto en Productos y servicios y vuelve a abrir esta venta.${typeof esAdmin === 'function' && esAdmin() ? `<br><a class="btn btn-sm" href="${href('/productos')}">${icon('plus')}Ir a Productos</a>` : ''}</p>`}
           <div class="pfl-ops pfl-1 vg-cobros" role="radiogroup" aria-label="Sistema de cobro">${cobroOp('recurrente')}${cobroOp('unico')}${cobroOp('venta')}</div>
         </fieldset>
         <fieldset class="bx"><legend>${icon('coins')}Monto y cobro</legend>
           <div class="bx-row">${fld('monto', 'Monto', ini.monto !== '' && ini.monto != null ? NF.format(Number(ini.monto)) : '', {req: true, ph: '0,00', modo: 'decimal', max: 16, ayuda: '<span data-monto-ayuda></span>'})}
             <label class="fld">Moneda<select name="moneda">${['USD', 'VES', 'EUR'].map(m => `<option ${m === ini.moneda ? 'selected' : ''}>${m}</option>`).join('')}</select></label></div>
-          ${valorOp ? `<p class="vg-mini">Valor de la oportunidad: <b>${esc(vgMonto(valorOp, ini.moneda))}</b> <button type="button" class="lnk-btn" data-usar-valor>Usar este valor</button></p>` : ''}
+          ${valorOp && !ctx.sinOportunidad ? `<p class="vg-mini">Valor de la oportunidad: <b>${esc(vgMonto(valorOp, ini.moneda))}</b> <button type="button" class="lnk-btn" data-usar-valor>Usar este valor</button></p>` : ''}
           <div class="bx-row" data-si="periodo"><label class="fld">Frecuencia<select name="frecuencia">${VG_FREC.map(([id, t]) => `<option value="${id}" ${(ini.frecuencia || 'mensual') === id ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
             ${fld('cuotas', '<span data-cuotas-l>Número de cobros</span>', ini.cuotas ?? '', {modo: 'numeric', max: 3, ph: 'Vacío = sin fin'})}</div>
           <div class="bx-row" data-si="venta">${fld('cantidad', 'Cantidad', ini.cantidad || 1, {modo: 'numeric', max: 6})}<span class="vg-stock" data-stock></span></div>
@@ -6742,7 +6746,7 @@ function vgFormulario(s, ctx, campos, {ventaId, nueva, alGuardar}) {
     <section class="vg-paso-c" data-paso="2" hidden>
       <div class="bx-grid">
         <fieldset class="bx"><legend>${icon('team')}Vendedor y notas</legend>
-          <div class="bx-row"><label class="fld">Vendedor<select name="vendedorId" ${ctx.puedeCambiarVendedor ? '' : 'disabled'}>${vendedores.map(u => `<option value="${esc(u.id)}" ${String(u.id) === String(ini.vendedorId) ? 'selected' : ''}>${esc(u.name)}</option>`).join('') || '<option value="">Tú</option>'}</select>${ctx.puedeCambiarVendedor ? '' : '<small class="vg-ayuda">Es quien tiene la oportunidad.</small>'}</label>
+          <div class="bx-row"><label class="fld">Vendedor<select name="vendedorId" ${ctx.puedeCambiarVendedor ? '' : 'disabled'}>${sinVend ? `<option value="" selected>${esc(v.vendedor || 'Sin vendedor')} · como vino del Excel</option>` : ''}${vendedores.map(u => `<option value="${esc(u.id)}" ${String(u.id) === String(ini.vendedorId) ? 'selected' : ''}>${esc(u.name)}</option>`).join('') || '<option value="">Tú</option>'}</select>${ctx.puedeCambiarVendedor ? '' : '<small class="vg-ayuda">Es quien tiene la oportunidad.</small>'}</label>
             ${fld('fecha', 'Fecha de la venta', ini.fecha || vgHoy(), {type: 'date', max: 10, req: true})}</div>
           <label class="fld">Notas<textarea name="notas" rows="3" maxlength="2000" placeholder="Acuerdos, condiciones especiales, cómo pagará…">${esc(ini.notas || '')}</textarea></label>
         </fieldset>
@@ -6772,7 +6776,7 @@ function vgFormulario(s, ctx, campos, {ventaId, nueva, alGuardar}) {
     documento: () => val('documento') && !/^[A-Za-z0-9 ./-]{3,40}$/.test(val('documento')) ? 'Usa letras, números, punto o guion. Ej.: V-12345678.' : '',
     correo: () => val('correo') && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val('correo')) ? 'Revisa el correo.' : '',
     telefono: () => val('telefono') && !/^[0-9+() .-]{7,40}$/.test(val('telefono')) ? 'Revisa el teléfono: solo números, espacios, +, guion y paréntesis.' : '',
-    productoId: () => !prod() ? 'Elige un producto del catálogo.' : '',
+    productoId: () => libre ? (!prod() && val('producto').length < 2 ? 'Escribe el producto o elige uno del catálogo.' : '') : !prod() ? 'Elige un producto del catálogo.' : '',
     monto: () => { const m = leerMonto(val('monto')); return !val('monto') || m === null || !(m > 0) ? 'Escribe un monto mayor que cero. Usa coma para los decimales.' : ''; },
     cuotas: () => { const c = cobro(), q = val('cuotas'); if (c === 'venta') return ''; if (c === 'unico' && q === '') return ''; return q !== '' && !(/^\d{1,3}$/.test(q) && +q >= 1 && +q <= (c === 'unico' ? 120 : 600)) ? `Debe ser un número entero entre 1 y ${c === 'unico' ? 120 : 600}.` : ''; },
     cantidad: () => { if (cobro() !== 'venta') return ''; const q = val('cantidad'); if (!/^\d{1,6}$/.test(q) || +q < 1) return 'La cantidad debe ser 1 o más.'; const p = prod(); return p && p.cobro === 'venta' && p.stock != null && +q > Number(p.stock) + (v && v.productoId === p.id ? Number(v.cantidad || 0) : 0) ? `Solo quedan ${p.stock} en existencia.` : ''; },
@@ -6803,13 +6807,13 @@ function vgFormulario(s, ctx, campos, {ventaId, nueva, alGuardar}) {
   };
   const resumen = () => {
     const c = cobro(), p = prod(), pl = plan(), mon = val('moneda'), m = leerMonto(val('monto')) || 0, q = cuotasN();
-    const vend = vendedores.find(u => String(u.id) === val('vendedorId'))?.name || 'Tú';
+    const vend = vendedores.find(u => String(u.id) === val('vendedorId'))?.name || (sinVend ? v.vendedor || 'Sin vendedor' : 'Tú');
     const tareasN = 1 + Math.max(1, pl.filter(x => x.fecha <= new Date(Date.now() + 31 * 864e5).toISOString().slice(0, 10)).length);
     const cambios = [['nombre', 'name', 'nombre'], ['correo', 'email', 'correo'], ['telefono', 'phone', 'teléfono'], ['documento', 'documento', 'documento'], ['direccion', 'address1', 'dirección'], ['empresa', 'companyName', 'empresa']].filter(([k, ck]) => val(k) && val(k) !== String(ct[ck] || '')).map(x => x[2]);
     const stock = p && c === 'venta' && p.stock != null ? `${p.stock} → ${Math.max(0, p.stock - (+val('cantidad') || 1) + (v && v.productoId === p.id && v.cobro === 'venta' ? Number(v.cantidad || 0) : 0))}` : '';
     const item = (ic, t, d) => `<li><span class="vg-r-ic" aria-hidden="true">${icon(ic)}</span><div><b>${t}</b><small>${d}</small></div></li>`;
     return `<div class="vg-resumen">
-      <div class="vg-r-total"><span>${esc(p?.nombre || 'Producto')}</span><strong>${esc(vgMonto(m, mon))}${c === 'recurrente' ? `<small> / ${esc(VG_FREC_CADA[val('frecuencia')] || 'mes')}</small>` : ''}</strong><span class="sc ${VG_COBRO[c][1]}">${VG_COBRO[c][0]}</span><small>${esc(val('nombre'))} · vende ${esc(vend)}</small></div>
+      <div class="vg-r-total"><span>${esc(p?.nombre || (libre ? val('producto') : '') || 'Producto')}</span><strong>${esc(vgMonto(m, mon))}${c === 'recurrente' ? `<small> / ${esc(VG_FREC_CADA[val('frecuencia')] || 'mes')}</small>` : ''}</strong><span class="sc ${VG_COBRO[c][1]}">${VG_COBRO[c][0]}</span><small>${esc(val('nombre'))} · vende ${esc(vend)}</small></div>
       <div><p class="vg-r-l">Al ${ventaId ? 'guardar' : 'registrar'} se ${ventaId ? 'actualiza' : 'crea'}:</p><ul class="vg-r-lista">
         ${item('receipt', ventaId ? 'La venta' : 'Una venta en Ventas registradas', `${pl.length}${c === 'recurrente' && !q ? '+' : ''} ${pl.length === 1 ? 'cobro' : 'cobros'} · ${c === 'recurrente' && !q ? 'sin fecha de fin' : 'total ' + esc(vgMonto(pl.reduce((t, x) => t + x.monto, 0), mon))}`)}
         ${item('trend', 'La oportunidad', `Queda ganada con valor ${esc(vgMonto(m, mon))} y la marca "Venta registrada".`)}
@@ -6860,10 +6864,10 @@ function vgFormulario(s, ctx, campos, {ventaId, nueva, alGuardar}) {
     const body = {
       oportunidadId: op.id, contactoId: ct.id || op.contactId || '',
       cliente: {nombre: val('nombre'), documento: val('documento'), correo: val('correo'), telefono: val('telefono'), direccion: val('direccion'), empresa: val('empresa')},
-      productoId: val('productoId'), cobro: c, monto: leerMonto(val('monto')), moneda: val('moneda'),
+      productoId: val('productoId'), ...(libre ? {producto: val('producto')} : {}), cobro: c, monto: leerMonto(val('monto')), moneda: val('moneda'),
       frecuencia: c === 'venta' ? null : val('frecuencia'), cuotas: c === 'venta' ? 1 : (c === 'unico' ? (cuotasN() || 1) : cuotasN()),
       cantidad: c === 'venta' ? +val('cantidad') || 1 : 1, fechaInicio: val('fechaInicio'), diaCobro: val('diaCobro') ? +val('diaCobro') : null,
-      vendedorId: val('vendedorId') ? +val('vendedorId') || val('vendedorId') : null, fecha: val('fecha'), notas: val('notas'),
+      vendedorId: val('vendedorId') ? +val('vendedorId') || val('vendedorId') : null, ...(sinVend && !val('vendedorId') ? {vendedor: v.vendedor || ''} : {}), fecha: val('fecha'), notas: val('notas'),
       customFields: campos.map(x => { const el = f.elements.namedItem('cf__' + x.clave); return {clave: x.clave, nombre: x.nombre, valor: el ? (el.type === 'checkbox' ? (el.checked ? 'Sí' : 'No') : String(el.value).trim()) : ''}; }),
     };
     if (ventaId) { body.id = ventaId; body.version = v?.version; }
