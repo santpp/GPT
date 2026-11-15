@@ -34,7 +34,7 @@ Léelo entero antes de tocar nada. Es el resumen de cómo trabajamos y de lo que
 ## Estructura del repositorio
 
 - **Raíz** (`src/`, `public/`, `database/`, `tests/`, `deploy/`): **Ágora Mobile** (Ágora 1.x), en producción en nueva.agoradigital.app. Última: **1.10.14**. Paquete en `Agora Mobile/agora-update-1.10.14.zip` (+ `.sha256`, `manual-vendedores.pdf`). PHP 8.3 sin framework, módulos ES en el navegador, `public/router.php`, `src/live-inbox.php`, pasarela `GhlGateway` (20 consultas cada 10 s, 50 000 al día), `TokenVault` (sodium, XChaCha20). Diseño: `docs/DESIGN.md`, `tests/design-tokens.py`.
-- **`Agora New App/`**: el **ERP** (no llamarlo «armazón»). Hoy en pruebas en **tests.agoradigital.app** (CyberPanel + OpenLiteSpeed). Versión actual: **2.8.3**.
+- **`Agora New App/`**: el **ERP** (no llamarlo «armazón»). Hoy en pruebas en **tests.agoradigital.app** (CyberPanel + OpenLiteSpeed). Versión actual: **2.8.4**.
 - `docs/roadmap.md`: historial de versiones de ambos.
 
 ## Agora New App (ERP) · cómo está hecho
@@ -56,7 +56,7 @@ Léelo entero antes de tocar nada. Es el resumen de cómo trabajamos y de lo que
 
 - Script: `/tmp/claude-0/-home-user-GPT/47d2de27-7ad9-51d6-885f-20e6833c2033/scratchpad/up-erp.sh` (si no existe, recrearlo): levanta MariaDB (`/tmp/mdb`, socket `/tmp/mdb/run/mysql.sock`, base `agora_erp`), la cuenta simulada `tests/fake-ghl.py 8099` y la API en `:8090` con `APP_ENV=development AGORA_GHL_FAKE=http://127.0.0.1:8099`, copiando un `config.php` local. **Borra `servidor/config/config.php` y `tests/fake-ghl.log` antes de empaquetar y de hacer commit.**
 - Cuentas de prueba: dueña `duena@example.test` / `Clave-Local-2026!`; ASOCIM: `admin.asocim@agora.test`, `supervisor.asocim@…`, `ejecutivo1.asocim@…`, `ejecutivo2.asocim@…`, `consulta.asocim@…`, todas con `Agora-Pruebas-2026!`.
-- Orden de pruebas (11 s de pausa entre una y otra y `delete from agora_rate_limits`): `motor-puente.py duena@example.test 'Clave-Local-2026!'` (deja ASOCIM conectada), `permisos.py` (mismos args), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `ui-estados.py`, `ghl-conexion.php`.
+- Orden de pruebas (11 s de pausa entre una y otra y `delete from agora_rate_limits`): `motor-puente.py duena@example.test 'Clave-Local-2026!'` (deja ASOCIM conectada), `permisos.py` (mismos args), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `tarjetas.py`, `ui-estados.py`, `ghl-conexion.php`.
 - Revisa la pantalla con Playwright (Chromium en `/opt/pw-browsers/chromium`, `--no-sandbox`), en teléfono (390×844) y escritorio (1280×800), y mira las capturas antes de entregar.
 
 ## Pendientes y decisiones del usuario
@@ -65,6 +65,7 @@ Léelo entero antes de tocar nada. Es el resumen de cómo trabajamos y de lo que
 - **No hacer por ahora**: avisos al teléfono («la prioridad no es móvil»), publicar o borrar publicaciones desde Ágora, conexión directa con Meta.
 - **Aprendido**: la cuenta sí sincroniza publicaciones hechas en Meta Business Suite («Native post», interruptor «Sync posts» en Social Planner). No afirmes que algo no existe en la cuenta sin evidencia; si el usuario muestra lo contrario, créele y corrige.
 - **2.8.2 por confirmar**: la lista de publicaciones se pide con `Version: v3` (y si falla, 2021-07-28); las Campañas de Meta necesitan la cuenta publicitaria conectada en el administrador de anuncios de la cuenta (no basta Social Planner). Resultado real (2.8.3): ASOCIM da 422 «Access Token not found» (Meta) y 404 «connect a page first» (Ad Manager) → la agencia debe reconectar la cuenta publicitaria; las publicaciones vuelven en 0 con ambas versiones. Si salen vacías, la dueña ve un «Detalle técnico» con el código y motivo de cada intento: pídele captura de eso.
+- **Tarjetas a elección (2.8.4)**: componente `tarjCargar/tarjElegidas/tarjEditar` en `agora-app.js` + ruta `workspace/preferencias` (clave `prefs.<vista>.u<id>` y `prefs.<vista>.equipo` en `agora_settings`). Hoy solo en Ventas registradas (`VG_TARJETAS`); se puede llevar a otras vistas con su propio catálogo.
 - **Siguiente posible**: bajar de campaña a conjuntos/anuncios; campañas de Google; módulos del reporte para empresas que no son ASOCIM (el usuario debe decir cuáles y qué miden).
 - Ágora Mobile V2.1: resumen diario o semanal y cabeceras de seguridad (OpenLiteSpeed ignora `Header` en `.htaccess`). Pendiente de decidir: límite de intentos de contraseña por correo y Capacitor 6.2.3. En espera: plantillas de WhatsApp (falta el identificador de la cuenta de WhatsApp Business). Futuro lejano: módulo de inventario.
 - Registro de errores y su estado: `Agora New App/ERRORES.md`. Revisión por módulos: `Agora New App/REVISION-MODULOS.md`. Guía de instalación: `Agora New App/INSTALAR-CYBERPANEL.md`.

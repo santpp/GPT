@@ -270,6 +270,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - El repositorio se divide: `Agora Mobile/` (release 1.10.14 de nueva.agoradigital.app; el código sigue en la raíz) y `Agora New App/` (ERP 2.1.19 recibido: `public_html/`, `servidor/`). Análisis completo: `Agora New App/ANALISIS.md`. Sin Docker; MySQL.
 - Se deja de llamar «armazón». Lo de abajo es el historial de cuando lo era.
 - **2.2.0 (13 de noviembre)**: estable en MySQL; conexión con la cuenta por subcuenta (token cifrado, Location ID, «Probar conexión»); fuente Author; arreglos de Ajustes, Contactos, Gestión Comercial y logos; paquete de producción sin modo pruebas (`agora-new-app-2.2.0.zip`) y paquete de demo aparte. Siguiente: Conversaciones con el motor de Ágora Mobile.
+- **2.8.4 (15 de noviembre)**: «Editar tarjetas» en Ventas registradas (cada persona elige y ordena sus cifras; la administración fija la vista del equipo).
 - **2.8.3 (14 de noviembre)**: Campañas avisa que hay que reconectar la cuenta publicitaria de Meta; último intento y aviso claro en publicaciones; arreglos de pantalla en el teléfono; «Indicadores» sin «(KPI)».
 - **2.8.2 (14 de noviembre)**: publicaciones pedidas con la versión nueva de lectura (incluye las nativas de Meta); Campañas de Meta con aviso según la causa real y detalle técnico para dueños.
 - **2.8.1 (14 de noviembre)**: vuelven las publicaciones en Redes y anuncios, incluidas las hechas en Meta Business Suite.

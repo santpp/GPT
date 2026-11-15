@@ -6,7 +6,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.8.3'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.8.4'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -33,7 +33,8 @@ final class Api {
   if(preg_match('~^contratos/[a-f0-9]{24}/pdf/(previa|enviado|firmado)$~D',$p)&&$m==='GET'&&!isset($_SERVER['HTTP_X_WORKSPACE_ID']))$_SERVER['HTTP_X_WORKSPACE_ID']=(string)($_GET['workspace']??'');
   $this->a->workspace(in_array($p,['workspace/branding','admin/maintenance'],true));
   $permission='datos.consultar';
-  if(str_starts_with($p,'workspace/usuarios')||$p==='usuarios'||str_starts_with($p,'usuarios/')||$p==='workspace/permisos')$permission='usuarios.administrar';
+  if($p==='workspace/preferencias')$permission='datos.consultar';
+  elseif(str_starts_with($p,'workspace/usuarios')||$p==='usuarios'||str_starts_with($p,'usuarios/')||$p==='workspace/permisos')$permission='usuarios.administrar';
   elseif(str_starts_with($p,'admin/')||in_array($p,['workspace/import','workspace/config-mensual','workspace/sync']))$permission='ajustes.editar';
   elseif($p==='workspace/branding'&&$m!=='GET')$permission='ajustes.editar';
   elseif(in_array($p,['workspace/productos','workspace/personalizar','workspace/etiquetas'],true)&&$m!=='GET')$permission='ajustes.editar';
@@ -46,6 +47,19 @@ final class Api {
   $this->a->permit($permission);
   if($p==='workspace/permisos'||$p==='workspace/usuarios/permisos')return $this->u->permissions($p,$m,$b);
   if($p==='workspace/branding'&&in_array($m,['GET','POST']))return $this->ag->branding($m,$b);
+  // 2.8.4 · Tarjetas que cada persona elige ver en una vista (como editar los widgets de un tablero). La administración puede fijar la vista por defecto del equipo.
+  if($p==='workspace/preferencias'){
+   $vista=(string)($_GET['vista']??$b['vista']??'');if(!preg_match('/^[a-z_]{2,30}$/D',$vista))Http::fail('Vista no válida.');
+   $uid=(int)$this->a->requireUser()['id'];$t=(int)$this->a->tenant;$kMia='prefs.'.$vista.'.u'.$uid;$kEq='prefs.'.$vista.'.equipo';
+   if($m==='GET')return ['mia'=>$this->db->setting($t,$kMia,null),'equipo'=>$this->db->setting($t,$kEq,null)];
+   if($m!=='PUT')Http::fail('Método no permitido.',405);
+   $ids=$b['tarjetas']??null;
+   if($ids!==null&&(!is_array($ids)||count($ids)>20||array_filter($ids,fn($x)=>!is_string($x)||!preg_match('/^[a-zA-Z]{2,30}$/D',$x))))Http::fail('Tarjetas no válidas.');
+   $ids=$ids===null?null:array_values(array_unique($ids));
+   if(!empty($b['equipo'])){$this->a->permit('ajustes.editar');$this->db->saveSetting($t,$kEq,$ids===null?null:['tarjetas'=>$ids]);$this->a->audit('vista.equipo','ajuste',$vista);}
+   else $this->db->saveSetting($t,$kMia,$ids===null?null:['tarjetas'=>$ids]);
+   return ['ok'=>true,'mia'=>$this->db->setting($t,$kMia,null),'equipo'=>$this->db->setting($t,$kEq,null)];
+  }
   if($p==='admin/maintenance'&&$m==='POST'){$this->a->manage();$this->db->run('UPDATE agora_tenants SET status=?,revision=revision+1 WHERE id=?',[($b['on']??false)?'inactiva':'activa',$this->a->tenant]);$this->a->audit('estado.actualizado','ajuste',(string)$this->a->tenant);return ['maintenance'=>(bool)($b['on']??false)];}
   // 2.8.0 · Campañas de Meta (Ad Manager de la cuenta), solo lectura. Son cifras de la empresa: administración y supervisión.
   if($p==='workspace/campanas'&&$m==='GET'){$this->a->financial();if($this->a->assignedOnly())Http::fail('Las campañas son de toda la empresa: tu rol no las ve.',403);return (new \Agora\Services\Campanas($this->db,$this->config,$this->a))->mes($_GET['mes']??null);}

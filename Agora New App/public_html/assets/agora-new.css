@@ -327,3 +327,12 @@ table.t-fichas tr > td.empty .btn{margin-top:14px}
   #view.ag .t-sec-row .acts .fld{flex:1 1 140px;min-width:0}
   #view.ag .t-sec-row .acts .fld select{width:100%;min-width:0}
 }
+
+/* 2.8.4 · Editar tarjetas de una vista */
+.tarj-ed{display:grid;gap:8px;max-height:max(220px,calc(100vh - 420px));max-height:max(220px,calc(100dvh - 420px));overflow:auto;padding-right:2px}
+.tarj-ed .pz-l{margin:6px 0 2px;font-size:12.5px;font-weight:650;color:var(--muted)}
+.tarj-ed .pz-vacio{padding:10px 12px;border:1px dashed var(--line);border-radius:var(--r-md,12px);font-size:13px;color:var(--muted);list-style:none}
+.tarj-eq{margin-top:12px}
+.tarj-ft{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.tarj-ft .grow{flex:1}
+@media (max-width:600px){.tarj-ft .grow{display:none}.tarj-ft .btn{flex:1 1 auto}}

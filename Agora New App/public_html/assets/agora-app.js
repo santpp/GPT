@@ -4051,7 +4051,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.8.3').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.8.4').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -6888,6 +6888,74 @@ function vgRefrescar() {
   else vgVigilar(true);
 }
 
+/* ---------- 2.8.4 · Tarjetas a elección en una vista (como editar los widgets de un tablero) ----------
+   Cada persona elige qué tarjetas ver y en qué orden; se guarda en el servidor (la sigue en cualquier equipo).
+   La administración puede guardar su elección como la vista por defecto del equipo. Sin elección: la del equipo o la de fábrica. */
+const TARJ = {};
+async function tarjCargar(vista, force) {
+  if (TARJ[vista]?.cargado && !force) return;
+  try { const r = await agoraApi(`workspace/preferencias?vista=${encodeURIComponent(vista)}`); TARJ[vista] = {mia: r.mia, equipo: r.equipo, cargado: true}; }
+  catch { TARJ[vista] = {mia: null, equipo: null, cargado: true}; }
+}
+function tarjElegidas(vista, catalogo, defecto) {
+  const p = TARJ[vista], val = l => Array.isArray(l) ? l.filter(id => catalogo[id]) : null;
+  return val(p?.mia?.tarjetas) ?? val(p?.equipo?.tarjetas) ?? defecto.filter(id => catalogo[id]);
+}
+function tarjEditar(vista, catalogo, defecto, titulo, alGuardar) {
+  let sel = [...tarjElegidas(vista, catalogo, defecto)];
+  const admin = puede('ajustes.editar'), propia = !!TARJ[vista]?.mia;
+  const s = openModal(modalHead('Editar tarjetas', `Elige qué datos ver arriba de ${esc(titulo)} y en qué orden. Solo cambia tu vista${admin ? ', salvo que la guardes para el equipo' : ''}.`) + `<div class="tarj-ed"></div>
+    ${admin ? `<label class="bx-check tarj-eq"><input type="checkbox" data-tarj-eq> Guardar también como vista del equipo (la ven quienes no hayan elegido la suya)</label>` : ''}
+    <p class="fld-err" role="alert"></p>
+    <div class="form-ft tarj-ft"><button class="btn" type="button" data-tarj-def>${icon('refresh')}${propia ? 'Volver a la vista del equipo' : 'Restaurar'}</button><span class="grow"></span><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="button" data-tarj-ok>Guardar</button></div>`, {wide: true});
+  const caja = s.querySelector('.tarj-ed');
+  const pintar = () => {
+    const resto = Object.keys(catalogo).filter(id => !sel.includes(id));
+    const fila = (id, on, i) => { const x = catalogo[id]; return `<li class="pz-item ${on ? 'is-on' : ''}"><label class="pz-check"><input type="checkbox" data-tarj="${id}" ${on ? 'checked' : ''}><span class="pz-ic" aria-hidden="true">${icon(x.ic)}</span><span><b>${esc(x.t)}</b><small>${esc(x.d)}</small></span></label>${on ? pzFlechas('data-tarj-mover', id, i, sel.length, x.t) : ''}</li>`; };
+    caja.innerHTML = `<p class="pz-l">A la vista · ${sel.length} de 8 · usa las flechas para ordenar</p>
+      <ol class="pz-list">${sel.map((id, i) => fila(id, true, i)).join('') || '<li class="pz-vacio">No elegiste tarjetas: la vista se mostrará sin cifras arriba.</li>'}</ol>
+      <p class="pz-l">Disponibles</p><ul class="pz-list">${resto.map(id => fila(id, false, 0)).join('') || '<li class="pz-vacio">Ya están todas a la vista.</li>'}</ul>`;
+    caja.querySelectorAll('[data-tarj]').forEach(c => c.onchange = () => {
+      const id = c.dataset.tarj;
+      if (c.checked) { if (sel.length >= 8) { c.checked = false; s.querySelector('.fld-err').textContent = 'Caben hasta 8 tarjetas. Quita una para agregar otra.'; return; } sel.push(id); }
+      else sel = sel.filter(x => x !== id);
+      s.querySelector('.fld-err').textContent = ''; pintar();
+    });
+    caja.querySelectorAll('[data-tarj-mover]').forEach(b => b.onclick = () => { const [id, d] = b.dataset.tarjMover.split('|'), i = sel.indexOf(id), j = i + +d; if (j < 0 || j >= sel.length) return; [sel[i], sel[j]] = [sel[j], sel[i]]; pintar(); caja.querySelector(`[data-tarj-mover="${id}|${d}"]`)?.focus(); });
+  };
+  pintar();
+  const guardar = async (tarjetas, equipo) => agoraApi('workspace/preferencias', {method: 'PUT', body: {vista, tarjetas, equipo}});
+  s.querySelector('[data-tarj-def]').onclick = async e => {
+    const b = e.currentTarget; busy(b, true);
+    try { await guardar(null, false); await tarjCargar(vista, true); closeModal(); alGuardar(); toast(propia ? 'Volviste a la vista del equipo.' : 'Tarjetas restauradas.'); }
+    catch (x) { busy(b, false); s.querySelector('.fld-err').textContent = x.message; }
+  };
+  s.querySelector('[data-tarj-ok]').onclick = async e => {
+    const b = e.currentTarget; busy(b, true, 'Guardando…');
+    try { await guardar(sel, false); if (s.querySelector('[data-tarj-eq]')?.checked) await guardar(sel, true); await tarjCargar(vista, true); closeModal(); alGuardar(); toast('Tarjetas guardadas.'); }
+    catch (x) { busy(b, false); s.querySelector('.fld-err').textContent = x.message; }
+  };
+}
+/* Catálogo de tarjetas de Ventas registradas: cada una se calcula con las ventas del mes que ya están en pantalla. */
+const vgSuma = (items, fn) => items.reduce((o, v) => { const n = Number(fn(v)) || 0; if (n) o[v.moneda || 'USD'] = (o[v.moneda || 'USD'] || 0) + n; return o; }, {});
+const vgTop = (items, k) => { const m = new Map(); items.forEach(v => { const n = (typeof k === 'function' ? k(v) : v[k]) || ''; if (n) m.set(n, (m.get(n) || 0) + 1); }); return [...m.entries()].sort((a, b) => b[1] - a[1])[0] || null; };
+const VG_TARJETAS = {
+  cantidad: {t: 'Ventas del mes', ic: 'receipt', d: 'Cuántas ventas se registraron en el mes.', f: (d, r, mes) => ['', int(r.cantidad || 0), esc(mes)]},
+  vendido: {t: 'Vendido', ic: 'coins', d: 'Primer cobro o valor de cada venta.', f: (d, r) => ['is-ok', esc(vgPorMoneda(r.vendido)), 'Primer cobro o valor de cada venta']},
+  cobrado: {t: 'Cobrado en el mes', ic: 'check', d: 'Cobros marcados como pagados en el mes.', f: (d, r) => ['', esc(vgPorMoneda(r.cobrado)), 'Cobros marcados como pagados']},
+  porCobrar: {t: 'Por cobrar en el mes', ic: 'clock', d: 'Lo que falta cobrar este mes y lo vencido.', f: (d, r) => { const venc = Object.values(r.vencido || {}).some(x => x > 0); return [venc ? 'is-warn' : '', esc(vgPorMoneda(r.porCobrar)), venc ? `Vencido: ${esc(vgPorMoneda(r.vencido))}` : 'Nada vencido']; }},
+  vencido: {t: 'Cobros vencidos', ic: 'warn', d: 'Dinero atrasado y cuántas ventas lo tienen.', f: (d, r) => { const n = d.items.filter(v => v.estado === 'vencida').length; return [n ? 'is-warn' : '', esc(vgPorMoneda(r.vencido)), n ? `${int(n)} ${n === 1 ? 'venta' : 'ventas'} con cobro vencido` : 'Nada vencido']; }},
+  ticket: {t: 'Ticket promedio', ic: 'wallet', d: 'Lo vendido dividido entre las ventas del mes.', f: (d, r) => { const o = {}; Object.entries(r.vendido || {}).forEach(([m, v]) => { const n = d.items.filter(x => (x.moneda || 'USD') === m).length; if (n) o[m] = v / n; }); return ['', esc(vgPorMoneda(o)), 'Por venta']; }},
+  mensual: {t: 'Ingreso recurrente al mes', ic: 'sync', d: 'Lo que suman al mes las ventas recurrentes (semanal, anual… llevado a un mes).', f: d => { const rec = d.items.filter(v => v.cobro === 'recurrente'); return ['is-ok', esc(vgPorMoneda(vgSuma(rec, v => (Number(v.monto) || 0) * (FREC_MES[v.frecuencia] || 1)))), `${int(rec.length)} ${rec.length === 1 ? 'venta recurrente' : 'ventas recurrentes'}`]; }},
+  recurrentes: {t: 'Ventas recurrentes', ic: 'sync', d: 'Cuántas ventas son de cobro recurrente.', f: d => { const n = d.items.filter(v => v.cobro === 'recurrente').length, t = d.items.length; return ['', int(n), t ? `${Math.round(100 * n / t)} % de las ventas` : 'Sin ventas']; }},
+  unicas: {t: 'Pagos y ventas únicas', ic: 'receipt', d: 'Ventas de pago único o de venta única.', f: d => { const u = d.items.filter(v => v.cobro !== 'recurrente'); return ['', int(u.length), esc(vgPorMoneda(vgSuma(u, v => v.total ?? v.monto)))]; }},
+  pagadas: {t: 'Ventas pagadas', ic: 'check', d: 'Ventas con todos sus cobros pagados.', f: d => { const n = d.items.filter(v => v.estado === 'pagada').length; return ['', int(n), `de ${int(d.items.length)} del mes`]; }},
+  clientes: {t: 'Clientes', ic: 'users', d: 'Clientes distintos que compraron en el mes.', f: d => { const n = new Set(d.items.map(v => norm(v.cliente?.documento || v.cliente?.correo || v.cliente?.nombre || v.id))).size; return ['', int(n), n && d.items.length > n ? `${int(d.items.length - n)} compraron más de una vez` : 'Una compra cada uno']; }},
+  vendedor: {t: 'Quien más vendió', ic: 'team', d: 'La persona con más ventas en el mes.', f: d => { const x = vgTop(d.items, 'vendedor'); return ['', x ? esc(x[0]) : '—', x ? `${int(x[1])} ${x[1] === 1 ? 'venta' : 'ventas'}` : 'Sin vendedor indicado']; }},
+  producto: {t: 'Lo más vendido', ic: 'wallet', d: 'El producto o servicio con más ventas en el mes.', f: d => { const x = vgTop(d.items, 'producto'); return ['', x ? esc(x[0]) : '—', x ? `${int(x[1])} ${x[1] === 1 ? 'venta' : 'ventas'}` : 'Sin ventas']; }},
+  porCompletar: {t: 'Ventas por completar', ic: 'warn', d: 'Oportunidades ganadas a las que les falta el formulario de venta.', f: d => { const n = (d.pendientes || []).length; return [n ? 'is-warn' : '', int(n), n ? 'Falta el formulario de venta' : 'Todo completo']; }},
+};
+const VG_TARJ_DEFECTO = ['cantidad', 'vendido', 'cobrado', 'porCobrar'];
 /* ---------- 3. Ventas → pestaña "Ventas registradas" ---------- */
 function vgDetalle(id) {
   const v = VG.datos?.items?.find(x => x.id === id); if (!v) return;
@@ -6913,20 +6981,17 @@ function vgCsv() {
 }
 function vgRegistradasHtml() {
   const d = VG.datos;
-  const acts = d?.items?.length ? `<button class="btn" type="button" data-vg-csv>${icon('download')}Exportar CSV</button>` : '';
+  const acts = `<button class="btn" type="button" data-vg-tarjetas>${icon('gear')}Editar tarjetas</button>` + (d?.items?.length ? `<button class="btn" type="button" data-vg-csv>${icon('download')}Exportar CSV</button>` : '');
   const cabeza = head('Ventas', 'Ventas registradas', 'Lo que se vende al ganar una oportunidad: cliente, producto, cobros y vendedor, en un solo registro.', acts);
   if (!d) return cabeza + loading();
   const r = d.resumen || {}, mes = typeof mesNombre === 'function' ? mesNombre(VG.mes) : VG.mes;
   const f = VG.filtro, q = norm(f.q || '');
   const items = d.items.filter(v => (!f.estado || v.estado === f.estado) && (!q || norm(`${v.cliente?.nombre} ${v.cliente?.documento} ${v.producto} ${v.vendedor}`).includes(q)));
   const tarjeta = (cls, ic, t, val, det) => `<div class="ag-resumen ${cls}"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span><strong class="ag-resumen-v">${val}</strong><span class="ag-resumen-d">${det}</span></div>`;
-  const venc = Object.values(r.vencido || {}).some(x => x > 0);
-  const kpis = `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">
-    ${tarjeta('', 'receipt', 'Ventas del mes', int(r.cantidad || 0), esc(mes))}
-    ${tarjeta('is-ok', 'coins', 'Vendido', esc(vgPorMoneda(r.vendido)), 'Primer cobro o valor de cada venta')}
-    ${tarjeta('', 'check', 'Cobrado en el mes', esc(vgPorMoneda(r.cobrado)), 'Cobros marcados como pagados')}
-    ${tarjeta(venc ? 'is-warn' : '', 'clock', 'Por cobrar en el mes', esc(vgPorMoneda(r.porCobrar)), venc ? `Vencido: ${esc(vgPorMoneda(r.vencido))}` : 'Nada vencido')}
-  </section>`;
+  const elegidas = tarjElegidas('ventas', VG_TARJETAS, VG_TARJ_DEFECTO);
+  const kpis = elegidas.length ? `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">
+    ${elegidas.map(id => { const x = VG_TARJETAS[id]; let v; try { v = x.f(d, r, mes); } catch { v = ['', '—', '']; } return tarjeta(v[0], x.ic, esc(x.t), v[1], v[2]); }).join('')}
+  </section>` : '';
   const pend = (d.pendientes || []).length ? `<section class="panel vg-pend">${secH('warn', `${d.pendientes.length === 1 ? 'Una venta ganada' : d.pendientes.length + ' ventas ganadas'} por completar`, 'Se ganaron pero falta el formulario de venta. Complétalas para que lleguen al contacto, Tareas y Cobros.')}
     <ul class="vg-pend-l">${d.pendientes.slice(0, 8).map(p => `<li><span><b>${esc(p.name)}</b><small>Ganada el ${esc(vgFecha(p.wonAt))}${p.monetaryValue ? ' · ' + esc(vgMonto(p.monetaryValue, ESPACIO?.moneda || 'USD')) : ''}</small></span>${d.canEdit ? `<button class="btn btn-sm btn-tint" type="button" data-vg-completar="${esc(p.id)}">Completar venta</button>` : ''}</li>`).join('')}</ul></section>` : '';
   const chip = (k, t, n) => `<button type="button" class="agency-chip-btn ${f.estado === k ? 'is-active' : ''}" data-vg-f="${k}" aria-pressed="${f.estado === k}">${t}${n != null ? ` · ${n}` : ''}</button>`;
@@ -6951,6 +7016,8 @@ function vgRegistradasHtml() {
 }
 function vgRegistradasMontar(root) {
   root.querySelector('[data-vg-csv]')?.addEventListener('click', vgCsv);
+  root.querySelector('[data-vg-tarjetas]')?.addEventListener('click', () => tarjEditar('ventas', VG_TARJETAS, VG_TARJ_DEFECTO, 'Ventas registradas', repaint));
+  if (!TARJ.ventas?.cargado) tarjCargar('ventas').then(() => { if (TARJ.ventas?.mia || TARJ.ventas?.equipo) repaint(); });
   root.querySelectorAll('[data-vg-f]').forEach(b => b.onclick = () => { VG.filtro.estado = b.dataset.vgF; repaint(); });
   const qi = root.querySelector('[data-vg-q]');
   if (qi) qi.oninput = () => { VG.filtro.q = qi.value; clearTimeout(VG.qt); VG.qt = setTimeout(() => { repaint(); const n = $('[data-vg-q]'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 220); };

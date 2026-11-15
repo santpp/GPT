@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.8.4:**
+- **Ventas registradas: «Editar tarjetas»**, como editar los widgets de un tablero. Cada persona elige qué cifras ver arriba (hasta 8) y en qué orden. Su elección se guarda en el servidor y la acompaña en cualquier equipo.
+- 14 tarjetas para elegir: Ventas del mes, Vendido, Cobrado en el mes, Por cobrar en el mes, Cobros vencidos, Ticket promedio, Ingreso recurrente al mes, Ventas recurrentes, Pagos y ventas únicas, Ventas pagadas, Clientes, Quien más vendió, Lo más vendido y Ventas por completar.
+- La administración puede guardar su elección como **vista del equipo**: la ven quienes no hayan elegido la suya. «Restaurar» (o «Volver a la vista del equipo») borra la elección propia.
+- Sin migraciones (se guarda en la tabla de ajustes). Ruta nueva: `workspace/preferencias`. Prueba nueva: `tests/tarjetas.py` (10).
+
 **Novedades 2.8.3:**
 - **Campañas de Meta: diagnóstico de la cuenta real.** El detalle técnico de ASOCIM mostró que la cuenta publicitaria está registrada, pero Meta no entrega su autorización («Access Token not found», código 422) y el Ad Manager de la cuenta no tiene página conectada (404). Ahora el bloque lo dice así: **«Hay que volver a conectar la cuenta publicitaria de Meta»**, con los pasos.
 - **Publicaciones:** si la cuenta responde sin publicaciones, Ágora hace un último intento nombrando todas las redes conectadas y mirando un año atrás. Si sigue en cero, lo dice claro: la cuenta no entrega publicaciones para leer desde fuera, aunque se vean en su planificador; las cifras sí las incluyen.
