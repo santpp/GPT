@@ -1,5 +1,10 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.9.2:**
+- **Estudiantes solo en subcuentas de academia o educación.** Una venta es un estudiante únicamente si el **rubro de la subcuenta** es de educación (Educación, academia, instituto, colegio, universidad, formación…). En las demás subcuentas, Catálogo queda como antes, sin Estudiantes ni estados, y el servidor rechaza cambiar el estado de estudiante.
+  - El rubro se elige en Agencia → la ficha de la subcuenta. **ASOCIM debe tener el rubro «Educación»** para ver Estudiantes.
+- Prueba `tests/estudiantes.py` ampliada (16).
+
 **Novedades 2.9.1:**
 - **Mismo esqueleto que Ventas registradas** en Facturación, Productos y servicios y Catálogo (solo cambia cómo se ve; los datos son los mismos):
   - Tarjetas con icono, cifra y detalle; la tabla dentro de su recuadro con título y cantidad; al lado, la lista corta.

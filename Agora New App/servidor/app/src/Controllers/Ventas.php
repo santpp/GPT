@@ -299,9 +299,12 @@ final class Ventas {
    return ['ok'=>true,'venta'=>$v];
   });
  }
+ /** 2.9.2 · Solo una subcuenta de academia o educación tiene estudiantes (decisión del usuario): se mira el rubro de la subcuenta. */
+ public static function educativa(string $rubro):bool{return (bool)preg_match('/educaci|academ|escuela|colegio|instituto|universidad|formaci|capacitaci|liceo/iu',$rubro);}
  /** 2.9.1 · Cambia el estado del estudiante de una venta. No toca el plan de cobros ni el estado del cobro. */
  public function alumno(array $b):array{
   $this->auth->write();if(!$this->puedeEscribir())Http::fail('Tu rol no puede cambiar el estado.',403);
+  if(!self::educativa((string)($this->db->one('SELECT industry FROM agora_tenants WHERE id=?',[$this->auth->tenant])['industry']??'')))Http::fail('Los estudiantes son solo para subcuentas de educación (rubro de la subcuenta).',403);
   return $this->db->transaction(function()use($b){
    $id=Http::text($b,'ventaId',80);if(!preg_match(self::ID,$id))Http::fail('Venta inválida.');
    $estado=(string)($b['estado']??'');if(!in_array($estado,self::ALUMNO,true))Http::fail('Estado inválido. Usa activo, pausa, retirado o culminado.');

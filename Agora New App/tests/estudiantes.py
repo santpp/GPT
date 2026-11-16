@@ -1,7 +1,9 @@
 """2.9.1 · Catálogo → Estudiantes: filtro por vendedor y cédula, Excel solo con lo filtrado, estado a mano y recurrencia de activos.
 Requiere la API local en :8090 con la subcuenta ASOCIM (motor-puente.py antes) y ventas registradas (venta-cuenta.py / ventas-importadas.py).
+2.9.2: solo con rubro de educación. La prueba pone el rubro de ASOCIM en la base local (socket de MariaDB de pruebas).
 Uso: python3 tests/estudiantes.py"""
-import io, json, sys, zipfile, re, urllib.request
+SQL = lambda q: subprocess.run(['mariadb', '-S', '/tmp/mdb/run/mysql.sock', 'agora_erp', '-N', '-e', q], check=True, capture_output=True, text=True).stdout.strip()
+import io, json, sys, zipfile, re, subprocess, urllib.request
 from playwright.sync_api import sync_playwright
 B = 'http://127.0.0.1:8090'
 ok = 0
@@ -22,8 +24,21 @@ with sync_playwright() as p:
     pg.keyboard.press('Escape'); pg.evaluate("document.querySelectorAll('#layer .modal').forEach(m=>m.closest('#layer').innerHTML='')")
     bt = pg.locator('article:has-text("ASOCIM") [data-agency-open], .agency-card:has-text("ASOCIM") [data-agency-open]')
     if bt.count(): bt.first.click(); pg.wait_for_timeout(2500)
+    SQL("UPDATE agora_tenants SET industry='Comercio' WHERE subaccount LIKE 'ASOCIM%'")
+    pg.goto(B + '/agencia'); pg.wait_for_timeout(2500)
+    pg.keyboard.press('Escape'); pg.evaluate("document.querySelectorAll('#layer .modal').forEach(m=>m.closest('#layer').innerHTML='')")
+    if bt.count(): bt.first.click(); pg.wait_for_timeout(2500)
     pg.goto(B + '/catalogo'); pg.wait_for_timeout(4500)
-    check(pg.locator('.est-v').count() == 1, 'Catálogo muestra Estudiantes')
+    check(pg.locator('.est-v').count() == 0 and pg.locator('.mod-h').count() >= 1, 'subcuenta que no es de educación: Catálogo sin Estudiantes')
+    vid0 = pg.evaluate("fetch('/api/workspace/ventas',{credentials:'same-origin'}).then(r=>r.json()).then(d=>d.items[0].id)")
+    st0 = pg.evaluate("fetch('/api/workspace/ventas/alumno',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Requested-With':'fetch'},body:JSON.stringify({ventaId:'" + vid0 + "',estado:'pausa'})}).then(r=>r.status)")
+    check(st0 == 403, f'sin educación, el estado de estudiante se rechaza ({st0})')
+    SQL("UPDATE agora_tenants SET industry='Educación' WHERE subaccount LIKE 'ASOCIM%'")
+    pg.goto(B + '/agencia'); pg.wait_for_timeout(2500)
+    pg.keyboard.press('Escape'); pg.evaluate("document.querySelectorAll('#layer .modal').forEach(m=>m.closest('#layer').innerHTML='')")
+    if bt.count(): bt.first.click(); pg.wait_for_timeout(2500)
+    pg.goto(B + '/catalogo'); pg.wait_for_timeout(4500)
+    check(pg.locator('.est-v').count() == 1, 'subcuenta de educación: Catálogo muestra Estudiantes')
     d = pg.evaluate("fetch('/api/workspace/ventas',{credentials:'same-origin'}).then(r=>r.json())")
     items = d['items']; check(len(items) >= 3, f'hay ventas ({len(items)})')
     vend = lambda v: (v.get('vendedor') or '').strip() or 'Sin vendedor'

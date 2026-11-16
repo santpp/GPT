@@ -4063,7 +4063,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.9.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.9.2').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -7381,11 +7381,13 @@ function estMontar(root) {
   });
 }
 /** Pone Estudiantes debajo del encabezado del Catálogo (y le da encabezado al Catálogo sin reporte). */
+/* 2.9.2 · Decisión del usuario: cada venta es un estudiante solo si la subcuenta es de academia o educación (su rubro). */
+const esEducativa = () => /educaci|academ|escuela|colegio|instituto|universidad|formaci|capacitaci|liceo/i.test(String(ESPACIO?.rubro || ''));
 function estInsertar(html) {
   const t = document.createElement('template'); t.innerHTML = html;
   let h = t.content.querySelector('.mod-h');
-  if (!h) { const ref = t.content.querySelector('.prod-tabs'); const w = document.createElement('template'); w.innerHTML = head('Ventas y facturación', 'Catálogo', 'Tus programas o productos, sus estudiantes y la recurrencia de los activos.'); h = w.content.firstElementChild; if (ref) ref.after(h); else t.content.prepend(h); }
-  const w = document.createElement('template'); w.innerHTML = estHtml(); h.after(...w.content.childNodes);
+  if (!h) { const ref = t.content.querySelector('.prod-tabs'); const w = document.createElement('template'); w.innerHTML = head('Ventas y facturación', 'Catálogo', esEducativa() ? 'Tus programas, sus estudiantes y la recurrencia de los activos.' : 'Tus productos y servicios, con lo vendido en cada uno.'); h = w.content.firstElementChild; if (ref) ref.after(h); else t.content.prepend(h); }
+  if (esEducativa()) { const w = document.createElement('template'); w.innerHTML = estHtml(); h.after(...w.content.childNodes); }
   return t.innerHTML;
 }
 if (typeof V === 'object' && V.tc_catalogo) {
