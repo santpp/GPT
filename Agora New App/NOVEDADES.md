@@ -1,5 +1,8 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.9.3:**
+- **Ícono de la pestaña (favicon) de Ágora Mobile.** El que traía el ERP era un ícono ajeno que venía en los archivos originales; ahora es el mismo de Ágora Mobile, también en la raíz del sitio (`/favicon.ico`).
+
 **Novedades 2.9.2:**
 - **Estudiantes solo en subcuentas de academia o educación.** Una venta es un estudiante únicamente si el **rubro de la subcuenta** es de educación (Educación, academia, instituto, colegio, universidad, formación…). En las demás subcuentas, Catálogo queda como antes, sin Estudiantes ni estados, y el servidor rechaza cambiar el estado de estudiante.
   - El rubro se elige en Agencia → la ficha de la subcuenta. **ASOCIM debe tener el rubro «Educación»** para ver Estudiantes.

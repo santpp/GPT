@@ -51,6 +51,7 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 48 | Al editar una venta importada, el vendedor cambiaba a quien la importó. | La venta queda a nombre de quien importa y el formulario tomaba ese usuario como vendedor. | 2.8.15: se conserva el vendedor escrito si no se elige otro. Lo encontró la prueba nueva. | Arreglado |
 | 49 | «Venta ganada» en una oportunidad de una subcuenta conectada fallaba (la oportunidad no existía en Ágora), y la venta podía quedar sin marcar ganada en la cuenta o repetirse. | La venta buscaba la oportunidad en la copia local de Ágora; con la cuenta conectada, las oportunidades viven en la cuenta. | «Venta ganada» marca la oportunidad como ganada en la cuenta (con el monto) y guarda la venta en Ágora enlazada por el identificador de la oportunidad y del contacto de la cuenta. Una segunda venta para la misma oportunidad se rechaza y se ofrece editar la existente. | Corregido en 2.9.0. Por confirmar con la cuenta real |
 | 50 | La meta y las «ganadas sin venta» del mes se calculaban con copias locales viejas. | Leían la tabla local de oportunidades, que con la cuenta conectada no se actualiza. | Se leen de la cuenta y se guardan en el espejo (se sobreescriben en cada lectura). | Corregido en 2.9.0 |
+| 51 | El ícono de la pestaña del navegador no era el de Ágora. | El `favicon.ico` del ERP venía de los archivos originales con un ícono ajeno, y el navegador lo usa antes que los PNG. | Se usa el de Ágora Mobile, en `assets/` y en la raíz. | Corregido en 2.9.3 |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 
@@ -66,13 +67,13 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | N.º | Qué falta | Por qué importa |
 |---|---|---|
 | 11 | Probar las escrituras con la cuenta real: enviar un mensaje, asignar una conversación, editar un contacto, mover y crear una oportunidad, marcar ganada, crear, corregir y completar una tarea, crear un contacto nuevo, abrir Redes y anuncios y ver sus cifras, y ver las campañas de Meta del mes. | Las atiende el mismo código de Ágora Mobile 1.10.14, pero en esta app solo se probaron contra una cuenta simulada; desde el entorno de desarrollo no hay salida a la cuenta real. |
-| 12 | Confirmar el error 2 en tests después de subir la 2.9.2. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
+| 12 | Confirmar el error 2 en tests después de subir la 2.9.3. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
 | 13 | Cabeceras de seguridad en OpenLiteSpeed. | OpenLiteSpeed no aplica las líneas `Header` del `.htaccess`; van en el vHost (paso 9 de la guía). |
 | 14 | (Resuelto en 2.5.0) La bandeja usaba el código de una versión anterior de Ágora Mobile. | Bandeja, Contactos y Embudos ya llevan lo de la 1.10.14. |
 
 ## Cómo comprobar la versión instalada
 
-- `https://TU-DOMINIO/api/health` debe decir `"version":"2.9.2"`.
+- `https://TU-DOMINIO/api/health` debe decir `"version":"2.9.3"`.
 - `https://TU-DOMINIO/version.json` debe decir lo mismo.
 - Si una pantalla se ve rara tras actualizar: recarga una vez. Si sigue, en Chrome toca el icono a la izquierda de la dirección → Configuración del sitio → Borrar datos, y vuelve a entrar.
 
