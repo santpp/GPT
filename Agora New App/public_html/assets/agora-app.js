@@ -4058,7 +4058,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.8.17').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.9.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -6669,7 +6669,7 @@ async function vgAbrir(oportunidadId, {nueva = false, ventaId = null} = {}) {
   const layer = s.parentNode;
   const vigia = new MutationObserver(() => {
     if (s.isConnected) return; vigia.disconnect();
-    if (!guardada && nueva && ctx && !ctx.venta) vgPendiente(ctx.oportunidad, s);
+    if (!guardada && nueva && ctx && !ctx.venta && !ctx.enCuenta) vgPendiente(ctx.oportunidad, s); // 2.9.0: con la cuenta, las ganadas sin venta salen solas en «por completar»
   });
   if (layer) vigia.observe(layer, {childList: true});
   // Un clic fuera no borra lo escrito.
@@ -6987,7 +6987,7 @@ const VG_TARJETAS = {
   recurrentes: {t: 'Ventas recurrentes', ic: 'sync', d: 'Cuántas ventas son de cobro recurrente.', f: d => { const n = d.items.filter(v => v.cobro === 'recurrente').length, t = d.items.length; return ['', int(n), t ? `${Math.round(100 * n / t)} % de las ventas` : 'Sin ventas']; }},
   unicas: {t: 'Pagos y ventas únicas', ic: 'receipt', d: 'Ventas de pago único o de venta única.', f: d => { const u = d.items.filter(v => v.cobro !== 'recurrente'); return ['', int(u.length), esc(vgPorMoneda(vgSuma(u, v => v.total ?? v.monto)))]; }},
   pagadas: {t: 'Ventas pagadas', ic: 'check', d: 'Ventas con todos sus cobros pagados.', f: d => { const n = d.items.filter(v => v.estado === 'pagada').length; return ['', int(n), `de ${int(d.items.length)} del mes`]; }},
-  clientes: {t: 'Clientes', ic: 'users', d: 'Clientes distintos que compraron en el mes.', f: d => { const n = new Set(d.items.map(v => norm(v.cliente?.documento || v.cliente?.correo || v.cliente?.nombre || v.id))).size; return ['', int(n), n && d.items.length > n ? `${int(d.items.length - n)} compraron más de una vez` : 'Una compra cada uno']; }},
+  clientes: {t: 'Clientes', ic: 'users', d: 'Clientes distintos que compraron en el mes.', f: d => { const n = new Set(d.items.map(v => v.contactoId ? 'c:' + v.contactoId : norm(v.cliente?.documento || v.cliente?.correo || v.cliente?.nombre || v.id))).size; /* 2.9.0: el contacto de la cuenta identifica al cliente */ return ['', int(n), n && d.items.length > n ? `${int(d.items.length - n)} compraron más de una vez` : 'Una compra cada uno']; }},
   vendedor: {t: 'Quien más vendió', ic: 'team', d: 'La persona con más ventas en el mes.', f: d => { const x = vgTop(d.items, 'vendedor'); return ['', x ? esc(x[0]) : '—', x ? `${int(x[1])} ${x[1] === 1 ? 'venta' : 'ventas'}` : 'Sin vendedor indicado']; }},
   producto: {t: 'Lo más vendido', ic: 'wallet', d: 'El producto o servicio con más ventas en el mes.', f: d => { const x = vgTop(d.items, 'producto'); return ['', x ? esc(x[0]) : '—', x ? `${int(x[1])} ${x[1] === 1 ? 'venta' : 'ventas'}` : 'Sin ventas']; }},
   porCompletar: {t: 'Ventas por completar', ic: 'warn', d: 'Oportunidades ganadas a las que les falta el formulario de venta.', f: d => { const n = (d.pendientes || []).length; return [n ? 'is-warn' : '', int(n), n ? 'Falta el formulario de venta' : 'Todo completo']; }},

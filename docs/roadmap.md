@@ -270,6 +270,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - El repositorio se divide: `Agora Mobile/` (release 1.10.14 de nueva.agoradigital.app; el código sigue en la raíz) y `Agora New App/` (ERP 2.1.19 recibido: `public_html/`, `servidor/`). Análisis completo: `Agora New App/ANALISIS.md`. Sin Docker; MySQL.
 - Se deja de llamar «armazón». Lo de abajo es el historial de cuando lo era.
 - **2.2.0 (13 de noviembre)**: estable en MySQL; conexión con la cuenta por subcuenta (token cifrado, Location ID, «Probar conexión»); fuente Author; arreglos de Ajustes, Contactos, Gestión Comercial y logos; paquete de producción sin modo pruebas (`agora-new-app-2.2.0.zip`) y paquete de demo aparte. Siguiente: Conversaciones con el motor de Ágora Mobile.
+- **2.9.0 (16 de noviembre)**: «Venta ganada» marca ganada en la cuenta y guarda la venta en Ágora enlazada por identificadores de la cuenta (sin duplicados); espejo de contactos, oportunidades y ganadas que se sobreescribe en cada lectura.
 - **2.8.17 (15 de noviembre)**: filtros en Facturación (estado, búsqueda, vendedor, producto) y filtro «Entraron» en Contactos.
 - **2.8.16 (15 de noviembre)**: cada cifra del Resumen de hoy lleva a su módulo con el filtro puesto.
 - **2.8.15 (15 de noviembre)**: plan de cobros automático para las ventas importadas por Excel (cuotas pasadas pagadas); el vendedor escrito se conserva al editar.

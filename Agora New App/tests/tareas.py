@@ -29,7 +29,13 @@ def cuenta():
     r=urllib.request.Request('http://127.0.0.1:8099/__tasks',headers={'Authorization':'Bearer pit-prueba'})
     return json.loads(urllib.request.urlopen(r).read())['tasks']
 a=C('admin.asocim@agora.test');e=C('ejecutivo1.asocim@agora.test');cid=a.ws
-antes=len(cuenta());locales=lambda c:[t for t in c.call('workspace/tareas')[1].get('items',[])]
+antes=len(cuenta())
+def locales(c):
+    out,cur=[],0
+    while True:
+        d=c.call(f'workspace/tareas?cursor={cur}')[1];out+=d.get('items',[])
+        if not d.get('hasMore') or not d.get('nextCursor'):return out
+        cur=d['nextCursor']
 ok(a.call('workspace/tareas','POST',{'titulo':'Sin contacto','vence':'2026-12-01','hora':'10:00'})[0] in (400,422),'en una subcuenta conectada no se guarda una tarea sin contacto')
 ok(len(cuenta())==antes,'y nada llega a la cuenta')
 rid=uuid.uuid4().hex

@@ -10,7 +10,7 @@ use PDO;
 final class DB {
  public PDO $pdo;
  public string $driver='mysql';
- private const UPSERT_KEYS=['agora_rate_limits'=>'bucket','agora_settings'=>'tenant_id,setting_key'];
+ private const UPSERT_KEYS=['agora_rate_limits'=>'bucket','agora_settings'=>'tenant_id,setting_key','agora_cuenta_contactos'=>'tenant_id,ghl_id','agora_cuenta_oportunidades'=>'tenant_id,ghl_id'];
  private array $cache=[];
  public function __construct(array $c){
   $opts=[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,PDO::ATTR_EMULATE_PREPARES=>false];

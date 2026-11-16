@@ -7,6 +7,7 @@ function db(): PDO {
     return $db ??= new PDO(getenv('DB_DSN') ?: '', getenv('DB_USER') ?: '', getenv('DB_PASSWORD') ?: '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false]);
 }
 function respond(array $body, int $status = 200): never {
+    motorEspejo($body,$status);
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
@@ -19,7 +20,14 @@ function respond(array $body, int $status = 200): never {
  * después un trabajo que la persona no tiene por qué esperar. Si no sabe, el
  * trabajo no se hace aquí: lo hará el cron, y la respuesta no se retrasa nunca.
  */
+/** Agora New App 2.9.0: antes de responder, el ERP guarda en su espejo los contactos y oportunidades que trae la respuesta. */
+function motorEspejo(array $body,int $status):void {
+    $f=$GLOBALS['motorPuente']['alResponder']??null;
+    if($status<400&&is_callable($f)){try{$f($body);}catch(Throwable $e){}}
+}
+
 function respondThen(array $body, callable $after): never {
+    motorEspejo($body,200);
     $finish=function_exists('litespeed_finish_request')?'litespeed_finish_request':(function_exists('fastcgi_finish_request')?'fastcgi_finish_request':null);
     if($finish===null)respond($body);
     http_response_code(200);

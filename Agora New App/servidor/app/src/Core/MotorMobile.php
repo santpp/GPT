@@ -116,7 +116,9 @@ final class MotorMobile {
     $erp->run("UPDATE agora_records SET data=?,status=?,version=version+1,updated_at=UTC_TIMESTAMP() WHERE seq=?",[DB::json($d),$d['estado'],$row['seq']]);
    }
   };
-  $GLOBALS['motorPuente']=['connectionId'=>$tenant,'alActuar'=>$alActuar,'membership'=>function(array $connection)use($erp,$user,$restringido,$escribe,$reasigna):array{
+  // 2.9.0 · espejo: cada respuesta de contactos u oportunidades queda guardada (sobrescribe por id de la cuenta).
+  $espejo=new \Agora\Services\Espejo($erp,(int)$tenant);
+  $GLOBALS['motorPuente']=['connectionId'=>$tenant,'alActuar'=>$alActuar,'alResponder'=>static fn(array $body)=>$espejo->deRespuesta($p,$body),'membership'=>function(array $connection)use($erp,$user,$restringido,$escribe,$reasigna):array{
    $full=\PermissionPolicy::capabilities(['identity_type'=>'native','role'=>'administrator']);
    // 2.4.0 · primero el enlace que eligió quien administra; si no hay, el del mismo correo.
    $enlace=(new \Agora\Services\UserLinks($erp))->forUser((int)$connection['id'],['id'=>$user['id'],'email'=>$user['email']]);
@@ -198,6 +200,73 @@ final class MotorMobile {
   try{\query('DELETE FROM directory_cache WHERE connection_id=?',[$tenant]);}catch(\Throwable){}
   $a->audit('contacto.creado','contacto',$id,['conTelefono'=>$tel!=='','conCorreo'=>$correo!=='']);
   return ['ok'=>true,'id'=>$id,'nombre'=>$payload['name']];
+ }
+
+ /* ---------- 2.9.0 · Venta ganada con la cuenta: la oportunidad y el contacto viven en la cuenta; el espejo guarda la última lectura. ---------- */
+ private static function conexion(DB $erp,array $config,int $tenant):array{
+  self::instalar($erp,$config);self::arrancar($config);
+  $c=\query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$tenant,self::AGENCIA])->fetch();
+  if(!$c){self::sincronizar($erp,$config,$tenant);$c=\query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$tenant,self::AGENCIA])->fetch();}
+  if(!$c)Http::fail('Esta subcuenta todavía no está conectada con su cuenta.',409);
+  return $c;
+ }
+ private static function falla(\Throwable $e,string $que):never{
+  if($e instanceof \GhlCooldown){header('Retry-After: '.$e->retryAfter);Http::fail('La cuenta pidió esperar un momento. '.$que.' todavía no se guardó: inténtalo otra vez.',429);}
+  if($e instanceof \GhlApiException){if($e->status===404)Http::fail('La cuenta no encuentra esa oportunidad. Puede que la hayan borrado.',404);Http::fail(in_array($e->status,[401,403],true)?'La cuenta rechazó la operación por permisos. Revisa el permiso de oportunidades en la conexión.':'La cuenta no aceptó la operación (código '.$e->status.').',424);}
+  throw $e;
+ }
+ /** La oportunidad y su contacto, leídos de la cuenta (y guardados en el espejo). */
+ public static function oportunidadCuenta(DB $erp,array $config,int $tenant,string $id):array{
+  if(!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$id))Http::fail('Oportunidad inválida.');
+  $c=self::conexion($erp,$config,$tenant);$g=new \GhlGateway();$espejo=new \Agora\Services\Espejo($erp,$tenant);
+  try{$op=$g->execute($c,fn(\GhlClient $cl):array=>$cl->opportunity($id),false)['opportunity']??null;}catch(\Throwable $e){self::falla($e,'La venta');}
+  if(!is_array($op)||($op['id']??'')!==$id)Http::fail('La cuenta no encuentra esa oportunidad.',404);
+  if(isset($op['locationId'])&&$op['locationId']!==$c['location_id'])Http::fail('Esa oportunidad no es de esta subcuenta.',403);
+  $espejo->oportunidad($op);
+  $ct=null;$cid=(string)($op['contactId']??($op['contact']['id']??''));
+  if($cid!==''){try{$ct=$g->execute($c,fn(\GhlClient $cl):array=>$cl->contact($cid),false)['contact']??null;if(is_array($ct))$espejo->contacto($ct);}catch(\GhlCooldown $e){self::falla($e,'La venta');}catch(\Throwable){$ct=null;}}
+  return ['op'=>$op,'contacto'=>is_array($ct)?$ct:null];
+ }
+ /** Marca la oportunidad como ganada en la cuenta, con el monto de la venta. */
+ public static function ganarEnCuenta(DB $erp,array $config,int $tenant,string $id,float $monto):array{
+  $c=self::conexion($erp,$config,$tenant);$g=new \GhlGateway();
+  try{
+   $g->execute($c,fn(\GhlClient $cl):array=>$cl->updateOpportunityStatus($id,['status'=>'won']),false);
+   $r=$g->execute($c,fn(\GhlClient $cl):array=>$cl->updateOpportunity($id,['monetaryValue'=>$monto]),false);
+  }catch(\Throwable $e){self::falla($e,'La venta');}
+  $op=is_array($r['opportunity']??null)?$r['opportunity']:['id'=>$id];
+  $op=['status'=>'won','monetaryValue'=>$monto,'wonAt'=>gmdate('c')]+$op;$op['status']='won';
+  (new \Agora\Services\Espejo($erp,$tenant))->oportunidad($op);
+  // Las ganadas del mes se vuelven a leer en la próxima consulta.
+  try{\query("DELETE FROM directory_cache WHERE connection_id=? AND cache_key LIKE 'won:%'",[$tenant]);}catch(\Throwable){}
+  return $op;
+ }
+ /** Corrige el monto de una oportunidad ganada en la cuenta (al editar la venta). No interrumpe si falla. */
+ public static function montoEnCuenta(DB $erp,array $config,int $tenant,string $id,float $monto):void{
+  try{$c=self::conexion($erp,$config,$tenant);$r=(new \GhlGateway())->execute($c,fn(\GhlClient $cl):array=>$cl->updateOpportunity($id,['monetaryValue'=>$monto]),false,true);if(is_array($r['opportunity']??null))(new \Agora\Services\Espejo($erp,$tenant))->oportunidad($r['opportunity']);}catch(\Throwable){}
+ }
+ /** Completa en la cuenta el correo o el teléfono del contacto si la cuenta no los tenía. No borra ni reemplaza nada. No interrumpe si falla. */
+ public static function completarContacto(DB $erp,array $config,int $tenant,array $ct,array $cliente):void{
+  $id=(string)($ct['id']??'');if($id==='')return;$p=[];
+  if(empty($ct['email'])&&($cliente['correo']??'')!=='')$p['email']=$cliente['correo'];
+  if(empty($ct['phone'])&&($cliente['telefono']??'')!=='')$p['phone']=$cliente['telefono'];
+  if(!$p)return;
+  try{$c=self::conexion($erp,$config,$tenant);$r=(new \GhlGateway())->execute($c,fn(\GhlClient $cl):array=>$cl->updateContact($id,$p),false,true);if(is_array($r['contact']??null))(new \Agora\Services\Espejo($erp,$tenant))->contacto($r['contact']);}catch(\Throwable){}
+ }
+ /** Ganadas del mes según la cuenta (lectura guardada unos minutos por el motor) y escritas en el espejo. */
+ public static function ganadasMes(DB $erp,array $config,int $tenant,string $ym):array{
+  try{$c=self::conexion($erp,$config,$tenant);require_once dirname(__DIR__,3).'/motor/src/WonSales.php';$m=(new \WonSales())->month($c,$ym);}
+  catch(\Throwable){return (new \Agora\Services\Espejo($erp,$tenant))->ganadas($ym);}
+  $espejo=new \Agora\Services\Espejo($erp,$tenant);
+  foreach($m['records']??[] as $o)if(is_array($o))$espejo->oportunidad(['id'=>$o['id'],'name'=>$o['name']??'','contactName'=>$o['contactName']??null,'assignedTo'=>$o['assignedTo']??null,'monetaryValue'=>$o['value']??0,'status'=>'won','wonAt'=>$o['wonAt']??null]+(($prev=$espejo->op((string)$o['id']))?['contactId'=>$prev['contacto_id'],'pipelineId'=>$prev['embudo_id'],'pipelineStageId'=>$prev['etapa_id']]:[]));
+  return $espejo->ganadas($ym);
+ }
+ /** La persona de Ágora enlazada con un usuario de la cuenta (o null). */
+ public static function usuarioDe(DB $erp,int $tenant,?string $externo):?int{
+  if(!$externo)return null;
+  $users=$erp->all('SELECT id,email FROM agora_users WHERE local_tenant_id=? AND active=1',[$tenant]);
+  foreach((new \Agora\Services\UserLinks($erp))->forUsers($tenant,$users) as $uid=>$l)if($l&&$l['id']===$externo)return (int)$uid;
+  return null;
  }
 
  /** Consumos de la agencia: solo dueños (MASTER y SUPERADMIN). Token de agencia y Company ID cifrados en el motor. */

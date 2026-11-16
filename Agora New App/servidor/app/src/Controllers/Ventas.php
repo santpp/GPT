@@ -60,9 +60,17 @@ final class Ventas {
     $this->db->run("UPDATE agora_records SET data=?,status=?,version=version+1,updated_at=UTC_TIMESTAMP() WHERE tenant_id=? AND kind='venta' AND uid=? AND version=?",[DB::json($d),$d['estado'],$this->auth->tenant,$r['uid'],(int)$r['version']]);
     $r['version']=(int)$r['version']+1;
    }
+   // 2.9.0: una venta sin contacto de la cuenta (por ejemplo, importada) se enlaza al contacto del espejo con el mismo correo o teléfono.
+   if(empty($d['contactoId'])&&$this->conectadaCache()){
+    $ct=($this->espejo??=new \Agora\Services\Espejo($this->db,(int)$this->auth->tenant))->buscarContacto((string)($d['cliente']['correo']??$d['correo']??''),(string)($d['cliente']['telefono']??$d['telefono']??''));
+    if($ct){$d['contactoId']=$ct['ghl_id'];$d['contactoEnlazado']='espejo';unset($d['version']);
+     $this->db->run("UPDATE agora_records SET data=?,version=version+1,updated_at=UTC_TIMESTAMP() WHERE tenant_id=? AND kind='venta' AND uid=? AND version=?",[DB::json($d),$this->auth->tenant,$r['uid'],(int)$r['version']]);$r['version']=(int)$r['version']+1;}
+   }
    $d['id']=$r['uid'];$d['version']=(int)$r['version'];$d['estado']=self::estadoDe($d);$out[]=$d;}
   return $out;
  }
+ private ?\Agora\Services\Espejo $espejo=null;private ?bool $conCache=null;
+ private function conectadaCache():bool{return $this->conCache??=$this->conectada();}
  /**
   * 2.8.15 · Plan de cobros de una venta que llegó por Excel (Migración), con la misma regla que una venta registrada.
   * Decisión del usuario: las cuotas con fecha anterior a hoy se dan por pagadas (las ventas venían «al día»).
@@ -105,11 +113,76 @@ final class Ventas {
   // Oportunidades ganadas que quedaron sin venta registrada (la persona cerró el formulario).
   $args=[$this->auth->tenant];$sql="SELECT uid,data FROM agora_records WHERE tenant_id=? AND kind='opportunity' AND status='won'";
   if($this->auth->assignedOnly()){$sql.=' AND owner_id=?';$args[]=$this->auth->user['id'];}
-  $pend=[];foreach($this->db->all($sql.' ORDER BY seq DESC LIMIT 2000',$args) as $r){$d=json_decode($r['data'],true);if(is_array($d)&&!empty($d['ventaPendiente'])&&empty($d['ventaId']))$pend[]=['id'=>$r['uid'],'name'=>$d['name']??'Oportunidad','contactId'=>$d['contactId']??'','monetaryValue'=>$d['monetaryValue']??null,'wonAt'=>$d['wonAt']??null];}
+  $pend=[];
+  if($this->conectada()){
+   // 2.9.0: con la cuenta conectada, las ganadas del mes son las de la cuenta (en el espejo); las que no tienen venta quedan por completar.
+   $conVenta=array_flip(array_filter(array_map(fn($v)=>(string)($v['oportunidadId']??''),$todas)));
+   $mio=$this->auth->assignedOnly()?((new \Agora\Services\UserLinks($this->db))->forUser((int)$this->auth->tenant,['id'=>$this->auth->user['id'],'email'=>$this->auth->user['email']])['id']??'-'):null;
+   foreach(\Agora\Core\MotorMobile::ganadasMes($this->db,$this->auth->config,(int)$this->auth->tenant,$ym) as $g){
+    if(isset($conVenta[$g['ghl_id']])||$g['venta_id'])continue;if($mio!==null&&$g['asignado_a']!==$mio)continue;
+    $pend[]=['id'=>$g['ghl_id'],'name'=>$g['nombre']?:'Oportunidad','contactId'=>$g['contacto_id']??'','contactName'=>$g['contacto_nombre'],'monetaryValue'=>(float)$g['valor'],'wonAt'=>$g['ganada_en']?str_replace(' ','T',$g['ganada_en']).'Z':null,'enCuenta'=>true];
+   }
+  }else foreach($this->db->all($sql.' ORDER BY seq DESC LIMIT 2000',$args) as $r){$d=json_decode($r['data'],true);if(is_array($d)&&!empty($d['ventaPendiente'])&&empty($d['ventaId']))$pend[]=['id'=>$r['uid'],'name'=>$d['name']??'Oportunidad','contactId'=>$d['contactId']??'','monetaryValue'=>$d['monetaryValue']??null,'wonAt'=>$d['wonAt']??null];}
   return ['items'=>$items,'total'=>count($items),'resumen'=>$res,'proximos'=>array_slice($proximos,0,60),
    'vinculos'=>array_map(fn($v)=>['ventaId'=>$v['id'],'oportunidadId'=>$v['oportunidadId']??'','contactoId'=>$v['contactoId']??'','estado'=>$v['estado']],$todas),
    'pendientes'=>$pend,'canEdit'=>$this->puedeEscribir(),'restricted'=>$this->auth->assignedOnly()];
  }
+ /* ---------- 2.9.0 · Venta ganada con la cuenta (subcuenta conectada): la oportunidad y el contacto se leen y se escriben en la cuenta. ---------- */
+ private function conectada():bool{return \Agora\Core\MotorMobile::conectada($this->db,(int)$this->auth->tenant);}
+ private function opLocal(string $id):?array{try{return $this->records->get('opportunity',$id);}catch(\Agora\Core\HttpError $e){if($e->getCode()===404)return null;throw $e;}}
+ /** La venta ya registrada para una oportunidad (una sola por oportunidad). */
+ private function ventaDeOportunidad(string $opId):?array{
+  foreach($this->db->all("SELECT uid,data,version FROM agora_records WHERE tenant_id=? AND kind='venta' AND data LIKE ? LIMIT 5",[$this->auth->tenant,'%"oportunidadId":"'.$opId.'"%']) as $r){$d=json_decode($r['data'],true);if(is_array($d)&&($d['oportunidadId']??'')===$opId){$d['id']=$r['uid'];$d['version']=(int)$r['version'];return $d;}}
+  return null;
+ }
+ /** Quien solo ve lo suyo solo toca oportunidades asignadas a su usuario de la cuenta. */
+ private function soloSuya(array $o):void{
+  if(!$this->auth->assignedOnly())return;
+  $mio=(new \Agora\Services\UserLinks($this->db))->forUser((int)$this->auth->tenant,['id'=>$this->auth->user['id'],'email'=>$this->auth->user['email']])['id']??null;
+  if(!$mio||($o['assignedTo']??null)!==$mio)Http::fail('Esa oportunidad no está asignada a ti.',403);
+ }
+ private function contextoCuenta(string $opId,?array $venta):array{
+  $t=(int)$this->auth->tenant;$r=\Agora\Core\MotorMobile::oportunidadCuenta($this->db,$this->auth->config,$t,$opId);$o=$r['op'];$ct=$r['contacto']??[];$this->soloSuya($o);
+  $venta??=$this->ventaDeOportunidad($opId);
+  $owner=\Agora\Core\MotorMobile::usuarioDe($this->db,$t,is_string($o['assignedTo']??null)?$o['assignedTo']:null);
+  $cid=(string)($ct['id']??($o['contactId']??''));
+  $op=['id'=>$opId,'name'=>(string)($o['name']??''),'contactId'=>$cid,'contactName'=>(string)($ct['contactName']??$ct['name']??($o['contact']['name']??'')),'monetaryValue'=>$o['monetaryValue']??0,'status'=>(string)($o['status']??''),'ownerId'=>$owner,'enCuenta'=>true];
+  $contacto=$ct?['id'=>$cid,'name'=>(string)($ct['contactName']??$ct['name']??''),'firstName'=>$ct['firstName']??'','lastName'=>$ct['lastName']??'','email'=>$ct['email']??'','phone'=>$ct['phone']??'','address1'=>$ct['address1']??'','city'=>$ct['city']??'','companyName'=>$ct['companyName']??'','documento'=>'']:null;
+  $catalogo=$this->db->setting($t,'catalogo.productos',['rubros'=>[],'productos'=>[]]);
+  return ['oportunidad'=>$op,'contacto'=>$contacto,'venta'=>$venta,'enCuenta'=>true,'catalogo'=>['rubros'=>$catalogo['rubros']??[],'productos'=>$catalogo['productos']??[]],
+   'perfil'=>$this->db->setting($t,'cuenta.perfil',null),'vendedores'=>$this->vendedores(),'yo'=>(int)$this->auth->user['id'],'canEdit'=>$this->puedeEscribir(),'puedeCambiarVendedor'=>$this->administra()];
+ }
+ private function crearCuenta(array $b,string $opId):array{
+  $t=(int)$this->auth->tenant;
+  if($this->ventaDeOportunidad($opId))Http::fail('Esta oportunidad ya tiene una venta registrada. Edítala desde Ventas.',409);
+  $r=\Agora\Core\MotorMobile::oportunidadCuenta($this->db,$this->auth->config,$t,$opId);$o=$r['op'];$ct=$r['contacto']??[];$this->soloSuya($o);
+  $ctId=(string)($ct['id']??($o['contactId']??''));
+  if(isset($b['contactoId'])&&$b['contactoId']!==''&&(string)$b['contactoId']!==$ctId)Http::fail('El contacto no corresponde a la oportunidad.');
+  $owner=\Agora\Core\MotorMobile::usuarioDe($this->db,$t,is_string($o['assignedTo']??null)?$o['assignedTo']:null)??(int)$this->auth->user['id'];
+  $catalogo=$this->db->setting($t,'catalogo.productos',['rubros'=>[],'productos'=>[]]);
+  $v=$this->leer($b,$catalogo,$owner,null);
+  // 1. En la cuenta: la oportunidad queda ganada con el monto de la venta. Si la cuenta no acepta, no se guarda nada.
+  \Agora\Core\MotorMobile::ganarEnCuenta($this->db,$this->auth->config,$t,$opId,(float)$v['datos']['monto']);
+  // 2. En Ágora: la venta, unida a la oportunidad y al contacto de la cuenta por su identificador.
+  $out=$this->db->transaction(function()use($b,$v,$o,$opId,$ctId,$catalogo,$t){
+   if($this->ventaDeOportunidad($opId))Http::fail('Esta oportunidad ya tiene una venta registrada. Edítala desde Ventas.',409);
+   $id=bin2hex(random_bytes(12));$hoy=gmdate('c');
+   $venta=['id'=>$id,'fecha'=>$v['fechaVenta'],'creada'=>$hoy,'oportunidadId'=>$opId,'oportunidad'=>(string)($o['name']??''),'contactoId'=>$ctId,'oportunidadEnCuenta'=>true]+$v['datos'];
+   $venta['plan']=$v['plan'];$venta['total']=$v['total'];$venta['sinFin']=$v['sinFin'];
+   $venta['registradaPor']=$this->auth->user['name']??'';$venta['tareas']=[];
+   $this->moverStock($catalogo,$venta['productoId'],$venta['cobro']==='venta'?-$venta['cantidad']:0);
+   $venta['tareas']=$this->tareas($venta,$ctId);
+   $venta['estado']=self::estadoDe($venta);
+   $this->records->save('venta',$id,$venta,($venta['cliente']['nombre']??'').' · '.$venta['producto'],$venta['estado'],substr($venta['fecha'],0,7),$v['vendedorId']);
+   (new \Agora\Services\Espejo($this->db,$t))->enlazarVenta($opId,$id);
+   $this->auth->audit('venta.ganada','ventas',$id,['oportunidad'=>$opId,'contacto'=>$ctId,'enCuenta'=>true,'producto'=>$venta['producto'],'monto'=>$venta['monto'],'moneda'=>$venta['moneda'],'cobro'=>$venta['cobro'],'cobros'=>count($venta['plan'])]);
+   return ['ok'=>true,'venta'=>$venta];
+  });
+  // 3. El contacto de la cuenta recibe el correo o el teléfono si no los tenía (no se reemplaza nada).
+  if($ct)\Agora\Core\MotorMobile::completarContacto($this->db,$this->auth->config,$t,$ct,$v['datos']['cliente']);
+  return $out;
+ }
+
  public function contexto():array{
   $ventaId=(string)($_GET['ventaId']??'');$venta=null;
   if($ventaId!==''){$venta=$this->records->payload($this->records->get('venta',$ventaId));$opId=(string)($venta['oportunidadId']??'');}
@@ -124,6 +197,7 @@ final class Ventas {
     'canEdit'=>$this->puedeEscribir(),'puedeCambiarVendedor'=>$this->administra()];
   }
   if(!preg_match(self::ID,$opId))Http::fail('Falta la oportunidad.');
+  if($this->conectada()&&!$this->opLocal($opId))return $this->contextoCuenta($opId,$venta);
   $op=$this->records->payload($this->records->get('opportunity',$opId));
   if(!$venta&&!empty($op['ventaId'])){try{$venta=$this->records->payload($this->records->get('venta',(string)$op['ventaId']));}catch(\Throwable){$venta=null;}}
   $contacto=null;try{$contacto=$this->records->payload($this->records->get('contact',(string)($op['contactId']??'')));}catch(\Throwable){$contacto=null;}
@@ -138,6 +212,8 @@ final class Ventas {
  /* ---------- Escritura ---------- */
  public function crear(array $b):array{
   $this->auth->write();
+  $opCuenta=(string)($b['oportunidadId']??'');
+  if(preg_match(self::ID,$opCuenta)&&$this->conectada()&&!$this->opLocal($opCuenta))return $this->crearCuenta($b,$opCuenta);
   return $this->db->transaction(function()use($b){
    $opId=Http::text($b,'oportunidadId',80);if(!preg_match(self::ID,$opId))Http::fail('Oportunidad inválida.');
    $opRow=$this->records->get('opportunity',$opId,true);$op=$this->records->payload($opRow);
@@ -186,8 +262,9 @@ final class Ventas {
    $this->records->save('venta',$id,$venta,($venta['cliente']['nombre']??'').' · '.$venta['producto'],$venta['estado'],substr($venta['fecha'],0,7),$v['vendedorId']??($row['owner_id']!==null?(int)$row['owner_id']:null));
    // La oportunidad y el contacto siguen a la venta: no puede quedar un dato distinto en cada módulo.
    $opId=(string)($venta['oportunidadId']??'');
-   if($opId!==''){try{$opRow=$this->records->get('opportunity',$opId,true);$this->actualizarOportunidad($opRow,$this->records->payload($opRow),$venta,$v['vendedorId']);}catch(\Agora\Core\HttpError $e){if($e->getCode()!==404)throw $e;}}
-   $ct=(string)($venta['contactoId']??'');
+   if($opId!==''&&!empty($venta['oportunidadEnCuenta'])){if((float)($antes['monto']??0)!==(float)$venta['monto'])\Agora\Core\MotorMobile::montoEnCuenta($this->db,$this->auth->config,(int)$this->auth->tenant,$opId,(float)$venta['monto']);}
+   elseif($opId!==''){try{$opRow=$this->records->get('opportunity',$opId,true);$this->actualizarOportunidad($opRow,$this->records->payload($opRow),$venta,(int)($v['vendedorId']??0));}catch(\Agora\Core\HttpError $e){if($e->getCode()!==404)throw $e;}}
+   $ct=empty($venta['oportunidadEnCuenta'])?(string)($venta['contactoId']??''):'';
    if($ct!==''){try{$this->actualizarContacto($this->records->get('contact',$ct,true),$venta);}catch(\Agora\Core\HttpError $e){if($e->getCode()!==404)throw $e;}}
    $cambios=[];foreach(['monto','moneda','cobro','frecuencia','cuotas','fechaInicio','diaCobro','productoId','vendedor','notas'] as $k)if(($antes[$k]??null)!==($venta[$k]??null))$cambios[$k]=['antes'=>$antes[$k]??null,'despues'=>$venta[$k]??null];
    if(($antes['cliente']??null)!==$venta['cliente'])$cambios['cliente']='actualizado';
@@ -340,9 +417,16 @@ final class Ventas {
  /** Bienvenida + cobros que caen en los próximos días (siempre al menos el primero). */
  private function tareas(array $venta,string $ctId):array{
   $owner=(int)$venta['vendedorId'];$resp=$venta['vendedor'];$cliente=$venta['cliente']['nombre']??'';$hoy=gmdate('Y-m-d');$limite=gmdate('Y-m-d',strtotime('+'.self::DIAS_TAREA.' days'));
-  $nueva=function(string $titulo,string $detalle,string $vence,string $tipo,?int $n)use($owner,$resp,$cliente,$ctId,$venta):array{
+  $nueva=function(string $titulo,string $detalle,string $vence,string $tipo,?int $n)use($owner,$resp,$cliente,$ctId,$venta):?array{
    $id=bin2hex(random_bytes(12));
    $t=['id'=>$id,'titulo'=>mb_substr($titulo,0,250),'detalle'=>mb_substr($detalle,0,2000),'vence'=>$vence,'hora'=>'','estado'=>'pendiente','responsable'=>$resp,'responsableId'=>$owner,'origen'=>'venta','contactId'=>$ctId,'conversationId'=>null,'contacto'=>$cliente,'ventaId'=>$venta['id'],'oportunidadId'=>$venta['oportunidadId']];
+   // 2.9.0: con la venta unida a la cuenta, la tarea se escribe en la cuenta (misma tarea, mismo identificador en Tareas). Si la cuenta no la acepta, no se crea una copia local.
+   if(!empty($venta['oportunidadEnCuenta'])){
+    if($ctId==='')return null;
+    try{$cid=\Agora\Core\MotorMobile::tarea($this->db,$this->auth->config,$this->auth,'crear',$ctId,['title'=>mb_substr($titulo,0,190),'dueDate'=>$vence.'T12:00:00Z','body'=>mb_substr($detalle,0,2000)])['id'];}catch(\Agora\Core\HttpError){return null;}
+    if($cid==='')return null;
+    $id=\Agora\Core\MotorMobile::uidTarea($cid);$t['id']=$id;$t['cuentaTareaId']=$cid;
+   }
    $this->records->save('task',$id,$t,$t['titulo'],'pendiente',substr($vence,0,7),$owner);
    return ['id'=>$id,'tipo'=>$tipo,'n'=>$n];
   };
@@ -353,7 +437,7 @@ final class Ventas {
    $cuota=$total>1?' (cobro '.$c['n'].($venta['sinFin']?'':' de '.$total).')':'';
    $out[]=$nueva('Cobrar '.$venta['producto'].' a '.$cliente.$cuota,number_format((float)$c['monto'],2,',','.').' '.$venta['moneda'],max($hoy,(string)$c['fecha']),'cobro',(int)$c['n']);
   }
-  return $out;
+  return array_values(array_filter($out));
  }
  private function actualizarOportunidad(array $row,array $op,array $venta,int $vendedor):void{
   unset($op['version']);

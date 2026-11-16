@@ -1,5 +1,18 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.9.0:**
+- **«Venta ganada» escribe en la cuenta y en Ágora a la vez.** Con la subcuenta conectada, al registrar la venta de una oportunidad: la oportunidad queda **ganada en la cuenta** con su monto y la venta se guarda en Ágora **enlazada por el identificador de la oportunidad y del contacto de la cuenta**.
+  - **Sin duplicados:** una oportunidad tiene una sola venta. Si se vuelve a pulsar «Venta ganada», se ofrece editar la que ya existe.
+  - Si la cuenta no acepta el cambio, no se guarda nada en Ágora (no quedan medias ventas).
+  - Al editar el monto de la venta, también se corrige en la oportunidad de la cuenta. El correo o teléfono del cliente se completa en la cuenta solo si allí estaba vacío.
+  - Las tareas de seguimiento de la venta se crean en la cuenta, igual que las del módulo Tareas.
+  - Un ejecutivo solo puede registrar la venta de oportunidades asignadas a él.
+- **Copia ordenada (espejo) de contactos, oportunidades y ganadas.** Cada vez que Ágora lee la cuenta, guarda esos datos en dos tablas propias y **sobreescribe** lo anterior (una fila por contacto y por oportunidad, nunca repetidas). Las conversaciones no se copian. Los módulos se quedan como estaban.
+- **«Ganadas sin venta» y la meta del mes** se calculan con las ganadas de la cuenta, no con copias viejas.
+- **Ventas importadas por Excel:** si su correo o teléfono coincide con un contacto de la cuenta, quedan enlazadas a ese contacto.
+- **Arreglado:** las migraciones nuevas ya se aplican solas al abrir la app (antes se detenía en la 005).
+- Prueba nueva: `tests/venta-cuenta.py` (14).
+
 **Novedades 2.8.17:**
 - **Facturación: filtros.** Estado del cobro (Todos · Pagados · Pendientes · Vencidos, con su cantidad), búsqueda por cliente, documento o producto, vendedor y producto. Los filtros afectan también a las tarjetas (por ejemplo, lo cobrado de una vendedora). «Quitar filtros» vuelve a todo.
 - **Contactos: filtro «Entraron»** (Todos · Entraron hoy · 7 días · 30 días), por fecha de alta en la cuenta y en la hora del dispositivo, del más nuevo al más viejo. Quien solo ve lo suyo ve solo los suyos. Se recuerda mientras dure la sesión.

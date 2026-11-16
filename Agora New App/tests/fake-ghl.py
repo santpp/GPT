@@ -141,6 +141,13 @@ class H(BaseHTTPRequestHandler):
         if p=='/opportunities/search':
             items=[o for o in OPPS if (q.get('status') in(None,'all') or o['status']==q.get('status')) and ('assigned_to' not in q or o['assignedTo']==q['assigned_to']) and ('contact_id' not in q or o['contactId']==q['contact_id'])]
             return self.out(200,{'opportunities':items,'meta':{'total':len(items)}})
+        m5=re.match(r'^/opportunities/([\w-]+)/status$',p)
+        if m5 and m=='PUT':
+            o=next((x for x in OPPS if x['id']==m5.group(1)),None)
+            if not o:return self.out(404,{'message':'not found'})
+            o['status']=b.get('status',o['status'])
+            if o['status']=='won':o['lastStatusChangeAt']=__import__('datetime').datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+            return self.out(200,{'succeded':True})
         m2=re.match(r'^/opportunities/([\w-]+)$',p)
         if m2:
             o=next((x for x in OPPS if x['id']==m2.group(1)),None)
