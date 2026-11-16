@@ -435,3 +435,38 @@ a.inicio-resumen-c:hover .inicio-resumen-l .ic{opacity:.9;transform:translateX(2
 .contact-since{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
 #view .contact-since .agency-chip-btn{background:var(--surface,#fff);border:1px solid var(--line);color:var(--ink)}
 #view .contact-since .agency-chip-btn.is-active{background:var(--brand);border-color:var(--brand);color:var(--brand-ink,#fff)}
+
+/* 2.9.1 · Esqueleto de Ventas registradas en Facturación, Productos y servicios y Catálogo; Catálogo → Estudiantes */
+.fa-lado-ir { margin-top: 12px; }
+.fa-filtros-in { display: grid; gap: 10px; margin: 0 0 14px; }
+.fa-tabla .tw { margin-top: 4px; }
+.prod-grid { grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); }
+.prod-grid > .prod-rubros { order: 2; }
+@media (max-width: 1180px) { .prod-grid { grid-template-columns: 1fr; } .prod-grid > .prod-rubros { order: 0; } }
+.est-v { margin-top: 18px; }
+.est-filtros { position: sticky; top: calc(var(--top-h, 56px) + 8px); z-index: 6; display: grid; grid-template-columns: minmax(170px, 240px) minmax(180px, 280px) minmax(0, 1fr); gap: 12px 16px; align-items: end; margin: 18px 0; padding: 14px 18px; box-shadow: var(--shadow); }
+.est-filtros .fld { margin: 0; }
+.est-f-acts { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.est-chips { grid-column: 1 / -1; }
+.est-b { display: inline-flex; align-items: center; gap: 4px; border: 0; cursor: pointer; font: inherit; }
+.est-b .ic { width: 12px; height: 12px; }
+.est-t tfoot td { border-top: 2px solid var(--line); font-weight: 500; vertical-align: top; }
+.est-t tfoot small { display: block; color: var(--muted); font-weight: 400; font-size: 12px; }
+.est-tot { margin-top: 20px; }
+.est-tot-g { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 0; }
+.est-tot-g > div { padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; }
+.est-tot-g dt { font-size: 12px; color: var(--muted); }
+.est-tot-g dd { margin: 4px 0 0; font-weight: 700; font-size: 18px; }
+.est-pop .mg-op { justify-content: flex-start; }
+@media (max-width: 760px) {
+  .est-filtros { grid-template-columns: 1fr 1fr; top: calc(var(--top-h, 56px) + 4px); padding: 12px; gap: 10px; }
+  .est-f-acts { grid-column: 1 / -1; }
+  .est-f-acts .btn { flex: 1; justify-content: center; }
+  .est-chips { overflow-x: auto; flex-wrap: nowrap; }
+}
+.est-t { width: 100%; }
+.est-t th, .est-t td, .est-t .who-cell, .est-t .who-cell b, .est-t .who-cell small { white-space: normal; overflow-wrap: anywhere; }
+.est-t td:first-child, .est-t td:nth-child(2) { min-width: 130px; }
+.est-t td.n { white-space: nowrap; }
+.est-cols { grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); }
+@media (max-width: 1180px) { .est-cols { grid-template-columns: 1fr; } }

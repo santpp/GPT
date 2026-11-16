@@ -22,12 +22,15 @@ use Agora\Core\{DB,Http};use Agora\Security\Auth;use Agora\Services\Records;
  *   GET  workspace/ventas/contexto   todo lo que el formulario necesita (?oportunidadId= o ?ventaId=)
  *   POST workspace/ventas/cobro      marcar un cobro pagado o pendiente {ventaId, n, pagado}
  *   POST workspace/ventas/pendiente  la persona cerró el formulario: la oportunidad queda "venta por completar"
+ *   POST workspace/ventas/alumno     2.9.1 · estado del estudiante, a mano {ventaId, estado: activo|pausa|retirado|culminado}
  */
 final class Ventas {
  private const COBROS=['recurrente','unico','venta'];
  private const FRECUENCIAS=['semanal','quincenal','mensual','trimestral','semestral','anual'];
  private const MONEDAS=['USD','VES','EUR'];
  private const ESTADOS=['al_dia','vencida','pagada'];
+ /** 2.9.1 · Estado del estudiante (lo cambia la persona; no depende de los cobros). Una venta sin estado es «activo». */
+ public const ALUMNO=['activo','pausa','retirado','culminado'];
  private const ID='/^[A-Za-z0-9_-]{1,80}$/D';
  /** Cobros que se generan por adelantado cuando el plan recurrente no tiene fin. */
  private const SIN_FIN=12;
@@ -45,6 +48,7 @@ final class Ventas {
   if($p==='workspace/ventas/contexto'&&$m==='GET')return $this->contexto();
   if($p==='workspace/ventas/cobro'&&$m==='POST')return $this->cobro($b);
   if($p==='workspace/ventas/pendiente'&&$m==='POST')return $this->pendiente($b);
+  if($p==='workspace/ventas/alumno'&&$m==='POST')return $this->alumno($b);
   Http::fail('Ruta no disponible.',404);
  }
 
@@ -66,7 +70,8 @@ final class Ventas {
     if($ct){$d['contactoId']=$ct['ghl_id'];$d['contactoEnlazado']='espejo';unset($d['version']);
      $this->db->run("UPDATE agora_records SET data=?,version=version+1,updated_at=UTC_TIMESTAMP() WHERE tenant_id=? AND kind='venta' AND uid=? AND version=?",[DB::json($d),$this->auth->tenant,$r['uid'],(int)$r['version']]);$r['version']=(int)$r['version']+1;}
    }
-   $d['id']=$r['uid'];$d['version']=(int)$r['version'];$d['estado']=self::estadoDe($d);$out[]=$d;}
+   $d['id']=$r['uid'];$d['version']=(int)$r['version'];$d['estado']=self::estadoDe($d);
+   if(!in_array($d['alumno']??'',self::ALUMNO,true))$d['alumno']='activo';$out[]=$d;}
   return $out;
  }
  private ?\Agora\Services\Espejo $espejo=null;private ?bool $conCache=null;
@@ -292,6 +297,21 @@ final class Ventas {
    }
    $this->auth->audit($pagado?'venta.cobro.pagado':'venta.cobro.pendiente','ventas',$id,['n'=>$n]);
    return ['ok'=>true,'venta'=>$v];
+  });
+ }
+ /** 2.9.1 · Cambia el estado del estudiante de una venta. No toca el plan de cobros ni el estado del cobro. */
+ public function alumno(array $b):array{
+  $this->auth->write();if(!$this->puedeEscribir())Http::fail('Tu rol no puede cambiar el estado.',403);
+  return $this->db->transaction(function()use($b){
+   $id=Http::text($b,'ventaId',80);if(!preg_match(self::ID,$id))Http::fail('Venta inválida.');
+   $estado=(string)($b['estado']??'');if(!in_array($estado,self::ALUMNO,true))Http::fail('Estado inválido. Usa activo, pausa, retirado o culminado.');
+   $row=$this->records->get('venta',$id,true);$v=$this->records->payload($row);unset($v['version']);
+   $antes=in_array($v['alumno']??'',self::ALUMNO,true)?$v['alumno']:'activo';
+   if($antes===$estado)return ['ok'=>true,'alumno'=>$estado];
+   $v['alumno']=$estado;$v['alumnoEn']=gmdate('c');$v['alumnoPor']=$this->auth->user['name']??'';
+   $this->records->save('venta',$id,$v,(string)$row['label'],(string)$row['status'],(string)$row['period']);
+   $this->auth->audit('venta.alumno','ventas',$id,['antes'=>$antes,'despues'=>$estado]);
+   return ['ok'=>true,'alumno'=>$estado];
   });
  }
  public function pendiente(array $b):array{

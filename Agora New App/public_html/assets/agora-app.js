@@ -3784,9 +3784,14 @@ V.facturas = {count: INV.length, per: 25, filtered() {
   const fam = invBy('familia', rows).sort((a, b) => b.v - a.v), adv = invBy('asesor', rows).sort((a, b) => b.v - a.v);
   const top = (list, n) => list.length > n ? [...list.slice(0, n - 1), list.slice(n - 1).reduce((o, g) => ({l: `Otros (${list.length - n + 1})`, n: o.n + g.n, v: o.v + g.v}), {n: 0, v: 0})] : list;
   const empty = s.mes && isProj(+s.mes - 1) ? `<b>${MES[+s.mes - 1]} todavía no tiene registros</b>Es el próximo mes. <button class="btn btn-sm" type="button" data-clear>Ver todo el año</button>` : undefined;
-  return `<div class="grid g4 mb">${metric('Registros', int(rows.length))}${metric('Monto facturado', usd(tot))}${metric('Promedio por registro', usd(rows.length ? Math.round(tot / rows.length) : null))}${metric('Con número de factura', int(rows.filter(r => r.factura).length), pct(rows.filter(r => r.factura).length / (rows.length || 1)) + ' del total')}</div>
+  const tj = (ic, t, v, d = '', cls = '') => `<div class="ag-resumen ${cls}"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span><strong class="ag-resumen-v">${v}</strong><span class="ag-resumen-d">${d}</span></div>`;
+  const conF = rows.filter(r => r.factura).length;
+  return `<section class="ag-resumen-grid vg-kpis mb" aria-label="Resumen de facturación">${tj('receipt', 'Registros', int(rows.length), s.mes ? MES[+s.mes - 1] : 'Todo el año')}${tj('invoice', 'Monto facturado', usd(tot), 'Suma de la columna monto')}${tj('trend', 'Promedio por registro', usd(rows.length ? Math.round(tot / rows.length) : null), 'Monto entre registros')}${tj('check', 'Con número de factura', int(conF), pct(conF / (rows.length || 1)) + ' del total', rows.length && conF === rows.length ? 'is-ok' : '')}</section>
   ${rows.length ? `<div class="grid g2 mb">${panel('Por familia de programa', 'Monto facturado', bars(top(fam, 10).map(g => ({l: g.l, v: g.v, tip: `<b>${esc(g.l)}</b><br>${usd(g.v)} · ${g.n} registros`}))))}${panel('Por asesor', 'Monto facturado', bars(top(adv, 10).map(g => ({l: titleCase(g.l), v: g.v, tip: `<b>${esc(g.l)}</b><br>${usd(g.v)} · ${g.n} registros`})), {alt: 1}))}</div>` : ''}`
-  + table(INV_COLS, rows.slice(s.p * per, s.p * per + per), {foot: {fecha: 'Total filtrado', monto: usd(tot)}, sortable: 1, sortKey: s.sk, sortDir: s.sd, rowKey: r => 'inv:' + r._i, empty}) + pager(s, rows.length, per);
+  + (() => { const lado = typeof window.agoraCobrosLado === 'function' ? window.agoraCobrosLado() : '';
+    const sec = `<section class="panel pf-sec vg-tabla fa-tabla"><header class="pf-sec-h"><span class="pf-sec-ic" aria-hidden="true">${icon('invoice')}</span><div class="pf-sec-tx"><h2>Registros${s.mes ? ' de ' + MES[+s.mes - 1].toLowerCase() : ' del año'}</h2><p>${int(rows.length)} ${rows.length === 1 ? 'registro' : 'registros'} en la vista · ${usd(tot)}</p></div></header>`
+      + table(INV_COLS, rows.slice(s.p * per, s.p * per + per), {foot: {fecha: 'Total filtrado', monto: usd(tot)}, sortable: 1, sortKey: s.sk, sortDir: s.sd, rowKey: r => 'inv:' + r._i, empty}) + pager(s, rows.length, per) + '</section>';
+    return lado ? `<div class="vg-cols fa-cols">${sec}${lado}</div>` : sec; })();
 }, render() {
   const s = state.facturas;
   return head(`Registro documental · ${MES[invMonths[0] - 1].toLowerCase()} a ${MES[invMonths.at(-1) - 1].toLowerCase()} 2026`, 'Facturación', `Los ${int(INV.length)} registros de los libros mensuales. El mes elegido arriba filtra la tabla. Un registro no confirma por sí solo un cobro ni una factura fiscal. Cédula, teléfono y correo aparecen parciales.`, csvBtn('facturas'))
@@ -4058,7 +4063,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.9.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.9.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -6099,6 +6104,7 @@ const AgoraTabla = {
       toast(`Descargaste ${int(hoja.filas.length)} ${hoja.filas.length === 1 ? 'fila' : 'filas'} en ${n}`);
       try { agoraApi('workspace/auditoria', {method: 'POST', body: {accion: 'descargo.excel', detalle: `${MODS[modulo]?.name || modulo} · ${hoja.filas.length} filas`}}).catch(() => {}); } catch {}
     };
+    bar._descargar = descargarVista;
     bar.querySelector('.xt-xls').addEventListener('click', e => { if (ed?.puedeEditar?.()) teMenuExcel(ed, e.currentTarget, descargarVista); else descargarVista(); });
     pintar();
     return {bar, pintar};
@@ -6523,8 +6529,11 @@ AgoraTabla.alPintar(root => {
   acts.prepend(b);
   b.onclick = () => {
     const ver = mod !== 'usuarios';
+    /* 2.9.1 · Con filtros, «Descargar lo que ves» baja solo las filas filtradas de la tabla principal. */
+    const vista = root.querySelector('.xt-bar')?._descargar;
     const p = openPop(b, `<p class="xt-pop-h">${esc(MODS[R.mod]?.name || '')} en Excel</p>
-      <button type="button" class="mg-op" data-op="datos">${icon('download')}<span><b>Descargar datos</b><small>Todo, con tus columnas</small></span></button>
+      ${vista ? `<button type="button" class="mg-op" data-op="vista">${icon('download')}<span><b>Descargar lo que ves</b><small>Solo lo filtrado en pantalla</small></span></button>` : ''}
+      <button type="button" class="mg-op" data-op="datos">${icon('download')}<span><b>Descargar todo</b><small>Sin filtros, con tus columnas</small></span></button>
       ${ver ? `<button type="button" class="mg-op" data-op="plantilla">${icon('invoice')}<span><b>Descargar plantilla</b><small>Vacía, lista para llenar</small></span></button>
       <button type="button" class="mg-op" data-op="cargar">${icon('upload')}<span><b>Cargar desde Excel</b><small>Carga masiva con revisión</small></span></button>` : ''}
       <button type="button" class="mg-op" data-op="campos">${icon('edit')}<span><b>Ajustar columnas</b><small>Orden, nombres y campos propios</small></span></button>`, 'xt-pop mg-hpop', {align: 'right'});
@@ -6532,7 +6541,8 @@ AgoraTabla.alPintar(root => {
     p.onclick = async e => {
       const op = e.target.closest('[data-op]')?.dataset.op; if (!op) return; closePop();
       try {
-        if (op === 'datos') { await camposDe(mod); await migDescargarDatos(mod); }
+        if (op === 'vista') vista();
+        else if (op === 'datos') { await camposDe(mod); await migDescargarDatos(mod); }
         else if (op === 'plantilla') { await camposDe(mod); await migDescargarPlantilla(mod); }
         else migracionIr(mod, op);
       } catch (x) { toast(x.message); }
@@ -7137,7 +7147,7 @@ function faVivoHtml() {
   const chip = (k, t, n) => `<button type="button" class="agency-chip-btn ${f.estado === k ? 'is-active' : ''}" data-fa-f="${k}" aria-pressed="${f.estado === k}">${t}${n != null ? ` · ${int(n)}` : ''}</button>`;
   const opciones = (l, sel, todos) => `<option value="">${todos}</option>` + [...new Set(l)].filter(Boolean).sort((a, b) => a.localeCompare(b)).map(x => `<option value="${esc(x)}" ${x === sel ? 'selected' : ''}>${esc(x)}</option>`).join('');
   const todosC = [...crudo.mes, ...crudo.atrasados], hayFiltro = f.estado || f.q || f.vendedor || f.producto;
-  const filtros = `<section class="panel fa-filtros" aria-label="Filtros de cobros">
+  const filtros = `<section class="fa-filtros fa-filtros-in" aria-label="Filtros de cobros">
     <div class="agency-chips" role="group" aria-label="Estado del cobro">${chip('', 'Todos', base.mes.length + base.atrasados.length)}${chip('pagado', 'Pagados', cuenta('pagado'))}${chip('pendiente', 'Pendientes', cuenta('pendiente'))}${chip('vencido', 'Vencidos', cuenta('vencido'))}</div>
     <div class="fa-fila"><label class="fld grow"><span class="sr-only">Buscar</span><span class="search-in">${icon('search')}<input type="search" data-fa-q value="${esc(f.q)}" placeholder="Cliente, documento o producto" autocomplete="off"></span></label>
       <label class="fld"><span class="sr-only">Vendedor</span><select data-fa-vend>${opciones(todosC.map(x => x.v.vendedor || 'Sin vendedor'), f.vendedor, 'Todos los vendedores')}</select></label>
@@ -7147,8 +7157,10 @@ function faVivoHtml() {
   const fila = x => `<tr><td>${esc(vgFecha(x.c.fecha))}</td><td class="wrap"><span class="who-cell"><b>${esc(x.v.cliente?.nombre || '—')}</b><small>${esc(x.v.cliente?.documento || '')}</small></span></td><td class="wrap"><span class="who-cell"><b>${esc(x.v.producto || '')}</b><small>${esc(x.v.vendedor ? 'vende ' + x.v.vendedor : '')}</small></span></td><td class="n">${x.v.sinFin ? `Cobro ${int(x.c.n)}` : `${int(x.c.n)} de ${int((x.v.plan || []).length)}`}</td><td class="n">${esc(vgMonto(x.c.monto, x.v.moneda))}</td><td>${estado(x)}</td><td class="n">${puedeEd && x.c.estado !== 'pagado' ? `<button class="btn btn-sm btn-tint" type="button" data-fa-pagar="${esc(x.v.id)}" data-n="${esc(x.c.n)}">Marcar pagado</button>` : ''}</td></tr>`;
   const tabla = l => `<div class="tw"><table data-xt="vivo"><thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th class="n">Cuota</th><th class="n">Monto</th><th>Estado</th><th></th></tr></thead><tbody>${l.map(fila).join('')}</tbody></table></div>`;
   const cobrosMes = m.mes.length ? tabla(m.mes) : hayFiltro ? `<p class="empty"><b>Ningún cobro de ${esc(mes)} coincide con los filtros</b>Prueba con otro estado, vendedor o producto, o quita los filtros.</p>` : `<p class="empty"><b>No hay cobros que venzan en ${esc(mes)}</b>Los cobros salen del plan de cada venta registrada.</p>`;
-  const atras = m.atrasados.length ? `<section class="panel pf-sec mt">${secH('warn', 'Atrasados de meses anteriores', `${int(m.atrasados.length)} ${m.atrasados.length === 1 ? 'cobro' : 'cobros'} · ${esc(faSuma(m.atrasados))}`)}${tabla(m.atrasados)}</section>` : '';
-  return cabeza + filtros + kpis + `<section class="panel pf-sec">${secH('receipt', 'Cobros de ' + esc(mes), `${int(m.mes.length)} ${m.mes.length === 1 ? 'cobro' : 'cobros'} · ${esc(faSuma(m.mes))}`)}${cobrosMes}</section>` + atras;
+  /* 2.9.1 · Mismo esqueleto que Ventas: tarjetas, tabla con sus filtros y, al lado, lo atrasado de meses anteriores. */
+  const atras = `<section class="panel pf-sec vg-prox fa-lado">${secH('warn', 'Atrasados de meses anteriores', m.atrasados.length ? `${int(m.atrasados.length)} ${m.atrasados.length === 1 ? 'cobro' : 'cobros'} · ${esc(faSuma(m.atrasados))}` : 'Nada atrasado de meses anteriores.')}
+    ${m.atrasados.length ? `<ul class="vg-prox-l">${m.atrasados.slice(0, 30).map(x => `<li class="is-venc"><span class="vg-prox-f"><b>${esc(vgFecha(x.c.fecha).slice(0, 5))}</b><small>${esc(vgFecha(x.c.fecha).slice(6))}</small></span><span class="vg-prox-t"><b>${esc(x.v.cliente?.nombre || '—')}</b><small>${esc(x.v.producto || '')}${x.v.vendedor ? ' · ' + esc(x.v.vendedor) : ''}</small></span><strong>${esc(vgMonto(x.c.monto, x.v.moneda))}</strong>${puedeEd ? `<button class="icon-btn" type="button" data-fa-pagar="${esc(x.v.id)}" data-n="${x.c.n}" aria-label="Marcar pagado" title="Marcar pagado">${icon('check')}</button>` : ''}</li>`).join('')}</ul>${m.atrasados.length > 30 ? `<p class="bx-help">Y ${int(m.atrasados.length - 30)} más.</p>` : ''}` : '<p class="empty"><b>Todo al día</b>No hay cobros atrasados de meses anteriores.</p>'}</section>`;
+  return cabeza + kpis + `<div class="vg-cols fa-cols"><section class="panel pf-sec vg-tabla">${secH('receipt', 'Cobros de ' + esc(mes), `${int(m.mes.length)} ${m.mes.length === 1 ? 'cobro' : 'cobros'} · ${esc(faSuma(m.mes))}`)}${filtros}${cobrosMes}</section>${atras}</div>`;
 }
 function faVivoMontar(root) {
   root?.querySelectorAll('[data-fa-f]').forEach(b => b.onclick = () => { FA.f.estado = b.dataset.faF; repaint(); });
@@ -7276,6 +7288,114 @@ function ctVivoHtml() {
   return `<section class="panel pf-sec">${secH('receipt', 'Catálogo con lo inscrito', 'Cada producto o servicio con sus ventas registradas: cuántas en total, cuántas siguen activas y lo que suman al mes.')}
     <div class="tw"><table data-xt="vivo"><thead><tr><th>Producto o servicio</th><th>Rubro</th><th>Cobro</th><th class="n">Precio</th><th class="n">Ventas</th><th class="n">Activas</th><th class="n">Recurrente al mes</th></tr></thead><tbody>${filas.map(x => `<tr><td class="wrap"><b>${esc(x.p.nombre)}</b>${x.p.activo === false ? ' <span class="sc sc-gray">Pausado</span>' : ''}</td><td>${esc(rubro(x.p.rubroId))}</td><td><span class="sc ${COBRO_P[x.p.cobro]?.[1] || 'sc-gray'}">${esc(COBRO_P[x.p.cobro]?.[0] || '—')}</span></td><td class="n">${esc(precioTexto(x.p))}</td><td class="n">${int(x.l.length)}</td><td class="n">${int(x.act)}</td><td class="n">${x.mensual ? esc(usd(x.mensual)) : '—'}</td></tr>`).join('')}</tbody></table></div></section>`;
 }
+/* ---------- 2.9.1 · Catálogo → Estudiantes ----------
+   Cada venta registrada es un estudiante en un programa (también las cargadas por Excel). Su estado (Activo, En pausa,
+   Retirado, Culminado) lo cambia la persona a mano: no depende de los cobros. Arriba, el desglose de lo filtrado
+   (ventas activas y lo que suman, recurrencia mensual de los activos); abajo, los totales generales sin filtros.
+   Filtros siempre visibles: cédula y vendedor (y estado). «Descargar Excel» baja solo lo filtrado. */
+const ALUMNO = {activo: ['Activo', 'sc-ok', 'Activos'], pausa: ['En pausa', 'sc-warn', 'En pausa'], retirado: ['Retirado', 'sc-bad', 'Retirados'], culminado: ['Culminado', 'sc-info', 'Culminados']};
+const EST = {f: {doc: '', vend: '', estado: ''}, qt: 0};
+const estDe = v => ALUMNO[v.alumno] ? v.alumno : 'activo';
+/** Lo que el estudiante paga al mes: la mensualidad (recurrente) o la cuota (pago único en cuotas). Pago único de una vez o venta única: 0. */
+const estMensual = v => { const n = Number(v.monto) || 0, q = Number(v.cuotas) || 0, f = FREC_MES[v.frecuencia] || 1;
+  if (v.cobro === 'recurrente') return n * f; if (v.cobro === 'unico' && q > 1) return n / q * f; return 0; };
+const estValor = v => v.sinFin ? Number(v.monto) || 0 : Number(v.total ?? v.monto) || 0;
+const estDoc = x => String(x || '').toLowerCase().replace(/[^0-9a-z]/g, '');
+const estVend = v => String(v.vendedor || '').trim() || 'Sin vendedor';
+const estBase = () => { const f = EST.f, d = estDoc(f.doc); return (FA.datos?.items || []).filter(v => (!d || estDoc(v.cliente?.documento).includes(d)) && (!f.vend || estVend(v) === f.vend)); };
+const estFiltradas = () => estBase().filter(v => !EST.f.estado || estDe(v) === EST.f.estado);
+const estPor = (l, fn) => vgPorMoneda(vgSuma(l, fn));
+function estHtml() {
+  const todas = FA.datos?.items || [];
+  if (!FA.datos) return '<section class="panel est-sec"><p class="empty"><b>No se pudieron leer los estudiantes</b>Vuelve a intentarlo en un momento.</p></section>';
+  const f = EST.f, base = estBase(), l = estFiltradas(), puedeEd = !!FA.datos.canEdit;
+  const act = base.filter(v => estDe(v) === 'activo'), conRec = act.filter(v => estMensual(v) > 0);
+  const recs = [...new Set(conRec.map(v => Math.round(estMensual(v) * 100)))];
+  const recDet = !conRec.length ? 'Ningún activo con mensualidad' : recs.length === 1 ? `${int(conRec.length)} ${conRec.length === 1 ? 'activo' : 'activos'} × ${esc(vgMonto(recs[0] / 100, conRec[0].moneda))}` : `${int(conRec.length)} activos con mensualidad · promedio ${esc(vgMonto(conRec.reduce((t, v) => t + estMensual(v), 0) / conRec.length, conRec[0].moneda))}`;
+  const pau = base.filter(v => estDe(v) === 'pausa'), ret = base.filter(v => estDe(v) === 'retirado'), cul = base.filter(v => estDe(v) === 'culminado');
+  const card = (cls, ic, t, v, d) => `<div class="ag-resumen ${cls}"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span><strong class="ag-resumen-v">${v}</strong><span class="ag-resumen-d">${d}</span></div>`;
+  const quien = f.vend || f.doc ? ` de ${esc(f.vend || 'la cédula ' + f.doc)}` : '';
+  const kpis = `<section class="ag-resumen-grid vg-kpis est-kpis" aria-label="Desglose de estudiantes">
+    ${card('is-ok', 'users', 'Ventas activas' + quien, int(act.length), `Suman ${esc(estPor(act, estValor))}`)}
+    ${card('', 'sync', 'Recurrencia mensual', `${esc(estPor(act, estMensual))}<small>/mes</small>`, recDet)}
+    ${card(pau.length ? 'is-warn' : '', 'clock', 'En pausa', int(pau.length), pau.length ? `${esc(estPor(pau, estMensual))}/mes detenidos` : 'Nadie en pausa')}
+    ${card('', 'check', 'Retirados y culminados', int(ret.length + cul.length), `${int(ret.length)} ${ret.length === 1 ? 'retirado' : 'retirados'} · ${int(cul.length)} ${cul.length === 1 ? 'culminado' : 'culminados'}`)}
+  </section>`;
+  const vends = [...new Set(todas.map(estVend))].sort((a, b) => a.localeCompare(b));
+  const chip = (k, t, n) => `<button type="button" class="agency-chip-btn ${f.estado === k ? 'is-active' : ''}" data-est-f="${k}" aria-pressed="${f.estado === k}">${t} · ${int(n)}</button>`;
+  const hay = f.doc || f.vend || f.estado;
+  const filtros = `<section class="panel est-filtros" aria-label="Filtros de estudiantes">
+    <label class="fld"><span class="fld-l">N.º de cédula</span><span class="search-in">${icon('search')}<input type="search" inputmode="numeric" data-est-doc value="${esc(f.doc)}" placeholder="Ej.: 12345678" autocomplete="off"></span></label>
+    <label class="fld"><span class="fld-l">Vendedor</span><select data-est-vend><option value="">Todos los vendedores</option>${vends.map(x => `<option value="${esc(x)}" ${x === f.vend ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
+    <div class="est-f-acts">${hay ? `<button type="button" class="btn" data-est-limpiar>Quitar filtros</button>` : ''}<button type="button" class="btn btn-cta" data-est-xls ${l.length ? '' : 'disabled'}>${icon('download')}Descargar Excel · ${int(l.length)}</button></div>
+    <div class="agency-chips est-chips" role="group" aria-label="Estado del estudiante">${chip('', 'Todos', base.length)}${Object.entries(ALUMNO).map(([k, x]) => chip(k, x[2], base.filter(v => estDe(v) === k).length)).join('')}</div>
+  </section>`;
+  const estadoBtn = v => { const e = estDe(v); return puedeEd ? `<button type="button" class="sc ${ALUMNO[e][1]} est-b" data-est-alumno="${esc(v.id)}" aria-haspopup="true" aria-expanded="false" title="Cambiar estado">${ALUMNO[e][0]}${icon('chev')}</button>` : `<span class="sc ${ALUMNO[e][1]}">${ALUMNO[e][0]}</span>`; };
+  const filas = [...l].sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))).map(v => `<tr><td class="wrap"><span class="who-cell"><b>${esc(v.cliente?.nombre || '—')}</b><small>C.I. ${esc(v.cliente?.documento || '—')}</small></span></td><td class="wrap"><span class="who-cell"><b>${esc(v.producto || '—')}</b><small>vende ${esc(estVend(v))} · desde ${esc(vgFecha(v.fecha))}</small></span></td><td class="n">${esc(vgMonto(estValor(v), v.moneda))}</td><td class="n">${estMensual(v) ? esc(vgMonto(estMensual(v), v.moneda)) : '<span class="muted">—</span>'}</td><td>${estadoBtn(v)}</td></tr>`).join('');
+  const actL = l.filter(v => estDe(v) === 'activo');
+  const tabla = l.length ? `<div class="tw"><table data-sin-mejorar class="est-t"><thead><tr><th>Estudiante</th><th>Programa</th><th class="n">Valor</th><th class="n">Mensualidad</th><th>Estado</th></tr></thead><tbody>${filas}</tbody>
+    <tfoot><tr><td colspan="2"><b>Total de la vista</b> · ${int(l.length)} ${l.length === 1 ? 'estudiante' : 'estudiantes'} (${int(actL.length)} ${actL.length === 1 ? 'activo' : 'activos'})</td><td class="n"><b>${esc(estPor(l, estValor))}</b></td><td class="n"><b>${esc(estPor(actL, estMensual))}</b><small>de activos</small></td><td></td></tr></tfoot></table></div>`
+    : `<p class="empty"><b>${todas.length ? 'Ningún estudiante coincide con los filtros' : 'Todavía no hay estudiantes'}</b>${todas.length ? 'Revisa la cédula o el vendedor, o quita los filtros.' : 'Cada venta registrada (o cargada por Excel en Migración de datos) aparece aquí como un estudiante.'}</p>`;
+  const prog = new Map(); base.forEach(v => { const k = v.producto || 'Sin programa'; const p = prog.get(k) || {n: 0, act: 0, rec: {}, mon: v.moneda || 'USD'}; p.n++; if (estDe(v) === 'activo') { p.act++; const m = v.moneda || 'USD'; p.rec[m] = (p.rec[m] || 0) + estMensual(v); } prog.set(k, p); });
+  const lado = `<section class="panel pf-sec vg-prox est-lado">${secH('receipt', 'Por programa', 'Activos y su recurrencia al mes, con los filtros puestos.')}
+    ${prog.size ? `<ul class="vg-prox-l">${[...prog.entries()].sort((a, b) => b[1].act - a[1].act || b[1].n - a[1].n).map(([k, p]) => `<li><span class="vg-prox-f"><b>${int(p.act)}</b><small>activos</small></span><span class="vg-prox-t"><b>${esc(k)}</b><small>${int(p.n)} en total</small></span><strong>${esc(vgPorMoneda(p.rec))}</strong></li>`).join('')}</ul>` : '<p class="empty"><b>Sin programas</b>No hay estudiantes con estos filtros.</p>'}</section>`;
+  const aT = todas.filter(v => estDe(v) === 'activo');
+  const tot = (t, v) => `<div><dt>${t}</dt><dd>${v}</dd></div>`;
+  const generales = `<section class="panel pf-sec est-tot">${secH('pie', 'Totales generales', 'Todos los estudiantes, sin filtros.')}
+    <dl class="est-tot-g">${tot('Estudiantes', int(todas.length))}${Object.entries(ALUMNO).map(([k, x]) => tot(x[2], int(todas.filter(v => estDe(v) === k).length))).join('')}${tot('Valor de todas las ventas', esc(estPor(todas, estValor)))}${tot('Valor de las ventas activas', esc(estPor(aT, estValor)))}${tot('Recurrencia mensual de activos', esc(estPor(aT, estMensual)) + '/mes')}</dl></section>`;
+  return `<div class="est-v">${kpis}${filtros}<div class="vg-cols est-cols"><section class="panel pf-sec vg-tabla est-tabla">${secH('users', 'Estudiantes', `${int(l.length)} ${l.length === 1 ? 'estudiante' : 'estudiantes'} en la vista${puedeEd ? ' · toca el estado para cambiarlo' : ''}`)}${tabla}</section>${lado}</div>${generales}</div>`;
+}
+function estExcel() {
+  const l = [...estFiltradas()].sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+  if (!l.length) { toast('No hay estudiantes con estos filtros.'); return; }
+  const r2 = n => Math.round(n * 100) / 100;
+  const columnas = [['doc', 'Cédula'], ['nombre', 'Estudiante'], ['programa', 'Programa'], ['vendedor', 'Vendedor'], ['fecha', 'Desde'], ['valor', 'Valor'], ['mensual', 'Mensualidad'], ['moneda', 'Moneda'], ['estado', 'Estado'], ['correo', 'Correo'], ['telefono', 'Teléfono']].map(([clave, titulo]) => ({clave, titulo}));
+  const filas = l.map(v => ({doc: v.cliente?.documento || '', nombre: v.cliente?.nombre || '', programa: v.producto || '', vendedor: estVend(v), fecha: v.fecha || '', valor: r2(estValor(v)), mensual: r2(estMensual(v)), moneda: v.moneda || 'USD', estado: ALUMNO[estDe(v)][0], correo: v.cliente?.correo || '', telefono: v.cliente?.telefono || ''}));
+  const act = l.filter(v => estDe(v) === 'activo');
+  filas.push({}, {doc: 'Total', nombre: `${l.length} estudiantes`, valor: r2(l.reduce((t, v) => t + estValor(v), 0))}, {doc: 'Activos', nombre: `${act.length} estudiantes`, valor: r2(act.reduce((t, v) => t + estValor(v), 0)), mensual: r2(act.reduce((t, v) => t + estMensual(v), 0))});
+  const f = EST.f, sufijo = [f.vend, f.doc && 'ci-' + f.doc, f.estado && ALUMNO[f.estado][2]].filter(Boolean).join('-');
+  const n = AgoraExcel.descargar(('estudiantes' + (sufijo ? '-' + sufijo : '') + '-' + vgHoy()).toLowerCase().replace(/\s+/g, '-'), [{nombre: 'Estudiantes', columnas, filas}]);
+  toast(`Descargaste ${int(l.length)} ${l.length === 1 ? 'estudiante' : 'estudiantes'} en ${n}`);
+  try { agoraApi('workspace/auditoria', {method: 'POST', body: {accion: 'descargo.excel', detalle: `Estudiantes · ${l.length} filas${sufijo ? ' · ' + sufijo : ''}`}}).catch(() => {}); } catch { /* sin registro */ }
+}
+function estMontar(root) {
+  const v = root?.querySelector('.est-v'); if (!v) return;
+  const foco = sel => { const n = $(sel); if (n) { n.focus(); n.setSelectionRange?.(n.value.length, n.value.length); } };
+  const di = v.querySelector('[data-est-doc]');
+  if (di) di.oninput = () => { EST.f.doc = di.value; clearTimeout(EST.qt); EST.qt = setTimeout(() => { repaint(); foco('[data-est-doc]'); }, 250); };
+  v.querySelector('[data-est-vend]')?.addEventListener('change', e => { EST.f.vend = e.target.value; repaint(); });
+  v.querySelectorAll('[data-est-f]').forEach(b => b.onclick = () => { EST.f.estado = b.dataset.estF; repaint(); });
+  v.querySelector('[data-est-limpiar]')?.addEventListener('click', () => { EST.f = {doc: '', vend: '', estado: ''}; repaint(); });
+  v.querySelector('[data-est-xls]')?.addEventListener('click', estExcel);
+  v.querySelectorAll('[data-est-alumno]').forEach(b => b.onclick = () => {
+    const venta = (FA.datos?.items || []).find(x => x.id === b.dataset.estAlumno); if (!venta) return;
+    const p = openPop(b, `<p class="xt-pop-h">Estado de ${esc(venta.cliente?.nombre || 'el estudiante')}</p>${Object.entries(ALUMNO).map(([k, x]) => `<button type="button" class="mg-op ${estDe(venta) === k ? 'is-on' : ''}" data-op="${k}"><span class="sc ${x[1]}">${x[0]}</span></button>`).join('')}`, 'xt-pop mg-hpop est-pop', {align: 'right'});
+    if (!p) return;
+    p.onclick = async e => {
+      const k = e.target.closest('[data-op]')?.dataset.op; if (!k) return; closePop();
+      if (k === estDe(venta)) return;
+      busy(b, true, '…');
+      try { await agoraApi('workspace/ventas/alumno', {method: 'POST', body: {ventaId: venta.id, estado: k}}); venta.alumno = k; if (typeof vgInvalidar === 'function') vgInvalidar(); repaint(); toast(`${venta.cliente?.nombre || 'Estudiante'}: ${ALUMNO[k][0].toLowerCase()}.`); }
+      catch (x) { busy(b, false); toast(x.message); }
+    };
+  });
+}
+/** Pone Estudiantes debajo del encabezado del Catálogo (y le da encabezado al Catálogo sin reporte). */
+function estInsertar(html) {
+  const t = document.createElement('template'); t.innerHTML = html;
+  let h = t.content.querySelector('.mod-h');
+  if (!h) { const ref = t.content.querySelector('.prod-tabs'); const w = document.createElement('template'); w.innerHTML = head('Ventas y facturación', 'Catálogo', 'Tus programas o productos, sus estudiantes y la recurrencia de los activos.'); h = w.content.firstElementChild; if (ref) ref.after(h); else t.content.prepend(h); }
+  const w = document.createElement('template'); w.innerHTML = estHtml(); h.after(...w.content.childNodes);
+  return t.innerHTML;
+}
+if (typeof V === 'object' && V.tc_catalogo) {
+  const base = V.tc_catalogo;
+  V.tc_catalogo = {...base,
+    need: () => Promise.allSettled([base.need ? base.need() : null, faCargar()]).then(r => { if (r[0].status === 'rejected') throw r[0].reason; }),
+    render() { const html = base.render.call(base); return /data-placeholder/.test(html) || (typeof TB !== 'undefined' && TB.estado === 'error') ? html : estInsertar(html); },
+    mounted(root) { base.mounted?.(root); estMontar(root); },
+  };
+}
 /* ---------- 2.8.13 · Tablero comercial: «Ventas del mes y del año» ----------
    Cada mes sale del reporte mensual si lo trae; si no, de lo vendido en las ventas registradas. La meta, de Configuración mensual.
    Solo para quien ve cifras del equipo. */
@@ -7377,8 +7497,10 @@ function vgDetalle(id) {
     catch (x) { busy(b, false); toast(x.message); }
   });
 }
+/* 2.9.1 · Lo que se ve con los filtros puestos (estado y búsqueda): lo usan la tabla y la descarga. */
+const vgFiltradas = () => { const f = VG.filtro, q = norm(f.q || ''); return (VG.datos?.items || []).filter(v => (!f.estado || v.estado === f.estado) && (!q || norm(`${v.cliente?.nombre} ${v.cliente?.documento} ${v.producto} ${v.vendedor}`).includes(q))); };
 function vgCsv() {
-  const items = VG.datos?.items || []; if (!items.length) { toast('No hay ventas para exportar en este mes.'); return; }
+  const items = vgFiltradas(); if (!items.length) { toast('No hay ventas con estos filtros para exportar.'); return; }
   const seguro = x => { let t = String(x ?? ''); if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; return /[";\n,]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   const filas = [['Fecha', 'Cliente', 'Documento', 'Correo', 'Teléfono', 'Producto', 'Rubro', 'Cobro', 'Frecuencia', 'Cuotas', 'Monto', 'Moneda', 'Total', 'Inicio', 'Vendedor', 'Estado', 'Notas']]
     .concat(items.map(v => [v.fecha, v.cliente?.nombre, v.cliente?.documento, v.cliente?.correo, v.cliente?.telefono, v.producto, v.rubro, VG_COBRO[v.cobro]?.[0] || v.cobro, v.frecuencia || '', v.cuotas ?? (v.sinFin ? 'sin fin' : ''), v.monto, v.moneda, v.sinFin ? '' : v.total, v.fechaInicio, v.vendedor, VG_ESTADO[v.estado]?.[0] || v.estado, v.notas]));
@@ -7392,7 +7514,7 @@ function vgRegistradasHtml() {
   if (!d) return cabeza + loading();
   const r = d.resumen || {}, mes = typeof mesNombre === 'function' ? mesNombre(VG.mes) : VG.mes;
   const f = VG.filtro, q = norm(f.q || '');
-  const items = d.items.filter(v => (!f.estado || v.estado === f.estado) && (!q || norm(`${v.cliente?.nombre} ${v.cliente?.documento} ${v.producto} ${v.vendedor}`).includes(q)));
+  const items = vgFiltradas();
   const tarjeta = (cls, ic, t, val, det) => `<div class="ag-resumen ${cls}"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span><strong class="ag-resumen-v">${val}</strong><span class="ag-resumen-d">${det}</span></div>`;
   const elegidas = tarjElegidas('ventas', VG_TARJETAS, VG_TARJ_DEFECTO);
   const kpis = elegidas.length ? `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">
@@ -7450,7 +7572,13 @@ if (typeof V === 'object' && V.tc_ventas) {
     },
   };
 }
-/* Facturación: una sección pequeña con los cobros por recibir de las ventas registradas. */
+/* Facturación con reporte: los cobros por recibir de las ventas registradas van en la columna de al lado (2.9.1, como en Ventas). */
+window.agoraCobrosLado = () => {
+  const p = VG.datos?.proximos || []; if (!p.length) return '';
+  return `<section class="panel pf-sec vg-prox fa-lado">${secH('clock', 'Cobros por recibir', `${p.length} ${p.length === 1 ? 'cobro' : 'cobros'} de las ventas registradas · ${esc(vgPorMoneda(p.reduce((o, c) => { o[c.moneda] = (o[c.moneda] || 0) + c.monto; return o; }, {})))}`)}
+    <ul class="vg-prox-l">${p.slice(0, 12).map(c => `<li class="${c.vencido ? 'is-venc' : ''}"><span class="vg-prox-f"><b>${esc(vgFecha(c.fecha).slice(0, 5))}</b><small>${c.vencido ? 'Vencido' : 'Vence'}</small></span><span class="vg-prox-t"><b>${esc(c.cliente)}</b><small>${esc(c.producto)}</small></span><strong>${esc(vgMonto(c.monto, c.moneda))}</strong></li>`).join('')}</ul>
+    <a class="btn btn-sm fa-lado-ir" href="${href('/ventas')}" data-vg-ir-ventas>${icon('receipt')}Ver en Ventas</a></section>`;
+};
 if (typeof V === 'object' && V.tc_facturas) {
   const base = V.tc_facturas;
   V.tc_facturas = {
@@ -7458,14 +7586,7 @@ if (typeof V === 'object' && V.tc_facturas) {
     render() { return base.render(); },
     mounted(root) {
       base.mounted?.(root);
-      if (TB.estado === 'sin-datos') return; // 2.8.11: sin reporte, Facturación ya muestra todos los cobros
-      const p = VG.datos?.proximos || [], cab = root.querySelector('.mod-h');
-      if (!p.length || !cab || root.querySelector('.vg-fact')) return;
-      const sec = document.createElement('section'); sec.className = 'panel pf-sec vg-fact';
-      sec.innerHTML = `${secH('clock', 'Cobros por recibir de las ventas registradas', `${p.length} ${p.length === 1 ? 'cobro' : 'cobros'} en los próximos 31 días o atrasados · ${esc(vgPorMoneda(p.reduce((o, c) => { o[c.moneda] = (o[c.moneda] || 0) + c.monto; return o; }, {})))}`, `<a class="btn btn-sm" href="${href('/ventas')}" data-vg-ir-ventas>${icon('receipt')}Ver en Ventas</a>`)}
-        <ul class="vg-prox-l vg-prox-h">${p.slice(0, 6).map(c => `<li class="${c.vencido ? 'is-venc' : ''}"><span class="vg-prox-f"><b>${esc(vgFecha(c.fecha).slice(0, 5))}</b><small>${c.vencido ? 'Vencido' : 'Vence'}</small></span><span class="vg-prox-t"><b>${esc(c.cliente)}</b><small>${esc(c.producto)}</small></span><strong>${esc(vgMonto(c.monto, c.moneda))}</strong></li>`).join('')}</ul>`;
-      cab.after(sec);
-      sec.querySelector('[data-vg-ir-ventas]')?.addEventListener('click', () => { try { store.set('vg.tab', 'registradas'); } catch { /* sin almacenamiento */ } });
+      root?.addEventListener('click', e => { if (e.target.closest('[data-vg-ir-ventas]')) { try { store.set('vg.tab', 'registradas'); } catch { /* sin almacenamiento */ } } });
     },
   };
 }

@@ -1,5 +1,19 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.9.1:**
+- **Mismo esqueleto que Ventas registradas** en Facturación, Productos y servicios y Catálogo (solo cambia cómo se ve; los datos son los mismos):
+  - Tarjetas con icono, cifra y detalle; la tabla dentro de su recuadro con título y cantidad; al lado, la lista corta.
+  - Facturación: «Registros» con sus filtros y, al lado, «Cobros por recibir» (con reporte) o «Atrasados de meses anteriores» (sin reporte).
+  - Productos y servicios: la lista de productos a la izquierda y los rubros al lado, como en Ventas.
+- **Catálogo → Estudiantes.** Cada venta registrada (también las cargadas por Excel) es un estudiante en su programa.
+  - **Estado a mano:** Activo · En pausa · Retirado · Culminado. Se toca el estado en la fila y se elige. Las ventas empiezan como Activo. No cambia los cobros.
+  - **Desglose arriba:** ventas activas y cuánto suman; **recurrencia mensual** solo de los activos (por ejemplo, «10 activos × US$ 50» = US$ 500/mes); en pausa; retirados y culminados.
+  - **Filtros siempre visibles** (se quedan arriba al bajar): N.º de cédula y vendedor, más el estado.
+  - **«Descargar Excel» baja solo lo filtrado** (el botón dice cuántas filas): si filtras a una vendedora y salen 19, el Excel trae esas 19, con sus totales al final.
+  - **Abajo, los totales generales** de todos los estudiantes, sin filtros. Al lado, «Por programa»: activos y su recurrencia.
+- **Descargas con filtros:** «Exportar CSV» de Ventas registradas baja solo lo filtrado. El botón «Excel» del encabezado ofrece «Descargar lo que ves» (lo filtrado) y «Descargar todo».
+- Prueba nueva: `tests/estudiantes.py` (14).
+
 **Novedades 2.9.0:**
 - **«Venta ganada» escribe en la cuenta y en Ágora a la vez.** Con la subcuenta conectada, al registrar la venta de una oportunidad: la oportunidad queda **ganada en la cuenta** con su monto y la venta se guarda en Ágora **enlazada por el identificador de la oportunidad y del contacto de la cuenta**.
   - **Sin duplicados:** una oportunidad tiene una sola venta. Si se vuelve a pulsar «Venta ganada», se ofrece editar la que ya existe.
