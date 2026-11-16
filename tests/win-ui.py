@@ -51,8 +51,9 @@ with sync_playwright() as p:
         page.locator('[data-view="dashboard"]').click()
         page.wait_for_selector('.personal-tiles')
         tiles=page.locator('.personal-tiles').inner_text()
-        assert 'Leads de hoy' in tiles and '3' in tiles and 'Mis leads de hoy' in tiles and '27' in tiles and 'Mis ventas del mes' in tiles and '4' in tiles,tiles
-        print('PASS the board shows today\'s leads, my leads and my sales won this month')
+        # 1.10.15: quien solo ve lo suyo no ve «Leads de hoy» aparte (ya serían los suyos) ni el rótulo «Asignados a ti».
+        assert 'Leads de hoy\n' not in tiles.replace('Mis leads de hoy','') and 'Mis leads de hoy' in tiles and '27' in tiles and 'Mis ventas del mes' in tiles and '4' in tiles and 'Asignados a ti' not in tiles,tiles
+        print('PASS a seller\'s board shows only their own leads and sales, without «Asignados a ti»')
         assert page.locator('#menu-version').inner_text().startswith('Ágora v') or width==390
         assert not errors,errors
     print('PASS no JS errors')

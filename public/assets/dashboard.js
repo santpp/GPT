@@ -218,8 +218,8 @@ export async function renderDashboard(container){
     const isOwner=workspace.me?.user?.role==='administrator'&&workspace.me?.user?.identity_type==='native';
     const unlinked=isOwner?{html:'<button type="button" class="link-button" data-self>Elegir quién soy</button>'}:'Usa en Ágora el mismo correo que en la cuenta';
     const personal=[
-      ...(leads?[tile(sel.kind==='today'?'Leads de hoy':sel.kind==='yesterday'?'Leads de ayer':'Leads nuevos',leads.today===null||leads.today===undefined?null:number(leads.today),leads.today===null||leads.today===undefined?'La cuenta no devolvió este dato':(['today','yesterday'].includes(sel.kind)?'':range.label))]:[]),
-      ...(leads?[tile(sel.kind==='today'?'Mis leads de hoy':sel.kind==='yesterday'?'Mis leads de ayer':'Mis leads nuevos',leads.mine===null||leads.mine===undefined?null:number(leads.mine),leads.linked?(leads.mine===null||leads.mine===undefined?'La cuenta no devolvió este dato':(['today','yesterday'].includes(sel.kind)?'Asignados a ti':'Asignados a ti · '+range.label)):unlinked)]:[]),
+      ...(leads&&!data.restricted?[tile(sel.kind==='today'?'Leads de hoy':sel.kind==='yesterday'?'Leads de ayer':'Leads nuevos',leads.today===null||leads.today===undefined?null:number(leads.today),leads.today===null||leads.today===undefined?'La cuenta no devolvió este dato':(['today','yesterday'].includes(sel.kind)?'':range.label))]:[]),
+      ...(leads?[tile(sel.kind==='today'?'Mis leads de hoy':sel.kind==='yesterday'?'Mis leads de ayer':'Mis leads nuevos',leads.mine===null||leads.mine===undefined?null:number(leads.mine),leads.linked?(leads.mine===null||leads.mine===undefined?'La cuenta no devolvió este dato':(['today','yesterday'].includes(sel.kind)?'':range.label)):unlinked)]:[]),
       ...(sales&&!data.restricted?[tile('Ventas ganadas del mes',number(sales.closings??0),`${money(sales.total??0)} en total`)]:[]),
       ...(month&&!month.error?[tile('Mis ventas del mes',mine?number(mine.closings):null,mine?`${money(mine.sold)} ganados`:unlinked)]:[]),    ].join('');
     const stages=data.opportunities?asList(data.opportunities.stages):[];
