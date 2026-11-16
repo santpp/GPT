@@ -1154,3 +1154,8 @@ html,body{max-width:100%;overflow-x:hidden}
 /* 1.10.14 · Bandeja: quien ve toda la subcuenta ve el responsable de cada conversación */
 .live-assignee{display:block;margin-top:4px;font-size:11px;color:#5d6370;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .live-assignee.none{color:#ad103c;font-weight:600}
+/* 1.10.16 · Cifras del mes: las metas se miden en dinero o en número de ventas */
+.board-goal-kind{display:grid;gap:8px;margin:0;padding:12px 14px;border:1px solid var(--line);border-radius:12px}
+.board-goal-kind legend{padding:0 4px;color:var(--muted);font-size:13px}
+.dialog-form .board-goal-kind label{display:flex;align-items:center;gap:8px;margin:0;font-weight:500}
+.dialog-form .board-goal-kind input[type=radio]{width:auto;min-height:0;margin:0;padding:0;accent-color:var(--green)}

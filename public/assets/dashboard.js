@@ -108,6 +108,9 @@ function teamTable(data){
   if(!rows.length)return '<p class="board-empty">Todavía no hay equipo importado en esta cuenta.</p>';
   const word=data.settings?.closingWord||'cierres';
   const cell=value=>value===null||value===undefined?'—':esc(money(value));
+  // 1.10.16 · La meta puede ser en número de ventas: entonces la meta y la diferencia se cuentan en cierres.
+  const count=data.settings?.goalKind==='count';
+  const unit=value=>value===null||value===undefined?'—':count?esc(number(value)):esc(money(value));
   return `<div class="board-table-wrap"><table class="board-table"><thead><tr>
     <th scope="col">Asesora</th><th scope="col">${esc(word[0].toUpperCase()+word.slice(1))}</th><th scope="col">Meta</th><th scope="col">Vendido</th><th scope="col">Diferencia</th><th scope="col">Avance</th><th scope="col">Estado</th>
   </tr></thead><tbody>${rows.map(row=>{
@@ -115,8 +118,8 @@ function teamTable(data){
     const width=Math.max(0,Math.min(100,Number(row.progress)||0));
     // Cada celda lleva su rótulo: en un teléfono la fila se lee como tarjeta.
     const heading=esc(word[0].toUpperCase()+word.slice(1));
-    return `<tr><th scope="row">${esc(row.name)}</th><td data-label="${heading}">${number(row.closings)}</td><td data-label="Meta">${cell(row.goal)}</td><td data-label="Vendido">${cell(row.sold)}</td>
-      <td data-label="Diferencia" class="${Number(row.difference)<0?'down':'up'}">${row.difference===null?'—':(Number(row.difference)>=0?'+':'−')+esc(money(Math.abs(row.difference)))}</td>
+    return `<tr><th scope="row">${esc(row.name)}</th><td data-label="${heading}">${number(row.closings)}</td><td data-label="Meta">${unit(row.goal)}</td><td data-label="Vendido">${cell(row.sold)}</td>
+      <td data-label="Diferencia" class="${Number(row.difference)<0?'down':'up'}">${row.difference===null?'—':(Number(row.difference)>=0?'+':'−')+(count?esc(number(Math.abs(row.difference))):esc(money(Math.abs(row.difference))))}</td>
       <td data-label="Avance" class="board-progress"><span class="board-progress-line"><span class="board-bar ${esc(kind)}"><i style="width:${width}%"></i></span><b>${row.progress===null?'—':number(Math.round(row.progress))+' %'}</b></span></td>
       <td data-label="Estado"><span class="board-state ${esc(kind)}">${esc(label)}</span></td></tr>`;
   }).join('')}</tbody></table></div>`;
@@ -272,6 +275,8 @@ export async function renderDashboard(container){
       tile(`Comisiones del equipo (${commissionText(month.commission,word)})`,money(p.commissions),month.commission?.kind==='per_closing'?`${number(month.sales.closings)} ${word}`:`Sobre ${money(p.sales)} vendidos`),
     ].join('');
     const goal=month.goal;
+    // En número de ventas, la meta se dice con la palabra de cada cierre («12 estudiantes»).
+    const inUnit=v=>goal.kind==='count'?`${number(v)} ${word}`:money(v);
     const progress=Math.max(0,Math.min(100,Number(goal.progress)||0));
     const counts=asList(month.team).reduce((acc,row)=>{acc[row.state]=(acc[row.state]||0)+1;return acc},{});
     return `${picker}${adsLine}${warn}
@@ -280,7 +285,7 @@ export async function renderDashboard(container){
       <div class="section-label">Desempeño del equipo de ventas</div>
       <div class="board-goal">
         <div class="board-goal-main"><span>Avance del equipo frente a su meta</span><strong>${goal.progress===null?'—':number(Math.round(goal.progress))+' %'}</strong>
-          <small>${goal.target===null?'Indica la meta del mes para ver el avance.':goal.missing>0?`Faltan ${esc(money(goal.missing))} para la meta de ${esc(money(goal.target))}.`:`Meta de ${esc(money(goal.target))} superada.`}</small></div>
+          <small>${goal.target===null?'Indica la meta del mes para ver el avance.':goal.missing>0?`Faltan ${esc(inUnit(goal.missing))} para la meta de ${esc(inUnit(goal.target))}.`:`Meta de ${esc(inUnit(goal.target))} superada.`}</small></div>
         <div class="board-goal-counts">
           <span class="board-state ok">${number(counts.lograda||0)} con la meta lograda</span>
           <span class="board-state near">${number(counts.cerca||0)} cerca de la meta</span>
@@ -337,7 +342,8 @@ export async function renderDashboard(container){
     const dialog=document.querySelector('#action-dialog');
     const s=month.settings||{};
     const rows=asList(month.team).filter(row=>row.id).map(row=>
-      `<label>${esc(row.name)}<input type="number" min="0" step="0.01" data-goal="${esc(row.id)}" value="${row.goal??''}" placeholder="Meta del mes"></label>`).join('');
+      `<label>${esc(row.name)}<input type="number" min="0" step="${s.goalKind==='count'?'1':'0.01'}" data-goal="${esc(row.id)}" value="${row.goal??''}" placeholder="Meta del mes"></label>`).join('');
+    const word=s.closingWord||'cierres';
     document.querySelector('#dialog-content').innerHTML=`<span class="eyebrow">${esc(monthName(month.period))}</span>
       <h2 style="margin-top:12px">Cifras del mes</h2>
       <p class="dialog-copy">Lo que la cuenta no sabe: lo que invertiste, lo que cuesta mantener la operación y las metas. Se guarda sólo para este mes y esta subcuenta.</p>
@@ -345,21 +351,32 @@ export async function renderDashboard(container){
         <p class="dialog-copy">Lo invertido en Meta lo informa la cuenta publicitaria conectada. Aquí sólo lo que no pasa por ella.</p>
         <label>Otros gastos de publicidad (fuera de Meta)<input type="number" min="0" step="0.01" name="otherAds" value="${s.otherAds??''}"></label>
         <label>Costos fijos del mes<input type="number" min="0" step="0.01" name="fixedCosts" value="${s.fixedCosts??''}"></label>
-        <label>Meta de ventas del equipo<input type="number" min="0" step="0.01" name="teamGoal" value="${s.teamGoal??''}"></label>
+        <fieldset class="board-goal-kind"><legend>Las metas del mes se miden en</legend>
+          <label><input type="radio" name="goalKind" value="money" ${s.goalKind==='count'?'':'checked'}><span>Dinero vendido</span></label>
+          <label><input type="radio" name="goalKind" value="count" ${s.goalKind==='count'?'checked':''}><span>Número de ventas (<span data-goal-word>${esc(word)}</span>)</span></label>
+        </fieldset>
+        <label><span data-goal-label>${s.goalKind==='count'?'Meta del equipo (número de ventas)':'Meta de ventas del equipo (dinero)'}</span><input type="number" min="0" step="${s.goalKind==='count'?'1':'0.01'}" name="teamGoal" value="${s.teamGoal??''}"></label>
         <label>¿Cómo llamas a cada cierre?<input name="closingWord" maxlength="24" value="${esc(s.closingWord||'cierres')}" placeholder="estudiantes, clientes, pólizas…"></label>
         <div class="section-label">Umbrales del semáforo</div>
         <label>Verde desde (%)<input type="number" min="0" max="100" step="1" name="green" value="${s.green??100}"></label>
         <label>Ámbar desde (%)<input type="number" min="0" max="100" step="1" name="amber" value="${s.amber??70}"></label>
-        ${rows?`<div class="section-label">Metas por asesora</div>${rows}`:''}
+        ${rows?`<div class="section-label" data-goal-heading>${s.goalKind==='count'?'Metas por asesora (número de ventas)':'Metas por asesora (dinero)'}</div>${rows}`:''}
         <button class="primary">Guardar cifras</button><p id="board-form-status" role="status"></p>
       </form>`;
     dialog.showModal();
     const form=document.querySelector('#board-form');
+    // Al cambiar la unidad, los campos de meta aceptan enteros o montos, y el rótulo lo dice.
+    const syncKind=()=>{const count=form.elements.goalKind.value==='count';
+      form.querySelectorAll('[name=teamGoal],[data-goal]').forEach(input=>{input.step=count?'1':'0.01'});
+      form.querySelector('[data-goal-label]').textContent=count?'Meta del equipo (número de ventas)':'Meta de ventas del equipo (dinero)';
+      const h=form.querySelector('[data-goal-heading]');if(h)h.textContent=count?'Metas por asesora (número de ventas)':'Metas por asesora (dinero)';};
+    form.querySelectorAll('[name=goalKind]').forEach(r=>r.onchange=syncKind);
+    form.elements.closingWord.oninput=()=>{form.querySelector('[data-goal-word]').textContent=form.elements.closingWord.value.trim()||'cierres'};
     form.onsubmit=async event=>{
       event.preventDefault();
       const status=form.querySelector('#board-form-status'),button=form.querySelector('button.primary');
       button.disabled=true;status.textContent='Guardando…';
-      const payload=Object.fromEntries(['otherAds','fixedCosts','teamGoal','closingWord','green','amber'].map(k=>[k,form.elements[k].value]));
+      const payload=Object.fromEntries(['otherAds','fixedCosts','teamGoal','closingWord','green','amber','goalKind'].map(k=>[k,form.elements[k].value]));
       payload.goals=Object.fromEntries([...form.querySelectorAll('[data-goal]')].map(input=>[input.dataset.goal,input.value]));
       try{
         await request(`workspace/board-month?connectionId=${encodeURIComponent(connection)}&period=${period}`,'POST',csrf,payload);

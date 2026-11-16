@@ -161,4 +161,38 @@ with sync_playwright() as pw:
     print('PASS en el teléfono el equipo se lee como tarjetas, sin nombres partidos ni barras fuera de sitio')
     assert not errors, errors
     context.close()
+
+    # 1.10.16 · Metas por número de ventas: se eligen en las cifras del mes y la meta se dice en ventas.
+    page,errors,saved,context=session()
+    page.locator('#board-settings').click()
+    page.wait_for_selector('#board-form',state='visible')
+    assert page.locator('#board-form [name=goalKind][value=money]').is_checked(), 'por defecto, en dinero'
+    page.locator('#board-form [name=goalKind][value=count]').check()
+    assert page.locator('#board-form [name=teamGoal]').get_attribute('step')=='1' and 'número de ventas' in page.locator('[data-goal-label]').inner_text()
+    page.locator('#board-form [name="teamGoal"]').fill('150')
+    page.locator('#board-form [data-goal="seller-3"]').fill('40')
+    page.locator('#board-form button.primary').click()
+    page.wait_for_function("()=>!document.querySelector('#action-dialog').open")
+    assert saved[-1]['goalKind']=='count' and saved[-1]['teamGoal']=='150' and saved[-1]['goals']['seller-3']=='40', saved[-1]
+    print('PASS en las cifras del mes se elige medir las metas en número de ventas')
+    assert not errors, errors
+    context.close()
+    COUNT=dict(SETTINGS,goalKind='count',teamGoal=150.0,goals={'seller-1':45.0,'seller-2':50.0,'seller-3':40.0})
+    global_month=month
+    def month_count(**kw):
+        d=global_month(**kw);d['settings']=COUNT
+        d['goal']={'kind':'count','target':150.0,'sold':11292.25,'achieved':130.0,'progress':86.7,'missing':20.0}
+        d['team']=[dict(TEAM[0],goal=50.0,difference=2.0,progress=104.0),dict(TEAM[1],goal=45.0,difference=-5.0,progress=88.9),dict(TEAM[2],goal=40.0,difference=-2.0,progress=95.0)]
+        return d
+    month=month_count
+    page,errors,saved,context=session()
+    page.wait_for_selector('.board-goal',state='attached')
+    g=plain(page.locator('.board-goal').inner_text())
+    assert 'Faltan 20 estudiantes para la meta de 150 estudiantes' in g, g
+    first=plain(page.locator('.board-table tbody tr').nth(0).inner_text())
+    cells=first.split('\t')
+    assert cells[2]=='50' and cells[4].startswith('+2') and '$' in cells[3], cells
+    print('PASS con metas en número de ventas, la meta y la diferencia se dicen en ventas')
+    assert not errors, errors
+    context.close()
     b.close()

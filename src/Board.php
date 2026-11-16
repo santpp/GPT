@@ -14,7 +14,7 @@ require_once __DIR__.'/GhlGateway.php';
  * en lugar de enseñar un cero que parezca un resultado.
  */
 final class Board {
-    public const DEFAULTS=['otherAds'=>null,'fixedCosts'=>null,'commissionRate'=>10.0,'teamGoal'=>null,'goals'=>[],'closingWord'=>'cierres','green'=>100.0,'amber'=>70.0];
+    public const DEFAULTS=['otherAds'=>null,'fixedCosts'=>null,'commissionRate'=>10.0,'teamGoal'=>null,'goals'=>[],'goalKind'=>'money','closingWord'=>'cierres','green'=>100.0,'amber'=>70.0];
     private const PAGE=100;
     private const PAGES=10;
 
@@ -82,10 +82,13 @@ final class Board {
             $value=is_string($value)?str_replace(',','.',trim($value)):$value;
             return is_numeric($value)&&(float)$value>=0&&(float)$value<=100?round((float)$value,2):$fallback;
         };
+        // 1.10.16 · Las metas del mes se miden en dinero vendido o en número de ventas (cierres). En número, sin decimales.
+        $kind=($input['goalKind']??'money')==='count'?'count':'money';
+        $target=function(mixed $value)use($money,$kind):?float{$v=$money($value);return $v===null?null:($kind==='count'?(float)round($v):$v);};
         $goals=[];
         foreach(is_array($input['goals']??null)?$input['goals']:[] as $id=>$goal) {
             if(!is_string($id)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$id))continue;
-            $value=$money(is_array($goal)?($goal['goal']??null):$goal);
+            $value=$target(is_array($goal)?($goal['goal']??null):$goal);
             if($value!==null)$goals[$id]=$value;
             if(count($goals)>=200)break;
         }
@@ -99,8 +102,9 @@ final class Board {
             'otherAds'=>$money($input['otherAds']??null),
             'fixedCosts'=>$money($input['fixedCosts']??null),
             'commissionRate'=>$rate($input['commissionRate']??null,self::DEFAULTS['commissionRate']),
-            'teamGoal'=>$money($input['teamGoal']??null),
+            'teamGoal'=>$target($input['teamGoal']??null),
             'goals'=>$goals,
+            'goalKind'=>$kind,
             'closingWord'=>$word,
             // El umbral ámbar nunca puede quedar por encima del verde.
             'green'=>max($green,$amber),
@@ -198,6 +202,9 @@ final class Board {
 
         $team=$this->team($connection,$settings,$byMember,$restricted,$mine,$rule);
         $goal=$settings['teamGoal'];
+        // Lo logrado en la unidad de la meta: dinero vendido o número de ventas.
+        $count=($settings['goalKind']??'money')==='count';
+        $achieved=$count?($restricted?array_sum(array_column($team,'closings')):$closings):($restricted?array_sum(array_column($team,'sold')):$sales);
         return [
             'period'=>$period,
             'restricted'=>$restricted,
@@ -225,10 +232,12 @@ final class Board {
             ],
             'team'=>$team,
             'goal'=>[
+                'kind'=>$count?'count':'money',
                 'target'=>$goal,
                 'sold'=>round($restricted?array_sum(array_column($team,'sold')):$sales,2),
-                'progress'=>$goal!==null&&$goal>0?round(($restricted?array_sum(array_column($team,'sold')):$sales)/$goal*100,1):null,
-                'missing'=>$goal!==null?round(max(0,$goal-($restricted?array_sum(array_column($team,'sold')):$sales)),2):null,
+                'achieved'=>round((float)$achieved,2),
+                'progress'=>$goal!==null&&$goal>0?round($achieved/$goal*100,1):null,
+                'missing'=>$goal!==null?round(max(0,$goal-$achieved),2):null,
             ],
             'missing'=>array_values(array_filter([
                 $ads===null?'ads':null,
@@ -309,10 +318,11 @@ final class Board {
     }
 
     private function row(?string $id,string $name,float $sold,int $closings,?float $goal,array $settings,array $rule):array {
-        $progress=$goal!==null&&$goal>0?round($sold/$goal*100,1):null;
+        $achieved=($settings['goalKind']??'money')==='count'?(float)$closings:$sold;
+        $progress=$goal!==null&&$goal>0?round($achieved/$goal*100,1):null;
         return [
             'id'=>$id,'name'=>$name,'sold'=>round($sold,2),'closings'=>$closings,'goal'=>$goal,
-            'difference'=>$goal!==null?round($sold-$goal,2):null,
+            'difference'=>$goal!==null?round($achieved-$goal,2):null,
             'progress'=>$progress,
             'state'=>$progress===null?'sin-meta':($progress>=$settings['green']?'lograda':($progress>=$settings['amber']?'cerca':'apoyo')),
             'commission'=>$rule['kind']==='per_closing'?round($closings*$rule['amount'],2):round($sold*$rule['amount']/100,2),
@@ -324,7 +334,7 @@ final class Board {
             'sales'=>['total'=>0.0,'closings'=>0,'counted'=>0,'partial'=>false],
             'profitability'=>['sales'=>0.0,'ads'=>null,'adsFromAccount'=>null,'adsOther'=>null,'adsSource'=>null,'adsReason'=>'restricted','commissions'=>0.0,'profit'=>null,'fixedCosts'=>null,'net'=>null,
                 'marginPerUnit'=>null,'adsPerUnit'=>null,'commissionPerUnit'=>null,'costPerClosing'=>null,'returnPerHundred'=>null,'marketingCost'=>null],
-            'team'=>[],'goal'=>['target'=>null,'sold'=>0.0,'progress'=>null,'missing'=>null],
+            'team'=>[],'goal'=>['kind'=>($settings['goalKind']??'money')==='count'?'count':'money','target'=>null,'sold'=>0.0,'achieved'=>0.0,'progress'=>null,'missing'=>null],
             'missing'=>['ads','fixedCosts','teamGoal'],'readAt'=>gmdate('c')];
     }
 }

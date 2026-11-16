@@ -104,6 +104,23 @@ try {
  boardCheck(isset($team['Sin asignar'])&&$team['Sin asignar']['sold']===403.00,'lo cerrado sin responsable no desaparece del resumen');
  boardCheck($team['María Carvallo']['commission']===479.40,'cada quien ve la comisión que le corresponde');
 
+ // ---- 1.10.16 · metas por número de ventas -----------------------------------------
+ boardCheck(($month['goal']['kind']??'')==='money'&&Board::settings($connectionId,'2026-10')['goalKind']==='money','sin elegir, las metas siguen siendo en dinero');
+ $seller=fn(string $name)=>array_values(array_filter($month['team'],fn($r)=>$r['name']===$name))[0];
+ $closingsMaria=$team['María Carvallo']['closings'];$closingsAll=$month['sales']['closings'];
+ Board::save($connectionId,'2026-10',['goalKind'=>'count','teamGoal'=>(string)($closingsAll*2),'closingWord'=>'estudiantes','green'=>'100','amber'=>'70',
+   'goals'=>['seller-2'=>(string)$closingsMaria,'seller-1'=>'3,6','seller-3'=>'100']]);
+ $saved=Board::settings($connectionId,'2026-10');
+ boardCheck($saved['goalKind']==='count'&&$saved['goals']['seller-1']===4.0,'en número de ventas la meta se guarda sin decimales');
+ $api->reset();boardFree($connectionId);
+ $month=$board()->month($connection,'2026-10',$owner);$team=array_column($month['team'],null,'name');
+ boardCheck($month['goal']['kind']==='count'&&$month['goal']['target']===(float)($closingsAll*2)&&$month['goal']['achieved']===(float)$closingsAll&&$month['goal']['progress']===50.0&&$month['goal']['missing']===(float)$closingsAll,'la meta del equipo se mide contra el número de ventas del mes');
+ boardCheck($team['María Carvallo']['progress']===100.0&&$team['María Carvallo']['difference']===0.0&&$team['María Carvallo']['state']==='lograda','cada asesora se mide contra su número de ventas');
+ boardCheck($team['Lisbella Moreno']['state']==='apoyo'&&$team['Lisbella Moreno']['difference']===(float)($team['Lisbella Moreno']['closings']-100),'la diferencia se cuenta en ventas, no en dinero');
+ boardCheck($team['María Carvallo']['sold']>0&&$month['sales']['total']>0,'lo vendido en dinero se sigue mostrando');
+ Board::save($connectionId,'2026-10',['goalKind'=>'otra','teamGoal'=>'20100']);
+ boardCheck(Board::settings($connectionId,'2026-10')['goalKind']==='money','una unidad inventada vuelve a dinero');
+
  Board::save($connectionId,'2026-10',['adSpend'=>'1385','commissionRate'=>'10','teamGoal'=>'20100','green'=>'70','amber'=>'100','goals'=>['seller-1'=>'4800']]);
  boardCheck(Board::settings($connectionId,'2026-10')['amber']<=Board::settings($connectionId,'2026-10')['green'],'el umbral ámbar nunca puede quedar por encima del verde');
 
