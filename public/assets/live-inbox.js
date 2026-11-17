@@ -244,13 +244,21 @@ export async function renderLiveInbox(container){
    }).join('');
    return `<div class="channel-menu"><button type="button" class="channel-current" data-ch="${esc(chosen?.type??'')}" aria-haspopup="menu" aria-expanded="false" aria-label="Canal de envío: ${esc(chosen?.label??'')}"><span class="live-channel-mark" aria-hidden="true">${channelMarks[chosen?.type]||''}</span><span class="live-channel-label">${esc(chosen?.label??'')}</span><span class="channel-chevron">${CHEVRON}</span></button><div class="channel-list" role="menu" hidden>${items}</div></div>`;
   };
+  // ---- 1.10.17 · Adjuntos y respuestas guardadas (snippets) -------------------------------
+  const CLIP='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12.5 13.6 7a2.6 2.6 0 0 1 3.7 3.7l-7 7a4.2 4.2 0 0 1-6-6l6.6-6.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const FILE_EXT=['jpg','jpeg','png','pdf','doc','docx','txt','mp4','mpeg','mp3','wav','zip','rar'];
+  const FILE_ACCEPT=FILE_EXT.map(x=>'.'+x).join(',');
+  const MB=1024*1024;
+  const sizeText=n=>n>=MB?(n/MB).toFixed(1).replace('.',',')+' MB':Math.max(1,Math.round(n/1024))+' KB';
+  const fileName=url=>{try{return decodeURIComponent(new URL(url).pathname.split('/').filter(Boolean).pop()||'archivo')}catch{return 'archivo'}};
+  let snippets={open:false,items:null,error:'',q:'',generation:-1};
   function composer(c,channels=null){
    const offered=channels??threadChannel(c);
    const usable=usableChannels(offered);
    if(!usable.length||!c.contactId)return '<p class="live-readonly">Este canal todavía no admite respuestas desde aquí.</p>';
    const chosen=usable.find(o=>o.type===chatChannel)||usable[0];
    chatChannel=chosen.type;
-   return `<form id="live-composer" class="live-composer"><div class="live-channels" id="live-channel-row" role="group" aria-label="Canal de envío">${pickerMarkup(offered)}</div><div id="live-subject-slot">${chosen.needsSubject?'<label class="live-subject-field">Asunto<input id="live-subject" maxlength="200" required></label>':''}</div><p id="live-window-hint" class="live-window-hint" hidden>Han pasado más de 24 horas desde su último mensaje. WhatsApp sólo permite escribir con una plantilla aprobada.</p><div id="live-template-slot"></div><label class="sr-only" for="live-reply">Respuesta</label><textarea id="live-reply" maxlength="4000" rows="3" required placeholder="Escribe una respuesta…"></textarea><div class="live-composer-actions"><span id="live-channel-name">${esc(chosen.label)}</span><button type="button" id="live-template-toggle" class="link-button" hidden>Usar plantilla</button><button id="live-send" class="primary">Enviar</button></div><p id="live-send-status" role="status"></p></form>`;
+   return `<form id="live-composer" class="live-composer"><div class="live-channels" id="live-channel-row" role="group" aria-label="Canal de envío">${pickerMarkup(offered)}</div><div id="live-subject-slot">${chosen.needsSubject?'<label class="live-subject-field">Asunto<input id="live-subject" maxlength="200" required></label>':''}</div><p id="live-window-hint" class="live-window-hint" hidden>Han pasado más de 24 horas desde su último mensaje. WhatsApp sólo permite escribir con una plantilla aprobada.</p><div id="live-template-slot"></div><div id="live-snippet-slot"></div><label class="sr-only" for="live-reply">Respuesta</label><textarea id="live-reply" maxlength="4000" rows="3" required placeholder="Escribe una respuesta…"></textarea><div id="live-files" class="live-files" hidden></div><div class="live-composer-actions"><span id="live-channel-name">${esc(chosen.label)}</span><button type="button" id="live-attach" class="icon-btn live-attach" aria-label="Adjuntar archivo" title="Adjuntar archivo">${CLIP}</button><input type="file" id="live-file" multiple hidden accept="${FILE_ACCEPT}"><button type="button" id="live-snippets-toggle" class="link-button">Respuestas guardadas</button><button type="button" id="live-template-toggle" class="link-button" hidden>Usar plantilla</button><button id="live-send" class="primary">Enviar</button></div><p id="live-send-status" role="status"></p></form>`;
   }
 
   /**
@@ -478,7 +486,7 @@ export async function renderLiveInbox(container){
   function bindComposer(c){
    const form=$('#live-composer');if(!form)return;
    const connection=select.value,version=chatGeneration,key=connection+':'+c.id;
-   const draft=drafts.get(key)||{message:'',subject:'',sending:false,notice:''};drafts.set(key,draft);
+   const draft=drafts.get(key)||{message:'',subject:'',sending:false,notice:'',files:[]};draft.files??=[];drafts.set(key,draft);
    applyChannels(c,chatChannels??threadChannel(c),draft);
    const text=$('#live-reply'),subject=$('#live-subject');
    // Looked up when used, not captured: switching channel replaces these nodes
@@ -488,27 +496,86 @@ export async function renderLiveInbox(container){
     if(!field)return;
     field.value=draft.message;field.disabled=draft.sending;
     if(topic){topic.value=draft.subject;topic.disabled=draft.sending}
-    if(send){send.disabled=draft.sending;send.textContent=draft.sending?'Enviando…':'Enviar'}
+    const uploading=draft.files.some(f=>f.status==='uploading');
+    if(send){send.disabled=draft.sending||uploading;send.textContent=draft.sending?'Enviando…':uploading?'Subiendo…':'Enviar'}
     if(notice)notice.textContent=draft.notice;
+    field.required=!draft.files.some(f=>f.status==='ready');
+    const box=$('#live-files');
+    if(box){box.hidden=!draft.files.length;box.innerHTML=draft.files.map((f,i)=>`<span class="live-file ${f.status}"><span class="live-file-name">${esc(f.name)}</span><small>${f.status==='uploading'?'Subiendo…':f.status==='error'?esc(f.error):esc(f.size?sizeText(f.size):'Listo')}</small>${draft.sending?'':`<button type="button" class="live-file-x" data-file-x="${i}" aria-label="Quitar ${esc(f.name)}">×</button>`}</span>`).join('');
+     box.querySelectorAll('[data-file-x]').forEach(b=>b.onclick=()=>{draft.files.splice(Number(b.dataset.fileX),1);show()})}
    };
+   /* Sube cada archivo a nuestro servidor, que lo pasa a la cuenta. Se comprueba antes el tipo y el tamaño. */
+   async function addFiles(list){
+    for(const file of list){
+     if(draft.files.length>=5){draft.notice='Puedes adjuntar hasta 5 archivos por mensaje.';break}
+     const ext=(file.name.split('.').pop()||'').toLowerCase();
+     const limit=chatChannel==='WhatsApp'?16*MB:5*MB;
+     const item={name:file.name,size:file.size,status:'uploading',url:'',error:''};
+     if(!FILE_EXT.includes(ext)){item.status='error';item.error='Tipo no admitido';draft.files.push(item);continue}
+     if(file.size>limit){item.status='error';item.error=chatChannel==='WhatsApp'?'Pasa de 16 MB':'Pasa de 5 MB (por WhatsApp, hasta 16 MB)';draft.files.push(item);continue}
+     draft.files.push(item);show();
+     const form=new FormData();form.append('file',file,file.name);
+     try{
+      const r=await fetch(`/api/workspace/upload?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(c.id)}&channel=${encodeURIComponent(chatChannel||'')}`,{method:'POST',body:form,cache:'no-store',headers:{'X-CSRF-Token':me.csrf}});
+      let data={};try{data=await r.json()}catch{}
+      if(!r.ok)throw Error(data.error||`No se pudo subir (HTTP ${r.status}).`);
+      item.status='ready';item.url=data.url;item.name=data.name||item.name;
+     }catch(error){item.status='error';item.error=error.message}
+     if(active()&&version===chatGeneration)show();
+    }
+    show();
+   }
+   const attach=$('#live-attach'),picker=$('#live-file');
+   if(attach&&picker){attach.onclick=()=>picker.click();picker.onchange=()=>{const files=[...picker.files];picker.value='';draft.notice='';addFiles(files)}}
+   const snipToggle=$('#live-snippets-toggle');
+   if(snipToggle)snipToggle.onclick=()=>{snippets.open=!snippets.open;if(snippets.open&&(snippets.items===null||snippets.error||snippets.generation!==chatGeneration))loadSnippets();else paintSnippets()};
+   async function loadSnippets(refresh=false){
+    snippets={open:true,items:null,error:'',q:snippets.q||'',generation:chatGeneration};paintSnippets();
+    try{const data=await request(`workspace/snippets?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(c.id)}${refresh?'&refresh=1':''}`);if(version!==chatGeneration||!active())return;snippets.items=Array.isArray(data.items)?data.items:[]}
+    catch(error){if(version!==chatGeneration||!active())return;snippets.items=[];snippets.error=friendly(error)}
+    paintSnippets();
+   }
+   function paintSnippets(){
+    const slot=$('#live-snippet-slot');if(!slot)return;
+    if(!snippets.open){slot.innerHTML='';return}
+    const close='<button type="button" class="link-button" id="snip-close">Cerrar</button>';
+    if(snippets.items===null){slot.innerHTML=`<div class="snip-panel"><p class="muted">Cargando respuestas guardadas…</p>${close}</div>`;$('#snip-close').onclick=()=>{snippets.open=false;paintSnippets()};return}
+    const q=snippets.q.toLowerCase().trim();
+    const list=(snippets.items||[]).filter(s=>!q||(s.name+' '+s.text).toLowerCase().includes(q));
+    slot.innerHTML=`<div class="snip-panel"><div class="snip-head"><input id="snip-q" type="search" placeholder="Buscar respuesta guardada" value="${esc(snippets.q)}" aria-label="Buscar respuesta guardada">${close}</div>
+     ${snippets.error?`<p class="muted">${esc(snippets.error)}</p>`:!snippets.items.length?'<p class="muted">Esta subcuenta todavía no tiene respuestas guardadas. Se crean en la cuenta, en Marketing → Snippets.</p>':!list.length?'<p class="muted">Ninguna coincide con la búsqueda.</p>':''}
+     <ul class="snip-list">${list.slice(0,50).map(s=>`<li><button type="button" data-snip="${esc(s.id)}"><b>${esc(s.name)}</b><span>${esc(s.text.slice(0,140))}${s.text.length>140?'…':''}</span>${s.attachments.length?`<small>${CLIP}${s.attachments.length} ${s.attachments.length===1?'archivo':'archivos'}</small>`:''}</button></li>`).join('')}</ul></div>`;
+    $('#snip-close').onclick=()=>{snippets.open=false;paintSnippets()};
+    const qi=$('#snip-q');if(qi){qi.oninput=()=>{snippets.q=qi.value;const pos=qi.selectionStart;paintSnippets();const n=$('#snip-q');n.focus();n.setSelectionRange(pos,pos)}}
+    slot.querySelectorAll('[data-snip]').forEach(b=>b.onclick=()=>{
+     const s=(snippets.items||[]).find(x=>x.id===b.dataset.snip);if(!s)return;
+     draft.message=draft.message.trim()?draft.message.replace(/\s*$/,'')+'\n'+s.text:s.text;
+     for(const url of s.attachments)if(draft.files.length<5&&!draft.files.some(f=>f.url===url))draft.files.push({name:fileName(url),size:0,status:'ready',url,error:''});
+     draft.notice=s.missing.length?`Completa antes de enviar: ${s.missing.join(', ')}.`:'';
+     snippets.open=false;paintSnippets();show();const f=$('#live-reply');if(f){f.focus();const m=f.value.search(/\{\{/);if(m>=0)f.setSelectionRange(m,m)}
+    });
+   }
    show();
    text.oninput=()=>draft.message=text.value;if(subject)subject.oninput=()=>draft.subject=subject.value;
    form.onsubmit=async e=>{
-    e.preventDefault();if(draft.sending||!draft.message.trim())return;
+    const ready=draft.files.filter(f=>f.status==='ready');
+    e.preventDefault();if(draft.sending||draft.files.some(f=>f.status==='uploading')||(!draft.message.trim()&&!ready.length))return;
+    if(/\{\{[^}]*\}\}/.test(draft.message)){draft.notice='Hay campos sin completar entre llaves {{…}}. Escribe ese dato antes de enviar.';show();return}
     draft.sending=true;draft.notice='Enviando…';show();
     let storageKey;
-    const body={channel:chatChannel||sendChannels[c.lastMessageType],message:draft.message.trim(),subject:draft.subject.trim()};
+    const body={channel:chatChannel||sendChannels[c.lastMessageType],message:draft.message.trim(),subject:draft.subject.trim(),...(ready.length?{attachments:ready.map(f=>f.url)}:{})};
     try{
      const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(body)));
      storageKey='agora-send:'+key+':'+Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
      // Persist only a random request key and content hash, never message text or credentials.
      const requestId=sessionStorage.getItem(storageKey)||crypto.randomUUID();sessionStorage.setItem(storageKey,requestId);
      const result=await request(`workspace/send?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(c.id)}`,'POST',me.csrf,{...body,requestId});
-     sessionStorage.removeItem(storageKey);draft.message='';draft.notice=result.deliveryStatus==='failed'?'El canal registró el mensaje como fallido. Revisa su configuración.':'Mensaje aceptado por el canal.';
-     if(active()&&version===chatGeneration){messages.set(result.messageId,{id:result.messageId,body:body.message,direction:'outbound',dateAdded:new Date().toISOString(),status:result.deliveryStatus});renderMessages();scrollEnd($('#live-log'),true);c.lastMessageBody=body.message;list()}
-    }catch(error){draft.notice=friendly(error);if(storageKey&&['send_rejected','invalid_message','invalid_subject','unsupported_channel','invalid_contact','connection_unverified'].includes(error.code))sessionStorage.removeItem(storageKey)}
+     sessionStorage.removeItem(storageKey);draft.message='';draft.files=[];draft.notice=result.deliveryStatus==='failed'?'El canal registró el mensaje como fallido. Revisa su configuración.':'Mensaje aceptado por el canal.';
+     if(active()&&version===chatGeneration){messages.set(result.messageId,{id:result.messageId,body:body.message,attachments:body.attachments||[],direction:'outbound',dateAdded:new Date().toISOString(),status:result.deliveryStatus});renderMessages();scrollEnd($('#live-log'),true);c.lastMessageBody=body.message||'Archivo adjunto';list()}
+    }catch(error){draft.notice=friendly(error);if(storageKey&&['send_rejected','invalid_message','invalid_subject','unsupported_channel','invalid_contact','connection_unverified','invalid_attachments','unfilled_fields'].includes(error.code))sessionStorage.removeItem(storageKey)}
     finally{draft.sending=false;if(active()&&version===chatGeneration)show()}
    };
+   if(snippets.generation!==chatGeneration)snippets.open=false;paintSnippets();
    const toggle=$('#live-template-toggle');
    if(toggle)toggle.onclick=()=>{templates.open=true;templates.notice='';if(templates.items===null||templates.error)loadTemplates(c);else syncTemplates(c)};
    syncTemplates(c);

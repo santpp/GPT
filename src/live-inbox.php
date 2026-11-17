@@ -390,6 +390,47 @@ if($path==='/api/workspace/read'&&$method==='POST'){
     catch(GhlApiException $e){respond(['error'=>'No se pudo marcar como leída. Revisa el permiso de escritura de conversaciones.','code'=>'read_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'No se pudo marcar como leída.','code'=>'read_failed'],424);}
 }
+// 1.10.17 · Adjuntar un archivo: el navegador lo manda aquí y el servidor lo sube a la cuenta.
+if($path==='/api/workspace/upload'&&$method==='POST'){
+    if(!($membership['capabilities']['sendMessages']??false))respond(['error'=>'Tu usuario no tiene permiso para responder.'],403);
+    $conversation=$_GET['conversationId']??'';
+    if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);
+    $record=InboxFeed::known($id,$conversation);
+    if(!$record||!Actor::filterConversations([$record],$membership))respond(['error'=>'Conversación no disponible en esta subcuenta'],404);
+    $file=$_FILES['file']??null;
+    if(!is_array($file)||is_array($file['name']??null))respond(['error'=>'No llegó ningún archivo.','code'=>'file_missing'],422);
+    $err=(int)($file['error']??UPLOAD_ERR_NO_FILE);
+    if(in_array($err,[UPLOAD_ERR_INI_SIZE,UPLOAD_ERR_FORM_SIZE],true))respond(['error'=>'El archivo es más grande de lo que el servidor admite. Pide a quien administra Ágora subir el límite de archivos (16 MB).','code'=>'file_too_large'],413);
+    if($err!==UPLOAD_ERR_OK||!is_uploaded_file((string)$file['tmp_name']))respond(['error'=>'El archivo no llegó completo. Vuelve a intentarlo.','code'=>'file_incomplete'],422);
+    $channel=is_string($_GET['channel']??null)?$_GET['channel']:'';
+    require_once __DIR__.'/Attachments.php';
+    try{respond((new Attachments())->upload($connection,$record,(string)$file['tmp_name'],(string)$file['name'],(int)$file['size'],$channel));}
+    catch(AttachmentProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
+}
+// 1.10.17 · Snippets (respuestas guardadas) de la subcuenta, ya rellenados para esta conversación.
+if($path==='/api/workspace/snippets'&&$method==='GET'){
+    if(!($membership['capabilities']['sendMessages']??false))respond(['error'=>'Tu usuario no tiene permiso para responder.'],403);
+    $conversation=$_GET['conversationId']??'';
+    if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);
+    $record=InboxFeed::known($id,$conversation);
+    if(!$record||!Actor::filterConversations([$record],$membership))respond(['error'=>'Conversación no disponible en esta subcuenta'],404);
+    require_once __DIR__.'/Snippets.php';
+    try{$list=(new Snippets())->list($connection,($_GET['refresh']??'')==='1');}
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La lista de respuestas guardadas está en espera. Vuelve a intentarlo en unos segundos.','retryAfter'=>$e->retryAfter],429);}
+    catch(GhlApiException $e){respond(['error'=>in_array($e->status,[401,403],true)?'La clave de la cuenta no permite leer las respuestas guardadas. Hace falta el permiso de plantillas.':'No se pudieron leer las respuestas guardadas de la cuenta.','code'=>'snippets_upstream_'.$e->status],424);}
+    catch(Throwable $e){respond(['error'=>'No se pudieron leer las respuestas guardadas de la cuenta.','code'=>'snippets_failed'],424);}
+    $profile=is_string($record['contactId']??null)?query('SELECT payload FROM contact_profile_cache WHERE connection_id=? AND contact_id=?',[$id,$record['contactId']])->fetchColumn():false;
+    $profile=is_string($profile)?(json_decode($profile,true)?:[]):[];
+    if(!$profile)$profile=['name'=>$record['contactName']??($record['fullName']??'')];
+    $self=$membership['self_id']??null;
+    $user=['name'=>'','email'=>$u['email']??''];
+    if(is_string($self)&&$self!==''){$n=query('SELECT display_name FROM external_users WHERE connection_id=? AND external_user_id=? LIMIT 1',[$id,$self])->fetchColumn();if(is_string($n))$user['name']=$n;}
+    $files=[];$items=[];
+    foreach($list as $s){$r=Snippets::render($s['body'],$profile,$user,(string)($connection['name']??''));$items[]=['id'=>$s['id'],'name'=>$s['name'],'text'=>$r['text'],'missing'=>$r['missing'],'attachments'=>$s['attachments']];array_push($files,...$s['attachments']);}
+    // Los archivos de los snippets quedan permitidos para esta conversación.
+    if($files){require_once __DIR__.'/Attachments.php';Attachments::allow($id,$conversation,$files);}
+    respond(['items'=>$items]);
+}
 // Plantillas aprobadas de WhatsApp de esta cuenta, para escribir pasadas las 24 horas.
 if($path==='/api/workspace/templates'&&$method==='GET') {
     if(!($membership['capabilities']['sendMessages']??false))respond(['error'=>'Tu usuario no tiene permiso para responder.'],403);

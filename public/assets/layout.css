@@ -1159,3 +1159,22 @@ html,body{max-width:100%;overflow-x:hidden}
 .board-goal-kind legend{padding:0 4px;color:var(--muted);font-size:13px}
 .dialog-form .board-goal-kind label{display:flex;align-items:center;gap:8px;margin:0;font-weight:500}
 .dialog-form .board-goal-kind input[type=radio]{width:auto;min-height:0;margin:0;padding:0;accent-color:var(--green)}
+/* 1.10.17 · Adjuntos y respuestas guardadas en la bandeja */
+.live-attach{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)}
+.live-attach svg{width:18px;height:18px}
+.live-files{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.live-file{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:4px 4px 4px 10px;border:1px solid var(--line);border-radius:14px;background:#f7f7fa;font-size:12px}
+.live-file-name{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.live-file small{color:var(--subtle);font-size:11px}
+.live-file.uploading{opacity:.7}.live-file.error{background:#f7e9ee;border-color:#f7e9ee}.live-file.error small{color:#ad103c}
+.live-file-x{border:0;background:transparent;color:var(--muted);font-size:16px;line-height:1;min-width:28px;min-height:28px;cursor:pointer}
+.snip-panel{display:grid;gap:8px;margin:6px 0;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+.snip-head{display:flex;gap:8px;align-items:center}.snip-head input{flex:1;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)}
+.snip-list{list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:260px;overflow:auto}
+.snip-list button{display:grid;gap:2px;width:100%;text-align:left;padding:8px 10px;border:0;border-radius:6px;background:transparent;color:var(--ink);cursor:pointer}
+.snip-list button:hover,.snip-list button:focus-visible{background:#f1f1f5}
+.snip-list b{font-size:13px}.snip-list span{font-size:12px;color:var(--subtle);white-space:pre-line}.snip-list small{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+.snip-list small svg{width:12px;height:12px}
+.live-composer.template-mode .live-files,.live-composer.template-mode #live-snippet-slot{display:none}
+@media (max-width:640px){.live-composer-actions{flex-wrap:wrap}.live-file-name{max-width:130px}}
+#live-snippet-slot{width:100%}.snip-panel{width:100%;box-sizing:border-box}

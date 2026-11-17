@@ -243,3 +243,6 @@ html[data-theme="dark"] .origin-note,html[data-theme="dark"] .live-window-hint,h
 html[data-theme="dark"] .board-tile,html[data-theme="dark"] .personal-tiles .board-tile{background:none}
 html[data-theme="dark"] .bubble.out{background:#2a3048;border-color:#343b57}
 html[data-theme="dark"] img.brand-logo,html[data-theme="dark"] img.brand-dot{filter:brightness(1.25) saturate(1.1)}
+/* 1.10.17 · adjuntos y respuestas guardadas */
+html[data-theme="dark"] .live-file{background:#1d1f2b}html[data-theme="dark"] .snip-list button:hover,html[data-theme="dark"] .snip-list button:focus-visible{background:#1d1f2b}
+html[data-theme="dark"] .live-file.error{background:#3a1622;border-color:#3a1622}

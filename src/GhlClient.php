@@ -33,7 +33,29 @@ final class GhlClient {
     }
     /** Abre una conversación con un contacto que aún no tenía (POST /conversations/). */
     public function createConversation(string $location,string $contact):array {return $this->get('/conversations/','2021-04-15',['locationId'=>$location,'contactId'=>$contact]);}
-    /** Subida de un archivo a la conversación, en dos pasos: dirección firmada y confirmación. */
+    /** 1.10.17 · Snippets (respuestas guardadas) de la subcuenta: GET /locations/{id}/templates, type=sms. */
+    public function snippets(string $location,int $skip=0):array {
+        return $this->get('/locations/'.rawurlencode($location).'/templates?'.http_build_query(['type'=>'sms','originId'=>$location,'deleted'=>'false','skip'=>(string)$skip,'limit'=>'100']),'2021-07-28');
+    }
+    /** 1.10.17 · Sube un archivo a la conversación (POST /conversations/messages/upload, multipart, campo fileAttachment). */
+    public function uploadAttachment(string $location,string $conversation,string $contact,string $name,string $mime,string $bytes):array {
+        return $this->multipart('/conversations/messages/upload','2021-04-15',['conversationId'=>$conversation,'contactId'=>$contact,'locationId'=>$location],$name,$mime,$bytes);
+    }
+    /** 1.10.17 · Archivos grandes (WhatsApp): dirección firmada, subida y confirmación. */
+    public function initiateUpload(array $payload):array {return $this->get('/conversations/messages/upload/initiate','2021-04-15',$payload);}
+    public function completeUpload(array $payload):array {return $this->get('/conversations/messages/upload/complete','2021-04-15',$payload);}
+    /** Sube el contenido a la dirección firmada que dio la cuenta. Sólo direcciones https de almacenamiento de Google. */
+    public function putSigned(string $url,string $mime,string $bytes):void {
+        $host=parse_url($url,PHP_URL_HOST);
+        if(parse_url($url,PHP_URL_SCHEME)!=='https'||!is_string($host)||!preg_match('/(^|\.)storage\.googleapis\.com$/D',$host))throw new RuntimeException('Unexpected upload address');
+        if($this->transport){$r=($this->transport)('__put__',$url,'PUT',['size'=>strlen($bytes),'mime'=>$mime]);$this->status=$r['status'];}
+        else{
+            $ch=curl_init($url);
+            curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>120,CURLOPT_CUSTOMREQUEST=>'PUT',CURLOPT_POSTFIELDS=>$bytes,CURLOPT_HTTPHEADER=>['Content-Type: '.$mime]]);
+            curl_exec($ch);$this->status=curl_getinfo($ch,CURLINFO_RESPONSE_CODE);curl_close($ch);
+        }
+        if($this->status<200||$this->status>=300)throw new GhlApiException($this->status);
+    }
     public function sendMessage(array $payload):array {return $this->get('/conversations/messages','2021-04-15',$payload);}
     public function duplicateContact(string $location,string $email):array {
         return $this->get('/contacts/search/duplicate?'.http_build_query(['locationId'=>$location,'email'=>$email]),'2021-07-28');
@@ -90,6 +112,24 @@ final class GhlClient {
         return $this->put('/contacts/'.rawurlencode($contact).'/tasks/'.rawurlencode($task).'/completed','2021-07-28',['completed'=>$completed]);
     }
     private function put(string $path,string $version,array $payload):array {return $this->get($path,$version,$payload,'PUT');}
+    /** POST multipart con un archivo (el campo del archivo se llama fileAttachment). */
+    private function multipart(string $path,string $version,array $fields,string $name,string $mime,string $bytes):array {
+        if($this->token==='')throw new RuntimeException('GHL credential missing');
+        $this->headers=[];$this->status=0;
+        if($this->transport){$r=($this->transport)($path,$version,'POST',$fields+['__file'=>['name'=>$name,'mime'=>$mime,'size'=>strlen($bytes)]]);$this->status=$r['status'];$this->headers=array_change_key_case($r['headers']??[]);$raw=$r['body'];}
+        else{
+            $ch=curl_init('https://services.leadconnectorhq.com'.$path);
+            curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>120,CURLOPT_POST=>true,
+                CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$this->token,'Version: '.$version,'Accept: application/json'],
+                CURLOPT_POSTFIELDS=>$fields+['fileAttachment'=>new CURLStringFile($bytes,$name,$mime)],
+                CURLOPT_HEADERFUNCTION=>function($ch,string $line):int{$parts=explode(':',$line,2);if(count($parts)===2)$this->headers[strtolower(trim($parts[0]))]=trim($parts[1]);return strlen($line);}]);
+            $raw=curl_exec($ch);$this->status=curl_getinfo($ch,CURLINFO_RESPONSE_CODE);curl_close($ch);
+        }
+        if($raw===false||$this->status<200||$this->status>=300){$retry=$this->headers['retry-after']??'';throw new GhlApiException($this->status,ctype_digit((string)$retry)?min(86400,(int)$retry):0,$this->reason(is_string($raw)?$raw:''));}
+        $result=json_decode($raw,true,64,JSON_THROW_ON_ERROR);
+        if(!is_array($result))throw new RuntimeException('Invalid GHL response');
+        return $result;
+    }
     private function delete(string $path,string $version,array $payload):array {return $this->get($path,$version,$payload,'DELETE');}
     /** Lo que la cuenta explica al rechazar una petición (sin contenido de mensajes ni marcas), para poder diagnosticar. */
     private function reason(string $raw):string {

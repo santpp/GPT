@@ -54,7 +54,14 @@ final class MessageSender {
         $request=$input['requestId']??null;$text=$input['message']??null;
         $template=is_array($input['template']??null)?$input['template']:null;
         if(!is_string($request)||!preg_match('/^[A-Za-z0-9_-]{16,64}$/D',$request))throw new SendProblem('invalid_message',422,'Escribe un mensaje de hasta 4.000 caracteres.');
-        if(!$template&&(!is_string($text)||trim($text)===''||mb_strlen($text)>4000))throw new SendProblem('invalid_message',422,'Escribe un mensaje de hasta 4.000 caracteres.');
+        // 1.10.17 · Con archivos adjuntos, el texto puede ir vacío.
+        require_once __DIR__.'/Attachments.php';
+        $files=$template?[]:Attachments::forSend($id,(string)$conversationId,$input['attachments']??null);
+        if($text!==null&&!is_string($text))throw new SendProblem('invalid_message',422,'Escribe un mensaje de hasta 4.000 caracteres.');
+        $text=is_string($text)?$text:'';
+        if(!$template&&((trim($text)===''&&!$files)||mb_strlen($text)>4000))throw new SendProblem('invalid_message',422,$files?'Escribe un mensaje de hasta 4.000 caracteres.':'Escribe un mensaje de hasta 4.000 caracteres o adjunta un archivo.');
+        // Un snippet con campos sin rellenar ({{contact.…}}) no sale: el cliente vería las llaves.
+        if(!$template&&preg_match('/\{\{\s*[A-Za-z0-9_]+\.[A-Za-z0-9_.]+\s*\}\}/u',$text))throw new SendProblem('unfilled_fields',422,'El mensaje tiene campos sin completar entre llaves {{…}}. Escribe ese dato antes de enviar.');
         // The choice is checked against the set the server computes, never trusted.
         $available=array_column(array_values(array_filter(self::availableChannels($connection,$conversation),fn(array $c):bool=>$c['available'])),'type');
         $channel=$input['channel']??null;
@@ -62,7 +69,7 @@ final class MessageSender {
         $contact=$conversation['contactId']??null;
         if(!is_string($contact)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contact)||($conversation['locationId']??null)!==$connection['location_id'])throw new SendProblem('invalid_contact',422,'Actualiza la conversación antes de responder.');
         if($template)$payload=$this->templatePayload($connection,$contact,$channel,$template);
-        else $payload=['type'=>$channel,'contactId'=>$contact,'message'=>trim($text)];
+        else{$payload=['type'=>$channel,'contactId'=>$contact];if(trim($text)!=='')$payload['message']=trim($text);if($files)$payload['attachments']=$files;}
         if(!$template&&$channel==='Email'){
             $subject=$input['subject']??null;
             if(!is_string($subject)||trim($subject)===''||mb_strlen($subject)>200)throw new SendProblem('invalid_subject',422,'Añade un asunto de hasta 200 caracteres.');
