@@ -6,7 +6,7 @@ Léelo entero antes de tocar nada. Es el resumen de cómo trabajamos y de lo que
 
 - Proyecto **Ágora** (Ágora Digital): espacio de trabajo comercial en español sobre subcuentas de GoHighLevel (GHL). Lo usan agencias y sus clientes (ej.: ASOCIM, educación).
 - El usuario escribe en **español**. Responde en español, claro, sin jerga técnica innecesaria.
-- **Al final de cada respuesta, un roadmap corto y actualizado** con este orden: hecho, de tu lado, siguiente (lo más urgente primero), después, en pausa, en espera, futuro lejano y, de último, **«Otros»** (lo que antes era «pendiente de decidir»; el usuario pidió quitar ese rótulo).
+- **Al final de cada respuesta, un roadmap corto y actualizado** con este orden: hecho, de tu lado, siguiente (lo más urgente primero), después, en pausa, en espera, futuro lejano y, de último, **«Otros»** (lo que antes era «pendiente de decidir»; el usuario pidió quitar ese rótulo). Cada punto dice a qué producto pertenece (ERP o Mobile). «En pausa» es del ERP (avisos al teléfono, publicar/borrar publicaciones, conexión directa con Meta); «En espera» (plantillas de WhatsApp) e inventario son de Mobile. Quita de «De tu lado» lo que el usuario ya confirmó.
 - Decide tú lo que sea de criterio técnico o de diseño y explícalo; pregunta solo lo que de verdad es del usuario (producto, prioridades, nombres, gastos).
 - Prefiere hacer y entregar (ZIP listo) a describir. Muestra evidencia: pruebas que pasan, capturas revisadas.
 - Si algo no se pudo probar (por ejemplo, contra la cuenta real), dilo sin rodeos.
