@@ -3385,7 +3385,7 @@ function csv(name, cols, rows, modulo) {
   A.record('Descargó un CSV', modulo, `${name}.csv · ${rows.length} registros`);
   toast(`Descargaste ${int(rows.length)} registros en ${name}.csv`);
 }
-const csvBtn = key => can('editar.exportar') ? `<button class="btn" type="button" data-csv="${key}">${icon('download')}Descargar CSV</button>` : '';
+const csvBtn = () => ''; // 2.9.5: las descargas salen por el botón «Excel» de arriba (lo filtrado), igual en todas las vistas
 const money = (k, l) => ({k, l, n: 1, money: 1, f: v => usd(v)});
 const when = iso => {
   if (!iso) return 'Nunca';
@@ -4065,7 +4065,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.9.4').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.9.5').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -5312,7 +5312,7 @@ V.productos = {
           </ul>
           ${canEdit ? `<button type="button" class="btn btn-sm" data-rubro-nuevo>${icon('plus')}Agregar rubro</button>` : ''}
         </section>
-        <section class="panel pf-sec prod-lista">${secH('wallet', 'Productos', `${int(lista.length)} ${lista.length === 1 ? 'producto' : 'productos'} en la vista`)}
+        <section class="panel pf-sec prod-lista" data-filtros-propios>${secH('wallet', 'Productos', `${int(lista.length)} ${lista.length === 1 ? 'producto' : 'productos'} en la vista`)}
           <div class="prod-tools"><div class="agency-chips" role="group" aria-label="Forma de cobro">${chip('cobro', '', 'Todos')}${chip('cobro', 'recurrente', 'Recurrente', productos.filter(p => p.cobro === 'recurrente').length)}${chip('cobro', 'unico', 'Pago único', productos.filter(p => p.cobro === 'unico').length)}${chip('cobro', 'venta', 'Venta única', productos.filter(p => p.cobro === 'venta').length)}</div>
             <label class="fld grow prod-q"><span class="sr-only">Buscar</span><span class="search-in">${icon('search')}<input type="search" data-prod-q value="${esc(PROD_F.q)}" placeholder="Buscar por nombre o código" autocomplete="off"></span></label></div>
           <div class="tw full"><table class="prod-t"><thead><tr><th>Producto</th><th>Rubro</th><th>Cobro</th><th class="n">Precio</th><th>Estado</th><th class="n"><span class="sr-only">Acciones</span></th></tr></thead>
@@ -5995,6 +5995,7 @@ const AgoraTabla = {
     const ths = tablaCabeceras(t), titulos = ths.map(tablaTitulo);
     const tw = t.closest('.tw') || t.parentElement;
     const externo = !!t.querySelector('thead [data-sort]') || !!tw?.nextElementSibling?.classList?.contains('pager');
+    const sinBuscar = externo || !!t.closest('[data-filtros-propios]'); // 2.9.5: la vista ya filtra arriba
     const clave = (modulo || 'x') + '.' + (nombre || titulos.slice(0, 3).join('|')).slice(0, 80);
     const id = 'xt' + Math.random().toString(36).slice(2, 8); t.dataset.xtId = id; t.classList.add('xt-t');
     const st = TABLA_ESTADO[clave] ||= {q: '', col: -1, dir: 1, p: 0};
@@ -6004,7 +6005,7 @@ const AgoraTabla = {
     const aplicarCols = () => { estilo.textContent = titulos.map((x, i) => ocultas.includes(x) ? `table[data-xt-id="${id}"] tr > :nth-child(${i + 1}){display:none}` : '').join(''); };
     aplicarCols();
     const bar = document.createElement('div'); bar.className = 'xt-bar' + (externo ? ' is-externo' : ''); bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Herramientas de la tabla' + (nombre ? ' ' + nombre : ''));
-    bar.innerHTML = `${externo ? '' : `<label class="xt-q"><span class="sr-only">Buscar en la tabla</span>${icon('search')}<input type="search" placeholder="Buscar en la tabla" autocomplete="off" value="${esc(st.q)}"></label>`}
+    bar.innerHTML = `${sinBuscar ? '' : `<label class="xt-q"><span class="sr-only">Buscar en la tabla</span>${icon('search')}<input type="search" placeholder="Buscar en la tabla" autocomplete="off" value="${esc(st.q)}"></label>`}
       <span class="xt-n" role="status" aria-live="polite"></span>
       <span class="xt-acts">${ed?.manual?.() && ed.tipo === 'tabla' ? `<button type="button" class="btn btn-sm btn-cta xt-man" title="Agregar una fila con el formulario de estas columnas">${icon('plus')}<span>Agregar manual</span></button>` : ''}<button type="button" class="btn btn-sm xt-cols" aria-haspopup="true" aria-expanded="false" title="${ed?.puedeEditar?.() ? 'Cambiar, agregar o quitar columnas' : 'Elegir columnas'}">${icon('sidebar')}<span>Columnas</span></button><button type="button" class="btn btn-sm xt-xls" ${ed?.puedeEditar?.() ? 'aria-haspopup="true" aria-expanded="false"' : ''} title="${ed?.puedeEditar?.() ? 'Descargar, plantilla o carga masiva' : 'Descargar en Excel lo que ves'}">${icon('download')}<span>Excel</span>${ed?.puedeEditar?.() ? icon('chev') : ''}</button></span>`;
     tw.before(bar); bar.append(estilo);
@@ -6055,8 +6056,8 @@ const AgoraTabla = {
         const ord = () => { st.dir = st.col === i ? -st.dir : (tipos[i] === 'texto' ? 1 : -1); st.col = i; st.p = 0; pintar(); };
         th.addEventListener('click', ord); th.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ord(); } });
       });
-      const q = bar.querySelector('input'); let tq = 0;
-      q.addEventListener('input', () => { clearTimeout(tq); tq = setTimeout(() => { st.q = q.value; st.p = 0; pintar(); }, 120); });
+      const q = bar.querySelector('.xt-q input'); let tq = 0;
+      q?.addEventListener('input', () => { clearTimeout(tq); tq = setTimeout(() => { st.q = q.value; st.p = 0; pintar(); }, 120); });
       pager.addEventListener('click', e => { const b = e.target.closest('[data-xp]'); if (!b) return; st.p += +b.dataset.xp; pintar(); bar.scrollIntoView({block: 'nearest', behavior: reduced() ? 'auto' : 'smooth'}); });
     }
     /* 2.1.19: menú de cada columna (⋮), filas a mano y celdas de columnas propias. */
@@ -6106,8 +6107,8 @@ const AgoraTabla = {
       toast(`Descargaste ${int(hoja.filas.length)} ${hoja.filas.length === 1 ? 'fila' : 'filas'} en ${n}`);
       try { agoraApi('workspace/auditoria', {method: 'POST', body: {accion: 'descargo.excel', detalle: `${MODS[modulo]?.name || modulo} · ${hoja.filas.length} filas`}}).catch(() => {}); } catch {}
     };
-    bar._descargar = descargarVista;
-    bar.querySelector('.xt-xls').addEventListener('click', e => { if (ed?.puedeEditar?.()) teMenuExcel(ed, e.currentTarget, descargarVista); else descargarVista(); });
+    bar._descargar = window.AgoraXtExcel?.[t.dataset.xtExcel] || descargarVista; bar._ed = ed;
+    bar.querySelector('.xt-xls').addEventListener('click', e => { if (ed?.puedeEditar?.()) teMenuExcel(ed, e.currentTarget, bar._descargar); else bar._descargar(); });
     pintar();
     return {bar, pintar};
   },
@@ -6519,34 +6520,42 @@ function migInformeDescargar() {
   AgoraExcel.descargar(migArchivo(MIG.mod, 'informe'), hojas);
 }
 
-/* ---------- Botón «Excel» en el encabezado de los módulos de datos ---------- */
+/* ---------- Botón «Excel» en el encabezado (2.9.5: el mismo en todas las vistas con tabla) ----------
+   Menú: Descargar lo que ves (lo filtrado) · Descargar todo · Descargar plantilla · Cargar desde Excel · Ajustar columnas.
+   Cada opción aparece si la vista la admite y si la persona puede usarla (las de cambiar datos, solo administración). */
 AgoraTabla.alPintar(root => {
-  const mod = MIG_DE_MOD[R.mod]; if (!mod || !esAdmin() || R.view === 'migracion') return;
-  if (conectada() && EN_VIVO.includes(R.mod)) return; // 2.4.0 · con la subcuenta conectada, estos datos viven en la cuenta
-  if (root.querySelector('.mg-hbtn')) return;
+  if (R.view === 'migracion' || root.querySelector('.mg-hbtn')) return;
+  const mod = MIG_DE_MOD[R.mod] && !(conectada() && EN_VIVO.includes(R.mod)) ? MIG_DE_MOD[R.mod] : null; // con la subcuenta conectada, esos datos viven en la cuenta
+  const barra = () => root.querySelector('.xt-bar');
+  if (!mod && !barra()) return;
   const h = root.querySelector('.mod-h'); if (!h) return;
   let acts = h.querySelector(':scope > .acts'); if (!acts) { acts = document.createElement('div'); acts.className = 'acts'; h.append(acts); }
   const b = document.createElement('button'); b.type = 'button'; b.className = 'btn mg-hbtn'; b.setAttribute('aria-haspopup', 'true'); b.setAttribute('aria-expanded', 'false');
   b.innerHTML = `${icon('invoice')}Excel${icon('chev')}`; b.title = 'Descargar o cargar con Excel';
   acts.prepend(b);
   b.onclick = () => {
-    const ver = mod !== 'usuarios';
-    /* 2.9.1 · Con filtros, «Descargar lo que ves» baja solo las filas filtradas de la tabla principal. */
-    const vista = root.querySelector('.xt-bar')?._descargar;
-    const p = openPop(b, `<p class="xt-pop-h">${esc(MODS[R.mod]?.name || '')} en Excel</p>
-      ${vista ? `<button type="button" class="mg-op" data-op="vista">${icon('download')}<span><b>Descargar lo que ves</b><small>Solo lo filtrado en pantalla</small></span></button>` : ''}
-      <button type="button" class="mg-op" data-op="datos">${icon('download')}<span><b>Descargar todo</b><small>Sin filtros, con tus columnas</small></span></button>
-      ${ver ? `<button type="button" class="mg-op" data-op="plantilla">${icon('invoice')}<span><b>Descargar plantilla</b><small>Vacía, lista para llenar</small></span></button>
-      <button type="button" class="mg-op" data-op="cargar">${icon('upload')}<span><b>Cargar desde Excel</b><small>Carga masiva con revisión</small></span></button>` : ''}
-      <button type="button" class="mg-op" data-op="campos">${icon('edit')}<span><b>Ajustar columnas</b><small>Orden, nombres y campos propios</small></span></button>`, 'xt-pop mg-hpop', {align: 'right'});
+    const bar = barra(), ed = bar?._ed || null, admin = esAdmin(), edita = !!ed?.puedeEditar?.();
+    const op = (k, ic, t, d) => `<button type="button" class="mg-op" data-op="${k}">${icon(ic)}<span><b>${t}</b><small>${d}</small></span></button>`;
+    const items = [
+      bar?._descargar ? op('vista', 'download', 'Descargar lo que ves', 'Solo lo filtrado en pantalla') : '',
+      mod && admin ? op('datos', 'download', 'Descargar todo', 'Sin filtros, con tus columnas') : '',
+      (mod && admin && mod !== 'usuarios') || edita ? op('plantilla', 'invoice', 'Descargar plantilla', 'Vacía, lista para llenar') : '',
+      (mod && admin && mod !== 'usuarios') || edita ? op('cargar', 'upload', 'Cargar desde Excel', 'Carga masiva con revisión') : '',
+      (mod && admin) || edita ? op('campos', 'edit', 'Ajustar columnas', 'Orden, nombres y campos propios') : (bar ? op('columnas', 'sidebar', 'Elegir columnas', 'Cuáles se ven en la tabla') : ''),
+    ].join('');
+    const p = openPop(b, `<p class="xt-pop-h">${esc(MODS[R.mod]?.name || '')} en Excel</p>${items}`, 'xt-pop mg-hpop', {align: 'right'});
     if (!p) return;
     p.onclick = async e => {
-      const op = e.target.closest('[data-op]')?.dataset.op; if (!op) return; closePop();
+      const k = e.target.closest('[data-op]')?.dataset.op; if (!k) return; closePop();
       try {
-        if (op === 'vista') vista();
-        else if (op === 'datos') { await camposDe(mod); await migDescargarDatos(mod); }
-        else if (op === 'plantilla') { await camposDe(mod); await migDescargarPlantilla(mod); }
-        else migracionIr(mod, op);
+        if (k === 'vista') bar._descargar();
+        else if (k === 'columnas') bar.querySelector('.xt-cols')?.click();
+        else if (mod && admin && k === 'datos') { await camposDe(mod); await migDescargarDatos(mod); }
+        else if (mod && admin && k === 'plantilla') { await camposDe(mod); await migDescargarPlantilla(mod); }
+        else if (mod && admin) migracionIr(mod, k === 'cargar' ? 'cargar' : 'campos');
+        else if (k === 'plantilla') await tePlantilla(ed);
+        else if (k === 'cargar') teCargarExcel(ed);
+        else if (k === 'campos') teEditorColumnas(ed);
       } catch (x) { toast(x.message); }
     };
   };
@@ -7022,9 +7031,9 @@ function gcVivoHtml() {
   const mensual = l => vgPorMoneda(vgSuma(l.filter(v => v.cobro === 'recurrente'), v => (Number(v.monto) || 0) * (FREC_MES[v.frecuencia] || 1)));
   const barra = (n, max) => `<span class="gc-barra" aria-hidden="true"><i style="width:${Math.max(4, Math.round(100 * n / Math.max(max, 1)))}%"></i></span>`;
   const vend = grupo('vendedor'), maxV = vend[0]?.l.length || 1;
-  const tablaVend = `<div class="tw"><table data-xt="vivo"><thead><tr><th>Vendedor</th><th class="n">Ventas</th><th class="n">Vendido</th><th class="n">Recurrente al mes</th><th class="n">Ticket promedio</th></tr></thead><tbody>${vend.map(g => `<tr><td><b>${esc(g.n)}</b>${barra(g.l.length, maxV)}</td><td class="n">${int(g.l.length)}</td><td class="n">${esc(vgPorMoneda(vgSuma(g.l, v => v.monto)))}</td><td class="n">${esc(mensual(g.l))}</td><td class="n">${esc(vgPorMoneda(Object.fromEntries(Object.entries(vgSuma(g.l, v => v.monto)).map(([m, t]) => [m, t / Math.max(1, g.l.filter(v => (v.moneda || 'USD') === m).length)]))))}</td></tr>`).join('')}</tbody></table></div>`;
+  const tablaVend = `<div class="tw"><table data-xt-vivo><thead><tr><th>Vendedor</th><th class="n">Ventas</th><th class="n">Vendido</th><th class="n">Recurrente al mes</th><th class="n">Ticket promedio</th></tr></thead><tbody>${vend.map(g => `<tr><td><b>${esc(g.n)}</b>${barra(g.l.length, maxV)}</td><td class="n">${int(g.l.length)}</td><td class="n">${esc(vgPorMoneda(vgSuma(g.l, v => v.monto)))}</td><td class="n">${esc(mensual(g.l))}</td><td class="n">${esc(vgPorMoneda(Object.fromEntries(Object.entries(vgSuma(g.l, v => v.monto)).map(([m, t]) => [m, t / Math.max(1, g.l.filter(v => (v.moneda || 'USD') === m).length)]))))}</td></tr>`).join('')}</tbody></table></div>`;
   const prod = grupo('producto'), maxP = prod[0]?.l.length || 1;
-  const tablaProd = `<div class="tw"><table data-xt="vivo"><thead><tr><th>Producto o servicio</th><th class="n">Ventas</th><th class="n">Vendido</th><th class="n">% de las ventas</th></tr></thead><tbody>${prod.map(g => `<tr><td><b>${esc(g.n)}</b>${barra(g.l.length, maxP)}</td><td class="n">${int(g.l.length)}</td><td class="n">${esc(vgPorMoneda(vgSuma(g.l, v => v.monto)))}</td><td class="n">${Math.round(100 * g.l.length / items.length)} %</td></tr>`).join('')}</tbody></table></div>`;
+  const tablaProd = `<div class="tw"><table data-xt-vivo><thead><tr><th>Producto o servicio</th><th class="n">Ventas</th><th class="n">Vendido</th><th class="n">% de las ventas</th></tr></thead><tbody>${prod.map(g => `<tr><td><b>${esc(g.n)}</b>${barra(g.l.length, maxP)}</td><td class="n">${int(g.l.length)}</td><td class="n">${esc(vgPorMoneda(vgSuma(g.l, v => v.monto)))}</td><td class="n">${Math.round(100 * g.l.length / items.length)} %</td></tr>`).join('')}</tbody></table></div>`;
   const cobros = [['recurrente', 'Recurrente'], ['unico', 'Pago único'], ['venta', 'Venta única']].map(([k, t]) => [t, items.filter(v => v.cobro === k)]).filter(([, l]) => l.length);
   const formas = `<ul class="gc-formas">${cobros.map(([t, l]) => `<li><span>${esc(t)}</span><b>${int(l.length)}</b><small>${esc(vgPorMoneda(vgSuma(l, v => v.monto)))}</small></li>`).join('')}</ul>`;
   const pend = (d.pendientes || []).length ? `<p class="gc-aviso is-warn">${icon('warn')}<span>${d.pendientes.length === 1 ? 'Hay una oportunidad ganada' : `Hay ${int(d.pendientes.length)} oportunidades ganadas`} sin su venta completada: no cuentan aquí hasta completarla en <a href="${href(MODS.ventas?.path || '/ventas')}">Ventas</a>.</span></p>` : '';
@@ -7068,7 +7077,7 @@ function eqVivoHtml() {
   if (!filas.length) return cabeza + vivoTarjetas('equipo', EQ_TARJETAS, EQ_DEFECTO, [], mes) + `<section class="panel"><p class="empty"><b>Todavía no hay actividad del equipo en ${esc(mes)}</b>Cuando haya ventas registradas u oportunidades ganadas, cada persona aparece aquí.</p></section>`;
   const max = Math.max(1, ...filas.map(f => f.ventas.length));
   const mensual = l => vgPorMoneda(vgSuma(l.filter(v => v.cobro === 'recurrente'), v => (Number(v.monto) || 0) * (FREC_MES[v.frecuencia] || 1)));
-  const tabla = `<div class="tw"><table data-xt="vivo"><thead><tr><th>Persona</th><th class="n">Ventas</th><th class="n">Vendido</th><th class="n">Recurrente al mes</th>${EQ.won ? '<th class="n">Ganadas en la cuenta</th>' : ''}${EQ.dia ? '<th class="n">Leads de hoy</th><th class="n">Sin leer ahora</th>' : ''}</tr></thead><tbody>${filas.map(f => `<tr><td><b>${esc(f.n)}</b><span class="gc-barra" aria-hidden="true"><i style="width:${Math.max(4, Math.round(100 * f.ventas.length / max))}%"></i></span></td><td class="n">${int(f.ventas.length)}</td><td class="n">${f.ventas.length ? esc(vgPorMoneda(vgSuma(f.ventas, v => v.monto))) : '—'}</td><td class="n">${f.ventas.some(v => v.cobro === 'recurrente') ? esc(mensual(f.ventas)) : '—'}</td>${EQ.won ? `<td class="n">${f.ganadas ? `${int(f.ganadas)} · ${esc(usd(f.ganadoValor))}` : '—'}</td>` : ''}${EQ.dia ? `<td class="n">${int(f.leads)}</td><td class="n">${f.sinLeer ? `<span class="sc sc-warn">${int(f.sinLeer)}</span>` : '0'}</td>` : ''}</tr>`).join('')}</tbody></table></div>`;
+  const tabla = `<div class="tw"><table data-xt-vivo><thead><tr><th>Persona</th><th class="n">Ventas</th><th class="n">Vendido</th><th class="n">Recurrente al mes</th>${EQ.won ? '<th class="n">Ganadas en la cuenta</th>' : ''}${EQ.dia ? '<th class="n">Leads de hoy</th><th class="n">Sin leer ahora</th>' : ''}</tr></thead><tbody>${filas.map(f => `<tr><td><b>${esc(f.n)}</b><span class="gc-barra" aria-hidden="true"><i style="width:${Math.max(4, Math.round(100 * f.ventas.length / max))}%"></i></span></td><td class="n">${int(f.ventas.length)}</td><td class="n">${f.ventas.length ? esc(vgPorMoneda(vgSuma(f.ventas, v => v.monto))) : '—'}</td><td class="n">${f.ventas.some(v => v.cobro === 'recurrente') ? esc(mensual(f.ventas)) : '—'}</td>${EQ.won ? `<td class="n">${f.ganadas ? `${int(f.ganadas)} · ${esc(usd(f.ganadoValor))}` : '—'}</td>` : ''}${EQ.dia ? `<td class="n">${int(f.leads)}</td><td class="n">${f.sinLeer ? `<span class="sc sc-warn">${int(f.sinLeer)}</span>` : '0'}</td>` : ''}</tr>`).join('')}</tbody></table></div>`;
   const nota = `<p class="camp-nota">«Ventas», «Vendido» y «Recurrente al mes» salen de las ventas registradas en Ágora.${EQ.won ? ' «Ganadas en la cuenta» son las oportunidades ganadas del mes.' : ''}${EQ.dia ? ' «Leads de hoy» y «Sin leer ahora» son de este momento.' : ''}${hayCuenta ? '' : ' Esta subcuenta no está conectada con su cuenta, por eso no se ven ganadas, leads ni conversaciones.'}</p>`;
   return cabeza + vivoTarjetas('equipo', EQ_TARJETAS, EQ_DEFECTO, [], mes) + `<section class="panel pf-sec">${secH('team', 'Por persona', `Ordenado por ventas registradas en ${esc(mes)}.`)}${tabla}${nota}</section>`;
 }
@@ -7157,12 +7166,12 @@ function faVivoHtml() {
       ${hayFiltro ? `<button type="button" class="btn btn-sm" data-fa-limpiar>${icon('plus')}Quitar filtros</button>` : ''}</div></section>`;
   const estado = x => x.c.estado === 'pagado' ? '<span class="sc sc-ok">Pagado</span>' : x.venc ? '<span class="sc sc-warn">Vencido</span>' : '<span class="sc sc-gray">Pendiente</span>';
   const fila = x => `<tr><td>${esc(vgFecha(x.c.fecha))}</td><td class="wrap"><span class="who-cell"><b>${esc(x.v.cliente?.nombre || '—')}</b><small>${esc(x.v.cliente?.documento || '')}</small></span></td><td class="wrap"><span class="who-cell"><b>${esc(x.v.producto || '')}</b><small>${esc(x.v.vendedor ? 'vende ' + x.v.vendedor : '')}</small></span></td><td class="n">${x.v.sinFin ? `Cobro ${int(x.c.n)}` : `${int(x.c.n)} de ${int((x.v.plan || []).length)}`}</td><td class="n">${esc(vgMonto(x.c.monto, x.v.moneda))}</td><td>${estado(x)}</td><td class="n">${puedeEd && x.c.estado !== 'pagado' ? `<button class="btn btn-sm btn-tint" type="button" data-fa-pagar="${esc(x.v.id)}" data-n="${esc(x.c.n)}">Marcar pagado</button>` : ''}</td></tr>`;
-  const tabla = l => `<div class="tw"><table data-xt="vivo"><thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th class="n">Cuota</th><th class="n">Monto</th><th>Estado</th><th></th></tr></thead><tbody>${l.map(fila).join('')}</tbody></table></div>`;
+  const tabla = l => `<div class="tw"><table data-xt-vivo><thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th class="n">Cuota</th><th class="n">Monto</th><th>Estado</th><th></th></tr></thead><tbody>${l.map(fila).join('')}</tbody></table></div>`;
   const cobrosMes = m.mes.length ? tabla(m.mes) : hayFiltro ? `<p class="empty"><b>Ningún cobro de ${esc(mes)} coincide con los filtros</b>Prueba con otro estado, vendedor o producto, o quita los filtros.</p>` : `<p class="empty"><b>No hay cobros que venzan en ${esc(mes)}</b>Los cobros salen del plan de cada venta registrada.</p>`;
   /* 2.9.1 · Mismo esqueleto que Ventas: tarjetas, tabla con sus filtros y, al lado, lo atrasado de meses anteriores. */
   const atras = `<section class="panel pf-sec vg-prox fa-lado">${secH('warn', 'Atrasados de meses anteriores', m.atrasados.length ? `${int(m.atrasados.length)} ${m.atrasados.length === 1 ? 'cobro' : 'cobros'} · ${esc(faSuma(m.atrasados))}` : 'Nada atrasado de meses anteriores.')}
     ${m.atrasados.length ? `<ul class="vg-prox-l">${m.atrasados.slice(0, 30).map(x => `<li class="is-venc"><span class="vg-prox-f"><b>${esc(vgFecha(x.c.fecha).slice(0, 5))}</b><small>${esc(vgFecha(x.c.fecha).slice(6))}</small></span><span class="vg-prox-t"><b>${esc(x.v.cliente?.nombre || '—')}</b><small>${esc(x.v.producto || '')}${x.v.vendedor ? ' · ' + esc(x.v.vendedor) : ''}</small></span><strong>${esc(vgMonto(x.c.monto, x.v.moneda))}</strong>${puedeEd ? `<button class="icon-btn" type="button" data-fa-pagar="${esc(x.v.id)}" data-n="${x.c.n}" aria-label="Marcar pagado" title="Marcar pagado">${icon('check')}</button>` : ''}</li>`).join('')}</ul>${m.atrasados.length > 30 ? `<p class="bx-help">Y ${int(m.atrasados.length - 30)} más.</p>` : ''}` : '<p class="empty"><b>Todo al día</b>No hay cobros atrasados de meses anteriores.</p>'}</section>`;
-  return cabeza + kpis + `<div class="vg-cols fa-cols"><section class="panel pf-sec vg-tabla">${secH('receipt', 'Cobros de ' + esc(mes), `${int(m.mes.length)} ${m.mes.length === 1 ? 'cobro' : 'cobros'} · ${esc(faSuma(m.mes))}`)}${filtros}${cobrosMes}</section>${atras}</div>`;
+  return cabeza + kpis + `<div class="vg-cols fa-cols"><section class="panel pf-sec vg-tabla" data-filtros-propios>${secH('receipt', 'Cobros de ' + esc(mes), `${int(m.mes.length)} ${m.mes.length === 1 ? 'cobro' : 'cobros'} · ${esc(faSuma(m.mes))}`)}${filtros}${cobrosMes}</section>${atras}</div>`;
 }
 function faVivoMontar(root) {
   root?.querySelectorAll('[data-fa-f]').forEach(b => b.onclick = () => { FA.f.estado = b.dataset.faF; repaint(); });
@@ -7246,7 +7255,7 @@ function tdVivoHtml() {
   if (!FA.datos) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas</b>Vuelve a intentarlo en un momento.</p></section>';
   const m = tdMeses(), max = Math.max(1, ...m.map(x => x.vendido));
   const barras = `<div class="td-barras" role="img" aria-label="Vendido por mes">${m.map(x => `<div class="td-b ${x.ym === m.at(-1).ym ? 'is-on' : ''}"><span class="td-v">${x.vendido ? esc(usd(x.vendido).replace(/,00$/, '')) : ''}</span><i style="height:${Math.max(2, Math.round(100 * x.vendido / max))}%"></i><small>${esc(mesNombre(x.ym).slice(0, 3))}</small></div>`).join('')}</div>`;
-  const tabla = `<div class="tw"><table data-xt="vivo"><thead><tr><th>Mes</th><th class="n">Ventas</th><th class="n">Recurrentes</th><th class="n">Vendido</th><th class="n">A cobrar</th><th class="n">Cobrado</th></tr></thead><tbody>${[...m].reverse().map(x => `<tr><td><b>${esc(mesNombre(x.ym))}</b></td><td class="n">${int(x.n)}</td><td class="n">${int(x.recurrentes)}</td><td class="n">${esc(usd(x.vendido))}</td><td class="n">${esc(usd(x.aCobrar))}</td><td class="n">${esc(usd(x.cobrado))}</td></tr>`).join('')}</tbody></table></div>`;
+  const tabla = `<div class="tw"><table data-xt-vivo><thead><tr><th>Mes</th><th class="n">Ventas</th><th class="n">Recurrentes</th><th class="n">Vendido</th><th class="n">A cobrar</th><th class="n">Cobrado</th></tr></thead><tbody>${[...m].reverse().map(x => `<tr><td><b>${esc(mesNombre(x.ym))}</b></td><td class="n">${int(x.n)}</td><td class="n">${int(x.recurrentes)}</td><td class="n">${esc(usd(x.vendido))}</td><td class="n">${esc(usd(x.aCobrar))}</td><td class="n">${esc(usd(x.cobrado))}</td></tr>`).join('')}</tbody></table></div>`;
   return cabeza + vivoTarjetas('tendencias', TD_TARJETAS, TD_DEFECTO, [m], mes) + `<section class="panel pf-sec">${secH('trend', 'Vendido por mes', 'Primer cobro o valor de las ventas registradas de cada mes.')}${barras}</section><section class="panel pf-sec mt">${secH('receipt', 'Mes a mes', 'Ventas, lo que tocaba cobrar y lo cobrado.')}${tabla}</section>`;
 }
 /* ---------- 2.8.12 · Calidad de datos sin reporte: lo que conviene corregir en las ventas registradas ---------- */
@@ -7288,7 +7297,7 @@ function ctVivoHtml() {
   const activa = v => v.sinFin ? v.estado !== 'pagada' : (v.plan || []).some(c => c.estado !== 'pagado' && String(c.fecha) >= hoy.slice(0, 7));
   const filas = prods.map(p => { const l = de(p); return {p, l, act: l.filter(activa).length, mensual: l.filter(v => v.cobro === 'recurrente' && activa(v)).reduce((t, v) => t + (Number(v.monto) || 0) * (FREC_MES[v.frecuencia] || 1), 0)}; }).sort((a, b) => b.l.length - a.l.length);
   return `<section class="panel pf-sec">${secH('receipt', 'Catálogo con lo inscrito', 'Cada producto o servicio con sus ventas registradas: cuántas en total, cuántas siguen activas y lo que suman al mes.')}
-    <div class="tw"><table data-xt="vivo"><thead><tr><th>Producto o servicio</th><th>Rubro</th><th>Cobro</th><th class="n">Precio</th><th class="n">Ventas</th><th class="n">Activas</th><th class="n">Recurrente al mes</th></tr></thead><tbody>${filas.map(x => `<tr><td class="wrap"><b>${esc(x.p.nombre)}</b>${x.p.activo === false ? ' <span class="sc sc-gray">Pausado</span>' : ''}</td><td>${esc(rubro(x.p.rubroId))}</td><td><span class="sc ${COBRO_P[x.p.cobro]?.[1] || 'sc-gray'}">${esc(COBRO_P[x.p.cobro]?.[0] || '—')}</span></td><td class="n">${esc(precioTexto(x.p))}</td><td class="n">${int(x.l.length)}</td><td class="n">${int(x.act)}</td><td class="n">${x.mensual ? esc(usd(x.mensual)) : '—'}</td></tr>`).join('')}</tbody></table></div></section>`;
+    <div class="tw"><table data-xt-vivo><thead><tr><th>Producto o servicio</th><th>Rubro</th><th>Cobro</th><th class="n">Precio</th><th class="n">Ventas</th><th class="n">Activas</th><th class="n">Recurrente al mes</th></tr></thead><tbody>${filas.map(x => `<tr><td class="wrap"><b>${esc(x.p.nombre)}</b>${x.p.activo === false ? ' <span class="sc sc-gray">Pausado</span>' : ''}</td><td>${esc(rubro(x.p.rubroId))}</td><td><span class="sc ${COBRO_P[x.p.cobro]?.[1] || 'sc-gray'}">${esc(COBRO_P[x.p.cobro]?.[0] || '—')}</span></td><td class="n">${esc(precioTexto(x.p))}</td><td class="n">${int(x.l.length)}</td><td class="n">${int(x.act)}</td><td class="n">${x.mensual ? esc(usd(x.mensual)) : '—'}</td></tr>`).join('')}</tbody></table></div></section>`;
 }
 /* ---------- 2.9.1 · Catálogo → Estudiantes ----------
    Cada venta registrada es un estudiante en un programa (también las cargadas por Excel). Su estado (Activo, En pausa,
@@ -7329,13 +7338,13 @@ function estHtml() {
   const filtros = `<section class="panel est-filtros" aria-label="Filtros de estudiantes">
     <label class="fld"><span class="fld-l">N.º de cédula</span><span class="search-in">${icon('search')}<input type="search" inputmode="numeric" data-est-doc value="${esc(f.doc)}" placeholder="Ej.: 12345678" autocomplete="off"></span></label>
     <label class="fld"><span class="fld-l">Vendedor</span><select data-est-vend><option value="">Todos los vendedores</option>${vends.map(x => `<option value="${esc(x)}" ${x === f.vend ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
-    <div class="est-f-acts">${hay ? `<button type="button" class="btn" data-est-limpiar>Quitar filtros</button>` : ''}<button type="button" class="btn btn-cta" data-est-xls ${l.length ? '' : 'disabled'}>${icon('download')}Descargar Excel · ${int(l.length)}</button></div>
+    <div class="est-f-acts">${hay ? `<button type="button" class="btn" data-est-limpiar>Quitar filtros</button>` : ''}<span class="est-n">${int(l.length)} ${l.length === 1 ? 'estudiante' : 'estudiantes'} con estos filtros</span></div>
     <div class="agency-chips est-chips" role="group" aria-label="Estado del estudiante">${chip('', 'Todos', base.length)}${Object.entries(ALUMNO).map(([k, x]) => chip(k, x[2], base.filter(v => estDe(v) === k).length)).join('')}</div>
   </section>`;
   const estadoBtn = v => { const e = estDe(v); return puedeEd ? `<button type="button" class="sc ${ALUMNO[e][1]} est-b" data-est-alumno="${esc(v.id)}" aria-haspopup="true" aria-expanded="false" title="Cambiar estado">${ALUMNO[e][0]}${icon('chev')}</button>` : `<span class="sc ${ALUMNO[e][1]}">${ALUMNO[e][0]}</span>`; };
   const filas = [...l].sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))).map(v => `<tr><td class="wrap"><span class="who-cell"><b>${esc(v.cliente?.nombre || '—')}</b><small>C.I. ${esc(v.cliente?.documento || '—')}</small></span></td><td class="wrap"><span class="who-cell"><b>${esc(v.producto || '—')}</b><small>vende ${esc(estVend(v))} · desde ${esc(vgFecha(v.fecha))}</small></span></td><td class="n">${esc(vgMonto(estValor(v), v.moneda))}</td><td class="n">${estMensual(v) ? esc(vgMonto(estMensual(v), v.moneda)) : '<span class="muted">—</span>'}</td><td>${estadoBtn(v)}</td></tr>`).join('');
   const actL = l.filter(v => estDe(v) === 'activo');
-  const tabla = l.length ? `<div class="tw"><table data-sin-mejorar class="est-t"><thead><tr><th>Estudiante</th><th>Programa</th><th class="n">Valor</th><th class="n">Mensualidad</th><th>Estado</th></tr></thead><tbody>${filas}</tbody>
+  const tabla = l.length ? `<div class="tw"><table class="est-t" data-xt-excel="est" data-xt-vivo data-mejorar><thead><tr><th>Estudiante</th><th>Programa</th><th class="n">Valor</th><th class="n">Mensualidad</th><th>Estado</th></tr></thead><tbody>${filas}</tbody>
     <tfoot><tr><td colspan="2"><b>Total de la vista</b> · ${int(l.length)} ${l.length === 1 ? 'estudiante' : 'estudiantes'} (${int(actL.length)} ${actL.length === 1 ? 'activo' : 'activos'})</td><td class="n"><b>${esc(estPor(l, estValor))}</b></td><td class="n"><b>${esc(estPor(actL, estMensual))}</b><small>de activos</small></td><td></td></tr></tfoot></table></div>`
     : `<p class="empty"><b>${todas.length ? 'Ningún estudiante coincide con los filtros' : 'Todavía no hay estudiantes'}</b>${todas.length ? 'Revisa la cédula o el vendedor, o quita los filtros.' : 'Cada venta registrada (o cargada por Excel en Migración de datos) aparece aquí como un estudiante.'}</p>`;
   const prog = new Map(); base.forEach(v => { const k = v.producto || 'Sin programa'; const p = prog.get(k) || {n: 0, act: 0, rec: {}, mon: v.moneda || 'USD'}; p.n++; if (estDe(v) === 'activo') { p.act++; const m = v.moneda || 'USD'; p.rec[m] = (p.rec[m] || 0) + estMensual(v); } prog.set(k, p); });
@@ -7345,7 +7354,7 @@ function estHtml() {
   const tot = (t, v) => `<div><dt>${t}</dt><dd>${v}</dd></div>`;
   const generales = `<section class="panel pf-sec est-tot">${secH('pie', 'Totales generales', 'Todos los estudiantes, sin filtros.')}
     <dl class="est-tot-g">${tot('Estudiantes', int(todas.length))}${Object.entries(ALUMNO).map(([k, x]) => tot(x[2], int(todas.filter(v => estDe(v) === k).length))).join('')}${tot('Valor de todas las ventas', esc(estPor(todas, estValor)))}${tot('Valor de las ventas activas', esc(estPor(aT, estValor)))}${tot('Recurrencia mensual de activos', esc(estPor(aT, estMensual)) + '/mes')}</dl></section>`;
-  return `<div class="est-v">${kpis}${filtros}<div class="vg-cols est-cols"><section class="panel pf-sec vg-tabla est-tabla">${secH('users', 'Estudiantes', `${int(l.length)} ${l.length === 1 ? 'estudiante' : 'estudiantes'} en la vista${puedeEd ? ' · toca el estado para cambiarlo' : ''}`)}${tabla}</section>${lado}</div>${generales}</div>`;
+  return `<div class="est-v" data-filtros-propios>${kpis}${filtros}<div class="vg-cols est-cols"><section class="panel pf-sec vg-tabla est-tabla">${secH('users', 'Estudiantes', `${int(l.length)} ${l.length === 1 ? 'estudiante' : 'estudiantes'} en la vista${puedeEd ? ' · toca el estado para cambiarlo' : ''}`)}${tabla}</section>${lado}</div>${generales}</div>`;
 }
 function estExcel() {
   const l = [...estFiltradas()].sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
@@ -7360,6 +7369,8 @@ function estExcel() {
   toast(`Descargaste ${int(l.length)} ${l.length === 1 ? 'estudiante' : 'estudiantes'} en ${n}`);
   try { agoraApi('workspace/auditoria', {method: 'POST', body: {accion: 'descargo.excel', detalle: `Estudiantes · ${l.length} filas${sufijo ? ' · ' + sufijo : ''}`}}).catch(() => {}); } catch { /* sin registro */ }
 }
+/* «Excel» de arriba y el de la tabla de Estudiantes bajan lo filtrado, con columnas separadas y totales. */
+window.AgoraXtExcel = Object.assign(window.AgoraXtExcel || {}, {est: estExcel});
 function estMontar(root) {
   const v = root?.querySelector('.est-v'); if (!v) return;
   const foco = sel => { const n = $(sel); if (n) { n.focus(); n.setSelectionRange?.(n.value.length, n.value.length); } };
@@ -7368,7 +7379,6 @@ function estMontar(root) {
   v.querySelector('[data-est-vend]')?.addEventListener('change', e => { EST.f.vend = e.target.value; repaint(); });
   v.querySelectorAll('[data-est-f]').forEach(b => b.onclick = () => { EST.f.estado = b.dataset.estF; repaint(); });
   v.querySelector('[data-est-limpiar]')?.addEventListener('click', () => { EST.f = {doc: '', vend: '', estado: ''}; repaint(); });
-  v.querySelector('[data-est-xls]')?.addEventListener('click', estExcel);
   v.querySelectorAll('[data-est-alumno]').forEach(b => b.onclick = () => {
     const venta = (FA.datos?.items || []).find(x => x.id === b.dataset.estAlumno); if (!venta) return;
     const p = openPop(b, `<p class="xt-pop-h">Estado de ${esc(venta.cliente?.nombre || 'el estudiante')}</p>${Object.entries(ALUMNO).map(([k, x]) => `<button type="button" class="mg-op ${estDe(venta) === k ? 'is-on' : ''}" data-op="${k}"><span class="sc ${x[1]}">${x[0]}</span></button>`).join('')}`, 'xt-pop mg-hpop est-pop', {align: 'right'});
@@ -7502,7 +7512,8 @@ function vgDetalle(id) {
   });
 }
 /* 2.9.1 · Lo que se ve con los filtros puestos (estado y búsqueda): lo usan la tabla y la descarga. */
-const vgFiltradas = () => { const f = VG.filtro, q = norm(f.q || ''); return (VG.datos?.items || []).filter(v => (!f.estado || v.estado === f.estado) && (!q || norm(`${v.cliente?.nombre} ${v.cliente?.documento} ${v.producto} ${v.vendedor}`).includes(q))); };
+const vgVend = v => String(v.vendedor || '').trim() || 'Sin vendedor';
+const vgFiltradas = () => { const f = VG.filtro, q = norm(f.q || ''); return (VG.datos?.items || []).filter(v => (!f.estado || v.estado === f.estado) && (!f.vend || vgVend(v) === f.vend) && (!f.prod || (v.producto || '') === f.prod) && (!q || norm(`${v.cliente?.nombre} ${v.cliente?.documento} ${v.producto} ${v.vendedor}`).includes(q))); };
 function vgCsv() {
   const items = vgFiltradas(); if (!items.length) { toast('No hay ventas con estos filtros para exportar.'); return; }
   const seguro = x => { let t = String(x ?? ''); if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; return /[";\n,]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
@@ -7513,7 +7524,7 @@ function vgCsv() {
 }
 function vgRegistradasHtml() {
   const d = VG.datos;
-  const acts = `<button class="btn" type="button" data-vg-tarjetas>${icon('gear')}Editar tarjetas</button>` + (d?.items?.length ? `<button class="btn" type="button" data-vg-csv>${icon('download')}Exportar CSV</button>` : '');
+  const acts = `<button class="btn" type="button" data-vg-tarjetas>${icon('gear')}Editar tarjetas</button>` ; // 2.9.5: sin «Exportar CSV» aparte: «Excel» → «Descargar lo que ves»
   const cabeza = head('Ventas', 'Ventas registradas', 'Lo que se vende al ganar una oportunidad: cliente, producto, cobros y vendedor, en un solo registro.', acts);
   if (!d) return cabeza + loading();
   const r = d.resumen || {}, mes = typeof mesNombre === 'function' ? mesNombre(VG.mes) : VG.mes;
@@ -7537,9 +7548,14 @@ function vgRegistradasHtml() {
     {k: 'id', l: '', f: id => `<span class="vg-acc"><button class="icon-btn" type="button" data-vg-ver="${esc(id)}" aria-label="Ver cobros" title="Ver cobros">${icon('receipt')}</button>${d.canEdit ? `<button class="icon-btn" type="button" data-vg-editar="${esc(id)}" aria-label="Editar venta" title="Editar venta">${icon('edit')}</button>` : ''}</span>`},
   ];
   const vacio = d.items.length ? '<b>No hay ventas con estos filtros</b>Prueba con otro estado o quita la búsqueda.' : `<b>Todavía no hay ventas registradas en ${esc(mes)}</b>Cuando ganes una oportunidad, se abre el formulario de venta y la venta aparece aquí.`;
-  const tabla = `<section class="panel pf-sec vg-tabla">${secH('receipt', 'Ventas de ' + esc(mes), `${int(items.length)} ${items.length === 1 ? 'venta' : 'ventas'} en la vista`)}
+  const opciones = (l, sel, todos) => `<option value="">${todos}</option>` + [...new Set(l)].filter(Boolean).sort((a, b) => a.localeCompare(b)).map(x => `<option value="${esc(x)}" ${x === sel ? 'selected' : ''}>${esc(x)}</option>`).join('');
+  const hayFiltro = f.estado || f.q || f.vend || f.prod;
+  const tabla = `<section class="panel pf-sec vg-tabla" data-filtros-propios>${secH('receipt', 'Ventas de ' + esc(mes), `${int(items.length)} ${items.length === 1 ? 'venta' : 'ventas'} en la vista`)}
     <div class="vg-tools"><div class="agency-chips" role="group" aria-label="Estado">${chip('', 'Todas', d.items.length)}${chip('al_dia', 'Al día', d.items.filter(v => v.estado === 'al_dia').length)}${chip('vencida', 'Cobro vencido', d.items.filter(v => v.estado === 'vencida').length)}${chip('pagada', 'Pagadas', d.items.filter(v => v.estado === 'pagada').length)}</div>
-      <label class="fld grow vg-buscar"><span class="sr-only">Buscar</span><span class="search-in">${icon('search')}<input type="search" data-vg-q value="${esc(f.q || '')}" placeholder="Cliente, documento, producto o vendedor" autocomplete="off"></span></label></div>
+      <div class="fa-fila"><label class="fld grow vg-buscar"><span class="sr-only">Buscar</span><span class="search-in">${icon('search')}<input type="search" data-vg-q value="${esc(f.q || '')}" placeholder="Cliente, documento, producto o vendedor" autocomplete="off"></span></label>
+      <label class="fld"><span class="sr-only">Vendedor</span><select data-vg-vend>${opciones(d.items.map(vgVend), f.vend, 'Todos los vendedores')}</select></label>
+      <label class="fld"><span class="sr-only">Producto</span><select data-vg-prod>${opciones(d.items.map(v => v.producto), f.prod, 'Todos los productos')}</select></label>
+      ${hayFiltro ? `<button type="button" class="btn btn-sm" data-vg-limpiar>Quitar filtros</button>` : ''}</div></div>
     ${table(cols, items, {empty: vacio})}</section>`;
   const prox = d.proximos || [];
   const cobros = `<section class="panel pf-sec vg-prox">${secH('clock', 'Cobros próximos', 'Lo que vence en los próximos 31 días y lo atrasado.')}
@@ -7551,6 +7567,9 @@ function vgRegistradasMontar(root) {
   root.querySelector('[data-vg-tarjetas]')?.addEventListener('click', () => tarjEditar('ventas', VG_TARJETAS, VG_TARJ_DEFECTO, 'Ventas registradas', repaint));
   if (!TARJ.ventas?.cargado) tarjCargar('ventas').then(() => { if (TARJ.ventas?.mia || TARJ.ventas?.equipo) repaint(); });
   root.querySelectorAll('[data-vg-f]').forEach(b => b.onclick = () => { VG.filtro.estado = b.dataset.vgF; repaint(); });
+  root.querySelector('[data-vg-vend]')?.addEventListener('change', e => { VG.filtro.vend = e.target.value; repaint(); });
+  root.querySelector('[data-vg-prod]')?.addEventListener('change', e => { VG.filtro.prod = e.target.value; repaint(); });
+  root.querySelector('[data-vg-limpiar]')?.addEventListener('click', () => { VG.filtro = {estado: '', q: '', vend: '', prod: ''}; repaint(); });
   const qi = root.querySelector('[data-vg-q]');
   if (qi) qi.oninput = () => { VG.filtro.q = qi.value; clearTimeout(VG.qt); VG.qt = setTimeout(() => { repaint(); const n = $('[data-vg-q]'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 220); };
   root.querySelectorAll('[data-vg-ver]').forEach(b => b.onclick = () => vgDetalle(b.dataset.vgVer));
@@ -8672,7 +8691,7 @@ const TablaEd = {
    * La primera vez que se abre un módulo pide los datos al servidor y, si hay algo que mostrar, repinta.
    */
   preparar(t, {modulo, nombre}) {
-    if (!TE_COLS.includes(modulo) || t.closest('.modal, .scrim, form')) return null;
+    if (!TE_COLS.includes(modulo) || t.closest('.modal, .scrim, form') || t.hasAttribute('data-xt-vivo')) return null; // 2.9.5: las tablas en vivo se calculan, no se editan
     const ths = tablaCabeceras(t); if (ths.length < 2) return null;
     const titulos = ths.map(teTituloTh);
     const reg = teRegistro(t, modulo);
@@ -9218,7 +9237,7 @@ function campanasHtml() {
     const cifra = (l, v) => `<div class="redes-cifra"><span class="redes-cifra-l">${l}</span><strong class="redes-cifra-v">${v}</strong><span class="redes-cifra-d"></span></div>`;
     const ESTADO = {active: ['Activa', 'sc-ok'], paused: ['En pausa', 'sc-gray'], archived: ['Archivada', 'sc-gray'], deleted: ['Borrada', 'sc-gray'], with_issues: ['Con problemas', 'sc-bad'], in_process: ['En proceso', 'sc-info']};
     cuerpo = `<div class="redes-cifras">${cifra('Inversión', plata(t.inversion))}${cifra('Resultados', n(t.resultados))}${cifra('Costo por resultado', plata(t.costoPorResultado))}${cifra('Impresiones', n(t.impresiones))}${cifra('Alcance', n(t.alcance))}${cifra('Clics · CTR', `${n(t.clics)} <small>${pct(t.ctr)}</small>`)}</div>
-      <div class="tw camp-tabla"><table data-xt="vivo"><thead><tr><th>Campaña</th><th>Estado</th><th class="n">Inversión</th><th class="n">Resultados</th><th class="n">Costo por resultado</th><th class="n">Impresiones</th><th class="n">Alcance</th><th class="n">Clics</th><th class="n">CTR</th></tr></thead><tbody>${d.campanas.map(c => {
+      <div class="tw camp-tabla"><table data-xt-vivo><thead><tr><th>Campaña</th><th>Estado</th><th class="n">Inversión</th><th class="n">Resultados</th><th class="n">Costo por resultado</th><th class="n">Impresiones</th><th class="n">Alcance</th><th class="n">Clics</th><th class="n">CTR</th></tr></thead><tbody>${d.campanas.map(c => {
         const [et, tono] = ESTADO[c.estado] || [c.estado ? c.estado : '—', 'sc-gray'];
         return `<tr><td class="wrap"><b>${esc(c.nombre)}</b></td><td><span class="sc ${tono}">${esc(et)}</span></td><td class="n">${plata(c.inversion)}</td><td class="n">${n(c.resultados)}</td><td class="n">${plata(c.costoPorResultado)}</td><td class="n">${n(c.impresiones)}</td><td class="n">${n(c.alcance)}</td><td class="n">${n(c.clics)}</td><td class="n">${pct(c.ctr)}</td></tr>`;
       }).join('')}</tbody></table></div>

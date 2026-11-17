@@ -514,3 +514,4 @@ a.inicio-resumen-c:hover .inicio-resumen-l .ic{opacity:.9;transform:translateX(2
   .inicio-resumen-v{grid-column:auto;grid-row:auto;font-size:24px;text-align:left}
   .inicio-resumen-d{grid-column:auto}
 }
+.est-n{align-self:center;font-size:13px;color:var(--muted)}

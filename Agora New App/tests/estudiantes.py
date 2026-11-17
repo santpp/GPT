@@ -49,8 +49,9 @@ with sync_playwright() as p:
     pg.select_option('[data-est-vend]', elegido); pg.wait_for_timeout(800)
     filas = pg.locator('.est-t tbody tr').count()
     check(filas == n, f'filtro por vendedor: {filas} filas = {n}')
-    check(f'· {n}' in pg.locator('[data-est-xls]').inner_text(), 'el botón dice cuántas bajan')
-    with pg.expect_download() as dl: pg.click('[data-est-xls]')
+    check(f'{n} ' in pg.locator('.est-n').inner_text(), 'dice cuántos estudiantes quedan con los filtros')
+    pg.click('.mg-hbtn');pg.wait_for_selector('.mg-hpop [data-op=vista]')
+    with pg.expect_download() as dl: pg.click('.mg-hpop [data-op=vista]')
     ruta = dl.value.path(); r = filas_xlsx(ruta)
     check(r == n + 1 + 3, f'Excel trae solo lo filtrado: {r - 4} de {len(items)} (encabezado + {n} + totales)')
     # Cédula

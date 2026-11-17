@@ -1,5 +1,13 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.9.5 · Las mismas herramientas en todas las tablas (Ventas y facturación primero):**
+- **Un solo botón «Excel» arriba, con el mismo menú en todas las vistas:** Descargar lo que ves (solo lo filtrado) · Descargar todo · Descargar plantilla · Cargar desde Excel · Ajustar columnas. Cada opción aparece si la vista la admite y si tu rol puede usarla. Ahora también está en Facturación y Catálogo.
+- **Sin botones CSV sueltos** («Descargar CSV», «Exportar CSV», «Descargar Excel · N» de Estudiantes): todo sale por «Excel».
+- **Todas las tablas traen su barra «Columnas» y «Excel»**, también las que se arman con los datos en vivo (Facturación sin reporte, Gestión Comercial, Equipo, Tendencias, Catálogo sin reporte, campañas) y la de Estudiantes. En esas tablas calculadas no hay «Agregar manual».
+- **Sin buscadores repetidos:** si la vista ya tiene sus filtros arriba, la tabla no trae otro buscador.
+- **Ventas registradas: filtros Vendedor y Producto** (como Facturación) y «Quitar filtros». La descarga respeta todos los filtros.
+- Prueba nueva: `tests/herramientas.py` (29).
+
 **Novedades 2.9.4 · Menú principal (Inicio):**
 - **Encabezado en una franja:** «[logo] Ágora Digital App / Hola, nombre», con el logo de la empresa a la derecha si lo tiene. Debajo, en una línea: «Elige un módulo… · 5 módulos · 25 herramientas».
 - **«Ir a Dashboard»** en lugar de «Ver el tablero completo» (en el teléfono, «Dashboard»). Lleva al Tablero comercial.
