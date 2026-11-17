@@ -247,3 +247,4 @@ html[data-theme="dark"] img.brand-logo,html[data-theme="dark"] img.brand-dot{fil
 html[data-theme="dark"] .live-file{background:#1d1f2b}html[data-theme="dark"] .snip-list button:hover,html[data-theme="dark"] .snip-list button:focus-visible{background:#1d1f2b}
 html[data-theme="dark"] .live-file.error{background:#3a1622;border-color:#3a1622}
 html[data-theme="dark"] .snip-field{background:#1d1f2b}html[data-theme="dark"] .snip-edit:hover{background:#1d1f2b}
+html[data-theme="dark"] .board-tile.is-link:hover,html[data-theme="dark"] .board-stage.is-link:hover{border-color:#fabd4b}

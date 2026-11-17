@@ -91,6 +91,35 @@ final class ContactDirectory {
         ]+$base;
     }
 
+    /**
+     * 1.10.19 · Los contactos creados en un periodo (hoy; también 7 o 30 días), por fecha de alta en la cuenta,
+     * del más nuevo al más viejo. Quien sólo ve lo suyo recibe solo los suyos (si la cuenta ignora el filtro, se descartan los ajenos).
+     */
+    public function recientes(array $connection,?string $search,array $membership,string $since,string $zone,int $page=1):array {
+        $query=self::search($search);$page=max(1,min(self::MAX_PAGE,$page));
+        $restricted=($membership['capabilities']['assignedDataOnly']??false)===true;
+        $assignee=$restricted&&is_string($membership['external_user_id']??null)?$membership['external_user_id']:null;
+        $tz=new DateTimeZone($zone);
+        $first=(new DateTimeImmutable('today',$tz))->modify(['hoy'=>'+0 days','7d'=>'-6 days','30d'=>'-29 days'][$since]??'+0 days');
+        $start=$first->setTimezone(new DateTimeZone('UTC'));$end=(new DateTimeImmutable('tomorrow',$tz))->setTimezone(new DateTimeZone('UTC'));
+        $filters=[['field'=>'dateAdded','operator'=>'range','value'=>['gt'=>$start->format('Y-m-d\TH:i:s\Z'),'lt'=>$end->format('Y-m-d\TH:i:s\Z')]]];
+        if($restricted){if($assignee===null)return ['items'=>[],'total'=>0,'query'=>$query,'restricted'=>true,'partial'=>false,'page'=>$page,'hasMore'=>false,'exact'=>true,'since'=>$since];$filters[]=['field'=>'assignedTo','operator'=>'eq','value'=>$assignee];}
+        $sort=[['field'=>'dateAdded','direction'=>'desc']];
+        $data=$this->gateway->execute($connection,function(GhlClient $client)use($connection,$filters,$page,$query,$sort):array{
+            try {return $client->searchContacts($connection['location_id'],$filters,$page,self::LIMIT,$query,$sort);}
+            catch(GhlApiException $e){if(in_array($e->status,[400,422],true))return $client->searchContacts($connection['location_id'],$filters,$page,self::LIMIT,$query,null);throw $e;}
+        },false);
+        $contacts=$data['contacts']??null;
+        if(!is_array($contacts)||!array_is_list($contacts))throw new RuntimeException('Invalid contacts response');
+        $items=$this->normalize($connection,$contacts);
+        $desde=$start->getTimestamp();
+        $items=array_values(array_filter($items,fn(array $r):bool=>($assignee===null||$r['assignedTo']===$assignee)&&(!is_string($r['dateAdded'])||strtotime($r['dateAdded'])===false||strtotime($r['dateAdded'])>=$desde)));
+        $total=$data['total']??($data['meta']['total']??null);$total=is_numeric($total)?(int)$total:(($page-1)*self::LIMIT+count($items));
+        return ['items'=>array_map(fn(array $row):array=>$row+['assignedName'=>$this->member($connection,$row['assignedTo'])],$items),
+            'total'=>$total,'query'=>$query,'restricted'=>$restricted,'partial'=>$total>$page*self::LIMIT,'page'=>$page,
+            'hasMore'=>$page<self::MAX_PAGE&&$total>$page*self::LIMIT,'exact'=>true,'since'=>$since];
+    }
+
     private function fetch(array $connection,?string $query):array {
         $data=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->locationContacts($connection['location_id'],$query,self::LIMIT),false);
         $contacts=$data['contacts']??null;

@@ -26,6 +26,7 @@ export async function renderContacts(container){
   container.innerHTML=`<div class="records-layout" id="records-layout">
    <div class="records-list">
     <div class="live-toolbar"><label class="search"><span aria-hidden="true">⌕</span><input id="contact-search" type="search" placeholder="Buscar por nombre, correo o teléfono" aria-label="Buscar contactos"></label></div>
+    <div class="tabs contact-tabs" role="group" aria-label="Qué contactos ver"><button type="button" data-contact-since="" class="active" aria-pressed="true">Todos</button><button type="button" data-contact-since="hoy" aria-pressed="false">Creados hoy</button></div>
     <p id="contact-feedback" class="live-feedback" role="status"></p>
     <div id="contact-results" role="list">${skeleton('list',7)}</div>
    </div>
@@ -34,6 +35,9 @@ export async function renderContacts(container){
   const $=s=>container.querySelector(s);
   const layout=$('#records-layout');
   let timer=null,generation=0,selected=null;
+  // 1.10.19 · «Creados hoy»: por fecha de alta en la cuenta y en la hora del dispositivo. El Tablero puede abrir Contactos ya filtrado.
+  let since='';if(workspace.pendingFilter==='created-today'){since='hoy';workspace.pendingFilter=null}
+  const zone=(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}catch{return 'UTC'}})();
 
   function rows(items){
     return items.map(c=>`<button class="record-row${c.id===selected?' selected':''}" data-contact="${esc(c.id)}" role="listitem">
@@ -45,6 +49,8 @@ export async function renderContacts(container){
   const loadTags=()=>request(`workspace/tags?connectionId=${encodeURIComponent(connection)}`).then(r=>asList(r.items));
   let shown=[],page=1;
   const describe=(data,search)=>{
+    if(since&&!data.total)return search?'Ningún contacto creado hoy coincide con esa búsqueda.':(data.restricted?'Hoy no se creó ningún contacto asignado a ti.':'Hoy no se creó ningún contacto.');
+    if(since){const n=data.total;return `${n} contacto${n===1?'':'s'} creado${n===1?'':'s'} hoy${data.restricted?' asignado'+(n===1?'':'s')+' a ti':''}${search?' que coinciden':''} · los más nuevos primero`}
     if(!data.total)return search?'Ningún contacto coincide con esa búsqueda.':(data.restricted?'Todavía no tienes contactos asignados.':'Esta cuenta todavía no tiene contactos.');
     const n=data.total,word=`${n} contacto${n===1?'':'s'}`;
     if(data.restricted&&data.exact)return `${word} asignado${n===1?'':'s'} a ti${search?' que coinciden':''}${shown.length<n?` · se muestran ${shown.length}, los más recientes primero`:''}`;
@@ -62,7 +68,7 @@ export async function renderContacts(container){
     const version=++generation;
     if(next===1){$('#contact-feedback').textContent='';if(!$('#contact-results').children.length||$('#contact-results .sk-wrap'))$('#contact-results').innerHTML=skeleton('list',7);}
     try{
-      const data=await request(`workspace/contacts?connectionId=${encodeURIComponent(connection)}${search?'&query='+encodeURIComponent(search):''}${next>1?'&page='+next:''}`);
+      const data=await request(`workspace/contacts?connectionId=${encodeURIComponent(connection)}${search?'&query='+encodeURIComponent(search):''}${since?'&since='+since+'&tz='+encodeURIComponent(zone):''}${next>1?'&page='+next:''}`);
       if(!active()||version!==generation)return;
       const items=asList(data.items);
       if(next===1)shown=items;else{const seen=new Set(shown.map(c=>c.id));shown=shown.concat(items.filter(c=>!seen.has(c.id)))}
@@ -167,6 +173,10 @@ export async function renderContacts(container){
   }
 
   // The term is only sent once typing settles, so a search costs one read.
+  const tabs=[...container.querySelectorAll('[data-contact-since]')];
+  const markTabs=()=>tabs.forEach(b=>{const on=b.dataset.contactSince===since;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on))});
+  markTabs();
+  tabs.forEach(b=>b.onclick=()=>{if(since===b.dataset.contactSince)return;since=b.dataset.contactSince;markTabs();load(searchText($('#contact-search').value))});
   $('#contact-search').oninput=e=>{clearTimeout(timer);const value=searchText(e.target.value);timer=setTimeout(()=>load(value),450)};
   container.agoraLiveDispose=()=>{clearTimeout(timer);container.agoraViewInstance=null};
   await load();

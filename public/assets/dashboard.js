@@ -71,8 +71,10 @@ function origin(month,word){
     ${row('Metas y costos fijos: ','los escribes tú en «Cifras del mes»; se guardan por subcuenta y por mes.')}
   </ul></details>`;
 }
-function tile(label,value,note){
-  return `<div class="board-tile"><span>${esc(label)}</span><strong>${value===null||value===undefined?'—':esc(value)}</strong>${note?`<small>${typeof note==='object'?note.html:esc(note)}</small>`:''}</div>`;
+function tile(label,value,note,go=null){
+  const inner=`<span>${esc(label)}${go?'<i class="board-tile-go" aria-hidden="true">›</i>':''}</span><strong>${value===null||value===undefined?'—':esc(value)}</strong>${note?`<small>${typeof note==='object'?note.html:esc(note)}</small>`:''}`;
+  // 1.10.19 · Cada cifra lleva a su módulo, ya filtrado, si la persona puede verlo.
+  return go?`<button type="button" class="board-tile is-link" data-go='${esc(JSON.stringify(go))}' aria-label="${esc(label)}: ver el detalle">${inner}</button>`:`<div class="board-tile">${inner}</div>`;
 }
 
 /**
@@ -208,12 +210,15 @@ export async function renderDashboard(container){
     const read=data.readAt?new Date(data.readAt).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):'';
     const feedback=$('#dashboard-feedback');feedback.hidden=false;feedback.innerHTML=`<span>${data.restricted?(read?`Actualizado a las ${read}`:''):`Cifras de la cuenta${read?` · actualizado a las ${read}`:''}`}</span>`;feedback.hidden=data.restricted&&!read;
     const unread=data.conversations?.unread??0;
+    // A dónde lleva cada cifra: solo a módulos que esta persona puede ver (los datos ya vienen según sus permisos).
+    const caps=workspace.me?.user?.capabilities||{},can=k=>caps[k]!==false;
+    const inbox=f=>can('viewConversations')?{view:'inbox',filter:f}:null,people=f=>can('viewContacts')?{view:'contacts',filter:f}:null,deals=t=>can('viewOpportunities')?{view:'board',tab:t}:null;
     const tiles=[
-      tile('Conversaciones',number(data.conversations?.total??0)),
-      tile('Sin leer',number(unread)),
-      ...(data.conversations?.waiting!==undefined?[tile('Esperando respuesta',number(data.conversations.waiting),{html:'<button type="button" class="link-button" data-go-waiting>Ver la lista</button>'})]:[]),
-      ...(data.contacts!==null&&data.contacts!==undefined?[tile('Contactos',number(data.contacts))]:[]),
-      ...(data.opportunities?[tile('Oportunidades abiertas',number(data.opportunities.count),`${money(data.opportunities.value)} en juego`)]:[]),
+      tile('Conversaciones',number(data.conversations?.total??0),'',inbox('all')),
+      tile('Sin leer',number(unread),'',inbox('unread')),
+      ...(data.conversations?.waiting!==undefined?[tile('Esperando respuesta',number(data.conversations.waiting),'El cliente escribió último',inbox('waiting'))]:[]),
+      ...(data.contacts!==null&&data.contacts!==undefined?[tile('Contactos',number(data.contacts),'',people(null))]:[]),
+      ...(data.opportunities?[tile('Oportunidades abiertas',number(data.opportunities.count),`${money(data.opportunities.value)} en juego`,deals('open'))]:[]),
     ].join('');
     // Lo del día y lo de cada quien. Si falta un dato, el recuadro dice por qué.
     const leads=data.leads||null;const sales=month&&!month.error?month.sales:null;const mine=month&&!month.error?month.mine:null;
@@ -221,13 +226,13 @@ export async function renderDashboard(container){
     const isOwner=workspace.me?.user?.role==='administrator'&&workspace.me?.user?.identity_type==='native';
     const unlinked=isOwner?{html:'<button type="button" class="link-button" data-self>Elegir quién soy</button>'}:'Usa en Ágora el mismo correo que en la cuenta';
     const personal=[
-      ...(leads&&!data.restricted?[tile(sel.kind==='today'?'Leads de hoy':sel.kind==='yesterday'?'Leads de ayer':'Leads nuevos',leads.today===null||leads.today===undefined?null:number(leads.today),leads.today===null||leads.today===undefined?'La cuenta no devolvió este dato':(['today','yesterday'].includes(sel.kind)?'':range.label))]:[]),
-      ...(leads?[tile(sel.kind==='today'?'Mis leads de hoy':sel.kind==='yesterday'?'Mis leads de ayer':'Mis leads nuevos',leads.mine===null||leads.mine===undefined?null:number(leads.mine),leads.linked?(leads.mine===null||leads.mine===undefined?'La cuenta no devolvió este dato':(['today','yesterday'].includes(sel.kind)?'':range.label)):unlinked)]:[]),
-      ...(sales&&!data.restricted?[tile('Ventas ganadas del mes',number(sales.closings??0),`${money(sales.total??0)} en total`)]:[]),
-      ...(month&&!month.error?[tile('Mis ventas del mes',mine?number(mine.closings):null,mine?`${money(mine.sold)} ganados`:unlinked)]:[]),    ].join('');
+      ...(leads&&!data.restricted?[tile(sel.kind==='today'?'Leads de hoy':sel.kind==='yesterday'?'Leads de ayer':'Leads nuevos',leads.today===null||leads.today===undefined?null:number(leads.today),leads.today===null||leads.today===undefined?'La cuenta no devolvió este dato':(['today','yesterday'].includes(sel.kind)?'':range.label),sel.kind==='today'?people('created-today'):null)]:[]),
+      ...(leads?[tile(sel.kind==='today'?'Mis leads de hoy':sel.kind==='yesterday'?'Mis leads de ayer':'Mis leads nuevos',leads.mine===null||leads.mine===undefined?null:number(leads.mine),leads.linked?(leads.mine===null||leads.mine===undefined?'La cuenta no devolvió este dato':(['today','yesterday'].includes(sel.kind)?'':range.label)):unlinked,leads.linked&&sel.kind==='today'?people('created-today'):null)]:[]),
+      ...(sales&&!data.restricted?[tile('Ventas ganadas del mes',number(sales.closings??0),`${money(sales.total??0)} en total`,deals('won'))]:[]),
+      ...(month&&!month.error?[tile('Mis ventas del mes',mine?number(mine.closings):null,mine?`${money(mine.sold)} ganados`:unlinked,mine?deals('won'):null)]:[]),    ].join('');
     const stages=data.opportunities?asList(data.opportunities.stages):[];
     const stageList=stages.length
-      ? `<div class="dashboard-stages">${stages.map(stage=>`<article class="board-stage"><h3>${esc(stage.name)}</h3><p>${number(stage.count)} oportunidad${stage.count===1?'':'es'}</p><strong>${esc(money(stage.value))}</strong></article>`).join('')}</div>`
+      ? `<div class="dashboard-stages">${stages.map(stage=>can('viewOpportunities')?`<button type="button" class="board-stage is-link" data-go='${esc(JSON.stringify({view:'board',tab:'open'}))}' aria-label="${esc(stage.name)}: ver en Oportunidades"><h3>${esc(stage.name)}</h3><p>${number(stage.count)} oportunidad${stage.count===1?'':'es'}</p><strong>${esc(money(stage.value))}</strong></button>`:`<article class="board-stage"><h3>${esc(stage.name)}</h3><p>${number(stage.count)} oportunidad${stage.count===1?'':'es'}</p><strong>${esc(money(stage.value))}</strong></article>`).join('')}</div>`
       : '<p class="board-empty">Todavía no hay oportunidades abiertas en esta cuenta.</p>';
     $('#dashboard-body').innerHTML=`<section class="board-block">
         ${personal?`<div class="dashboard-tiles personal-tiles">${personal}</div>`:''}
@@ -241,7 +246,9 @@ export async function renderDashboard(container){
     paintWonTeam();
     bindMonth();
     container.querySelectorAll('[data-self]').forEach(b=>b.onclick=selfDialog);
-    container.querySelectorAll('[data-go-waiting]').forEach(b=>b.onclick=()=>window.dispatchEvent(new CustomEvent('agora:goto',{detail:{view:'inbox',filter:'waiting'}})));
+    container.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{let go;try{go=JSON.parse(b.dataset.go)}catch{return}
+      if(go.tab)workspace.pendingOppTab=go.tab==='won'?'won':'funnels';
+      window.dispatchEvent(new CustomEvent('agora:goto',{detail:{view:go.view,filter:go.filter||null}}))});
   }
 
   function monthBlock(month){
