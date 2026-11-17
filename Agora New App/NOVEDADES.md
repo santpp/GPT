@@ -1,5 +1,13 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.9.4 · Menú principal (Inicio):**
+- **Encabezado en una franja:** «[logo] Ágora Digital App / Hola, nombre», con el logo de la empresa a la derecha si lo tiene. Debajo, en una línea: «Elige un módulo… · 5 módulos · 25 herramientas».
+- **«Ir a Dashboard»** en lugar de «Ver el tablero completo» (en el teléfono, «Dashboard»). Lleva al Tablero comercial.
+- **Cifras del «Resumen de hoy» iguales en cualquier pantalla:** título con flecha, número grande debajo y una línea de detalle. En el teléfono, dos por fila.
+- **Todo se puede tocar:** en cada tarjeta de módulo, las etiquetas de sus herramientas (Ventas, Facturación, Contactos…) llevan directo a esa herramienta; el resto de la tarjeta, al módulo.
+- Quedan para después (a pedido): cuatro cifras por fila y la separación con la barra superior.
+- Prueba nueva: `tests/menu-principal.py` (14).
+
 **Novedades 2.9.3:**
 - **Ícono de la pestaña (favicon) de Ágora Mobile.** El que traía el ERP era un ícono ajeno que venía en los archivos originales; ahora es el mismo de Ágora Mobile, también en la raíz del sitio (`/favicon.ico`).
 

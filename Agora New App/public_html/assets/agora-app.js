@@ -1508,24 +1508,25 @@ document.addEventListener('click', e => {
 function moduloTile(g, ids, i) {
   const G = GRUPOS[g], habil = ids.filter(moduleAllowed).length;
   const badge = ids.reduce((t, id) => t + (moduleAllowed(id) ? Number(MODS[id].n?.() || 0) : 0), 0);
-  return `<a class="mod-tile" href="${href('/modulos/' + G.slug)}" style="--module-color:${G.c};--card-order:${i}">
+  /* 2.9.4 · Toda la tarjeta lleva al módulo (enlace que la cubre) y cada etiqueta, directo a su herramienta. */
+  return `<div class="mod-tile" style="--module-color:${G.c};--card-order:${i}">
+    <a class="mod-tile-link" href="${href('/modulos/' + G.slug)}" aria-label="Entrar a ${esc(G.name)}"></a>
     <span class="mod-tile-ic">${icon(G.icon)}</span>${badge ? `<span class="operation-badge">${int(badge)}</span>` : ''}
     <span class="mod-tile-tx"><h3>${esc(G.name)}</h3><p>${esc(G.desc)}</p></span>
-    <span class="mod-tile-subs">${ids.map(id => `<span>${esc(MODS[id].name)}</span>`).join('')}</span>
+    <span class="mod-tile-subs">${ids.map(id => moduleAllowed(id) ? `<a href="${href(MODS[id].path)}">${esc(MODS[id].name)}</a>` : `<span title="Sin acceso">${esc(MODS[id].name)}</span>`).join('')}</span>
     <span class="mod-tile-ft"><span>${ids.length} ${ids.length === 1 ? 'submódulo' : 'submódulos'}${habil < ids.length ? ` · ${habil} habilitados` : ''}</span><span class="mod-tile-go">Entrar ${icon('chevR')}</span></span>
-  </a>`;
+  </div>`;
 }
 /* Marca del Inicio de subcuenta (2.1.10): logo de Ágora + logo de la empresa dueña de la subcuenta, lado a lado
    y a la misma altura óptica. El logo sale solo de Identidad del espacio (ESPACIO.logo); mientras no haya uno,
    se muestra la inicial y el nombre de la empresa en su lugar. */
-function marcaInicio(account) {
+function marcaInicio(account, saludo = '') {
   const nombre = ESPACIO?.nombre || 'la empresa';
   const logo = typeof ESPACIO?.logo === 'string' && /^(data:image\/|\/assets\/|https:\/\/)/.test(ESPACIO.logo) ? ESPACIO.logo : '';
   /* Sin logo cargado solo se ve la marca Ágora: el nombre o el código de la subcuenta nunca acompañan a la marca. */
-  if (!logo) return `<div class="home-brand home-brand-duo is-solo" aria-label="Ágora Digital App"><span class="home-brand-logo">${LOGO}</span></div>`;
-  return `<div class="home-brand home-brand-duo" aria-label="Ágora Digital App">
-    <span class="home-brand-logo">${LOGO}</span><span class="home-brand-sep" aria-hidden="true"></span><span class="home-brand-client"><img src="${esc(logo)}" alt="Logo de ${esc(nombre)}" decoding="async"></span>
-  </div>`;
+  const ag = `<span class="home-brand-logo">${LOGO}<small class="home-brand-app">Digital App</small></span>`;
+  if (!logo) return `<div class="home-brand home-brand-duo is-solo">${ag}${saludo}</div>`;
+  return `<div class="home-brand home-brand-duo">${ag}${saludo}<span class="home-brand-client"><img src="${esc(logo)}" alt="Logo de ${esc(nombre)}" decoding="async"></span></div>`;
 }
 V.centro = {
   render() {
@@ -1533,7 +1534,8 @@ V.centro = {
     const name = String(AGORA_ME?.user?.name || ME?.nombre || 'equipo').split(' ')[0];
     const account = ws?.name() || ESPACIO?.nombre || 'Tu subcuenta';
     try { localStorage.removeItem('agora_ultima_cuenta'); } catch { /* modo privado */ }
-    const content = `<div class="operations-home home-v2"><header class="operations-heading">${marcaInicio(account)}<h1>Hola, <em>${esc(name)}</em></h1><p class="operations-lede">Elige un módulo para ver sus herramientas.</p><p class="launch-summary"><strong>${grupos.length} módulos</strong> · ${ids.length} herramientas a tu alcance.</p></header>${tableroInicioHtml()}${launcherRecent()}
+    /* 2.9.4 · Encabezado en una franja: «Ágora Digital App / Hola, nombre», con el logo de la empresa a la derecha si lo tiene. */
+    const content = `<div class="operations-home home-v2"><header class="operations-heading home-franja">${marcaInicio(account, `<span class="home-franja-sep" aria-hidden="true">/</span><h1>Hola, <em>${esc(name)}</em></h1>`)}<p class="operations-lede home-franja-lede">Elige un módulo para ver sus herramientas · <strong>${grupos.length} módulos</strong> · ${ids.length} herramientas a tu alcance.</p></header>${tableroInicioHtml()}${launcherRecent()}
       <section class="operations-group" aria-labelledby="group-modulos"><h2 id="group-modulos">Módulos<span>${grupos.length}</span></h2><div class="mod-tiles">${grupos.map(([g, x], i) => moduloTile(g, x, i)).join('')}</div></section></div>`;
     return launcherFrame('centro', content);
   }
@@ -4063,7 +4065,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.9.3').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.9.4').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -5483,7 +5485,7 @@ function tableroInicioHtml() {
   /* 2.6.1 · un solo tablero: Inicio muestra el resumen de hoy (tres cifras reales) y lleva a ARP Comercial. */
   if (MODS.comercial && moduleAllowed('comercial') && !moduloOculto('comercial')) {
     const mio = !!ESPACIO?.permisos?.soloAsignado;
-    return `<section class="tb-inicio inicio-resumen" aria-labelledby="inicio-resumen-t"><header class="inicio-resumen-h"><h2 id="inicio-resumen-t">${mio ? 'Lo tuyo hoy' : 'Resumen de hoy'}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-ir-editar>${icon('gear')}Elegir cifras</button><a class="inicio-resumen-ver" href="${href(MODS.comercial.path)}">Ver el tablero completo${icon('chevR')}</a></span></header>
+    return `<section class="tb-inicio inicio-resumen" aria-labelledby="inicio-resumen-t"><header class="inicio-resumen-h"><h2 id="inicio-resumen-t">${mio ? 'Lo tuyo hoy' : 'Resumen de hoy'}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-ir-editar>${icon('gear')}Elegir cifras</button><a class="inicio-resumen-ver" href="${href(MODS.comercial.path)}" aria-label="Ir a Dashboard"><span class="ir-largo">Ir a Dashboard</span><span class="ir-corto">Dashboard</span>${icon('chevR')}</a></span></header>
       <div class="inicio-resumen-g">${iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO))}</div></section>`;
   }
   const c = tbConfig(); if (!c.visible) return '';
@@ -6981,7 +6983,7 @@ const INI_TARJETAS = {
 const INI_DEFECTO = ['sinleer', 'espera', 'opp'];
 /* 2.8.16 · cada cifra lleva a su módulo (con el filtro puesto cuando el módulo lo admite), si la persona puede abrirlo. */
 const iniDestino = id => { const r = INI_TARJETAS[id]?.ir; return r && MODS[r.mod] && moduleAllowed(r.mod) ? r : null; };
-const iniCifras = ids => ids.length ? ids.map(id => { const r = iniDestino(id), dentro = `<span class="inicio-resumen-l">${esc(INI_TARJETAS[id].t)}${r ? icon('chevR') : ''}</span><strong class="inicio-resumen-v"><span class="sk w40"></span></strong><span class="inicio-resumen-d"><span class="sk w60"></span></span>`;
+const iniCifras = ids => ids.length ? ids.map(id => { const r = iniDestino(id), dentro = `<span class="inicio-resumen-l">${esc(INI_TARJETAS[id].t)}${r ? icon('chevR') : '<span class="ic" aria-hidden="true"></span>'}</span><strong class="inicio-resumen-v"><span class="sk w40"></span></strong><span class="inicio-resumen-d"><span class="sk w60"></span></span>`;
   return r ? `<a class="inicio-resumen-c is-link" data-ir="${id}" data-ir-go="${id}" href="${href(MODS[r.mod].path)}" title="${esc(r.ayuda)}" aria-label="${esc(INI_TARJETAS[id].t)}: ${esc(r.ayuda)}">${dentro}</a>` : `<div class="inicio-resumen-c" data-ir="${id}">${dentro}</div>`; }).join('') : '<p class="inicio-resumen-x">No elegiste cifras. Usa «Elegir cifras» para agregar alguna.</p>';
 /* Catálogo de tarjetas de Ventas registradas: cada una se calcula con las ventas del mes que ya están en pantalla. */
 const vgSuma = (items, fn) => items.reduce((o, v) => { const n = Number(fn(v)) || 0; if (n) o[v.moneda || 'USD'] = (o[v.moneda || 'USD'] || 0) + n; return o; }, {});
@@ -8145,7 +8147,7 @@ async function inicioResumenLlenar(box, epoch) {
   ]);
   if (epoch !== NAV_EPOCH || !box.isConnected) return;
   const datos = {dash, dia, tareas, won};
-  if (!Object.values(datos).some(Boolean)) { box.querySelector('.inicio-resumen-g').innerHTML = '<p class="inicio-resumen-x">No se pudieron leer las cifras de hoy. Ábrelas en el tablero completo.</p>'; return; }
+  if (!Object.values(datos).some(Boolean)) { box.querySelector('.inicio-resumen-g').innerHTML = '<p class="inicio-resumen-x">No se pudieron leer las cifras de hoy. Ábrelas en el Dashboard.</p>'; return; }
   ids.forEach(id => {
     const c = box.querySelector(`[data-ir="${id}"]`); if (!c) return;
     const x = INI_TARJETAS[id], d = datos[x.fuente]; let v = ['—', 'Sin dato por ahora'];

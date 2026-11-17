@@ -67,13 +67,13 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | N.º | Qué falta | Por qué importa |
 |---|---|---|
 | 11 | Probar las escrituras con la cuenta real: enviar un mensaje, asignar una conversación, editar un contacto, mover y crear una oportunidad, marcar ganada, crear, corregir y completar una tarea, crear un contacto nuevo, abrir Redes y anuncios y ver sus cifras, y ver las campañas de Meta del mes. | Las atiende el mismo código de Ágora Mobile 1.10.14, pero en esta app solo se probaron contra una cuenta simulada; desde el entorno de desarrollo no hay salida a la cuenta real. |
-| 12 | Confirmar el error 2 en tests después de subir la 2.9.3. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
+| 12 | Confirmar el error 2 en tests después de subir la 2.9.4. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
 | 13 | Cabeceras de seguridad en OpenLiteSpeed. | OpenLiteSpeed no aplica las líneas `Header` del `.htaccess`; van en el vHost (paso 9 de la guía). |
 | 14 | (Resuelto en 2.5.0) La bandeja usaba el código de una versión anterior de Ágora Mobile. | Bandeja, Contactos y Embudos ya llevan lo de la 1.10.14. |
 
 ## Cómo comprobar la versión instalada
 
-- `https://TU-DOMINIO/api/health` debe decir `"version":"2.9.3"`.
+- `https://TU-DOMINIO/api/health` debe decir `"version":"2.9.4"`.
 - `https://TU-DOMINIO/version.json` debe decir lo mismo.
 - Si una pantalla se ve rara tras actualizar: recarga una vez. Si sigue, en Chrome toca el icono a la izquierda de la dirección → Configuración del sitio → Borrar datos, y vuelve a entrar.
 

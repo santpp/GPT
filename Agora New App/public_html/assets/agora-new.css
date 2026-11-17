@@ -470,3 +470,47 @@ a.inicio-resumen-c:hover .inicio-resumen-l .ic{opacity:.9;transform:translateX(2
 .est-t td.n { white-space: nowrap; }
 .est-cols { grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); }
 @media (max-width: 1180px) { .est-cols { grid-template-columns: 1fr; } }
+
+/* 2.9.4 · Menú principal: franja «Ágora Digital App / Hola, nombre», tarjetas con enlaces a cada herramienta, cifras iguales */
+.home-franja .home-brand{flex-wrap:wrap;align-items:center;gap:10px 14px;margin:0 0 6px}
+.home-franja .home-brand-logo{display:inline-flex;align-items:center;gap:8px}
+.home-franja .home-brand-duo{--brand-h:40px}
+.home-brand-app{font:600 14px/1 var(--font-text);color:var(--muted);white-space:nowrap}
+.home-franja-sep{font:300 34px/1 var(--font-display);color:var(--line-2,var(--line))}
+.home-franja h1{margin:0;font:700 30px/1.15 var(--font-display);letter-spacing:-.01em}
+.home-franja .home-brand-client{margin-left:auto}
+.home-franja-lede{margin:0 0 20px;font-size:14px;color:var(--muted)}
+.home-franja-lede strong{color:var(--ink)}
+@media(max-width:600px){
+  .home-franja .home-brand-duo{--brand-h:32px}
+  .home-franja-sep{font-size:26px}
+  .home-franja h1{font-size:23px}
+  .home-franja .home-brand-client{margin-left:0;flex-basis:100%}
+  .home-franja-lede{font-size:13px}
+}
+.mod-tile-link{position:absolute;inset:0;z-index:1;border-radius:inherit}
+.mod-tile-link:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.mod-tile:focus-within{box-shadow:var(--shadow-lift)}
+.mod-tile-subs{position:relative;z-index:2}
+.mod-tile-subs a,.mod-tile-subs span{padding:4px 9px;border-radius:99px;background:var(--fill);font-size:12px;color:var(--ink-2);text-decoration:none}
+.mod-tile-subs a:hover,.mod-tile-subs a:focus-visible{background:color-mix(in srgb,var(--module-color) 16%,var(--fill));color:var(--ink);outline:none;box-shadow:0 0 0 2px color-mix(in srgb,var(--module-color) 45%,transparent)}
+.mod-tile-subs span{opacity:.6}
+.inicio-resumen-ver .ir-corto{display:none}
+@media(max-width:600px){.inicio-resumen-ver .ir-largo{display:none}.inicio-resumen-ver .ir-corto{display:inline}}
+/* Las cifras se ven igual en cualquier pantalla: título con flecha, número grande debajo y una línea de detalle */
+.inicio-resumen-c{grid-template-rows:auto auto 1fr;align-content:start}
+.inicio-resumen-l,a.inicio-resumen-c .inicio-resumen-l{display:block}
+.inicio-resumen-l .ic{display:inline-block;width:14px;height:14px;margin-left:3px;vertical-align:-2px}
+.inicio-resumen-c.is-link{color:inherit;text-decoration:none;border-radius:8px}
+.inicio-resumen-c.is-link:hover .inicio-resumen-l{color:var(--ink)}
+@media(max-width:600px){
+  .inicio-resumen-g{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .inicio-resumen-c,.inicio-resumen-c + .inicio-resumen-c{grid-template-columns:minmax(0,1fr);padding:12px 10px 10px;border-top:0;border-left:0;border-radius:0}
+  .inicio-resumen-g .inicio-resumen-c:nth-child(n){border-left:0;border-top:0;padding-left:10px}
+  .inicio-resumen-g .inicio-resumen-c:nth-child(2n+1){padding-left:0}
+  .inicio-resumen-g .inicio-resumen-c:nth-child(2n){border-left:1px solid var(--line)}
+  .inicio-resumen-g .inicio-resumen-c:nth-child(n+3){border-top:1px solid var(--line)}
+  .inicio-resumen-l{grid-column:auto;font-size:12.5px;color:var(--muted);font-weight:600}
+  .inicio-resumen-v{grid-column:auto;grid-row:auto;font-size:24px;text-align:left}
+  .inicio-resumen-d{grid-column:auto}
+}
