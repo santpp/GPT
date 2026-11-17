@@ -528,25 +528,44 @@ export async function renderLiveInbox(container){
    const attach=$('#live-attach'),picker=$('#live-file');
    if(attach&&picker){attach.onclick=()=>picker.click();picker.onchange=()=>{const files=[...picker.files];picker.value='';draft.notice='';addFiles(files)}}
    const snipToggle=$('#live-snippets-toggle');
-   if(snipToggle)snipToggle.onclick=()=>{snippets.open=!snippets.open;if(snippets.open&&(snippets.items===null||snippets.error||snippets.generation!==chatGeneration))loadSnippets();else paintSnippets()};
+   if(snipToggle)snipToggle.onclick=()=>{snippets.open=!snippets.open;if(snippets.open)loadSnippets();else paintSnippets()};
    async function loadSnippets(refresh=false){
-    snippets={open:true,items:null,error:'',q:snippets.q||'',generation:chatGeneration};paintSnippets();
-    try{const data=await request(`workspace/snippets?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(c.id)}${refresh?'&refresh=1':''}`);if(version!==chatGeneration||!active())return;snippets.items=Array.isArray(data.items)?data.items:[]}
+    snippets={open:true,items:null,error:'',accountError:'',canShare:false,q:snippets.q||'',edit:null,generation:chatGeneration};paintSnippets();
+    try{const data=await request(`workspace/snippets?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(c.id)}${refresh?'&refresh=1':''}`);if(version!==chatGeneration||!active())return;snippets.items=Array.isArray(data.items)?data.items:[];snippets.canShare=!!data.canShare;snippets.accountError=data.accountError||''}
     catch(error){if(version!==chatGeneration||!active())return;snippets.items=[];snippets.error=friendly(error)}
     paintSnippets();
+   }
+   const GROUPS=[['mine','Tuyas'],['team','Del equipo'],['account','De la subcuenta']];
+   // Campos que se pueden poner en una respuesta: se rellenan solos al usarla.
+   const FIELDS=[['{{contact.first_name}}','Nombre'],['{{contact.name}}','Nombre completo'],['{{contact.phone}}','Teléfono'],['{{contact.email}}','Correo'],['{{user.first_name}}','Tu nombre']];
+   function editorMarkup(e){
+    const files=e.id?e.attachments:draft.files.filter(f=>f.status==='ready').map(f=>f.url);
+    return `<div class="snip-editor" id="snip-form" role="group" aria-label="Respuesta guardada"><h3>${e.id?'Editar respuesta':'Nueva respuesta'}</h3>
+     <label>Nombre<input name="name" maxlength="120" required value="${esc(e.name||'')}" placeholder="Ej.: Bienvenida"></label>
+     <label>Texto<textarea name="body" rows="4" maxlength="4000" required placeholder="Hola {{contact.first_name}}, …">${esc(e.body||'')}</textarea></label>
+     <div class="snip-fields" role="group" aria-label="Insertar un dato">${FIELDS.map(([t,l])=>`<button type="button" class="snip-field" data-field="${esc(t)}">+ ${esc(l)}</button>`).join('')}</div>
+     ${files.length?`<label class="snip-check"><input type="checkbox" name="files" checked> Incluir ${files.length===1?'el archivo adjunto':`los ${files.length} archivos adjuntos`}</label>`:''}
+     ${snippets.canShare?`<label class="snip-check"><input type="checkbox" name="shared"${e.shared?' checked':''}> Compartir con todo el equipo</label>`:''}
+     <p class="snip-status" role="status"></p>
+     <div class="snip-actions">${e.id?'<button type="button" class="link-button danger" id="snip-delete">Borrar</button>':''}<button type="button" class="link-button" id="snip-cancel">Cancelar</button><button type="button" class="primary" id="snip-save">Guardar</button></div></div>`;
    }
    function paintSnippets(){
     const slot=$('#live-snippet-slot');if(!slot)return;
     if(!snippets.open){slot.innerHTML='';return}
     const close='<button type="button" class="link-button" id="snip-close">Cerrar</button>';
     if(snippets.items===null){slot.innerHTML=`<div class="snip-panel"><p class="muted">Cargando respuestas guardadas…</p>${close}</div>`;$('#snip-close').onclick=()=>{snippets.open=false;paintSnippets()};return}
+    if(snippets.edit){slot.innerHTML=`<div class="snip-panel">${editorMarkup(snippets.edit)}</div>`;bindEditor();return}
     const q=snippets.q.toLowerCase().trim();
     const list=(snippets.items||[]).filter(s=>!q||(s.name+' '+s.text).toLowerCase().includes(q));
-    slot.innerHTML=`<div class="snip-panel"><div class="snip-head"><input id="snip-q" type="search" placeholder="Buscar respuesta guardada" value="${esc(snippets.q)}" aria-label="Buscar respuesta guardada">${close}</div>
-     ${snippets.error?`<p class="muted">${esc(snippets.error)}</p>`:!snippets.items.length?'<p class="muted">Esta subcuenta todavía no tiene respuestas guardadas. Se crean en la cuenta, en Marketing → Snippets.</p>':!list.length?'<p class="muted">Ninguna coincide con la búsqueda.</p>':''}
-     <ul class="snip-list">${list.slice(0,50).map(s=>`<li><button type="button" data-snip="${esc(s.id)}"><b>${esc(s.name)}</b><span>${esc(s.text.slice(0,140))}${s.text.length>140?'…':''}</span>${s.attachments.length?`<small>${CLIP}${s.attachments.length} ${s.attachments.length===1?'archivo':'archivos'}</small>`:''}</button></li>`).join('')}</ul></div>`;
+    const row=s=>`<li><button type="button" class="snip-use" data-snip="${esc(s.id)}"><b>${esc(s.name)}</b><span>${esc(s.text.slice(0,140))}${s.text.length>140?'…':''}</span>${s.attachments.length?`<small>${CLIP}${s.attachments.length} ${s.attachments.length===1?'archivo':'archivos'}</small>`:''}</button>${s.editable?`<button type="button" class="icon-btn snip-edit" data-snip-edit="${esc(s.id)}" aria-label="Editar ${esc(s.name)}" title="Editar">✎</button>`:''}</li>`;
+    const groups=GROUPS.map(([k,l])=>{const g=list.filter(s=>s.source===k);return g.length?`<p class="snip-group">${l}</p><ul class="snip-list">${g.slice(0,50).map(row).join('')}</ul>`:''}).join('');
+    slot.innerHTML=`<div class="snip-panel"><div class="snip-head"><input id="snip-q" type="search" placeholder="Buscar respuesta guardada" value="${esc(snippets.q)}" aria-label="Buscar respuesta guardada"><button type="button" class="primary snip-new" id="snip-new">+ Nueva</button>${close}</div>
+     ${snippets.error?`<p class="muted">${esc(snippets.error)}</p>`:!snippets.items.length?'<p class="muted">Todavía no hay respuestas guardadas. Crea la primera con «+ Nueva»: puedes guardar lo que ya escribiste.</p>':!list.length?'<p class="muted">Ninguna coincide con la búsqueda.</p>':''}
+     ${groups}${snippets.accountError?`<p class="muted snip-note">${esc(snippets.accountError)}</p>`:''}</div>`;
     $('#snip-close').onclick=()=>{snippets.open=false;paintSnippets()};
-    const qi=$('#snip-q');if(qi){qi.oninput=()=>{snippets.q=qi.value;const pos=qi.selectionStart;paintSnippets();const n=$('#snip-q');n.focus();n.setSelectionRange(pos,pos)}}
+    $('#snip-new').onclick=()=>{snippets.edit={name:'',body:draft.message,shared:false,attachments:[]};paintSnippets();$('#snip-form [name=name]')?.focus()};
+    const qi=$('#snip-q');if(qi){qi.onkeydown=ev=>{if(ev.key==='Enter')ev.preventDefault()};qi.oninput=()=>{snippets.q=qi.value;const pos=qi.selectionStart;paintSnippets();const n=$('#snip-q');n.focus();n.setSelectionRange(pos,pos)}}
+    slot.querySelectorAll('[data-snip-edit]').forEach(b=>b.onclick=()=>{const s=snippets.items.find(x=>x.id===b.dataset.snipEdit);if(s){snippets.edit={id:s.id,name:s.name,body:s.body??s.text,shared:s.shared&&s.source==='team',attachments:s.attachments};paintSnippets()}});
     slot.querySelectorAll('[data-snip]').forEach(b=>b.onclick=()=>{
      const s=(snippets.items||[]).find(x=>x.id===b.dataset.snip);if(!s)return;
      draft.message=draft.message.trim()?draft.message.replace(/\s*$/,'')+'\n'+s.text:s.text;
@@ -554,6 +573,27 @@ export async function renderLiveInbox(container){
      draft.notice=s.missing.length?`Completa antes de enviar: ${s.missing.join(', ')}.`:'';
      snippets.open=false;paintSnippets();show();const f=$('#live-reply');if(f){f.focus();const m=f.value.search(/\{\{/);if(m>=0)f.setSelectionRange(m,m)}
     });
+   }
+   function bindEditor(){
+    const form=$('#snip-form');if(!form)return;const e=snippets.edit,status=form.querySelector('.snip-status');
+    const field=n=>form.querySelector(`[name=${n}]`);const body=field('body');
+    // El dato va donde estaba el cursor; si aún no se tocó el texto, al final.
+    let caret=null;const keep=()=>{caret=[body.selectionStart,body.selectionEnd]};body.onkeyup=keep;body.onclick=keep;body.onselect=keep;
+    form.querySelectorAll('[data-field]').forEach(b=>b.onclick=()=>{const a=caret?caret[0]:body.value.length,z=caret?caret[1]:a;caret=[a+b.dataset.field.length,a+b.dataset.field.length];body.value=body.value.slice(0,a)+b.dataset.field+body.value.slice(z);body.focus();body.setSelectionRange(a+b.dataset.field.length,a+b.dataset.field.length)});
+    $('#snip-cancel').onclick=()=>{snippets.edit=null;paintSnippets()};
+    const del=$('#snip-delete');
+    if(del)del.onclick=async()=>{if(!confirm('¿Borrar esta respuesta guardada?'))return;del.disabled=true;
+     try{await request(`workspace/snippets/delete?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(c.id)}`,'POST',me.csrf,{id:e.id});loadSnippets()}catch(error){status.textContent=friendly(error);del.disabled=false}};
+    const save=$('#snip-save');
+    // Enter en el nombre guarda la respuesta (no envía el mensaje del cuadro de abajo).
+    field('name').onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();save.click()}};
+    save.onclick=async()=>{
+     if(!field('name').value.trim()||!body.value.trim()){status.textContent='Escribe el nombre y el texto de la respuesta.';return}
+     save.disabled=true;status.textContent='Guardando…';
+     const files=field('files')?.checked?(e.id?e.attachments:draft.files.filter(f=>f.status==='ready').map(f=>f.url)):[];
+     try{await request(`workspace/snippets?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(c.id)}`,'POST',me.csrf,{...(e.id?{id:e.id}:{}),name:field('name').value,body:body.value,shared:!!field('shared')?.checked,attachments:files});
+      window.dispatchEvent(new CustomEvent('agora:toast',{detail:'Respuesta guardada.'}));loadSnippets()}
+     catch(error){status.textContent=friendly(error);save.disabled=false}};
    }
    show();
    text.oninput=()=>draft.message=text.value;if(subject)subject.oninput=()=>draft.subject=subject.value;

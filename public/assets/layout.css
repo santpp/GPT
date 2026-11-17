@@ -1178,3 +1178,24 @@ html,body{max-width:100%;overflow-x:hidden}
 .live-composer.template-mode .live-files,.live-composer.template-mode #live-snippet-slot{display:none}
 @media (max-width:640px){.live-composer-actions{flex-wrap:wrap}.live-file-name{max-width:130px}}
 #live-snippet-slot{width:100%}.snip-panel{width:100%;box-sizing:border-box}
+/* 1.10.18 · Respuestas guardadas propias: grupos, edición y editor */
+.snip-head .snip-new{min-height:36px;padding:6px 12px;font-size:13px;white-space:nowrap}
+.snip-group{margin:6px 0 0;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--subtle)}
+.snip-list li{display:flex;align-items:flex-start;gap:4px}
+.snip-list li .snip-use{flex:1;min-width:0}
+.snip-edit{flex:none;border:0;background:transparent;color:var(--muted);font-size:16px;border-radius:6px;cursor:pointer}
+.snip-edit:hover,.snip-edit:focus-visible{background:#f1f1f5}
+.snip-note{font-size:12px}
+.snip-editor{display:grid;gap:10px}
+.snip-editor h3{margin:0;font-size:14px}
+.snip-editor label{display:grid;gap:6px;font-size:12px;color:var(--muted)}
+.snip-editor input:not([type=checkbox]),.snip-editor textarea{font:inherit;font-size:14px;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);width:100%;box-sizing:border-box}
+.snip-fields{display:flex;flex-wrap:wrap;gap:6px}
+.snip-field{border:1px solid var(--line);border-radius:14px;background:#f7f7fa;color:var(--ink);font-size:12px;padding:4px 10px;cursor:pointer}
+.snip-field:hover,.snip-field:focus-visible{background:#f1f1f5}
+.snip-editor .snip-check{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:13px}
+.snip-status{margin:0;font-size:12px;color:var(--muted)}
+.snip-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px}
+.snip-actions .danger{margin-right:auto;color:#ad103c}
+.snip-editor .snip-check{display:flex;justify-content:flex-start}.snip-editor .snip-check input{width:18px;height:18px;min-width:0;min-height:0;margin:0;padding:0;flex:none;accent-color:var(--green)}
+.snip-fields .snip-field{min-height:32px;min-width:0}

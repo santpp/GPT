@@ -75,8 +75,27 @@ try{
  Attachments::allow($id,'conv',$list[0]['attachments']);$free();
  $sender->send($connection,$conversation,['requestId'=>str_repeat('h',32),'channel'=>'WhatsApp','message'=>$x['text'],'attachments'=>$list[0]['attachments']]);
  ok(end($calls)[3]['attachments']===['https://storage.example.test/folleto.pdf'],'el archivo de un snippet se puede enviar en esa conversación');
+ // ---- 1.10.18 · respuestas guardadas propias (en Ágora) ----
+ require_once __DIR__.'/../src/Installation.php';Installation::applyMigrations();
+ $qp=fn(Closure $f)=>(function()use($f){try{$f();return '';}catch(QuickReplyProblem $e){return $e->reason;}})();
+ $a=QuickReplies::save($tenant,$id,'conv','external',501,false,['name'=>'Saludo','body'=>'Hola {{contact.first_name}}','attachments'=>[$r['url']]]);
+ $mine=QuickReplies::list($id,'external',501,false);
+ ok(count($mine)===1&&$mine[0]['mine']&&$mine[0]['editable']&&!$mine[0]['shared']&&$mine[0]['attachments']===[$r['url']],'cada persona crea su respuesta, con el archivo subido en la conversación');
+ ok(QuickReplies::list($id,'external',502,false)===[],'las respuestas personales no las ve el resto del equipo');
+ ok($qp(fn()=>QuickReplies::save($tenant,$id,'conv','external',501,false,['name'=>'Equipo','body'=>'x','shared'=>true]))==='share_forbidden','sin administrar la subcuenta no se comparte con el equipo');
+ QuickReplies::save($tenant,$id,'conv','native',1,true,['name'=>'Horario','body'=>'Atendemos de 8 a 5','shared'=>true]);
+ $team=array_values(array_filter(QuickReplies::list($id,'external',502,false),fn($x)=>$x['shared']));
+ ok(count($team)===1&&!$team[0]['editable'],'una compartida la ve todo el equipo, pero solo la cambia quien administra');
+ ok($qp(fn()=>QuickReplies::save($tenant,$id,'conv','external',502,false,['id'=>$a['id'],'name'=>'Mía','body'=>'x']))==='edit_forbidden','nadie cambia la respuesta de otra persona');
+ ok($qp(fn()=>QuickReplies::save($tenant,$id,'conv','external',501,false,['name'=>'Malo','body'=>'x','attachments'=>['https://evil.example/x.pdf']]))==='invalid_attachments','no se guarda un archivo que no se subió');
+ ok($qp(fn()=>QuickReplies::save($tenant,$id,'conv','external',501,false,['name'=>'','body'=>'x']))==='invalid_name'&&$qp(fn()=>QuickReplies::save($tenant,$id,'conv','external',501,false,['name'=>'x','body'=>' ']))==='invalid_body','nombre y texto son obligatorios');
+ QuickReplies::save($tenant,$id,'conv','external',501,false,['id'=>$a['id'],'name'=>'Saludo corto','body'=>'Hola','attachments'=>[$r['url']]]);
+ ok(QuickReplies::list($id,'external',501,false)[0]['name']==='Saludo corto','quien la creó la puede cambiar, conservando su archivo');
+ ok($qp(fn()=>QuickReplies::delete($id,'external',502,false,$a['id']))==='edit_forbidden','ni borrar la de otra persona');
+ QuickReplies::delete($id,'external',501,false,$a['id']);
+ ok(count(QuickReplies::list($id,'external',501,false))===1,'y la puede borrar');
 }finally{
- if($tenant){query('DELETE FROM directory_cache WHERE connection_id IN (SELECT id FROM ghl_connections WHERE tenant_id=?)',[$tenant]);query('DELETE FROM message_send_attempts WHERE connection_id IN (SELECT id FROM ghl_connections WHERE tenant_id=?)',[$tenant]);query('DELETE FROM ghl_connections WHERE tenant_id=?',[$tenant]);query('DELETE FROM tenants WHERE id=?',[$tenant]);}
+ if($tenant){query('DELETE FROM quick_replies WHERE tenant_id=?',[$tenant]);query('DELETE FROM directory_cache WHERE connection_id IN (SELECT id FROM ghl_connections WHERE tenant_id=?)',[$tenant]);query('DELETE FROM message_send_attempts WHERE connection_id IN (SELECT id FROM ghl_connections WHERE tenant_id=?)',[$tenant]);query('DELETE FROM ghl_connections WHERE tenant_id=?',[$tenant]);query('DELETE FROM tenants WHERE id=?',[$tenant]);}
  array_map('unlink',glob($dir.'/*')?:[]);@rmdir($dir);
 }
 echo "PASS $n attachment and snippet checks (simulated account, real MariaDB)\n";

@@ -407,18 +407,29 @@ if($path==='/api/workspace/upload'&&$method==='POST'){
     try{respond((new Attachments())->upload($connection,$record,(string)$file['tmp_name'],(string)$file['name'],(int)$file['size'],$channel));}
     catch(AttachmentProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
 }
-// 1.10.17 · Snippets (respuestas guardadas) de la subcuenta, ya rellenados para esta conversación.
-if($path==='/api/workspace/snippets'&&$method==='GET'){
+// 1.10.17–1.10.18 · Respuestas guardadas: las de la cuenta (snippets), las del equipo y las propias, ya rellenadas para esta conversación.
+if(in_array($path,['/api/workspace/snippets','/api/workspace/snippets/delete'],true)&&in_array($method,['GET','POST'],true)){
     if(!($membership['capabilities']['sendMessages']??false))respond(['error'=>'Tu usuario no tiene permiso para responder.'],403);
     $conversation=$_GET['conversationId']??'';
     if(!is_string($conversation)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$conversation))respond(['error'=>'Conversación inválida'],422);
     $record=InboxFeed::known($id,$conversation);
     if(!$record||!Actor::filterConversations([$record],$membership))respond(['error'=>'Conversación no disponible en esta subcuenta'],404);
     require_once __DIR__.'/Snippets.php';
+    // Quién escribe: su tipo de identidad y su número. Comparte con el equipo quien administra la subcuenta.
+    $kind=($u['identity_type']??'native')==='native'?'native':'external';$actor=(int)$u['id'];
+    $admin=($kind==='native'&&($u['role']??'')==='administrator')||(($membership['can_assign']??false)===true);
+    if($method==='POST'){
+        try{
+            if($path==='/api/workspace/snippets/delete'){QuickReplies::delete((int)$id,$kind,$actor,$admin,body()['id']??null);respond(['deleted'=>true]);}
+            respond(QuickReplies::save((int)$u['tenant_id'],(int)$id,$conversation,$kind,$actor,$admin,body()));
+        }catch(QuickReplyProblem $e){respond(['error'=>$e->getMessage(),'code'=>$e->reason],$e->httpStatus);}
+    }
+    if($path!=='/api/workspace/snippets')respond(['error'=>'Not found'],404);
+    $list=[];$accountError=null;
     try{$list=(new Snippets())->list($connection,($_GET['refresh']??'')==='1');}
-    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La lista de respuestas guardadas está en espera. Vuelve a intentarlo en unos segundos.','retryAfter'=>$e->retryAfter],429);}
-    catch(GhlApiException $e){respond(['error'=>in_array($e->status,[401,403],true)?'La clave de la cuenta no permite leer las respuestas guardadas. Hace falta el permiso de plantillas.':'No se pudieron leer las respuestas guardadas de la cuenta.','code'=>'snippets_upstream_'.$e->status],424);}
-    catch(Throwable $e){respond(['error'=>'No se pudieron leer las respuestas guardadas de la cuenta.','code'=>'snippets_failed'],424);}
+    catch(GhlCooldown $e){$accountError='Las respuestas de la cuenta están en espera. Vuelve a abrir en unos segundos.';}
+    catch(GhlApiException $e){$accountError=in_array($e->status,[401,403],true)?'La clave de la cuenta no permite leer sus respuestas guardadas (falta el permiso de plantillas). Las tuyas y las del equipo sí están.':'No se pudieron leer las respuestas guardadas de la cuenta.';}
+    catch(Throwable $e){$accountError='No se pudieron leer las respuestas guardadas de la cuenta.';}
     $profile=is_string($record['contactId']??null)?query('SELECT payload FROM contact_profile_cache WHERE connection_id=? AND contact_id=?',[$id,$record['contactId']])->fetchColumn():false;
     $profile=is_string($profile)?(json_decode($profile,true)?:[]):[];
     if(!$profile)$profile=['name'=>$record['contactName']??($record['fullName']??'')];
@@ -426,10 +437,16 @@ if($path==='/api/workspace/snippets'&&$method==='GET'){
     $user=['name'=>'','email'=>$u['email']??''];
     if(is_string($self)&&$self!==''){$n=query('SELECT display_name FROM external_users WHERE connection_id=? AND external_user_id=? LIMIT 1',[$id,$self])->fetchColumn();if(is_string($n))$user['name']=$n;}
     $files=[];$items=[];
-    foreach($list as $s){$r=Snippets::render($s['body'],$profile,$user,(string)($connection['name']??''));$items[]=['id'=>$s['id'],'name'=>$s['name'],'text'=>$r['text'],'missing'=>$r['missing'],'attachments'=>$s['attachments']];array_push($files,...$s['attachments']);}
-    // Los archivos de los snippets quedan permitidos para esta conversación.
-    if($files){require_once __DIR__.'/Attachments.php';Attachments::allow($id,$conversation,$files);}
-    respond(['items'=>$items]);
+    $add=function(array $s,string $source,bool $editable,bool $shared)use(&$items,&$files,$profile,$user,$connection):void{
+        $r=Snippets::render($s['body'],$profile,$user,(string)($connection['name']??''));
+        $items[]=['id'=>$s['id'],'name'=>$s['name'],'text'=>$r['text'],'missing'=>$r['missing'],'attachments'=>$s['attachments'],'source'=>$source,'editable'=>$editable,'shared'=>$shared]+($editable?['body'=>$s['body']]:[]);
+        array_push($files,...$s['attachments']);
+    };
+    foreach(QuickReplies::list((int)$id,$kind,$actor,$admin) as $q)$add($q,$q['mine']&&!$q['shared']?'mine':'team',$q['editable'],$q['shared']);
+    foreach($list as $s)$add($s,'account',false,true);
+    // Los archivos de las respuestas quedan permitidos para esta conversación.
+    if($files){require_once __DIR__.'/Attachments.php';Attachments::allow((int)$id,$conversation,$files);}
+    respond(['items'=>$items,'canShare'=>$admin,'accountError'=>$accountError]);
 }
 // Plantillas aprobadas de WhatsApp de esta cuenta, para escribir pasadas las 24 horas.
 if($path==='/api/workspace/templates'&&$method==='GET') {

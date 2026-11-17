@@ -76,3 +76,61 @@ final class Snippets {
         return ['text'=>$text,'missing'=>$missing];
     }
 }
+
+final class QuickReplyProblem extends RuntimeException {
+    public function __construct(public readonly string $reason,public readonly int $httpStatus,string $message){parent::__construct($message);}
+}
+/**
+ * 1.10.18 · Respuestas guardadas que crean las personas en Ágora (la cuenta no permite crearlas por su API).
+ * Cada persona tiene las suyas; quien administra la subcuenta puede compartir una con todo el equipo.
+ */
+final class QuickReplies {
+    public const MAX_OWN=100;public const MAX_SHARED=200;
+    /** Las propias de quien mira y las compartidas del equipo, con lo que puede hacer con cada una. */
+    public static function list(int $connection,string $kind,int $actor,bool $admin):array {
+        $rows=query('SELECT * FROM quick_replies WHERE connection_id=? AND (shared=1 OR (identity_type=? AND actor_id=?)) ORDER BY shared,name LIMIT 400',[$connection,$kind,$actor])->fetchAll();
+        return array_map(function(array $r)use($kind,$actor,$admin):array{
+            $mine=$r['identity_type']===$kind&&(int)$r['actor_id']===$actor;
+            $files=json_decode((string)($r['attachments']??'[]'),true);
+            return ['id'=>'q'.$r['id'],'name'=>$r['name'],'body'=>$r['body'],'shared'=>(bool)$r['shared'],'mine'=>$mine,
+                'editable'=>$mine||((bool)$r['shared']&&$admin),'attachments'=>is_array($files)?array_values(array_filter($files,'is_string')):[]];
+        },$rows);
+    }
+    /** Crea o cambia una respuesta. Los archivos solo pueden ser los ya subidos en la conversación desde la que se guarda. */
+    public static function save(int $tenant,int $connection,string $conversation,string $kind,int $actor,bool $admin,array $in):array {
+        $name=trim((string)($in['name']??''));$body=(string)($in['body']??'');
+        if($name===''||mb_strlen($name)>120)throw new QuickReplyProblem('invalid_name',422,'Ponle un nombre de hasta 120 caracteres.');
+        if(trim($body)===''||mb_strlen($body)>4000)throw new QuickReplyProblem('invalid_body',422,'Escribe el texto de la respuesta (hasta 4.000 caracteres).');
+        $shared=($in['shared']??false)===true;
+        if($shared&&!$admin)throw new QuickReplyProblem('share_forbidden',403,'Solo quien administra la subcuenta puede compartir respuestas con el equipo.');
+        $files=$in['attachments']??[];
+        if(!is_array($files)||!array_is_list($files)||count($files)>Attachments::PER_MESSAGE)throw new QuickReplyProblem('invalid_attachments',422,'Una respuesta puede llevar hasta '.Attachments::PER_MESSAGE.' archivos.');
+        $id=null;$old=null;
+        if(isset($in['id'])){
+            if(!is_string($in['id'])||!preg_match('/^q(\d{1,18})$/D',$in['id'],$m))throw new QuickReplyProblem('not_found',404,'Esa respuesta ya no existe.');
+            $id=(int)$m[1];
+            $old=query('SELECT * FROM quick_replies WHERE id=? AND connection_id=?',[$id,$connection])->fetch();
+            if(!$old)throw new QuickReplyProblem('not_found',404,'Esa respuesta ya no existe.');
+            $mine=$old['identity_type']===$kind&&(int)$old['actor_id']===$actor;
+            if(!$mine&&!((bool)$old['shared']&&$admin))throw new QuickReplyProblem('edit_forbidden',403,'Solo puedes cambiar tus respuestas.');
+        }
+        $known=array_merge(Attachments::allowed($connection,$conversation),$old?(json_decode((string)$old['attachments'],true)?:[]):[]);
+        foreach($files as $f)if(!is_string($f)||!in_array($f,$known,true))throw new QuickReplyProblem('invalid_attachments',422,'Un archivo ya no está disponible. Vuelve a adjuntarlo.');
+        $json=json_encode(array_values(array_unique($files)),JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES);
+        if($id===null){
+            $count=(int)query('SELECT COUNT(*) FROM quick_replies WHERE connection_id=? AND '.($shared?'shared=1':'shared=0 AND identity_type=? AND actor_id=?'),$shared?[$connection]:[$connection,$kind,$actor])->fetchColumn();
+            if($count>=($shared?self::MAX_SHARED:self::MAX_OWN))throw new QuickReplyProblem('too_many',422,'Llegaste al máximo de respuestas guardadas. Borra alguna que ya no uses.');
+            query('INSERT INTO quick_replies(tenant_id,connection_id,identity_type,actor_id,shared,name,body,attachments,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)',[$tenant,$connection,$kind,$actor,$shared?1:0,$name,$body,$json,time(),time()]);
+            $id=(int)db()->lastInsertId();
+        } else query('UPDATE quick_replies SET name=?,body=?,shared=?,attachments=?,updated_at=? WHERE id=?',[$name,$body,$shared?1:0,$json,time(),$id]);
+        return ['id'=>'q'.$id,'saved'=>true];
+    }
+    public static function delete(int $connection,string $kind,int $actor,bool $admin,mixed $ref):void {
+        if(!is_string($ref)||!preg_match('/^q(\d{1,18})$/D',$ref,$m))throw new QuickReplyProblem('not_found',404,'Esa respuesta ya no existe.');
+        $row=query('SELECT * FROM quick_replies WHERE id=? AND connection_id=?',[(int)$m[1],$connection])->fetch();
+        if(!$row)throw new QuickReplyProblem('not_found',404,'Esa respuesta ya no existe.');
+        $mine=$row['identity_type']===$kind&&(int)$row['actor_id']===$actor;
+        if(!$mine&&!((bool)$row['shared']&&$admin))throw new QuickReplyProblem('edit_forbidden',403,'Solo puedes borrar tus respuestas.');
+        query('DELETE FROM quick_replies WHERE id=?',[(int)$m[1]]);
+    }
+}
