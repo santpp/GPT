@@ -10,7 +10,9 @@ solo cómo se ve y cómo se lee. Lo de la sección 9 (verse dentro de Ágora) s�
 
 1. QUIÉN LA USA Y CÓMO
 ----------------------
-- Vendedores y administración de una subcuenta, casi siempre desde el TELÉFONO, con prisa.
+- TODAS las personas de la subcuenta que tiene la página activada (vendedores, administración
+  y la propietaria), casi siempre desde el TELÉFONO, con prisa. En Ágora la abren desde el menú
+  «Más» → «Contratos» (en el ordenador, desde la barra lateral).
 - Diseña primero para 390 px de ancho (prueba también 360, 412 y escritorio 1280).
 - Español neutro, tuteo, frases cortas.
 - Debe funcionar igual en modo claro y oscuro.
@@ -134,13 +136,14 @@ b) Permitir que Ágora la muestre. En las cabeceras del servidor de contratos:
 
 c) Que la sesión funcione incrustada. La cookie de sesión debe ser:
      Secure; HttpOnly; SameSite=None; Partitioned
-   (sin esto, el navegador no guarda la sesión dentro de Ágora y pide entrar en cada vez
-   o no deja entrar). En iPhone el navegador puede bloquearla igual; por eso Ágora tendrá
+   (sin esto, el navegador no guarda la sesión dentro de Ágora y pide entrar cada vez
+   o no deja entrar). En iPhone el navegador puede bloquearla igual; por eso Ágora tiene
    un botón «Abrir en pantalla completa» de respaldo.
 
-d) (Recomendado) Entrada directa desde Ágora sin volver a poner usuario y clave: aceptar un
-   enlace firmado de un solo uso (?sso=...) que Ágora genera para la persona que lo abre.
-   Se acuerda aparte la clave compartida y el formato; no lo inventes.
+d) Inicio de sesión: por ahora la persona entra en la página de contratos con SU PROPIO
+   acceso de esa página, como hoy. NO implementes entrada automática desde Ágora ni enlaces
+   firmados: queda para más adelante y se acordará aparte.
+   Haz que la pantalla de entrada se vea bien también en modo ?embed=1 (sin barra propia).
 
 e) No abrir ventanas nuevas para su navegación normal (enlaces internos en la misma vista).
    Los PDF y descargas pueden abrirse aparte.
@@ -158,6 +161,7 @@ f) Avisar a Ágora si la persona cierra sesión o termina, con:
 [ ] Se ve bien a 360, 390 y 412 px, y a 1280 px; sin desplazamiento horizontal.
 [ ] Con ?embed=1 no se ve la barra propia ni el pie.
 [ ] Se abre dentro de Ágora (frame-ancestors) y la sesión se mantiene (cookie de la sección 9c).
+[ ] La pantalla de entrada se ve bien con ?embed=1.
 [ ] Ningún texto nombra al proveedor de la cuenta ni muestra códigos técnicos.
 [ ] Foco con teclado visible; animaciones apagadas con movimiento reducido.
 [ ] Contraste ≥ 4,5:1.

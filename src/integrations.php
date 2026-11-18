@@ -11,7 +11,7 @@ require_once __DIR__.'/ExternalAuth.php';
 require_once __DIR__.'/AccessChannel.php';
 Installation::assertReady();
 if ($path === '/api/admin/integrations' && $method === 'GET') {
-    $rows=query('SELECT c.id,c.name,c.location_id,c.currency,c.unread_reminder_minutes,c.won_alert_days,c.whatsapp_number_id,c.whatsapp_account_id,c.sync_interval_seconds,c.status,c.last_checked_at,COALESCE(s.enabled,0) AS sync_enabled,s.last_success_at,s.last_error,s.requests_today,s.quota,s.users_last_success_at,s.users_last_error FROM ghl_connections c LEFT JOIN ghl_sync_state s ON s.connection_id=c.id WHERE c.tenant_id=? ORDER BY c.id',[$u['tenant_id']])->fetchAll();
+    $rows=query('SELECT c.id,c.name,c.location_id,c.currency,c.unread_reminder_minutes,c.won_alert_days,c.whatsapp_number_id,c.whatsapp_account_id,c.contracts_url,c.sync_interval_seconds,c.status,c.last_checked_at,COALESCE(s.enabled,0) AS sync_enabled,s.last_success_at,s.last_error,s.requests_today,s.quota,s.users_last_success_at,s.users_last_error FROM ghl_connections c LEFT JOIN ghl_sync_state s ON s.connection_id=c.id WHERE c.tenant_id=? ORDER BY c.id',[$u['tenant_id']])->fetchAll();
     foreach($rows as &$row){$row['tokenConfigured']=true;$row['externalUsers']=(int)query('SELECT COUNT(*) FROM external_users WHERE connection_id=? AND active=TRUE',[$row['id']])->fetchColumn();}
     $channel=AccessChannel::connection((int)$u['tenant_id']);
     foreach($rows as &$row)$row['accessChannel']=$channel&&(int)$channel['id']===(int)$row['id'];
@@ -59,7 +59,7 @@ if(preg_match('~^/api/admin/integrations/(\d+)/users(?:/(sync))?$~',$path,$userM
     }
     respond(['error'=>'Not found'],404);
 }
-if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|/whatsapp/check|/fields/folders|/currency|/reminder|/won-alert|/commission)?$~',$path,$match)) {
+if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|/whatsapp/check|/fields/folders|/currency|/reminder|/won-alert|/commission|/contracts)?$~',$path,$match)) {
     $row=query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$match[1],$u['tenant_id']])->fetch();
     if(!$row) respond(['error'=>'Integración no encontrada'],404);
     if((!isset($match[2]) && in_array($method,['PUT','DELETE'],true)) || (($match[2]??'')==='/schedule' && $method==='POST')) {
@@ -114,6 +114,18 @@ if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|
         query('UPDATE ghl_connections SET whatsapp_number_id=?,whatsapp_account_id=? WHERE id=? AND tenant_id=?',[$number,$number===null?null:$account,$row['id'],$u['tenant_id']]);
         query("DELETE FROM directory_cache WHERE connection_id=? AND cache_key LIKE 'wa-templates:%'",[$row['id']]);
         respond(['numberId'=>$number,'accountId'=>$number===null?null:$account]);
+    }
+    // 1.10.21 · Página de contratos de la subcuenta: dirección https o vacía (sin botón).
+    if(($match[2]??'')==='/contracts' && $method==='PUT') {
+        $url=body()['url']??null;
+        if($url!==null&&$url!==''){
+            $url=is_string($url)?trim($url):'';
+            if(!preg_match('~^https://~i',$url))$url='https://'.preg_replace('~^[a-z]+://~i','',$url);
+            $parts=parse_url($url);
+            if(!$parts||strtolower($parts['scheme']??'')!=='https'||!preg_match('/^[a-z0-9.-]+\.[a-z]{2,}$/i',$parts['host']??'')||isset($parts['user'])||isset($parts['pass'])||strlen($url)>255)respond(['error'=>'Escribe una dirección web válida, por ejemplo contratos.agoradigital.app.'],422);
+        } else $url=null;
+        query('UPDATE ghl_connections SET contracts_url=? WHERE id=? AND tenant_id=?',[$url,$row['id'],$u['tenant_id']]);
+        respond(['url'=>$url]);
     }
     // Pide la lista a la cuenta en ese momento y cuenta qué llegó y qué se quedó fuera.
     if(($match[2]??'')==='/whatsapp/check' && $method==='POST') {

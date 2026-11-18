@@ -6,9 +6,9 @@ require_once __DIR__.'/MessageHistory.php';
 require_once __DIR__.'/MessageFeed.php';
 if(($u['identity_type']??'native')==='native'&&$u['role']!=='administrator')respond(['error'=>'Acceso restringido'],403);
 if(in_array($path,['/api/workspace/connections','/api/ghl/connections'],true) && $method==='GET') {
-    if(isset($u['view_as']))$items=query('SELECT id,name,location_id,status,currency FROM ghl_connections WHERE id=? AND tenant_id=?',[$u['view_as']['connection_id'],$u['tenant_id']])->fetchAll();
-    elseif(($u['identity_type']??'native')==='native')$items=query('SELECT id,name,location_id,status,currency FROM ghl_connections WHERE tenant_id=? ORDER BY id',[$u['tenant_id']])->fetchAll();
-    else $items=query('SELECT DISTINCT c.id,c.name,c.location_id,c.status,c.currency FROM ghl_connections c JOIN external_users eu ON eu.connection_id=c.id AND eu.active=TRUE JOIN external_identity_memberships m ON m.external_user_row_id=eu.id WHERE c.tenant_id=? AND m.identity_id=? ORDER BY c.id',[$u['tenant_id'],$u['id']])->fetchAll();
+    if(isset($u['view_as']))$items=query('SELECT id,name,location_id,status,currency,contracts_url FROM ghl_connections WHERE id=? AND tenant_id=?',[$u['view_as']['connection_id'],$u['tenant_id']])->fetchAll();
+    elseif(($u['identity_type']??'native')==='native')$items=query('SELECT id,name,location_id,status,currency,contracts_url FROM ghl_connections WHERE tenant_id=? ORDER BY id',[$u['tenant_id']])->fetchAll();
+    else $items=query('SELECT DISTINCT c.id,c.name,c.location_id,c.status,c.currency,c.contracts_url FROM ghl_connections c JOIN external_users eu ON eu.connection_id=c.id AND eu.active=TRUE JOIN external_identity_memberships m ON m.external_user_row_id=eu.id WHERE c.tenant_id=? AND m.identity_id=? ORDER BY c.id',[$u['tenant_id'],$u['id']])->fetchAll();
     $total=count($items);
     $items=array_values(array_filter($items,fn(array $item)=>(Actor::connectionMembership($u,(int)$item['id'])['capabilities']['viewConversations']??false)===true));
     // Si no queda ninguna, se dice por qué: sin subcuenta asociada, o sin permiso de conversaciones en ella.

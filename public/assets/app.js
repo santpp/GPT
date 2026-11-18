@@ -13,6 +13,7 @@ import {startWonAlert} from './won-alert.js';
 import {runTour,tourDone} from './tour.js';
 import {initHelp,renderHelp} from './help.js';
 import {renderConsumption} from './consumption.js';
+import {renderContracts,contractsUrl} from './contracts.js';
 import {supported as passkeysSupported,platformReady,remembered as passkeyRemembered,remember as rememberPasskey,create as createPasskey,sign as signPasskey,trouble as passkeyTrouble} from './passkeys.js';
 
 const $=s=>document.querySelector(s);
@@ -26,6 +27,7 @@ const VIEWS={
   board:{path:'/oportunidades',title:'Oportunidades',eyebrow:'EMBUDO',heading:'De la conexión al cierre.',subtitle:'Cada oportunidad abierta, a la vista.',render:renderBoard,account:true},
   help:{path:'/ayuda',title:'Ayuda',eyebrow:'MANUAL',heading:'Manual de uso.',subtitle:'Lo básico para trabajar en Ágora.',render:renderHelp,account:false},
   consumption:{path:'/consumos',title:'Consumos',eyebrow:'ADMINISTRACIÓN',heading:'Lo que gasta cada subcuenta.',subtitle:'El consumo del mes y el plan de cada subcuenta, desde la agencia.',render:renderConsumption,account:false},
+  contracts:{path:'/contratos',title:'Contratos',eyebrow:'CONTRATOS',heading:'Tus contratos.',subtitle:'La página de contratos de la subcuenta, sin salir de Ágora.',render:renderContracts,account:true},
   settings:{path:'/conexiones',title:'Conexiones',eyebrow:'ADMINISTRACIÓN',heading:'Tu espacio, a tu manera.',subtitle:'Gestiona las cuentas conectadas y el acceso del equipo.',render:renderIntegrations,account:false},
 };
 const byPath=path=>Object.keys(VIEWS).find(name=>VIEWS[name].path===path);
@@ -45,7 +47,16 @@ async function api(path,method='GET',body=null,csrf=''){
 
 // ---- Menú de abajo: «Más» --------------------------------------------------------
 // En el teléfono la barra muestra cuatro pestañas; lo demás (sólo la propietaria) va en un panel que sube desde abajo.
-const MORE_VIEWS=['consumption','settings','help'];
+const MORE_VIEWS=['contracts','consumption','settings','help'];
+// 1.10.21 · Ícono propio de Contratos: una hoja con su firma.
+const CONTRACT_ICON='<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3.5V8h4.5"/><path d="M8.5 10.5h5M8.5 13.5h7"/><path d="M8.5 17.4c.7-1 1.3-1 1.8-.1s1.1 1 1.8-.2 1.3-.7 1.7.1"/><path d="M15.4 17.6h1.1"/></svg>';
+/** «Contratos» se ve si la subcuenta en uso tiene su página activada; «Más» se ve para quien tenga algo dentro. */
+function paintContracts(){
+  const on=!!contractsUrl(),admin=workspace.me?.user?.role==='administrator';
+  const item=document.querySelector('.sidebar nav .nav[data-view="contracts"]');if(item)item.hidden=!on;
+  const more=document.getElementById('nav-more');if(more)more.hidden=!(admin||on);
+  if(!on&&currentView==='contracts')show('dashboard');
+}
 const DOTS='<svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
 const HELP_ICON='<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.7"/><path d="M12 17h.01"/></svg>';
 function setupMore(){
@@ -55,7 +66,14 @@ function setupMore(){
   button.type='button';button.id='nav-more';button.className='nav nav-more';button.hidden=true;button.dataset.adminOnly='';
   button.setAttribute('aria-haspopup','dialog');button.setAttribute('aria-expanded','false');
   button.innerHTML=`<span aria-hidden="true">${DOTS}</span> Más`;
-  nav.append(button);
+  // En el ordenador, «Contratos» va en la barra lateral; en el teléfono, dentro de «Más».
+  const contracts=document.createElement('button');
+  contracts.type='button';contracts.className='nav';contracts.dataset.view='contracts';contracts.hidden=true;
+  contracts.innerHTML=`<span aria-hidden="true">${CONTRACT_ICON}</span> Contratos`;
+  contracts.onclick=()=>show('contracts');
+  nav.append(contracts,button);
+  workspace.onChange(paintContracts);
+  window.addEventListener('agora:contracts',paintContracts);
   const sheet=document.createElement('div');
   sheet.id='more-sheet';sheet.hidden=true;
   sheet.innerHTML='<div class="more-panel" role="dialog" aria-modal="true" aria-labelledby="more-title"><div class="more-grip" aria-hidden="true"></div><h2 id="more-title">Más</h2><div class="more-grid"></div></div>';
@@ -68,6 +86,7 @@ function openMore(){
   const sheet=document.getElementById('more-sheet');if(!sheet)return;
   const items=MORE_VIEWS.map(view=>{
     if(view==='help')return {view,label:'Ayuda',icon:HELP_ICON};
+    if(view==='contracts')return contractsUrl()?{view,label:'Contratos',icon:CONTRACT_ICON}:null;
     const source=document.querySelector(`.sidebar nav .nav[data-view="${view}"]`);
     if(!source||source.hidden)return null;
     return {view,label:source.textContent.trim(),icon:source.querySelector('span')?.innerHTML||''};
@@ -337,6 +356,7 @@ async function startSession(){
   document.querySelectorAll('[data-admin-only]').forEach(n=>n.hidden=me.user.role!=='administrator');
   try{const {items,reason}=await api('workspace/connections');workspace.setConnections(items,reason)}
   catch{workspace.setConnections([])}
+  paintContracts();
   renderAccounts();
   paintViewAs(me.viewAs);
   paintNudge();
