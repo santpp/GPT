@@ -28,7 +28,7 @@ for folder in ['src','bin','database']:
         if file.is_file() and not(update and folder=='database' and file.name=='schema.sql'):
             files.append((file,'agora-private/'+file.relative_to(root).as_posix(),0o644))
 for file in sorted((root/'public').rglob('*')):
-    if file.is_file() and file.name not in ['index.html','sw.js']:
+    if file.is_file() and file.name not in ['index.html','sw.js','manifest.webmanifest']:
         rel=file.relative_to(root/'public').as_posix()
         # El manual (PDF y capturas) sólo va en la carpeta de la versión: help.js lo busca junto a sí mismo.
         if rel.startswith('assets/manual'):continue  # (el PDF queda fuera del paquete; ver arriba)
@@ -37,11 +37,16 @@ for file in sorted((root/'public').rglob('*')):
 for file in assets:
     files.append((file,'public_html/'+prefix+'/'+file.relative_to(root/'public/assets').as_posix(),0o644))
 html=index.replace('/assets/','/'+prefix+'/')
+# 1.10.26 · Los íconos de la app instalada también llevan la carpeta de la versión: si cambia el ícono, cambia su dirección
+# y el teléfono lo vuelve a pedir (antes el manifiesto apuntaba siempre a /assets/icons/… y el ícono viejo se quedaba).
+manifest=(root/'public/manifest.webmanifest').read_text().replace('/assets/','/'+prefix+'/')
+files.append((manifest.encode(),'public_html/manifest.webmanifest',0o644))
 files.append((html.encode(),'public_html/index.html',0o644))
 files.append((html.replace('<title>Ágora Digital · Conversaciones</title>','<title>Ágora Digital · Conexiones</title>').encode(),'public_html/conexiones.html',0o644))
 shell=['/','/conexiones.html','/manifest.webmanifest']+['/'+prefix+'/'+file.relative_to(root/'public/assets').as_posix() for file in assets]
 worker=re.sub(r"const CACHE=.*?;",'const CACHE='+json.dumps('agora-shell-'+version+'-'+build)+';',worker,count=1)
 worker=re.sub(r"const SHELL=\[.*?\];",'const SHELL='+json.dumps(shell)+';',worker,count=1,flags=re.S)
+worker=worker.replace("'/assets/icons/","'/"+prefix+"/icons/")  # 1.10.26: los avisos usan los íconos de esta versión
 files.append((worker.encode(),'public_html/sw.js',0o644))
 files.append((json.dumps({'version':version,'build':build}).encode(),'public_html/version.json',0o644))
 if update:
@@ -68,6 +73,9 @@ with zipfile.ZipFile(output) as archive:
     assert not any(n.startswith('public_html/') and ('/src/' in n or '/config/' in n or '/database/' in n) for n in names)
     assert ('/'+prefix+'/app.js').encode() in archive.read('public_html/conexiones.html')
     assert version.encode() in archive.read('public_html/index.html'), 'the page must show the packaged version'
+    man=json.loads(archive.read('public_html/manifest.webmanifest'))
+    assert all(i['src'].startswith('/'+prefix+'/') and ('public_html'+i['src']) in names for i in man['icons']), 'the installed-app icons must point to this build'
+    assert ('agora-shell-'+version+'-').encode() in archive.read('public_html/sw.js'), 'each version must renew the offline copy'
     assert b"Installation::VERSION" in archive.read('public_html/router.php'), 'the version header must be derived, not typed'
     # The deployed tree keeps the code in agora-private, not next to public_html:
     # a path built from the development layout works here and breaks on the server.
