@@ -1,0 +1,163 @@
+GUÍA DE DISEÑO · PÁGINA DE CONTRATOS (contratos.agoradigital.app) CON EL ESTILO DE ÁGORA
+=====================================================================================
+
+Para: la IA (o persona) que rediseña la página de contratos.
+Objetivo: que la página se vea y se sienta como Ágora (la app que usan los vendedores),
+porque se va a abrir DENTRO de Ágora, en el teléfono y en el ordenador.
+No cambies lo que la página hace (contratos, firmas, cobros, conexión con la cuenta):
+solo cómo se ve y cómo se lee. Lo de la sección 9 (verse dentro de Ágora) sí es obligatorio.
+
+
+1. QUIÉN LA USA Y CÓMO
+----------------------
+- Vendedores y administración de una subcuenta, casi siempre desde el TELÉFONO, con prisa.
+- Diseña primero para 390 px de ancho (prueba también 360, 412 y escritorio 1280).
+- Español neutro, tuteo, frases cortas.
+- Debe funcionar igual en modo claro y oscuro.
+
+
+2. COLORES (usa solo estos; no inventes otros)
+-----------------------------------------------
+Defínelos como variables CSS en :root y usa siempre las variables.
+
+  Texto principal        --ink          #0b0b10   (oscuro: #e6e8f0)
+  Texto secundario       --muted        #30343c   (oscuro: #9aa0b4)
+  Texto terciario        --subtle       #5d6370
+  Rojo de marca (vino)   --brand        #ad103c   (oscuro: #d13c63)
+  Fondo suave de marca   --brand-soft   #f7e9ee
+  Azul profundo          --navy         #282e49
+  Oro (solo fondos/detalles, NUNCA texto ni bordes)  --accent  #fabd4b
+  Fondo de aviso         --gold-soft    #fff4d5
+  Texto sobre aviso      --gold-ink     #7a5c18
+  Éxito                  --success      #2f7a52   fondo: #eaf7ef
+  Información            --info         #0a57d0   fondo: #e9f1ff
+  Tarjetas / paneles     --paper        #ffffff   (oscuro: #1b1f2c)
+  Fondo de página        --bg           #f7f7fa   (oscuro: #12151f)
+  Campos hundidos        --surface      #f1f1f5
+  Bordes                 --line         #e5e4e9   (oscuro: #2f3445)
+  Bordes de botones      --line-strong  #d8dde6
+
+Reglas:
+- El rojo de marca es para la acción principal, lo activo, los montos y el foco. No para decorar.
+- No hay un rojo de error aparte: un error usa el rojo de marca.
+- Modo oscuro: nunca negro puro (#000). Usa los valores «oscuro» de arriba.
+- Contraste de texto mínimo 4,5:1 en claro y oscuro.
+
+
+3. LETRA
+--------
+- Familia: "Author Variable" (archivos woff2: Author-Variable.woff2 y Author-VariableItalic.woff2,
+  pesos 200 a 700). Si no los tienes, usa la letra del sistema:
+  font-family: "Author Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+- Tamaños permitidos (px): 12, 13, 14, 16, 18, 22, 26, 32. No uses otros.
+  Texto normal 16; secundario 14; etiquetas 13; títulos de tarjeta 18; título de pantalla 26.
+- Pesos: 400 normal, 600 títulos de tarjeta y etiquetas, 700 cifras y títulos de pantalla.
+- En el teléfono, todo campo de texto mide al menos 16 px (si no, el iPhone hace zoom).
+- Montos con formato venezolano/español: 1.730,50 $ (punto de miles, coma decimal).
+
+
+4. FORMA, ESPACIO Y TOQUE
+-------------------------
+  Esquinas: botones y campos 8 px · tarjetas 12 px · paneles 16 px · píldoras 999 px
+  Toque mínimo: 44 px de alto en todo lo que se pulsa.
+  Sombras (solo tres):
+    pequeña  0 1px 3px rgba(18,21,31,.12)    chips, tarjetas elevadas
+    media    0 8px 24px rgba(18,21,31,.12)   menús desplegables
+    grande   0 16px 40px rgba(18,21,31,.15)  diálogos
+  Las tarjetas normales NO llevan sombra: borde 1px --line y esquina 12 px.
+  Espaciado: múltiplos de 4 (8, 12, 16, 24). Margen lateral en el teléfono: 16 px.
+  Puntos de corte: 600 px (teléfono, una columna) y 1200 px.
+  Nada se sale del ancho a 360 px (sin desplazamiento horizontal de la página).
+
+
+5. COMPONENTES (cómo se ven en Ágora)
+-------------------------------------
+- Botón principal: fondo --brand, texto blanco, esquina 8, alto 44. Uno por pantalla.
+- Botón secundario: fondo --paper, borde --line-strong, texto --ink.
+- Enlace de acción: texto rojo de marca subrayado («Ver la lista», «Ahora no»).
+- Campos: etiqueta visible ENCIMA del campo (el texto de ejemplo no sustituye la etiqueta),
+  fondo --paper, borde --line-strong, esquina 8; al enfocar, contorno rojo de marca.
+- Desplegables: <select> nativo dentro de un <label> visible, con el mismo estilo que los campos.
+- Buscador: icono de lupa a la izquierda, fondo --surface, esquina 8.
+- Tarjeta: fondo --paper, borde --line, esquina 12, relleno 16.
+- Estados en píldora (Firmado, Pendiente, Vencido…): texto 13, esquina 999,
+  colores: éxito (--success sobre #eaf7ef), aviso (--gold-ink sobre --gold-soft),
+  vencido/error (--brand sobre --brand-soft), neutro (--muted sobre --surface).
+- Listas: filas con avatar redondo de iniciales (fondo --brand-soft, texto --brand),
+  nombre en 600 y una línea secundaria en --muted.
+- Cargando: esqueletos grises animados, nunca una pantalla en blanco.
+- Vacíos: una frase que diga qué pasa y qué hacer («Todavía no hay contratos. Crea el primero.»).
+- Diálogos: panel centrado (en el teléfono, sube desde abajo), sombra grande, esquina 16.
+- Avisos breves tras una acción: banda flotante abajo («Contrato enviado para firmar.»).
+- Iconos: SVG de línea, 24×24, stroke="currentColor", grosor 1,7, puntas redondeadas.
+  Sin emojis como iconos.
+
+
+6. ESTADOS DE INTERACCIÓN
+-------------------------
+  Encima (ratón): borde o texto en rojo de marca.
+  Pulsado: se encoge al 97 %.
+  Foco con teclado: contorno de 2 px rojo de marca, separado 2 px. Nunca quitar el foco sin poner otro.
+  Desactivado: 50 % de opacidad. Los botones que envían algo se desactivan mientras esperan
+  y cambian el texto («Enviando…»); si falla, vuelven y se explica qué pasó.
+
+
+7. MOVIMIENTO
+-------------
+- Suave y corto: 0,25 a 0,45 s, curva cubic-bezier(.22,.61,.36,1).
+- Aparecer subiendo 8–14 px; paneles que suben desde abajo en el teléfono.
+- TODA animación se apaga con @media (prefers-reduced-motion: reduce).
+
+
+8. TEXTOS
+---------
+- Verbos concretos: «Enviar para firmar», «Descargar PDF», «Marcar como cobrado».
+- Los errores dicen qué pasó y qué hacer, sin códigos técnicos.
+- NUNCA aparecen en pantalla: «GoHighLevel», «GHL», «HighLevel», «LeadConnector», nombres de
+  permisos, direcciones de la API ni códigos internos. Se dice «la cuenta».
+- Nada de «Oops», signos de exclamación de más ni mayúsculas sostenidas.
+- Accesibilidad: lang="es", cada campo con su etiqueta, botones de solo icono con aria-label.
+
+
+9. OBLIGATORIO: VERSE DENTRO DE ÁGORA
+------------------------------------
+Ágora abrirá la página dentro de su propia pantalla (Ágora pone arriba su barra con «Volver»).
+Para eso la página debe:
+
+a) Aceptar el modo incrustado: si la dirección trae ?embed=1, ocultar su propia barra
+   superior, su logo grande y su pie; dejar solo el contenido, con margen lateral de 16 px.
+   Respetar las zonas seguras del teléfono (env(safe-area-inset-bottom)).
+
+b) Permitir que Ágora la muestre. En las cabeceras del servidor de contratos:
+     Content-Security-Policy: frame-ancestors 'self' https://nueva.agoradigital.app capacitor://localhost https://localhost
+   y QUITAR cualquier «X-Frame-Options: DENY/SAMEORIGIN».
+
+c) Que la sesión funcione incrustada. La cookie de sesión debe ser:
+     Secure; HttpOnly; SameSite=None; Partitioned
+   (sin esto, el navegador no guarda la sesión dentro de Ágora y pide entrar en cada vez
+   o no deja entrar). En iPhone el navegador puede bloquearla igual; por eso Ágora tendrá
+   un botón «Abrir en pantalla completa» de respaldo.
+
+d) (Recomendado) Entrada directa desde Ágora sin volver a poner usuario y clave: aceptar un
+   enlace firmado de un solo uso (?sso=...) que Ágora genera para la persona que lo abre.
+   Se acuerda aparte la clave compartida y el formato; no lo inventes.
+
+e) No abrir ventanas nuevas para su navegación normal (enlaces internos en la misma vista).
+   Los PDF y descargas pueden abrirse aparte.
+
+f) Avisar a Ágora si la persona cierra sesión o termina, con:
+     window.parent.postMessage({fuente:'contratos', evento:'cerrar'}, 'https://nueva.agoradigital.app')
+   (opcional; Ágora lo usará para volver solo).
+
+
+10. LISTA DE COMPROBACIÓN ANTES DE ENTREGAR
+------------------------------------------
+[ ] Solo colores de la sección 2, como variables, en claro y oscuro.
+[ ] Solo tamaños de letra de la sección 3.
+[ ] Todo lo que se pulsa mide 44 px de alto o más.
+[ ] Se ve bien a 360, 390 y 412 px, y a 1280 px; sin desplazamiento horizontal.
+[ ] Con ?embed=1 no se ve la barra propia ni el pie.
+[ ] Se abre dentro de Ágora (frame-ancestors) y la sesión se mantiene (cookie de la sección 9c).
+[ ] Ningún texto nombra al proveedor de la cuenta ni muestra códigos técnicos.
+[ ] Foco con teclado visible; animaciones apagadas con movimiento reducido.
+[ ] Contraste ≥ 4,5:1.
