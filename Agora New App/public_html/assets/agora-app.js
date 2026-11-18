@@ -4085,7 +4085,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.9.9').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.10.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -4976,6 +4976,7 @@ const arpTile = (texto, cls) => `<span class="${cls}" aria-hidden="true">${icon(
 function arpEsqueleto(root) {
   if (!root || !root.classList?.contains('ag')) return;
   vtInyectar(root);
+  try { opEmbudoInyectar(root); } catch { /* el embudo es un extra: nunca traba la vista */ }
   arpPersonalizar(root);
   // Cabeceras de sección: icono + título + ayuda (igual que secH en la agencia).
   root.querySelectorAll('.t-sec-row:not([data-arp])').forEach(row => {
@@ -5563,8 +5564,8 @@ const ARP_SECCIONES = [
   {id: 'dia', t: 'Tu día', re: /^tu d[ií]a/i, cifras: ['Leads de hoy', 'Conversaciones', 'Sin leer', 'Esperando respuesta', 'Contactos', 'Oportunidades abiertas']},
   {id: 'ventasAnio', t: 'Ventas del mes y del año', re: /^ventas del mes y del a/i, cifras: ['Ventas del mes', 'Tendencia del año']},
   {id: 'operacion', t: 'Operación del día', re: /^operaci[oó]n del d[ií]a/i, cifras: ['Tiempo de respuesta promedio (SLA)', 'Sin leer ahora', 'Leads del día', 'Primera respuesta más lenta', 'Conversaciones atendidas', 'Sin leer por asesor', 'Fuente de los leads', 'Leads por ejecutivo']},
-  {id: 'anuncios', t: 'Inversión en anuncios', re: /^inversi[oó]n en anuncios/i, cifras: ['Invertido en el mes', 'Impresiones', 'Coste por conversión', 'Coste por lead', 'Retorno por cada 100', 'Campañas por gasto']},
-  {id: 'embudo', t: 'Embudo por etapa', re: /^embudo por etapa/i, cifras: []},
+  /* 2.10.0: {id: 'anuncios' se mudó (Costos / Oportunidades → Embudos) */
+  /* 2.10.0: {id: 'embudo' se mudó (Costos / Oportunidades → Embudos) */
   {id: 'rentabilidad', t: 'Rentabilidad del mes', re: /^rentabilidad/i, cifras: ['Ganancia después de publicidad y comisiones', 'Ventas ganadas del mes', 'Mis ventas del mes', 'Ganancia real del mes', 'Costo por cierre', 'Ventas por cada 100 invertido', 'Costos de mercadeo y ventas', 'Comisiones del equipo']},
   {id: 'equipo', t: 'Desempeño del equipo de ventas', re: /^desempe[ñn]o del equipo/i, cifras: []},
   {id: 'eficacia', t: 'Eficacia de ventas', re: /^eficacia de ventas/i, cifras: ['Tiempo de cierre promedio', 'Valor cerrado', 'Velocidad de venta', 'Ticket promedio', 'Tasa de cierre', 'Por ejecutivo']},
@@ -7043,13 +7044,15 @@ const VG_TARJ_DEFECTO = ['cantidad', 'vendido', 'cobrado', 'porCobrar'];
 const GC_DEFECTO = ['cantidad', 'vendido', 'meta', 'mensual', 'ticket', 'cobrado', 'porCobrar'];
 function gcVivoHtml() {
   const d = VG.datos, mes = mesNombre(VG.mes || PERIODO);
-  const acts = `<button class="btn" type="button" data-gc-tarjetas>${icon('gear')}Editar tarjetas</button><a class="btn" href="${href(MODS.ventas?.path || '/ventas')}">${icon('receipt')}Ver las ventas</a>`;
+  const acts = ''; // 2.10.0: «Elegir cifras» y «Ver las ventas» van en la caja de las cifras, como en el Inicio
   const cabeza = head('Gestión comercial', 'Gestión Comercial', `Cómo va ${esc(mes)}: lo vendido, quién lo vendió y qué se vendió.`, acts);
   if (!d) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas del mes</b>Vuelve a intentarlo en un momento.</p></section>';
   const r = d.resumen || {}, items = d.items || [];
   const tarjeta = (cls, ic, t, val, det) => `<div class="ag-resumen ${cls}"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span><strong class="ag-resumen-v">${val}</strong><span class="ag-resumen-d">${det}</span></div>`;
   const elegidas = tarjElegidas('gestion', VG_TARJETAS, GC_DEFECTO);
-  const kpis = elegidas.length ? `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">${elegidas.map(id => { const x = VG_TARJETAS[id]; let v; try { v = x.f(d, r, mes); } catch { v = ['', '—', '']; } return tarjeta(v[0], x.ic, esc(x.t), v[1], v[2]); }).join('')}</section>` : '';
+  /* 2.10.0 · Pedido del usuario: las cifras en una sola caja, con la estructura del «Resumen de hoy» del Inicio (título y botones arriba, cifras separadas por líneas), conservando el ícono y el color de cada una. */
+  const kpis = `<section class="inicio-resumen gc-caja" aria-labelledby="gc-caja-t"><header class="inicio-resumen-h"><h2 id="gc-caja-t">Cifras de ${esc(mes)}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-gc-tarjetas>${icon('gear')}Elegir cifras</button><a class="inicio-resumen-ver" href="${href(MODS.ventas?.path || '/ventas')}">Ver las ventas${icon('chevR')}</a></span></header>`
+    + (elegidas.length ? `<div class="gc-caja-g">${elegidas.map(id => { const x = VG_TARJETAS[id]; let v; try { v = x.f(d, r, mes); } catch { v = ['', '—', '']; } return tarjeta(v[0], x.ic, esc(x.t), v[1], v[2]); }).join('')}</div>` : '<p class="inicio-resumen-x">No elegiste cifras para esta vista. Usa «Elegir cifras».</p>') + '</section>';
   const graf = vtPuede() ? '<div data-gc-graf-aqui></div>' : '';
   if (!items.length) return cabeza + kpis + `<section class="panel"><p class="empty"><b>Todavía no hay ventas registradas en ${esc(mes)}</b>Cuando se gane una oportunidad y se complete su venta, aparece aquí.</p></section>` + graf;
   const grupo = k => { const m = new Map(); items.forEach(v => { const n = v[k] || (k === 'vendedor' ? 'Sin vendedor' : 'Sin nombre'); if (!m.has(n)) m.set(n, []); m.get(n).push(v); }); return [...m.entries()].map(([n, l]) => ({n, l, total: l.reduce((t, v) => t + (Number(v.monto) || 0), 0)})).sort((a, b) => b.l.length - a.l.length || b.total - a.total); };
@@ -7546,6 +7549,51 @@ function gcGraficosInyectar(root) {
   tarjCargar('gestiongraf').then(pintar);
 }
 if (V.tc_resumen) { const m0 = V.tc_resumen.mounted; V.tc_resumen.mounted = function (root) { m0?.call(this, root); try { gcGraficosInyectar(root || document.getElementById('app')); } catch {} }; }
+/* ---------- 2.10.0 · Secciones que salieron del Tablero comercial (pedido del usuario: mover, no copiar) ----------
+   «Inversión en anuncios» va al final de Costos (con o sin reporte) y «Embudo por etapa» al final de Oportunidades → Embudos.
+   Mismos datos que tenían en el Tablero: workspace/ads (+ campañas de Meta) y las oportunidades abiertas por etapa de workspace/dashboard. */
+function coAdsInyectar(root) {
+  if (R?.view !== 'tc_costos' || !root || root.querySelector('[data-co-ads]') || !conectada() || typeof window.AgoraPintarAds !== 'function') return;
+  const cab = root.querySelector('.hx-top, .mod-h'); if (!cab?.parentElement) return;
+  const sec = document.createElement('div'); sec.dataset.coAds = '1'; sec.className = 'vt-sec gc-graf co-ads';
+  sec.innerHTML = '<section class="panel"><span class="sk w80"></span><span class="sk w60"></span></section>';
+  cab.parentElement.append(sec);
+  const mes = (typeof VG !== 'undefined' && VG.mes && TB.estado !== 'listo' ? VG.mes : PERIODO) || mesActualYM(), hoy = new Date().toISOString().slice(0, 10);
+  (async () => {
+    let a = null;
+    try { a = await agoraApi(`workspace/ads?period=${encodeURIComponent(mes)}&date=${hoy}`); } catch { a = null; }
+    if (a && a.estado === 'ok' && !(a.campanas || []).length) {
+      try { const cm = await agoraApi(`workspace/campanas?mes=${encodeURIComponent(mes)}`); if (Array.isArray(cm?.campanas)) a.campanas = cm.campanas.filter(c => Number(c.inversion) > 0).map(c => ({nombre: c.nombre, gasto: c.inversion, conversiones: c.resultados})); } catch { /* sin campañas */ }
+    }
+    if (!sec.isConnected) return;
+    if (!a) { sec.remove(); return; }
+    window.AgoraPintarAds(sec, a, mesNombre(mes).toLowerCase());
+  })();
+}
+if (V.tc_costos) { const m0 = V.tc_costos.mounted; V.tc_costos.mounted = function (root) { m0?.call(this, root); try { coAdsInyectar(root || document.getElementById('app')); } catch {} }; }
+const OPE = {d: null, t: 0, p: null};
+function opEmbudoInyectar(root) {
+  if (R?.view !== 'ag_board' || !root) return;
+  const pane = root.querySelector('#opp-pane'); if (!pane) return;
+  const enEmbudos = root.querySelector('.opp-tabs button')?.classList.contains('on') !== false && !!pane.querySelector('.kanban');
+  let sec = root.querySelector('[data-op-embudo]');
+  if (!enEmbudos) { if (sec) sec.hidden = true; return; }
+  if (sec) { sec.hidden = false; if (sec.nextElementSibling) root.append(sec); return; }
+  sec = document.createElement('div'); sec.dataset.opEmbudo = '1'; sec.className = 'vt-sec gc-graf op-embudo';
+  sec.innerHTML = `<div class="t-sec-row"><div><h2 class="t-sec">Embudo por etapa</h2><p>Cuánto hay en juego en cada etapa de tus embudos.</p></div></div><section class="panel"><span class="sk w80"></span><span class="sk w60"></span></section>`;
+  root.append(sec);
+  const pintar = d => {
+    const o = d?.opportunities; const p = sec.querySelector('section.panel'); if (!p) return;
+    if (!o) { sec.remove(); return; }
+    const st = Array.isArray(o.stages) ? o.stages : [], porValor = st.some(x => Number(x.value) > 0);
+    const filas = [...st].sort((a, b) => porValor ? (Number(b.value) || 0) - (Number(a.value) || 0) : (Number(b.count) || 0) - (Number(a.count) || 0))
+      .map(x => ({l: x.name, v: porValor ? Number(x.value) || 0 : Number(x.count) || 0, texto: (porValor ? usd(Number(x.value) || 0) + ' · ' : '') + `${int(Number(x.count) || 0)} oportunidad${Number(x.count) === 1 ? '' : 'es'}`}));
+    p.outerHTML = panel('Oportunidades abiertas', 'Ordenadas por monto, de la etapa con más dinero a la que menos.', filas.length ? barras(filas) + (o.sampled ? '<p class="src">Se resumen las oportunidades abiertas más recientes.</p>' : '') : '<p class="empty"><b>Sin oportunidades abiertas</b>Todavía no hay oportunidades abiertas en esta cuenta.</p>');
+  };
+  if (OPE.d && Date.now() - OPE.t < 60000) { pintar(OPE.d); return; }
+  OPE.p ??= agoraApi('workspace/dashboard').then(d => { OPE.d = d; OPE.t = Date.now(); return d; }).catch(() => null).finally(() => { OPE.p = null; });
+  OPE.p.then(d => { if (sec.isConnected) pintar(d); });
+}
 var TB_VIVO = {
   configuracion: {need: () => Promise.all([vgCargar().catch(() => null)]).then(() => mesCfgCargar(null, true)), render: cfVivoHtml, montar: cfVivoMontar},
   tendencias: {need: () => Promise.all([vgCargar().catch(() => null), faCargar(), tarjCargar('tendencias')]), render: tdVivoHtml, montar: r => r?.querySelector('[data-td-tarjetas]')?.addEventListener('click', () => tarjEditar('tendencias', TD_TARJETAS, TD_DEFECTO, 'Tendencias', repaint))},

@@ -526,3 +526,20 @@ a.inicio-resumen-c:hover .inicio-resumen-l .ic{opacity:.9;transform:translateX(2
 .gc-graf-vacio{margin:0}
 /* 2.9.8 · Sin «scroll infinito» en Conversaciones: la lista contiene a sus elementos posicionados (el texto oculto de «sin leer» se salía y alargaba la página). */
 #view.ag #live-list,#view.ag #contact-results,#view.ag .board-stage-body{position:relative}
+/* 2.10.0 · Gestión Comercial: cifras en una sola caja como el «Resumen de hoy», con el ícono y el color de cada cifra */
+.gc-caja .gc-caja-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line)}
+.gc-caja .gc-caja-g .ag-resumen{background:transparent;border:0;border-radius:0;box-shadow:none;padding:16px 16px 12px;border-bottom:1px solid var(--line)}
+.gc-caja .gc-caja-g .ag-resumen:not(:nth-child(4n+1)){border-left:1px solid var(--line)}
+.gc-caja .gc-caja-g .ag-resumen:nth-child(4n+1){padding-left:0}
+.gc-caja .gc-caja-g .ag-resumen:nth-last-child(-n+4):nth-child(4n+1),.gc-caja .gc-caja-g .ag-resumen:nth-last-child(-n+4):nth-child(4n+1)~.ag-resumen{border-bottom:0}
+@media (max-width:1100px){
+  .gc-caja .gc-caja-g{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .gc-caja .gc-caja-g .ag-resumen{border-left:0!important;padding-left:0;border-bottom:1px solid var(--line)!important}
+  .gc-caja .gc-caja-g .ag-resumen:nth-child(2n){border-left:1px solid var(--line)!important;padding-left:16px}
+  .gc-caja .gc-caja-g .ag-resumen:nth-last-child(-n+2):nth-child(2n+1),.gc-caja .gc-caja-g .ag-resumen:nth-last-child(-n+2):nth-child(2n+1)~.ag-resumen{border-bottom:0!important}
+}
+@media (max-width:600px){
+  .gc-caja .gc-caja-g{grid-template-columns:minmax(0,1fr)}
+  .gc-caja .gc-caja-g .ag-resumen,.gc-caja .gc-caja-g .ag-resumen:nth-child(2n){border-left:0!important;padding:12px 0;border-bottom:1px solid var(--line)!important}
+  .gc-caja .gc-caja-g .ag-resumen:last-child{border-bottom:0!important}
+}

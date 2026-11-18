@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.10.0 · Orden de los módulos (pedido del usuario):**
+- **Gestión Comercial:** las cifras van en una sola caja, como el «Resumen de hoy» del Inicio (título «Cifras de <mes>», «Elegir cifras» y «Ver las ventas» arriba, cifras separadas por líneas), y cada una conserva su ícono y su color.
+- **«Inversión en anuncios» se mudó del Tablero comercial a Costos** (al final del módulo, con «Campañas por gasto»).
+- **«Embudo por etapa» se mudó del Tablero comercial a Oportunidades → Embudos** (al final; no aparece en «Ganadas»).
+- El botón «Ir a Ajustes» de «No hay cuenta publicitaria conectada» ya se ve con su texto.
+- `tests/fixes-296.py` lo comprueba (26).
+
 **Novedades 2.9.9:**
 - **Los gráficos de ventas van al final de Gestión Comercial** (pedido del usuario), con reporte y sin él. Antes, sin reporte, salían debajo de las tarjetas.
 - `tests/graficos-gestion.py` lo comprueba (10).

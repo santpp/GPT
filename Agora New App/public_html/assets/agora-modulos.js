@@ -350,7 +350,8 @@
   var panelx = (t, s, body, extra = "") => `<section class="panel"><div class="panel-h"><div><h2 class="t-panel">${t}</h2>${s ? `<p>${s}</p>` : ""}</div>${extra}</div>${body}</section>`;
   var tile = (l, v, f = "", cls = "") => `<div class="micro ${cls}"><h3>${esc2(l)}</h3><p class="t-metric">${v}</p>${f ? `<span class="f">${f}</span>` : ""}</div>`;
   var cargando = (n) => `<div class="grid g2">${'<div class="micro"><span class="sk w60"></span><span class="sk big"></span></div>'.repeat(n)}</div>`;
-  var slotsDia = () => '<div id="arp-dia"></div><div id="arp-ads"></div>';
+  // Agora New App 2.10.0: «Inversión en anuncios» se mudó a Costos (pedido del usuario); el Tablero ya no tiene su lugar.
+  var slotsDia = () => '<div id="arp-dia"></div>';
   var slotEficacia = () => '<div id="arp-efi"></div>';
   function pintarDia(nodo, d) {
     if (!d) {
@@ -389,6 +390,8 @@
       ${panelx("Leads por ejecutivo", "A quién le tocaron.", rueda((d.leadsPorUsuario || []).map((x) => ({ l: x.nombre, n: x.n })), { rotulo: "Leads asignados por ejecutivo", vacio: d.leads === null || d.leads === void 0 ? "Todavía no hay datos de leads para hoy." : "Hoy no se asignó ningún lead." }))}
     </div>`;
   }
+  // Agora New App 2.10.0: Costos dibuja «Inversión en anuncios» con este mismo código.
+  window.AgoraPintarAds = (nodo, a, periodoTexto) => pintarAds(nodo, a, periodoTexto);
   function pintarAds(nodo, a, periodoTexto) {
     if (!a) {
       nodo.innerHTML = "";
@@ -424,7 +427,7 @@
         ${tile("Impresiones", num(a.impresiones), a.clics !== void 0 ? `${num(a.clics)} clics` : "")}
         ${tile("Coste por conversión", esc2(dinero(a.costePorConversion)), `${num(a.conversiones)} conversiones`)}
         ${tile("Coste por lead", esc2(dinero(a.costePorLead)), "Inversión entre leads del día")}
-        ${tile("Retorno por cada 100", esc2(dinero(a.retornoPorCien)), a.retornoPorCien == null ? "Se calcula con lo vendido del mes: «Ventas por cada 100 invertido», en Rentabilidad" : "Vendido entre invertido, por cien")}
+        ${tile("Retorno por cada 100", esc2(dinero(a.retornoPorCien)), a.retornoPorCien == null ? "Se calcula con lo vendido del mes: «Ventas por cada 100 invertido», en Rentabilidad del Tablero comercial" : "Vendido entre invertido, por cien")}
       </div>
     </div>
     <div class="mt">${panelx(
@@ -1023,8 +1026,7 @@
       </div>
       <section id="won-team" hidden></section>
       ${slotsDia()}
-      ${sec2("Embudo por etapa", "Cuánto hay en juego en cada etapa de tus embudos.")}
-      ${panel("Oportunidades abiertas", "Ordenadas por monto, de la etapa con más dinero a la que menos.", funnel + (data.opportunities?.sampled ? '<p class="src">Se resumen las oportunidades abiertas más recientes.</p>' : ""))}
+      ${/* Agora New App 2.10.0: «Embudo por etapa» se mudó a Oportunidades → Embudos (pedido del usuario). */ ""}
       <div id="board-month">${monthBlock(month2)}</div>
       ${slotEficacia()}`;
       paintWonTeam();

@@ -101,8 +101,14 @@ with sync_playwright() as pw:
     ok('null' not in t,'el Tablero no muestra «null»')
     ok('La cuenta no ha informado lo invertido' not in t,'Rentabilidad no contradice a «Inversión en anuncios»')
     ok('Todavía no hay equipo importado' not in t,'el equipo del mes aparece')
-    cp=t[t.find('Campañas por gasto'):t.find('Campañas por gasto')+400]
-    ok('Sin movimiento' not in cp,'«Campañas por gasto» muestra las campañas de Meta')
+    ok('Inversión en anuncios' not in t and 'Embudo por etapa' not in t,'2.10.0: «Inversión en anuncios» y «Embudo por etapa» ya no están en el Tablero')
+    pg.goto(B+'/costos');pg.wait_for_timeout(7000)
+    tc=pg.locator('[data-co-ads]').inner_text() if pg.locator('[data-co-ads]').count() else ''
+    cp=tc[tc.find('Campañas por gasto'):tc.find('Campañas por gasto')+400]
+    ok('Campañas por gasto' in tc and 'Sin movimiento' not in cp,'«Campañas por gasto» (ahora en Costos) muestra las campañas de Meta')
+    pg.goto(B+'/oportunidades');pg.wait_for_timeout(6000)
+    ok(pg.locator('[data-op-embudo]:not([hidden]) .bars').count()==1,'«Embudo por etapa» está al final de Oportunidades → Embudos')
+    pg.goto(B+'/comercial');pg.wait_for_timeout(7000);pg.mouse.wheel(0,6000);pg.wait_for_timeout(3000)
     ok('según el reporte mensual' in t or 'según las ventas registradas' in t,'«Ventas del mes» dice de dónde sale la cifra')
     ok(not errs,f'sin errores de pantalla {errs}')
     br.close()
