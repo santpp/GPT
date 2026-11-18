@@ -4085,7 +4085,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.9.6').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.9.7').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -7050,7 +7050,8 @@ function gcVivoHtml() {
   const tarjeta = (cls, ic, t, val, det) => `<div class="ag-resumen ${cls}"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span><strong class="ag-resumen-v">${val}</strong><span class="ag-resumen-d">${det}</span></div>`;
   const elegidas = tarjElegidas('gestion', VG_TARJETAS, GC_DEFECTO);
   const kpis = elegidas.length ? `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">${elegidas.map(id => { const x = VG_TARJETAS[id]; let v; try { v = x.f(d, r, mes); } catch { v = ['', '—', '']; } return tarjeta(v[0], x.ic, esc(x.t), v[1], v[2]); }).join('')}</section>` : '';
-  if (!items.length) return cabeza + kpis + `<section class="panel"><p class="empty"><b>Todavía no hay ventas registradas en ${esc(mes)}</b>Cuando se gane una oportunidad y se complete su venta, aparece aquí.</p></section>`;
+  const graf = vtPuede() ? '<div data-gc-graf-aqui></div>' : '';
+  if (!items.length) return cabeza + kpis + graf + `<section class="panel"><p class="empty"><b>Todavía no hay ventas registradas en ${esc(mes)}</b>Cuando se gane una oportunidad y se complete su venta, aparece aquí.</p></section>`;
   const grupo = k => { const m = new Map(); items.forEach(v => { const n = v[k] || (k === 'vendedor' ? 'Sin vendedor' : 'Sin nombre'); if (!m.has(n)) m.set(n, []); m.get(n).push(v); }); return [...m.entries()].map(([n, l]) => ({n, l, total: l.reduce((t, v) => t + (Number(v.monto) || 0), 0)})).sort((a, b) => b.l.length - a.l.length || b.total - a.total); };
   const mensual = l => vgPorMoneda(vgSuma(l.filter(v => v.cobro === 'recurrente'), v => (Number(v.monto) || 0) * (FREC_MES[v.frecuencia] || 1)));
   const barra = (n, max) => `<span class="gc-barra" aria-hidden="true"><i style="width:${Math.max(4, Math.round(100 * n / Math.max(max, 1)))}%"></i></span>`;
@@ -7061,7 +7062,7 @@ function gcVivoHtml() {
   const cobros = [['recurrente', 'Recurrente'], ['unico', 'Pago único'], ['venta', 'Venta única']].map(([k, t]) => [t, items.filter(v => v.cobro === k)]).filter(([, l]) => l.length);
   const formas = `<ul class="gc-formas">${cobros.map(([t, l]) => `<li><span>${esc(t)}</span><b>${int(l.length)}</b><small>${esc(vgPorMoneda(vgSuma(l, v => v.monto)))}</small></li>`).join('')}</ul>`;
   const pend = (d.pendientes || []).length ? `<p class="gc-aviso is-warn">${icon('warn')}<span>${d.pendientes.length === 1 ? 'Hay una oportunidad ganada' : `Hay ${int(d.pendientes.length)} oportunidades ganadas`} sin su venta completada: no cuentan aquí hasta completarla en <a href="${href(MODS.ventas?.path || '/ventas')}">Ventas</a>.</span></p>` : '';
-  return cabeza + pend + kpis
+  return cabeza + pend + kpis + graf
     + `<div class="gc-cols"><section class="panel pf-sec">${secH('team', 'Por vendedor', `Quién vendió en ${esc(mes)}, de más a menos ventas.`)}${tablaVend}</section>
        <section class="panel pf-sec">${secH('wallet', 'Por forma de cobro', 'Cuántas ventas y cuánto, según cómo se cobran.')}${formas}</section></div>`
     + `<section class="panel pf-sec mt">${secH('receipt', 'Por producto o servicio', 'Lo que más se vendió en el mes.')}${tablaProd}</section>`;
@@ -7439,11 +7440,13 @@ if (typeof V === 'object' && V.tc_catalogo) {
    Solo para quien ve cifras del equipo. */
 const VT = {carga: null, t: 0, datos: null};
 const vtPuede = () => esSuperAdmin() || (puede('equipo.metricas') && puede('finanzas'));
-async function vtCargar() {
-  if (VT.datos && Date.now() - VT.t < 60000) return VT.datos;
-  if (VT.carga) return VT.carga;
+async function vtCargar(mesPedido) {
+  const ymP = /^\d{4}-\d{2}$/.test(mesPedido || '') && mesPedido <= mesActualYM() ? mesPedido : mesActualYM(); // 2.9.7: Gestión Comercial pide el mes que se está viendo
+  if (VT.datos && VT.datos.ym === ymP && Date.now() - VT.t < 60000) return VT.datos;
+  if (VT.carga && VT.cargaYm === ymP) return VT.carga;
+  VT.cargaYm = ymP;
   VT.carga = (async () => {
-    const ym = mesActualYM(), y = Number(ym.slice(0, 4));
+    const ym = ymP, y = Number(ym.slice(0, 4));
     await Promise.all([cargarTablero().catch(() => null), faCargar(), mesCfgCargar(ym, true)]);
     const rep = TB.estado === 'listo' && TB.api?.ventasDelAnio ? {[y]: TB.api.ventasDelAnio(y), [y - 1]: TB.api.ventasDelAnio(y - 1)} : {};
     const reg = {}; (FA.datos?.items || []).forEach(v => { const k = String(v.fecha).slice(0, 7); reg[k] = (reg[k] || 0) + (Number(v.monto) || 0); });
@@ -7488,7 +7491,7 @@ function vtDeDonde(d) {
   if ((f.registradas || []).includes(d.ym)) return ' · según las ventas registradas';
   return '';
 }
-function vtHtml(d) {
+function vtHtml(d, partes = ['mes', 'anio']) {
   const m = Number(d.ym.slice(5, 7)) - 1, mesL = mesNombre(d.ym).split(' ')[0].toLowerCase();
   const v = d.act[m], va = d.ant[m], meta = d.meta;
   const seis = Array.from({length: 6}, (_, i) => { const a = d.y * 12 + m - 5 + i, yy = Math.floor(a / 12), mm = a % 12; const arr = yy === d.y ? d.act : yy === d.y - 1 ? d.ant : []; return {l: vtMesCorto(mm), v: arr[mm] ?? null, p: yy === d.y ? d.ant[mm] ?? null : null}; });
@@ -7507,7 +7510,7 @@ function vtHtml(d) {
       <p class="vt-sent">${mejor ? `El mejor mes fue <b>${esc(mesNombre(`${d.y}-${String(mejor.i + 1).padStart(2, '0')}`).split(' ')[0].toLowerCase())}</b>${bajo && bajo.i !== mejor.i ? ` y el más bajo, <b>${esc(mesNombre(`${d.y}-${String(bajo.i + 1).padStart(2, '0')}`).split(' ')[0].toLowerCase())}</b>` : ''}.` : 'Todavía no hay ventas este año.'}</p>
       <dl class="vt-cmp"><div><dt>Mejor mes</dt><dd>${mejor ? esc(usd(mejor.v)) : '—'}</dd></div><div><dt>Mes más bajo</dt><dd>${bajo ? esc(usd(bajo.v)) : '—'}</dd></div><div><dt>Promedio mensual</dt><dd>${prom != null ? esc(usd(prom)) : '—'}</dd></div></dl></div>
     <div class="vt-c">${vtGrafica({labels: Array.from({length: 12}, (_, i) => vtMesCorto(i)), values: d.act, prev: d.ant, meta: null})}<div class="vt-leyenda"><span><i class="vt-sw is-act"></i>${d.y}</span><span><i class="vt-sw is-prev"></i>${d.y - 1}</span><small>${esc(vtFuenteTxt(d.fuente))}</small></div></div></div></section>`;
-  return mesPanel + anioPanel;
+  return (partes.includes('mes') ? mesPanel : '') + (partes.includes('anio') ? anioPanel : '');
 }
 function vtInyectar(root) {
   if (R?.view !== 'ag_dashboard' || !vtPuede()) return;
@@ -7517,6 +7520,32 @@ function vtInyectar(root) {
   body.append(sec);
   vtCargar().then(d => { const c = sec.querySelector('.vt-cuerpo'); if (c && sec.isConnected) c.innerHTML = vtHtml(d); }).catch(() => { const c = sec.querySelector('.vt-cuerpo'); if (c) c.innerHTML = '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas</b>Vuelve a abrir el tablero en un momento.</p></section>'; });
 }
+/* ---------- 2.9.7 · Gráficos de ventas también en Gestión Comercial (pedido del usuario) ----------
+   Los mismos de «Ventas del mes y del año» del Tablero (mismos datos: vtCargar; mismo permiso: vtPuede).
+   Cada persona elige cuáles ver con «Editar gráficos» (vista «gestiongraf»; la administración puede fijar la del equipo).
+   Con reporte mensual, la cabecera del reporte ya trae la gráfica del mes: por defecto solo se agrega la tendencia del año. */
+const GC_GRAFICOS = {
+  graficaMes: {t: 'Ventas del mes', ic: 'trend', d: 'Gráfico: lo vendido en el mes frente al año anterior y a la meta.'},
+  graficaAnio: {t: 'Tendencia del año', ic: 'pulse', d: 'Gráfico: el año mes a mes frente al anterior.'},
+};
+const gcGrafDefecto = () => (typeof TB !== 'undefined' && TB.estado === 'listo') ? ['graficaAnio'] : ['graficaMes', 'graficaAnio'];
+function gcGraficosInyectar(root) {
+  if (R?.view !== 'tc_resumen' || !vtPuede() || !root || root.querySelector('[data-gc-graf]')) return;
+  const ancla = root.querySelector('[data-gc-graf-aqui]');
+  const sec = document.createElement('div'); sec.dataset.gcGraf = '1'; sec.className = 'vt-sec gc-graf';
+  if (ancla) ancla.replaceWith(sec); else { const cab = root.querySelector('.hx-top, .mod-h'); if (!cab?.parentElement) return; cab.parentElement.append(sec); }
+  const pintar = () => {
+    const sel = tarjElegidas('gestiongraf', GC_GRAFICOS, gcGrafDefecto());
+    sec.innerHTML = `<div class="t-sec-row"><div><h2 class="t-sec">Gráficos de ventas</h2><p>Los mismos del Tablero comercial: del reporte mensual cuando lo trae; si no, de las ventas registradas.</p></div><div class="acts"><button class="btn btn-sm" type="button" data-gc-graf-ed>${icon('gear')}Editar gráficos</button></div></div>`
+      + (sel.length ? `<div class="vt-cuerpo"><section class="panel"><span class="sk w80"></span><span class="sk w60"></span></section></div>` : '<p class="src gc-graf-vacio">No elegiste gráficos para esta vista.</p>');
+    sec.querySelector('[data-gc-graf-ed]').onclick = () => tarjEditar('gestiongraf', GC_GRAFICOS, gcGrafDefecto(), 'Gestión Comercial (gráficos)', pintar);
+    if (!sel.length) return;
+    vtCargar(typeof VG !== 'undefined' && VG.mes && TB.estado !== 'listo' ? VG.mes : PERIODO).then(d => { const c = sec.querySelector('.vt-cuerpo'); if (c && sec.isConnected) c.innerHTML = vtHtml(d, sel.map(id => id === 'graficaMes' ? 'mes' : 'anio')); })
+      .catch(() => { const c = sec.querySelector('.vt-cuerpo'); if (c) c.innerHTML = '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas</b>Vuelve a abrir Gestión Comercial en un momento.</p></section>'; });
+  };
+  tarjCargar('gestiongraf').then(pintar);
+}
+if (V.tc_resumen) { const m0 = V.tc_resumen.mounted; V.tc_resumen.mounted = function (root) { m0?.call(this, root); try { gcGraficosInyectar(root || document.getElementById('app')); } catch {} }; }
 var TB_VIVO = {
   configuracion: {need: () => Promise.all([vgCargar().catch(() => null)]).then(() => mesCfgCargar(null, true)), render: cfVivoHtml, montar: cfVivoMontar},
   tendencias: {need: () => Promise.all([vgCargar().catch(() => null), faCargar(), tarjCargar('tendencias')]), render: tdVivoHtml, montar: r => r?.querySelector('[data-td-tarjetas]')?.addEventListener('click', () => tarjEditar('tendencias', TD_TARJETAS, TD_DEFECTO, 'Tendencias', repaint))},

@@ -10,8 +10,9 @@
    - **Etapa 2 · carga por módulo:** cada módulo se descarga al abrirlo y un error queda dentro de su módulo.
    - **Etapa 3 · limpiar las capas:** cada pantalla con sus ajustes en un solo lugar.
    - Más adelante: el ERP usa los archivos separados de las pantallas de Mobile en lugar de la copia empaquetada `agora-modulos.js`.
-2. **ERP · menú principal, puntos 4 y 5** (cuatro cifras por fila y separación con la barra superior): cuando el usuario los explique.
-3. **Ágora Mobile queda quieto:** no entra en la refactorización (ya está separado en archivos con importaciones).
+2. **ERP · widgets editables (mediano plazo, decisión del usuario: «tan personalizable o más que la cuenta»):** cada tarjeta como cifra o gráfico; diccionario de métricas (una sola definición por cifra); ruta de cálculo en el servidor con fuentes, operaciones y agrupaciones en lista cerrada; editor «Agregar widget»; fórmulas entre widgets, datos escritos a mano y plantillas por rubro. Después de la Etapa 1.
+3. **ERP · menú principal, puntos 4 y 5** (cuatro cifras por fila y separación con la barra superior): cuando el usuario los explique.
+4. **Ágora Mobile queda quieto:** no entra en la refactorización (ya está separado en archivos con importaciones).
 
 **Otros (sin decidir):** módulos del reporte para empresas que no son ASOCIM; límite de intentos de contraseña por correo; Capacitor 6.2.3.
 
@@ -284,6 +285,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - El repositorio se divide: `Agora Mobile/` (release 1.10.14 de nueva.agoradigital.app; el código sigue en la raíz) y `Agora New App/` (ERP 2.1.19 recibido: `public_html/`, `servidor/`). Análisis completo: `Agora New App/ANALISIS.md`. Sin Docker; MySQL.
 - Se deja de llamar «armazón». Lo de abajo es el historial de cuando lo era.
 - **2.2.0 (13 de noviembre)**: estable en MySQL; conexión con la cuenta por subcuenta (token cifrado, Location ID, «Probar conexión»); fuente Author; arreglos de Ajustes, Contactos, Gestión Comercial y logos; paquete de producción sin modo pruebas (`agora-new-app-2.2.0.zip`) y paquete de demo aparte. Siguiente: Conversaciones con el motor de Ágora Mobile.
+- **2.9.7 (18 de noviembre)**: «Ventas del mes» y «Tendencia del año» también en Gestión Comercial, elegibles con «Editar gráficos» (primer paso de los widgets editables).
 - **2.9.6 (18 de noviembre)**: arreglos de la revisión completa: Tareas conectada sin carga por Excel (antes caía en Productos), ventas desde el 1/1/2026, mensualidades sin fin siempre con cobros por delante y sin perder cobros pagados al editar, «Nuevo convenio» lleva a contratos.agoradigital.app, montos de convenio con punto, Tablero comercial coherente (cifras del mes con el motor), sin «null ganados», Excel «0.750» y «2026». Pendientes en `Agora New App/FIXES-PENDIENTES.txt`.
 - **2.9.5 (17 de noviembre)**: mismas herramientas en todas las tablas: «Excel» arriba con el mismo menú, barra Columnas/Excel también en tablas en vivo, sin CSV sueltos ni buscadores repetidos; Ventas registradas con filtros Vendedor y Producto.
 - **2.9.4 (17 de noviembre)**: menú principal: franja «Ágora Digital App / Hola», «Ir a Dashboard», cifras iguales, etiquetas de las tarjetas que llevan a cada herramienta.

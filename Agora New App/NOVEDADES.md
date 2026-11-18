@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.9.7 · Gráficos de ventas en Gestión Comercial:**
+- **«Ventas del mes» y «Tendencia del año» también en Gestión Comercial**, los mismos del Tablero comercial (mismos datos y misma regla de quién los ve: quien ve las cifras del equipo).
+- **«Editar gráficos»:** cada persona elige cuáles ver; la administración puede dejar su elección como vista del equipo. Primer paso hacia los widgets editables.
+- Con reporte mensual, por defecto sale solo la tendencia del año (la cabecera del reporte ya trae la gráfica del mes); sin reporte, salen los dos, justo debajo de las tarjetas.
+- Los gráficos siguen el mes elegido arriba (Oct · Nov · Dic).
+- Prueba nueva: `tests/graficos-gestion.py` (9).
+
 **Novedades 2.9.6 · Arreglos de la revisión completa (18 nov):**
 - **Importaciones más seguras:** con la subcuenta conectada, Tareas (como Contactos y Oportunidades) ya no ofrece «Descargar plantilla» ni «Cargar desde Excel». Antes, «Cargar» abría Migración con **Productos y servicios** elegido y el archivo de tareas se podía cargar como productos. Migración nunca vuelve a abrir la carga de un módulo distinto al pedido.
 - **Ventas desde el 1 de enero de 2026** (decisión del usuario): al crear, editar e importar, la fecha de inicio no puede ser anterior. El mensaje lo dice en palabras. (Antes, una venta importada de hace más de 400 días no se podía editar nunca.)

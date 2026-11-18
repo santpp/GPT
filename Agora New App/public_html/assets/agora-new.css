@@ -515,3 +515,12 @@ a.inicio-resumen-c:hover .inicio-resumen-l .ic{opacity:.9;transform:translateX(2
   .inicio-resumen-d{grid-column:auto}
 }
 .est-n{align-self:center;font-size:13px;color:var(--muted)}
+/* 2.9.7 · Gráficos de ventas en Gestión Comercial (fuera del Tablero, sin el estilo de #view.ag) */
+.gc-graf{margin-top:24px}
+.gc-graf>.t-sec-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px 16px;flex-wrap:wrap;margin:0 0 12px}
+.gc-graf>.t-sec-row .t-sec{font-size:18px;font-weight:600;margin:0}
+.gc-graf>.t-sec-row p{color:var(--muted);font-size:13px;margin:4px 0 0}
+.gc-graf>.t-sec-row .acts{display:flex;gap:8px}
+.gc-graf .vt-cuerpo{display:grid;gap:16px}
+.gc-graf .vt-panel{margin:0}
+.gc-graf-vacio{margin:0}
