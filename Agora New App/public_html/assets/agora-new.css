@@ -524,3 +524,5 @@ a.inicio-resumen-c:hover .inicio-resumen-l .ic{opacity:.9;transform:translateX(2
 .gc-graf .vt-cuerpo{display:grid;gap:16px}
 .gc-graf .vt-panel{margin:0}
 .gc-graf-vacio{margin:0}
+/* 2.9.8 · Sin «scroll infinito» en Conversaciones: la lista contiene a sus elementos posicionados (el texto oculto de «sin leer» se salía y alargaba la página). */
+#view.ag #live-list,#view.ag #contact-results,#view.ag .board-stage-body{position:relative}

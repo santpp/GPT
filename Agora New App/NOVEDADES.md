@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.9.8 · Conversaciones sin «scroll infinito» en el ordenador:**
+- Con muchas conversaciones, la página se alargaba miles de píxeles en blanco debajo del chat: el texto oculto de «sin leer» de cada conversación se salía de la lista. Ahora la lista lo contiene y la página mide lo que debe.
+- Lo mismo se aplicó a las listas de Contactos y a las columnas de Oportunidades, por si acaso.
+
 **Novedades 2.9.7 · Gráficos de ventas en Gestión Comercial:**
 - **«Ventas del mes» y «Tendencia del año» también en Gestión Comercial**, los mismos del Tablero comercial (mismos datos y misma regla de quién los ve: quien ve las cifras del equipo).
 - **«Editar gráficos»:** cada persona elige cuáles ver; la administración puede dejar su elección como vista del equipo. Primer paso hacia los widgets editables.

@@ -62,19 +62,20 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 10 | Una contraseña de dueño quedó visible en una captura de pantalla. | Quien vea la captura la conoce. | Cambiarla desde Perfil. No es un fallo de la app. | Pendiente (lo hace el dueño) |
 | — | La base se actualizaba sola solo hasta la migración 005: una migración nueva no se aplicaba al abrir la app. | El arranque comparaba con un nombre de archivo fijo. | Ahora mira la última migración que haya. | Corregido en 2.9.0 |
 | 50 | Revisión completa de la 2.9.5 (18 nov): «Cargar desde Excel» en Tareas abría Migración en Productos; ventas importadas antiguas imposibles de editar y sin cobros futuros; editar una mensualidad borraba cobros pagados después del 12; el buscador de «Nuevo convenio» ignoraba lo escrito; «40.50» en un convenio daba 4050; el Tablero comercial se contradecía (inversión, campañas, equipo, «null ganados»); Excel leía «0.750» como 750 y «2026» como 1905. | Se encontraron probando todas las pantallas con cada rol, la API y los guardados. | Arreglados en 2.9.6 (ver NOVEDADES). Lo que quedó para después, en FIXES-PENDIENTES.txt. | Corregido en 2.9.6 |
+| 51 | Conversaciones con «scroll infinito» en el ordenador: una zona en blanco enorme debajo del chat. | El texto oculto de «sin leer» de cada conversación tiene posición absoluta y la lista no lo contenía: se salía y alargaba la página. Con pocas conversaciones de prueba no se notaba. | La lista (y las de Contactos y Oportunidades) contiene a esos elementos. | Corregido en 2.9.8 |
 
 ## Sin probar o pendiente
 
 | N.º | Qué falta | Por qué importa |
 |---|---|---|
 | 11 | Probar las escrituras con la cuenta real: enviar un mensaje, asignar una conversación, editar un contacto, mover y crear una oportunidad, marcar ganada, crear, corregir y completar una tarea, crear un contacto nuevo, abrir Redes y anuncios y ver sus cifras, y ver las campañas de Meta del mes. | Las atiende el mismo código de Ágora Mobile 1.10.14, pero en esta app solo se probaron contra una cuenta simulada; desde el entorno de desarrollo no hay salida a la cuenta real. |
-| 12 | Confirmar el error 2 en tests después de subir la 2.9.7. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
+| 12 | Confirmar el error 2 en tests después de subir la 2.9.8. | La causa se dedujo sin acceso al servidor. Si la ventana sigue sin estilo tras recargar, hay que mirar si `public_html/assets/diseno.css` y `agora-new.css` del servidor son los del ZIP. |
 | 13 | Cabeceras de seguridad en OpenLiteSpeed. | OpenLiteSpeed no aplica las líneas `Header` del `.htaccess`; van en el vHost (paso 9 de la guía). |
 | 14 | (Resuelto en 2.5.0) La bandeja usaba el código de una versión anterior de Ágora Mobile. | Bandeja, Contactos y Embudos ya llevan lo de la 1.10.14. |
 
 ## Cómo comprobar la versión instalada
 
-- `https://TU-DOMINIO/api/health` debe decir `"version":"2.9.7"`.
+- `https://TU-DOMINIO/api/health` debe decir `"version":"2.9.8"`.
 - `https://TU-DOMINIO/version.json` debe decir lo mismo.
 - Si una pantalla se ve rara tras actualizar: recarga una vez. Si sigue, en Chrome toca el icono a la izquierda de la dirección → Configuración del sitio → Borrar datos, y vuelve a entrar.
 

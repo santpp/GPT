@@ -16,7 +16,7 @@
 
 **Otros (sin decidir):** módulos del reporte para empresas que no son ASOCIM; límite de intentos de contraseña por correo; Capacitor 6.2.3.
 
-Estado actualizado: 10 de noviembre de 2026. **Versión activa: 1.10.24 (1.10.1 + Consumos + teléfono + Embudos y búsqueda + Entrar como + listas por vendedor + menú «Más»)**, con el cambio de fuente (texto negro y más grande) y el canal de origen a la vista. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 10 de noviembre de 2026. **Versión activa: 1.10.25 (1.10.1 + Consumos + teléfono + Embudos y búsqueda + Entrar como + listas por vendedor + menú «Más»)**, con el cambio de fuente (texto negro y más grande) y el canal de origen a la vista. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 El trabajo de la 1.11.0 y la 1.11.1 (rutas de servidor para el armazón nuevo de Agora Digital App: tareas, recordatorios, auditoría, identidad del espacio, resumen, subcuenta de demostración) **queda en pausa, sin subir**, hasta que el usuario retome ese desarrollo. El código y los paquetes siguen en el repositorio por si se retoma, pero no son la versión activa. El desarrollo sigue a partir de la 1.10.1.
 
@@ -285,6 +285,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - El repositorio se divide: `Agora Mobile/` (release 1.10.14 de nueva.agoradigital.app; el código sigue en la raíz) y `Agora New App/` (ERP 2.1.19 recibido: `public_html/`, `servidor/`). Análisis completo: `Agora New App/ANALISIS.md`. Sin Docker; MySQL.
 - Se deja de llamar «armazón». Lo de abajo es el historial de cuando lo era.
 - **2.2.0 (13 de noviembre)**: estable en MySQL; conexión con la cuenta por subcuenta (token cifrado, Location ID, «Probar conexión»); fuente Author; arreglos de Ajustes, Contactos, Gestión Comercial y logos; paquete de producción sin modo pruebas (`agora-new-app-2.2.0.zip`) y paquete de demo aparte. Siguiente: Conversaciones con el motor de Ágora Mobile.
+- **2.9.8 (18 de noviembre)**: Conversaciones sin «scroll infinito» en el ordenador (la lista contiene sus textos ocultos).
 - **2.9.7 (18 de noviembre)**: «Ventas del mes» y «Tendencia del año» también en Gestión Comercial, elegibles con «Editar gráficos» (primer paso de los widgets editables).
 - **2.9.6 (18 de noviembre)**: arreglos de la revisión completa: Tareas conectada sin carga por Excel (antes caía en Productos), ventas desde el 1/1/2026, mensualidades sin fin siempre con cobros por delante y sin perder cobros pagados al editar, «Nuevo convenio» lleva a contratos.agoradigital.app, montos de convenio con punto, Tablero comercial coherente (cifras del mes con el motor), sin «null ganados», Excel «0.750» y «2026». Pendientes en `Agora New App/FIXES-PENDIENTES.txt`.
 - **2.9.5 (17 de noviembre)**: mismas herramientas en todas las tablas: «Excel» arriba con el mismo menú, barra Columnas/Excel también en tablas en vivo, sin CSV sueltos ni buscadores repetidos; Ventas registradas con filtros Vendedor y Producto.
@@ -344,6 +345,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## 1.10.4 · Consumos: movimientos de la agencia
 - Bloque «Agencia · movimientos propios», bloques para las subcuentas no conectadas, y selector «Sólo la agencia».
+
+## 1.10.25 · Sin «scroll infinito» en el ordenador
+Arreglo: Conversaciones (texto oculto que alargaba la página), Contactos y Oportunidades (ocupan la pantalla y cada lista se desplaza por dentro).
 
 ## 1.10.24 · Contratos solo en «Más» en el teléfono
 Arreglo: «Contratos» salía también en la barra de abajo del teléfono (regla perdida en 1.10.22).
