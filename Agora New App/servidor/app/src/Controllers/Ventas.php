@@ -36,6 +36,9 @@ final class Ventas {
  private const SIN_FIN=12;
  /** Se crea una tarea por cada cobro que cae en los próximos N días (siempre al menos el primero). */
  private const DIAS_TAREA=31;
+ /** 2.9.6 · Decisión del usuario: las ventas se registran desde el 1 de enero de 2026 (al crear, editar e importar). */
+ public const DESDE='2026-01-01';
+ public const DESDE_TEXTO='Las ventas se registran desde el 1 de enero de 2026. Revisa la fecha de inicio.';
 
  public function __construct(public DB $db,public Auth $auth,public Records $records){}
 
@@ -70,6 +73,9 @@ final class Ventas {
     if($ct){$d['contactoId']=$ct['ghl_id'];$d['contactoEnlazado']='espejo';unset($d['version']);
      $this->db->run("UPDATE agora_records SET data=?,version=version+1,updated_at=UTC_TIMESTAMP() WHERE tenant_id=? AND kind='venta' AND uid=? AND version=?",[DB::json($d),$this->auth->tenant,$r['uid'],(int)$r['version']]);$r['version']=(int)$r['version']+1;}
    }
+   // 2.9.6: una venta sin fin nunca se queda sin cobros por delante.
+   $hoyX=gmdate('Y-m-d');if(self::extenderSinFin($d,$hoyX)){unset($d['version']);$d['estado']=self::estadoDe($d);
+    $this->db->run("UPDATE agora_records SET data=?,status=?,version=version+1,updated_at=UTC_TIMESTAMP() WHERE tenant_id=? AND kind='venta' AND uid=? AND version=?",[DB::json($d),$d['estado'],$this->auth->tenant,$r['uid'],(int)$r['version']]);$r['version']=(int)$r['version']+1;}
    $d['id']=$r['uid'];$d['version']=(int)$r['version'];$d['estado']=self::estadoDe($d);
    if(!in_array($d['alumno']??'',self::ALUMNO,true))$d['alumno']='activo';$out[]=$d;}
   return $out;
@@ -88,12 +94,27 @@ final class Ventas {
   $frec=in_array($d['frecuencia']??'',self::FRECUENCIAS,true)?$d['frecuencia']:null;
   $q=is_numeric($d['cuotas']??null)&&(int)$d['cuotas']>0?(int)$d['cuotas']:null;
   if($cobro==='recurrente'){$frec??='mensual';$cuotas=$q;}elseif($cobro==='unico'){$cuotas=$q??1;if($cuotas>1)$frec??='mensual';}else{$cuotas=1;$frec=null;}
-  $plan=$monto>0?self::plan($cobro,$monto,(string)($frec??'mensual'),$cobro==='recurrente'?($cuotas??self::SIN_FIN):$cuotas,$inicio,null):[];
+  $plan=$monto>0?self::plan($cobro,$monto,(string)($frec??'mensual'),$cobro==='recurrente'?($cuotas??self::sinFinCuantos((string)($frec??'mensual'),$inicio,$hoy)):$cuotas,$inicio,null):[];
   foreach($plan as &$c)if($c['fecha']<$hoy)$c=['estado'=>'pagado','pagadoEn'=>$c['fecha'].'T12:00:00Z','pagadoPor'=>'Importación (venía al día)']+$c;unset($c);
   $d['cobro']=$cobro;$d['monto']=$monto;$d['frecuencia']=$frec;$d['cuotas']=$cuotas;$d['fechaInicio']=$inicio;$d['moneda']=$d['moneda']??'USD';
   $d['plan']=$plan;$d['total']=round(array_sum(array_column($plan,'monto')),2);$d['sinFin']=$cobro==='recurrente'&&$cuotas===null;$d['planOrigen']='importacion';
   $d['estado']=self::estadoDe($d);
   return $d;
+ }
+ /** 2.9.6 · Cuántos cobros lleva un plan sin fin: los que ya pasaron desde el inicio más SIN_FIN por delante (máximo 600). */
+ public static function sinFinCuantos(string $frec,string $inicio,string $hoy):int{
+  $pasados=0;foreach(self::plan('recurrente',1,$frec,600,$inicio,null) as $c){if($c['fecha']>$hoy)break;$pasados++;}
+  return min(600,$pasados+self::SIN_FIN);
+ }
+ /** 2.9.6 · Un plan sin fin siempre tiene cobros por delante: si quedan menos de 3 desde hoy, se agregan SIN_FIN más (pendientes). Devuelve true si cambió. */
+ public static function extenderSinFin(array &$v,string $hoy):bool{
+  if(empty($v['sinFin'])||empty($v['plan'])||!is_array($v['plan']))return false;
+  if(count(array_filter($v['plan'],fn($c)=>(string)$c['fecha']>=$hoy))>=3||count($v['plan'])>=600)return false;
+  $ult=end($v['plan']);$falta=self::sinFinCuantos((string)($v['frecuencia']??'mensual'),(string)$ult['fecha'],$hoy);
+  $ext=self::plan('recurrente',(float)$v['monto'],(string)($v['frecuencia']??'mensual'),min(600-count($v['plan']),$falta)+1,(string)$ult['fecha'],$v['diaCobro']??null);
+  foreach(array_slice($ext,1) as $c){$c['n']=(int)$ult['n']+(int)$c['n']-1;$v['plan'][]=$c;}
+  $v['total']=round(array_sum(array_column($v['plan'],'monto')),2);
+  return true;
  }
  public function listar():array{
   $mes=isset($_GET['mes'])&&$_GET['mes']!==''?Http::period($_GET['mes']):null;
@@ -261,8 +282,11 @@ final class Ventas {
    if($venta['cobro']==='venta')$this->moverStock($catalogo,$venta['productoId'],-$venta['cantidad']);
    // Plan: se recalcula y se conservan los cobros ya pagados (por número).
    $pagados=[];foreach($antes['plan']??[] as $c)if(($c['estado']??'')==='pagado')$pagados[(int)$c['n']]=$c;
+   // 2.9.6: un plan sin fin que ya creció (más de 12 cobros) conserva su largo, para no perder cobros pagados.
+   if($v['sinFin']&&count($antes['plan']??[])>count($v['plan']))$v['plan']=self::plan('recurrente',(float)$v['datos']['monto'],(string)$v['datos']['frecuencia'],min(600,count($antes['plan'])),(string)$v['datos']['fechaInicio'],$v['datos']['diaCobro']);
    $plan=$v['plan'];foreach($plan as &$c)if(isset($pagados[$c['n']]))$c=array_replace($c,['estado'=>'pagado','pagadoEn'=>$pagados[$c['n']]['pagadoEn']??null,'pagadoPor'=>$pagados[$c['n']]['pagadoPor']??null]);unset($c);
-   $venta['plan']=$plan;$venta['total']=$v['total'];$venta['sinFin']=$v['sinFin'];
+   $venta['plan']=$plan;$venta['total']=round(array_sum(array_column($plan,'monto')),2);$venta['sinFin']=$v['sinFin'];
+   self::extenderSinFin($venta,gmdate('Y-m-d'));
    $venta['editada']=gmdate('c');$venta['editadaPor']=$this->auth->user['name']??'';$venta['estado']=self::estadoDe($venta);
    $this->records->save('venta',$id,$venta,($venta['cliente']['nombre']??'').' · '.$venta['producto'],$venta['estado'],substr($venta['fecha'],0,7),$v['vendedorId']??($row['owner_id']!==null?(int)$row['owner_id']:null));
    // La oportunidad y el contacto siguen a la venta: no puede quedar un dato distinto en cada módulo.
@@ -373,7 +397,7 @@ final class Ventas {
   }else $cuotas=1;
   if($frecuencia!==null&&!in_array($frecuencia,self::FRECUENCIAS,true))Http::fail('Frecuencia inválida.');
   $inicio=self::fecha(Http::text($b,'fechaInicio',10),'fecha de inicio');
-  $min=gmdate('Y-m-d',strtotime('-400 days'));$max=gmdate('Y-m-d',strtotime('+800 days'));if($inicio<$min||$inicio>$max)Http::fail('La fecha de inicio está muy lejos de hoy.');
+  $max=gmdate('Y-m-d',strtotime('+800 days'));if($inicio<self::DESDE)Http::fail(self::DESDE_TEXTO);if($inicio>$max)Http::fail('La fecha de inicio está muy lejos de hoy.');
   $fechaVenta=isset($b['fecha'])&&$b['fecha']!==''?self::fecha(Http::text($b,'fecha',10),'fecha de la venta'):($antes['fecha']??gmdate('Y-m-d'));
   if($fechaVenta>gmdate('Y-m-d',strtotime('+1 day')))Http::fail('La fecha de la venta no puede ser futura.');
   $dia=$b['diaCobro']??null;$diaCobro=($dia===null||$dia==='')?null:Http::integer($dia,1,28);

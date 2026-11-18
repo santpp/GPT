@@ -7,6 +7,9 @@ function db(): PDO {
     return $db ??= new PDO(getenv('DB_DSN') ?: '', getenv('DB_USER') ?: '', getenv('DB_PASSWORD') ?: '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false]);
 }
 function respond(array $body, int $status = 200): never {
+    // Agora New App 2.9.6: el ERP puede ajustar la respuesta a sus reglas (por ejemplo, quién edita las cifras del mes).
+    $t=$GLOBALS['motorPuente']['transformar']??null;
+    if($status<400&&is_callable($t)){try{$body=$t($body);}catch(Throwable $e){}}
     motorEspejo($body,$status);
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');

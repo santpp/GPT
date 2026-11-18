@@ -250,11 +250,11 @@ final class Migracion {
   $c=strrpos($s,',');$p=strrpos($s,'.');
   if($c!==false&&$p!==false){if($c>$p)$s=str_replace(['.',','],['','.'],$s);else $s=str_replace(',','',$s);}
   elseif($c!==false){if(substr_count($s,',')>1)$s=str_replace(',','',$s);else $s=str_replace(',','.',$s);}
-  elseif($p!==false&&preg_match('/^-?\d{1,3}(\.\d{3})+$/D',$s))$s=str_replace('.','',$s);
+  elseif($p!==false&&preg_match('/^-?[1-9]\d{0,2}(\.\d{3})+$/D',$s))$s=str_replace('.','',$s); // 2.9.6: «0.750» es 0,75 (un cero delante no es separador de miles)
   return is_numeric($s)?(float)$s:null;
  }
  public static function fecha(mixed $v):?string{
-  if(is_int($v)||is_float($v)||(is_string($v)&&preg_match('/^\d{4,5}(\.\d+)?$/D',trim($v)))){$n=(float)$v;if($n<1||$n>2958465)return null;$ts=(int)round(($n-25569)*86400);return gmdate('Y-m-d',$ts);}
+  if(is_int($v)||is_float($v)||(is_string($v)&&preg_match('/^\d{4,5}(\.\d+)?$/D',trim($v)))){$n=(float)$v;if($n<10000||$n>2958465)return null;/* 2.9.6: «2026» u otro número corto no es una fecha (antes daba 1905) */$ts=(int)round(($n-25569)*86400);return gmdate('Y-m-d',$ts);}
   $s=trim((string)$v);
   if(preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ][0-9:.]+Z?)?$/D',$s,$m))[$y,$mo,$d]=[(int)$m[1],(int)$m[2],(int)$m[3]];
   elseif(preg_match('~^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2}|\d{4})$~D',$s,$m)){[$d,$mo,$y]=[(int)$m[1],(int)$m[2],(int)$m[3]];if($y<100)$y+=2000;}
@@ -400,6 +400,9 @@ final class Migracion {
    if(is_array($old['cliente']??null)&&is_string($data['cliente']??null))$data['cliente']=['nombre'=>$data['cliente']]+$old['cliente'];
    elseif(is_string($data['cliente']??null)&&$data['cliente']!=='')$data['cliente']=['nombre'=>$data['cliente'],'documento'=>(string)($data['documento']??''),'correo'=>(string)($data['correo']??''),'telefono'=>(string)($data['telefono']??''),'direccion'=>'','empresa'=>''];
    foreach(['fecha','cliente','monto'] as $k)if(!isset($data[$k])||$data[$k]===''){$falla($titulo[$k]??$k,'Es obligatorio.');return;}
+   // 2.9.6 · Las ventas se cargan desde el 1 de enero de 2026 (decisión del usuario).
+   $ini=(string)($data['fechaInicio']??'')?:(string)$data['fecha'];
+   if($ini<\Agora\Controllers\Ventas::DESDE){$falla($titulo[isset($data['fechaInicio'])&&$data['fechaInicio']!==''?'fechaInicio':'fecha']??'Fecha','Las ventas se cargan desde el 1 de enero de 2026.');return;}
    // 2.8.15: la venta importada nace con su plan de cobros (cuotas ya pasadas = pagadas); al actualizar, se rehace solo si no tenía.
    if(!array_key_exists('plan',$data)||!$old)$data=\Agora\Controllers\Ventas::planImportada($data,gmdate('Y-m-d'));
    $label=trim(($data['cliente']['nombre']??'').' '.($data['documento']??'').' '.($data['correo']??''));$status=(string)($data['estado']??$data['cobro']??'');$period=substr((string)$data['fecha'],0,7);

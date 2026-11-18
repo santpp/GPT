@@ -424,7 +424,7 @@
         ${tile("Impresiones", num(a.impresiones), a.clics !== void 0 ? `${num(a.clics)} clics` : "")}
         ${tile("Coste por conversión", esc2(dinero(a.costePorConversion)), `${num(a.conversiones)} conversiones`)}
         ${tile("Coste por lead", esc2(dinero(a.costePorLead)), "Inversión entre leads del día")}
-        ${tile("Retorno por cada 100", esc2(dinero(a.retornoPorCien)), "Vendido entre invertido, por cien")}
+        ${tile("Retorno por cada 100", esc2(dinero(a.retornoPorCien)), a.retornoPorCien == null ? "Se calcula con lo vendido del mes: «Ventas por cada 100 invertido», en Rentabilidad" : "Vendido entre invertido, por cien")}
       </div>
     </div>
     <div class="mt">${panelx(
@@ -498,6 +498,11 @@
       }
     };
     const [d, a] = await Promise.all([traer(`workspace/dia?${q}`), traer(`workspace/ads?${q}`)]);
+    // Agora New App 2.9.6: «Campañas por gasto» usa las mismas campañas de Meta que Embudo y publicidad (antes salía vacío con inversión).
+    if (a && a.estado === "ok" && !(a.campanas || []).length) {
+      const cm = await traer(`workspace/campanas?mes=${encodeURIComponent(period)}`);
+      if (cm && Array.isArray(cm.campanas)) a.campanas = cm.campanas.filter((c) => Number(c.inversion) > 0).map((c) => ({ nombre: c.nombre, gasto: c.inversion, conversiones: c.resultados }));
+    }
     if (!active()) return;
     if (dia) pintarDia(dia, d);
     if (ads) pintarAds(ads, a, periodoTexto);
@@ -1045,8 +1050,9 @@
       const actions = `<div class="acts"><label class="fld">Mes<select id="board-period">${monthOptions(month2.period)}</select></label>${month2.canEdit ? '<button type="button" data-board-settings class="btn btn-cta">Cifras del mes</button>' : ""}</div>`;
       const sales = month2.sales || {};
       const tiles2 = [
-        ...!restricted ? [metric("Ventas ganadas del mes", number(sales.closings ?? 0), `${money2(sales.total ?? 0)} en total`)] : [],
-        metric("Mis ventas del mes", month2.mine ? number(month2.mine.closings) : null, month2.mine ? `${money2(month2.mine.sold)} ganados` : unlinkedNote()),
+        ...!restricted ? [metric("Ganadas en la cuenta este mes", number(sales.closings ?? 0), `${money2(sales.total ?? 0)} en total, según la cuenta`)] : [],
+        // Agora New App 2.9.6: sin enlace con la cuenta no hay «mis ventas» (antes salía «0 · null ganados»).
+        metric("Mis ventas del mes", month2.mine && month2.mine.closings != null ? number(month2.mine.closings) : "—", month2.mine && month2.mine.closings != null ? `${money2(month2.mine.sold ?? 0)} ganados` : "Tu usuario no está enlazado con la cuenta. Se enlaza en Usuarios y roles."),
         metric("Ganancia real del mes", money2(p.net), p.net === null ? "Falta indicar los costos fijos" : `Después de ${money2(p.fixedCosts)} en costos fijos`),
         metric(`Costo por ${one}`, money2(p.costPerClosing), p.costPerClosing === null ? "Falta lo invertido en publicidad" : `${money2(p.ads)} entre ${number(sales.closings)} ${word}`),
         metric("Ventas por cada 100 invertido", money2(p.returnPerHundred)),
@@ -1060,7 +1066,8 @@
         return acc;
       }, {});
       const goalKind = goal.progress === null || goal.progress === void 0 ? "" : goal.progress >= month2.settings.green ? "ok" : goal.progress >= month2.settings.amber ? "warn" : "bad";
-      const goalText = goal.target === null ? "Indica la meta del mes para ver el avance." : goal.missing > 0 ? `Faltan ${money2(goal.missing)} para la meta de ${money2(goal.target)}.` : `Meta de ${money2(goal.target)} superada.`;
+      // Agora New App 2.9.6: el avance se mide con lo ganado en la cuenta; se dice para que no choque con la cifra del reporte mensual.
+      const goalText = goal.target === null ? "Indica la meta del mes para ver el avance." : goal.missing > 0 ? `Faltan ${money2(goal.missing)} para la meta de ${money2(goal.target)}, según lo ganado en la cuenta.` : `Meta de ${money2(goal.target)} superada, según lo ganado en la cuenta.`;
       const lead = p.profit === null ? "Indica lo invertido para ver la ganancia." : p.marginPerUnit !== null ? `De cada 1,00 vendido quedan ${money2(p.marginPerUnit)}.` : "";
       return `${sec2(`Rentabilidad de ${esc3(monthName(month2.period))}`, "Lo vendido, lo que se va en publicidad y comisiones, y lo que queda.", actions)}
       ${adsLine}${warn}

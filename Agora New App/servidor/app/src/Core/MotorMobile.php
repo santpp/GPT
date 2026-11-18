@@ -94,7 +94,28 @@ final class MotorMobile {
  }
 
  /** Atiende una ruta en vivo con el motor. Responde y termina. */
- public static function atender(DB $erp,array $config,Auth $a,string $p,string $m):never{
+ /**
+  * 2.9.6 · Cifras del mes del Tablero con la subcuenta conectada: las calcula el motor (lo ganado en la cuenta, lo invertido en anuncios,
+  * el equipo importado y «mis ventas»), con la configuración del mes que se guarda en Ágora. Así el Tablero no se contradice.
+  */
+ public static function mesTablero(DB $erp,array $config,Auth $a,string $period):never{
+  $tenant=(int)$a->tenant;self::instalar($erp,$config);self::arrancar($config);
+  if(!\query('SELECT 1 FROM ghl_connections WHERE id=? AND tenant_id=?',[$tenant,self::AGENCIA])->fetchColumn())self::sincronizar($erp,$config,$tenant);
+  require_once dirname(__DIR__,3).'/motor/src/Board.php';
+  $s=$erp->setting($tenant,'board.'.$period,[]);if(!is_array($s))$s=[];
+  // Los montos guardados por Ágora pueden venir como texto («40.5»): se pasan como números para que el motor no los lea como 405.
+  foreach(['otherAds','fixedCosts','teamGoal'] as $k)if(isset($s[$k])&&is_string($s[$k]))$s[$k]=is_numeric($s[$k])?(float)$s[$k]:null;
+  if(is_array($s['goals']??null))foreach($s['goals'] as $id=>$g)if(is_string($g))$s['goals'][$id]=is_numeric($g)?(float)$g:null;
+  // La comisión es la que se fija en Ajustes del ERP (integración de la subcuenta), no otra guardada en el motor.
+  $cfg=$erp->setting($tenant,'integracion',[]);$hist=is_array($cfg['comisiones']??null)?$cfg['comisiones']:[];
+  try{\query('DELETE FROM commission_rules WHERE connection_id=?',[$tenant]);foreach($hist as $r)if(is_array($r)&&in_array($r['kind']??'',['percent','per_closing'],true)&&preg_match('/^\d{4}-(0[1-9]|1[0-2])$/D',(string)($r['since']??''))&&is_numeric($r['amount']??null))\query('INSERT INTO commission_rules(connection_id,effective_from,kind,amount) VALUES(?,?,?,?)',[$tenant,$r['since'],$r['kind'],round((float)$r['amount'],2)]);}catch(\Throwable){}
+  \Board::save($tenant,$period,$s);
+  $_GET['period']=$period;
+  $edita=in_array($a->user['role']??'',['MASTER','SUPERADMIN','ADMIN'],true);
+  self::atender($erp,$config,$a,'workspace/board-month','GET',static fn(array $b):array=>['canEdit'=>$edita]+$b);
+ }
+
+ public static function atender(DB $erp,array $config,Auth $a,string $p,string $m,?\Closure $transformar=null):never{
   $user=$a->requireUser();$tenant=$a->tenant;
   self::instalar($erp,$config);self::arrancar($config);
   if(!\query('SELECT 1 FROM ghl_connections WHERE id=? AND tenant_id=?',[$tenant,self::AGENCIA])->fetchColumn())self::sincronizar($erp,$config,$tenant);
@@ -118,7 +139,7 @@ final class MotorMobile {
   };
   // 2.9.0 · espejo: cada respuesta de contactos u oportunidades queda guardada (sobrescribe por id de la cuenta).
   $espejo=new \Agora\Services\Espejo($erp,(int)$tenant);
-  $GLOBALS['motorPuente']=['connectionId'=>$tenant,'alActuar'=>$alActuar,'alResponder'=>static fn(array $body)=>$espejo->deRespuesta($p,$body),'membership'=>function(array $connection)use($erp,$user,$restringido,$escribe,$reasigna):array{
+  $GLOBALS['motorPuente']=['connectionId'=>$tenant,'transformar'=>$transformar,'alActuar'=>$alActuar,'alResponder'=>static fn(array $body)=>$espejo->deRespuesta($p,$body),'membership'=>function(array $connection)use($erp,$user,$restringido,$escribe,$reasigna):array{
    $full=\PermissionPolicy::capabilities(['identity_type'=>'native','role'=>'administrator']);
    // 2.4.0 · primero el enlace que eligió quien administra; si no hay, el del mismo correo.
    $enlace=(new \Agora\Services\UserLinks($erp))->forUser((int)$connection['id'],['id'=>$user['id'],'email'=>$user['email']]);

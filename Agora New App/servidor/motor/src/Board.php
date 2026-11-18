@@ -291,10 +291,12 @@ final class Board {
     private function team(array $connection,array $settings,array $byMember,bool $restricted,?string $mine,array $rule):array {
         // Quienes administran la cuenta (de subcuenta o de agencia) no son vendedores:
         // no salen en la lista. Lo que cierren sigue contando en el total del mes.
-        $members=query("SELECT external_user_id AS id,display_name AS name FROM external_users WHERE connection_id=? AND active=TRUE AND COALESCE(role_name,'')<>'admin' AND COALESCE(role_type,'')<>'agency' ORDER BY display_name",[$connection['id']])->fetchAll();
+        $members=query("SELECT external_user_id AS id,display_name AS name,(COALESCE(role_name,'')='admin' OR COALESCE(role_type,'')='agency') AS admin FROM external_users WHERE connection_id=? AND active=TRUE ORDER BY display_name",[$connection['id']])->fetchAll();
         $rows=[];
         foreach($members as $member) {
             if($restricted&&$member['id']!==$mine)continue;
+            // Agora New App 2.9.6: quien administra sale en el equipo solo si cerró algo este mes (así coincide con «Por ejecutivo»).
+            if(!empty($member['admin'])&&empty($byMember[$member['id']]['closings']))continue;
             $sold=$byMember[$member['id']]['sold']??0.0;
             $closings=$byMember[$member['id']]['closings']??0;
             $goal=$settings['goals'][$member['id']]??null;

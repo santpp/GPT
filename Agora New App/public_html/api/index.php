@@ -38,6 +38,8 @@ try{
    \Agora\Core\MotorMobile::atender($db,$config,$api->a,$path,$method);
   }
  }
+ // 2.9.6 · Cifras del mes del Tablero con la subcuenta conectada: las calcula el motor con la configuración del mes de Ágora.
+ if($api->a->user&&$path==='workspace/board-month'&&$method==='GET'){$tenantMes=$api->a->workspace();if(\Agora\Core\MotorMobile::conectada($db,$tenantMes)){$api->a->permit('datos.consultar');\Agora\Core\MotorMobile::mesTablero($db,$config,$api->a,\Agora\Core\Http::period($_GET['period']??gmdate('Y-m')));}}
  if($path==='sign')$api->a->rate('sign:'.($_SERVER['REMOTE_ADDR']??''),100,300);
  if($api->a->user&&$method!=='GET')$api->a->rate('writes:'.$api->a->user['id'],120,60);
  $call=fn()=>$api->dispatch($path,$method,$body);

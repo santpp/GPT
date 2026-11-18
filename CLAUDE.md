@@ -34,8 +34,33 @@ Léelo entero antes de tocar nada. Es el resumen de cómo trabajamos y de lo que
 ## Estructura del repositorio
 
 - **Raíz** (`src/`, `public/`, `database/`, `tests/`, `deploy/`): **Ágora Mobile** (Ágora 1.x), en producción en nueva.agoradigital.app. Última: **1.10.24**. Paquete en `Agora Mobile/agora-update-1.10.24.zip` (se arma con `python3 deploy/native/package.py "Agora Mobile/agora-update-X.zip" --update`, que usa `deploy/native/UPDATE-X.md` y la versión de `src/Installation.php`; subir también `public/index.html` pie y `tests/integration.php`) (+ `.sha256`, `manual-vendedores.pdf`). PHP 8.3 sin framework, módulos ES en el navegador, `public/router.php`, `src/live-inbox.php`, pasarela `GhlGateway` (20 consultas cada 10 s, 50 000 al día), `TokenVault` (sodium, XChaCha20). Diseño: `docs/DESIGN.md`, `tests/design-tokens.py`.
-- **`Agora New App/`**: el **ERP** (no llamarlo «armazón»). Hoy en pruebas en **tests.agoradigital.app** (CyberPanel + OpenLiteSpeed). Versión actual: **2.9.5**.
+- **`Agora New App/`**: el **ERP** (no llamarlo «armazón»). Hoy en pruebas en **tests.agoradigital.app** (CyberPanel + OpenLiteSpeed). Versión actual: **2.9.6**.
 - `docs/roadmap.md`: historial de versiones de ambos.
+
+## Dos productos, dos desarrollos
+
+| | **Ágora Mobile** (raíz del repo) | **Agora New App · ERP** (`Agora New App/`) |
+|---|---|---|
+| Qué es | La app del vendedor (bandeja, contactos, oportunidades, tablero), PWA y Android | El sistema de gestión completo (ventas, facturación, reporte mensual, contratos, agencia) |
+| Dónde corre | Producción: nueva.agoradigital.app | Pruebas: tests.agoradigital.app |
+| Código | 23 módulos ES ya separados (`public/assets/*.js`), `src/` PHP | `agora-app.js` (un solo archivo grande, se va a refactorizar), `agora-modulos.js` (pantallas de Mobile empaquetadas), `servidor/` |
+| Paquete | `deploy/native/package.py … --update` + `deploy/native/UPDATE-X.md` | `tools/package.py` |
+| Pruebas | `tests/*.php` y `tests/*-ui.py` de la raíz (servidor estático :8080) | `Agora New App/tests/*.py` (API :8090) |
+
+- **Se desarrollan por separado.** Un pedido es de uno u otro producto; en el roadmap cada punto dice cuál. Al trabajar en uno, **no se toca el otro**.
+- **Mobile no se refactoriza** y se toca solo cuando el usuario pide un cambio de Mobile («deja ese repo quieto» para la refactorización).
+- **El ERP lleva dentro una copia del motor de Mobile** (`servidor/motor/`, de Mobile 1.10.14). Los cambios a esa copia son del ERP: se marcan «Agora New App» en el código y se anotan en `servidor/motor/LEEME.md`, para volver a aplicarlos si algún día se copia el motor otra vez. Cambiar la copia **no** cambia Mobile, y un cambio de Mobile **no** llega solo al ERP.
+- Ideas que nacen en un producto y pasan al otro (por ejemplo, Contratos: botón en Mobile, en el ERP «Nuevo convenio» lleva a contratos.agoradigital.app) se deciden y se entregan por separado.
+
+## Revisión completa y fixes (metodología, 18 nov)
+
+Cuando el usuario pide «prueba todo» o «testea todo y no arregles nada»:
+1. **Solo probar, no arreglar.** Ni una línea de código hasta entregar el informe.
+2. **Qué se prueba:** todas las pruebas automáticas; una sonda de la API con cada rol (lecturas y permisos); los guardados (validaciones, conflicto de versión, registros ajenos, inyección de HTML); todas las pantallas con cada rol (errores del navegador, respuestas 4xx/5xx, textos técnicos o «null/undefined», desborde a 390 px), en ordenador y teléfono; las exportaciones (que el Excel traiga lo que se ve); las cargas por Excel; y que las cifras de un módulo coincidan con las de otro. Guardar copia de la base antes de probar escrituras y restaurarla al final. Los guiones viven en el scratchpad (`qa/api-probe.py`, `qa/explora.py`, `qa/escrituras.py`).
+3. **Informe numerado por gravedad:** Graves (dañan datos o bloquean trabajo) · Medios · Menores, cada uno con lo que pasa y cómo se vio. Decir lo que salió bien y lo que no se pudo probar.
+4. **El usuario decide punto por punto:** «arreglar» o «al txt».
+5. **Lo que se arregla** va en una versión nueva con su prueba `tests/fixes-XYZ.py` (XYZ = versión), y se anota en NOVEDADES.md, ERRORES.md y docs/roadmap.md.
+6. **Lo que no se arregla** va a **`Agora New App/FIXES-PENDIENTES.txt`** (en el repo): por punto, qué pasa, por qué importa, cómo verlo y una idea de arreglo; los menores aparte. Al arreglar uno, se borra de ese archivo. El roadmap lo menciona en «Siguiente» o «Después».
 
 ## Agora New App (ERP) · cómo está hecho
 
@@ -56,7 +81,7 @@ Léelo entero antes de tocar nada. Es el resumen de cómo trabajamos y de lo que
 
 - Script: `/tmp/claude-0/-home-user-GPT/47d2de27-7ad9-51d6-885f-20e6833c2033/scratchpad/up-erp.sh` (si no existe, recrearlo): levanta MariaDB (`/tmp/mdb`, socket `/tmp/mdb/run/mysql.sock`, base `agora_erp`), la cuenta simulada `tests/fake-ghl.py 8099` y la API en `:8090` con `APP_ENV=development AGORA_GHL_FAKE=http://127.0.0.1:8099`, copiando un `config.php` local. **Borra `servidor/config/config.php` y `tests/fake-ghl.log` antes de empaquetar y de hacer commit.**
 - Cuentas de prueba: dueña `duena@example.test` / `Clave-Local-2026!`; ASOCIM: `admin.asocim@agora.test`, `supervisor.asocim@…`, `ejecutivo1.asocim@…`, `ejecutivo2.asocim@…`, `consulta.asocim@…`, todas con `Agora-Pruebas-2026!`.
-- Orden de pruebas (11 s de pausa entre una y otra y `delete from agora_rate_limits`): `motor-puente.py duena@example.test 'Clave-Local-2026!'` (deja ASOCIM conectada), `permisos.py` (mismos args), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `tarjetas.py`, `ventas-importadas.py`, `estudiantes.py`, `venta-cuenta.py` (no es repetible: si todas las oportunidades de prueba ya tienen venta, lo avisa; reiniciar la base), `ui-estados.py`, `ghl-conexion.php`.
+- Orden de pruebas (11 s de pausa entre una y otra y `delete from agora_rate_limits`): `motor-puente.py duena@example.test 'Clave-Local-2026!'` (deja ASOCIM conectada), `permisos.py` (mismos args), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `tarjetas.py`, `ventas-importadas.py`, `estudiantes.py`, `venta-cuenta.py` (no es repetible: si todas las oportunidades de prueba ya tienen venta, lo avisa; reiniciar la base), `ui-estados.py`, `menu-principal.py`, `herramientas.py`, `fixes-296.py`, `ghl-conexion.php`.
 - Revisa la pantalla con Playwright (Chromium en `/opt/pw-browsers/chromium`, `--no-sandbox`), en teléfono (390×844) y escritorio (1280×800), y mira las capturas antes de entregar.
 
 ## Pendientes y decisiones del usuario
@@ -81,4 +106,5 @@ Léelo entero antes de tocar nada. Es el resumen de cómo trabajamos y de lo que
 - **Mobile 1.10.19**: Contactos «Todos/Creados hoy» (`ContactDirectory::recientes` traído del motor del ERP; `since=hoy&tz=` en `/api/workspace/contacts`; `workspace.pendingFilter='created-today'`). Tablero: `tile(label,value,note,go)` con `data-go` → `agora:goto` (inbox con filtro, contacts creados hoy, board con `pendingOppTab` won/funnels); enlace solo si `capabilities` lo permite. Pruebas: `tests/contacts-today.php`, `tests/board-links-ui.py`. Nota: este cambio fue pedido por el usuario; la regla de «no refactorizar Mobile» sigue en pie.
 - **Mobile 1.10.21 · Contratos**: botón «Contratos» (ícono propio `CONTRACT_ICON` en `app.js`, también `public/assets/icons/contratos.svg`) en «Más» (teléfono; la barra de abajo lo oculta con `@media(max-width:600px)`, regla que se perdió en 1.10.22 y volvió en 1.10.24) y barra lateral (ordenador), solo si la subcuenta en uso tiene `ghl_connections.contracts_url` (migración `033-contracts-page.sql`; Conexiones → «Contratos», ruta `PUT /api/admin/integrations/{id}/contracts`). **Decisión del usuario: lo ven todos los de esa subcuenta** (`paintContracts`: «Más» visible para admin o si hay contratos). Pantalla `contracts.js` (1.10.22, decisión del usuario): **a pantalla completa** (`.contracts-full` fijo, `html.contracts-open` oculta barra y menú) con **un botón flotante** redondo **arriba a la derecha** (1.10.23, pedido del usuario: abajo tapaba el menú de la página) que vuelve a `workspace.prevView`; **sin** «Abrir en pantalla completa». iframe con `?embed=1`, mensaje `postMessage {fuente:'contratos',evento:'cerrar'}`. **Sin enlace firmado/entrada automática por ahora** (el usuario lo dejó para más adelante). Guía para la IA de diseño de contratos: `docs/guia-diseno-contratos.txt`. En el ERP, Contratos todavía no se toca. Prueba: `tests/contracts-ui.py`.
 - Ágora Mobile V2.1: resumen diario o semanal y cabeceras de seguridad (OpenLiteSpeed ignora `Header` en `.htaccess`). Otros (sin decidir): límite de intentos de contraseña por correo y Capacitor 6.2.3. En espera: plantillas de WhatsApp (falta el identificador de la cuenta de WhatsApp Business). Futuro lejano: módulo de inventario.
+- **2.9.6 (decisiones del usuario, 18 nov):** las **ventas empiezan desde el 1/1/2026** (`Ventas::DESDE`; crear, editar e importar). **«Nuevo convenio» solo lleva a contratos.agoradigital.app** (`CONTRATOS_URL`; el formulario viejo queda como `renderAnterior`, sin usar). Con la subcuenta conectada, **Tareas/Contactos/Oportunidades no tienen plantilla ni carga por Excel** (TablaEd devuelve null; `migracionIr` no abre otro módulo). Mensualidad sin fin: `Ventas::sinFinCuantos` y `extenderSinFin` (siempre ≥3 cobros por delante; editar conserva el largo). **Cifras del mes del Tablero con la subcuenta conectada** = motor (`MotorMobile::mesTablero`: copia la configuración del mes de Ágora y la comisión de Ajustes al motor y responde con `Board::month`; `canEdit` solo MASTER/SUPERADMIN/ADMIN vía el gancho `transformar`). «Campañas por gasto» se llena con `workspace/campanas`. Pendientes: `FIXES-PENDIENTES.txt`.
 - Registro de errores y su estado: `Agora New App/ERRORES.md`. Revisión por módulos: `Agora New App/REVISION-MODULOS.md`. Guía de instalación: `Agora New App/INSTALAR-CYBERPANEL.md`.

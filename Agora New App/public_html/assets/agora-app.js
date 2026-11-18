@@ -553,6 +553,17 @@ function nuevoCon({contacto, buscar}) {
 }
 
 /* ---------- Nuevo convenio ---------- */
+/* 2.9.6 · Decisión del usuario: los convenios nuevos se hacen en la página de contratos. Aquí solo se ofrece ir allí. */
+const CONTRATOS_URL = 'https://contratos.agoradigital.app';
+/** 2.9.6 · Un monto escrito por una persona («40,50», «40.50», «1.200,50», «1,200.50») en texto con punto decimal («40.50»). */
+function montoTexto(x) {
+  let t = String(x ?? '').trim().replace(/[\s$]/g, '');
+  const c = t.lastIndexOf(','), p = t.lastIndexOf('.');
+  if (c >= 0 && p >= 0) t = c > p ? t.replace(/\./g, '').replace(',', '.') : t.replace(/,/g, '');
+  else if (c >= 0) t = (t.match(/,/g).length > 1) ? t.replace(/,/g, '') : t.replace(',', '.');
+  else if (/^[1-9]\d{0,2}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+  return t;
+}
 function nuevoInicial() {
   const d = new Date(), next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
   return {consulta: '', resultados: null, aviso: '', buscando: false, error: '', elegido: null, autoBuscar: false,
@@ -565,6 +576,14 @@ function elegirContacto(c) {
 const anios = () => { const y = new Date().getFullYear(); return [y, y + 1]; };
 V.nuevo = {
   render() {
+    if (!can('editar')) return noAccess();
+    const back0 = `<a class="back" href="${href('/contratos')}">${icon('chevL')}Contratos</a>`;
+    return back0 + head('Contratos', 'Nuevo convenio', 'Los convenios nuevos se preparan en la página de contratos de tu empresa.')
+      + `<section class="panel pf-sec conv-ir">${secH('invoice', 'Crea el convenio en Contratos', 'Allí eliges al cliente, armas el plan de pago y lo envías para firmar. Se abre en una pestaña nueva.')}
+        <div class="form-ft" style="justify-content:flex-start"><a class="btn btn-cta" href="${CONTRATOS_URL}" target="_blank" rel="noopener">${icon('invoice')}Ir a contratos.agoradigital.app</a><a class="btn" href="${href('/contratos')}">Volver a Contratos</a></div></section>`;
+  },
+  /* Hasta 2.9.5 el convenio se armaba aquí (búsqueda de contacto y cálculo). Se conserva sin usar por si se retoma. */
+  renderAnterior() {
     if (!can('editar')) return noAccess();
     const s = state.nuevo ||= nuevoInicial(), c = s.elegido, f = s.f;
     const back = `<a class="back" href="${href('/contratos')}">${icon('chevL')}Contratos</a>`;
@@ -600,7 +619,8 @@ V.nuevo = {
       <div class="goal">${kv([['Cuota mensual', cuotas ? esc(money(cuotas)) : '—'], ['Meses', meses ? int(meses) : '—'], ['Cuotas por mes', esc(f.cuotasPorMes)], ['Precio del curso', k ? esc(money(k.precio_curso)) : '—']])}
       <p class="f" style="margin:0">El cálculo es el mismo del convenio: precio = cuota × meses. Los cargos como la inscripción se agregan después, en el detalle.</p></div></section>`;
   },
-  mounted(app) {
+  mounted() {}, // 2.9.6: el formulario ya no se usa (ver render)
+  mountedAnterior(app) {
     const s = state.nuevo;
     if (s?.autoBuscar) { s.autoBuscar = false; buscarNuevo(s.consulta); return; }
     if (s?.elegido && !s.calc && !s.calcErr) calcular();
@@ -619,7 +639,7 @@ function calcular() {
   clearTimeout(calcT);
   calcT = setTimeout(async () => {
     const s = state.nuevo; if (!s) return; const f = s.f, seq = ++calcSeq;
-    const cuota = String(f.cuota).trim().replace(/\./g, '').replace(',', '.'), meses = parseInt(f.meses, 10);
+    const cuota = montoTexto(f.cuota), meses = parseInt(f.meses, 10);
     if (!cuota || !(num(cuota) > 0) || !meses) { s.calc = null; s.calcErr = ''; paintSum(); return; }
     try {
       const k = await api('contratos/calculo', {method: 'POST', body: {cuota, meses, anio: Number(f.anio), mes: Number(f.mes), cuotas_por_mes: Number(f.cuotasPorMes), cargos: []}});
@@ -634,7 +654,7 @@ async function crearConvenio(btn) {
   const err = m => { s.errorForm = m; const e = $('[data-form="nuevo"] .fld-err'); if (e) e.textContent = m; };
   if (!f.nombre.trim() || !f.cedula.trim()) return err('El nombre y la cédula son obligatorios.');
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.correo.trim())) return err('Escribe un correo válido: por ahí le llega el enlace para firmar.');
-  const cuota = String(f.cuota).trim().replace(/\./g, '').replace(',', '.');
+  const cuota = montoTexto(f.cuota);
   if (!/^\d+(\.\d{1,2})?$/.test(cuota) || !(num(cuota) > 0)) return err('La cuota mensual debe ser un monto mayor que cero, con hasta dos decimales.');
   const meses = parseInt(f.meses, 10); if (!(meses >= 1 && meses <= 20)) return err('Los meses deben estar entre 1 y 20.');
   s.guardando = true; busy(btn, true, 'Creando…'); err('');
@@ -721,7 +741,7 @@ function editarCalculo(d) {
   const form = s.querySelector('form');
   form.onsubmit = async ev => {
     ev.preventDefault();
-    const fd = new FormData(form), m = x => String(x || '').trim().replace(/\./g, '').replace(',', '.');
+    const fd = new FormData(form), m = x => montoTexto(x); // 2.9.6: «40.50» ya no se vuelve 4050
     const cuota = m(fd.get('cuota')), ins = m(fd.get('inscripcion')) || '0';
     const err = form.querySelector('.fld-err');
     if (!/^\d+(\.\d{1,2})?$/.test(cuota) || !(num(cuota) > 0)) { err.textContent = 'La cuota mensual debe ser un monto mayor que cero.'; return; }
@@ -4065,7 +4085,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.9.5').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.9.6').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -6172,12 +6192,12 @@ function migNumero(v) {
   const c = s.lastIndexOf(','), p = s.lastIndexOf('.');
   if (c >= 0 && p >= 0) s = c > p ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
   else if (c >= 0) s = (s.match(/,/g).length > 1) ? s.replace(/,/g, '') : s.replace(',', '.');
-  else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  else if (/^-?[1-9]\d{0,2}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, ''); // 2.9.6: «0.750» es 0,75
   const n = Number(s); return Number.isFinite(n) ? n : null;
 }
 function migFecha(v) {
   const p = x => String(x).padStart(2, '0');
-  if (typeof v === 'number' || /^\d{4,5}(\.\d+)?$/.test(String(v).trim())) { const n = Number(v); if (n < 1 || n > 2958465) return null; const d = new Date(Math.round((n - 25569) * 86400000)); return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`; }
+  if (typeof v === 'number' || /^\d{4,5}(\.\d+)?$/.test(String(v).trim())) { const n = Number(v); if (n < 10000 || n > 2958465) return null; /* 2.9.6: «2026» no es una fecha */ const d = new Date(Math.round((n - 25569) * 86400000)); return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`; }
   const s = String(v).trim(); let m, y, mo, d;
   if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ][0-9:.]+Z?)?$/))) [y, mo, d] = [+m[1], +m[2], +m[3]];
   else if ((m = s.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2}|\d{4})$/))) { [d, mo, y] = [+m[1], +m[2], +m[3]]; if (y < 100) y += 2000; }
@@ -6229,8 +6249,9 @@ MODS.migracion = {g: 'administracion', view: 'migracion', name: 'Migración de d
   desc: 'Descarga y carga tus datos con Excel, y ajusta sus campos.', ok: () => puede('ajustes.editar')};
 V.migracion = {
   async need() {
-    if (!MIG.modulos) { const d = await agoraApi('workspace/campos'); MIG.modulos = (d.modulos || []).filter(m => !(conectada() && EN_VIVO.includes(m.id))); if (MIG.modulos.length && !MIG.modulos.some(m => m.id === MIG.mod)) MIG.mod = MIG.modulos[0].id; }
-    if (!MIG.modulos.some(m => m.id === MIG.mod)) MIG.mod = MIG.modulos[0]?.id || 'contactos';
+    if (!MIG.modulos) { const d = await agoraApi('workspace/campos'); MIG.modulos = (d.modulos || []).filter(m => !(conectada() && EN_VIVO.includes(m.id))); }
+    // 2.9.6: si el módulo pedido no está disponible, se abre otro en «Campos» y sin archivo: nunca en «Cargar» de un módulo distinto.
+    if (!MIG.modulos.some(m => m.id === MIG.mod)) { MIG.mod = MIG.modulos[0]?.id || 'contactos'; MIG.tab = 'campos'; MIG.carga = null; MIG.edit = null; }
     await camposDe(MIG.mod);
     if (!MIG.edit || MIG.edit.mod !== MIG.mod) migEditarDesde(MIG.mod);
   },
@@ -6257,7 +6278,10 @@ V.migracion = {
 };
 function migCambiar(fn, mismo) { if (!MIG.sucio || mismo) return fn(); confirmModal('Cambios sin guardar', 'Tienes cambios en los campos que no guardaste. Si sigues, se pierden.', 'Descartar cambios', async () => { MIG.sucio = false; MIG.edit = null; fn(); }, true); }
 /** Abre el módulo en un módulo y pestaña concretos (desde el botón Excel de otros módulos). */
-function migracionIr(mod, tab = 'cargar') { MIG.mod = mod; MIG.tab = tab; MIG.carga = null; MIG.edit = null; MIG.sucio = false; go('/migracion'); }
+function migracionIr(mod, tab = 'cargar') {
+  // 2.9.6: nunca se abre la carga de un módulo que aquí no se carga (antes caía en otro módulo, por ejemplo Productos).
+  if (conectada() && EN_VIVO.includes(mod)) { toast('Con la subcuenta conectada, estos datos se crean en sus pantallas y quedan en la cuenta: no se cargan por Excel.'); return; }
+  MIG.mod = mod; MIG.tab = tab; MIG.carga = null; MIG.edit = null; MIG.sucio = false; go('/migracion'); }
 
 /* ---------- Pestaña Campos ---------- */
 function migEditarDesde(mod) { MIG.edit = {mod, campos: (MIG.info[mod]?.campos || []).map(c => ({...c, opciones: c.opciones ? [...c.opciones] : null}))}; MIG.sucio = false; }
@@ -6801,7 +6825,7 @@ function vgFormulario(s, ctx, campos, {ventaId, nueva, alGuardar}) {
     monto: () => { const m = leerMonto(val('monto')); return !val('monto') || m === null || !(m > 0) ? 'Escribe un monto mayor que cero. Usa coma para los decimales.' : ''; },
     cuotas: () => { const c = cobro(), q = val('cuotas'); if (c === 'venta') return ''; if (c === 'unico' && q === '') return ''; return q !== '' && !(/^\d{1,3}$/.test(q) && +q >= 1 && +q <= (c === 'unico' ? 120 : 600)) ? `Debe ser un número entero entre 1 y ${c === 'unico' ? 120 : 600}.` : ''; },
     cantidad: () => { if (cobro() !== 'venta') return ''; const q = val('cantidad'); if (!/^\d{1,6}$/.test(q) || +q < 1) return 'La cantidad debe ser 1 o más.'; const p = prod(); return p && p.cobro === 'venta' && p.stock != null && +q > Number(p.stock) + (v && v.productoId === p.id ? Number(v.cantidad || 0) : 0) ? `Solo quedan ${p.stock} en existencia.` : ''; },
-    fechaInicio: () => !/^\d{4}-\d{2}-\d{2}$/.test(val('fechaInicio')) ? 'Elige la fecha de inicio.' : '',
+    fechaInicio: () => !/^\d{4}-\d{2}-\d{2}$/.test(val('fechaInicio')) ? 'Elige la fecha de inicio.' : val('fechaInicio') < '2026-01-01' ? 'Las ventas se registran desde el 1 de enero de 2026.' : '',
     diaCobro: () => val('diaCobro') && !(/^\d{1,2}$/.test(val('diaCobro')) && +val('diaCobro') >= 1 && +val('diaCobro') <= 28) ? 'El día de cobro va del 1 al 28.' : '',
     fecha: () => !/^\d{4}-\d{2}-\d{2}$/.test(val('fecha')) ? 'Elige la fecha de la venta.' : val('fecha') > vgHoy() ? 'La fecha de la venta no puede ser futura.' : '',
   };
@@ -7457,14 +7481,21 @@ function vtFuenteTxt(f) {
   const p = [f.reporte.length ? `reporte mensual (${rangos(f.reporte)})` : '', f.registradas.length ? `ventas registradas (${rangos(f.registradas)})` : ''].filter(Boolean);
   return p.length ? 'Fuente: ' + p.join(' y ') + '.' : '';
 }
+/** 2.9.6 · De dónde sale la cifra del mes, para que no choque con «Ganadas en la cuenta» (lo marcado como ganado en la cuenta). */
+function vtDeDonde(d) {
+  const f = d.fuente || {};
+  if ((f.reporte || []).includes(d.ym)) return ' · según el reporte mensual';
+  if ((f.registradas || []).includes(d.ym)) return ' · según las ventas registradas';
+  return '';
+}
 function vtHtml(d) {
   const m = Number(d.ym.slice(5, 7)) - 1, mesL = mesNombre(d.ym).split(' ')[0].toLowerCase();
   const v = d.act[m], va = d.ant[m], meta = d.meta;
   const seis = Array.from({length: 6}, (_, i) => { const a = d.y * 12 + m - 5 + i, yy = Math.floor(a / 12), mm = a % 12; const arr = yy === d.y ? d.act : yy === d.y - 1 ? d.ant : []; return {l: vtMesCorto(mm), v: arr[mm] ?? null, p: yy === d.y ? d.ant[mm] ?? null : null}; });
   const dif = typeof v === 'number' && typeof va === 'number' ? v - va : null, falta = typeof meta === 'number' && meta > 0 ? meta - (v || 0) : null;
-  const frase = [dif != null ? `<span class="${dif >= 0 ? 'up' : 'down'}">${dif >= 0 ? '+' : '−'}${esc(usd(Math.abs(dif)))}</span> respecto a ${mesL} de ${d.y - 1}.` : `Sin datos de ${mesL} de ${d.y - 1} para comparar.`, falta == null ? 'Sin meta cargada en Configuración mensual.' : falta > 0 ? `Faltan <b>${esc(usd(falta))}</b> para alcanzar la meta del mes.` : `Meta del mes cumplida por <b>${esc(usd(-falta))}</b>.`].join(' ');
+  const frase = [dif != null ? `<span class="${dif >= 0 ? 'up' : 'down'}">${dif >= 0 ? '+' : '−'}${esc(usd(Math.abs(dif)))}</span> respecto a ${mesL} de ${d.y - 1}.` : `Sin datos de ${mesL} de ${d.y - 1} para comparar.`, falta == null ? 'Sin meta cargada en Configuración mensual.' : falta > 0 ? `Faltan <b>${esc(usd(falta))}</b> para alcanzar la meta del mes${vtDeDonde(d).replace(' · ', ', ')}.` : `Meta del mes cumplida por <b>${esc(usd(-falta))}</b>${vtDeDonde(d).replace(' · ', ', ')}.`].join(' ');
   const mesPanel = `<section class="panel vt-panel"><div class="panel-h"><div><h2 class="t-panel">Ventas del mes</h2><p>Lo vendido en ${mesL} frente al año anterior y a la meta.</p></div></div><div class="vt-main">
-    <div class="vt-txt"><p class="vt-label">Ventas de ${mesL} de ${d.y}</p><p class="vt-big">${typeof v === 'number' ? esc(usd(v)) : '—'}</p><p class="vt-sent">${frase}</p>
+    <div class="vt-txt"><p class="vt-label">Ventas de ${mesL} de ${d.y}${vtDeDonde(d)}</p><p class="vt-big">${typeof v === 'number' ? esc(usd(v)) : '—'}</p><p class="vt-sent">${frase}</p>
       <dl class="vt-cmp"><div><dt><i class="vt-sw is-act"></i>${esc(mesNombre(d.ym))}</dt><dd class="vt-cmp-t">Ventas de cada mes</dd></div><div><dt><i class="vt-sw is-prev"></i>${esc(mesNombre(d.ym).replace(String(d.y), String(d.y - 1)))}</dt><dd>${typeof va === 'number' ? esc(usd(va)) : '—'}</dd></div><div><dt><i class="vt-sw is-meta"></i>Meta del mes</dt><dd>${typeof meta === 'number' && meta > 0 ? esc(usd(meta)) : '—'}</dd></div></dl></div>
     <div class="vt-c">${vtGrafica({labels: seis.map(x => x.l), values: seis.map(x => x.v), prev: seis.map(x => x.p), meta})}</div></div></section>`;
   const meses = d.act.slice(0, m + 1).map((x, i) => ({i, v: x, p: d.ant[i]})).filter(x => typeof x.v === 'number');
@@ -7482,7 +7513,7 @@ function vtInyectar(root) {
   if (R?.view !== 'ag_dashboard' || !vtPuede()) return;
   const body = root.querySelector('#dashboard-body'); if (!body || body.querySelector('[data-vt]') || !body.querySelector('.t-sec-row, .t-sec')) return;
   const sec = document.createElement('div'); sec.dataset.vt = '1'; sec.className = 'vt-sec';
-  sec.innerHTML = `<div class="t-sec-row"><div><h2 class="t-sec">Ventas del mes y del año</h2><p>Del reporte mensual cuando lo trae; si no, de las ventas registradas.</p></div></div><div class="vt-cuerpo"><section class="panel"><span class="sk w80"></span><span class="sk w60"></span></section></div>`;
+  sec.innerHTML = `<div class="t-sec-row"><div><h2 class="t-sec">Ventas del mes y del año</h2><p>Del reporte mensual cuando lo trae; si no, de las ventas registradas. «Ganadas en la cuenta» (arriba) cuenta solo lo marcado como ganado en la cuenta.</p></div></div><div class="vt-cuerpo"><section class="panel"><span class="sk w80"></span><span class="sk w60"></span></section></div>`;
   body.append(sec);
   vtCargar().then(d => { const c = sec.querySelector('.vt-cuerpo'); if (c && sec.isConnected) c.innerHTML = vtHtml(d); }).catch(() => { const c = sec.querySelector('.vt-cuerpo'); if (c) c.innerHTML = '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas</b>Vuelve a abrir el tablero en un momento.</p></section>'; });
 }
@@ -8695,6 +8726,8 @@ const TablaEd = {
     const ths = tablaCabeceras(t); if (ths.length < 2) return null;
     const titulos = ths.map(teTituloTh);
     const reg = teRegistro(t, modulo);
+    // 2.9.6: con la subcuenta conectada, contactos, oportunidades y tareas viven en la cuenta: su tabla no se edita ni se carga por Excel.
+    if (reg && EN_VIVO.includes(reg) && conectada()) return null;
     if (reg) return TablaEd.prepararRegistro(t, {modulo, nombre, reg, ths, titulos});
     const base = titulos.map((titulo, pos) => ({titulo, pos})).filter(b => !teEsAccion(b.titulo));
     if (!base.length) return null;

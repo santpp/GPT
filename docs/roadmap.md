@@ -1,7 +1,9 @@
 - **Gasto en GHL por subcuenta (sólo propietario):** verificado en la documentación local (`apps/v3/saas-v3.json`): existe el saldo por subcuenta `GET /saas-api/public-api/companies/{companyId}/locations/{locationId}/wallet-balance` (devuelve `balance`, `complimentaryCredits`, `walletId`). NO aparece en la documentación local el listado de transacciones de billetera (`/saas/companies/{companyId}/wallet-transactions`) que se citó; falta confirmarlo con un token de agencia (PIT con `saas/company.read`). Sin ese listado sólo hay saldo, no gasto del mes. Pendiente: confirmar el endpoint de transacciones.
 # Roadmap de Ágora Workspace
 
-## Próximo (actualizado el 17 de noviembre de 2026)
+## Próximo (actualizado el 18 de noviembre de 2026)
+
+0. **ERP · fixes pendientes de la revisión del 18 nov:** ver `Agora New App/FIXES-PENDIENTES.txt` (registro de agencia con texto técnico, pausa por oportunidad borrada, descargas sin auditoría, aviso que tapa la barra en el teléfono, menú de Agencia en el teléfono y menores).
 
 1. **Lo más urgente · ERP: separar `agora-app.js` en archivos (refactorización por etapas).** Hoy son 9.675 líneas en un solo bloque, sin importaciones.
    - **Etapa 1 · separar sin cambiar nada:** una herramienta divide el archivo por módulos (más uno común y uno de estado) y escribe las importaciones; un archivo router los carga en el mismo orden de hoy. Se verifica con revisión automática (nada sin importar, nada sobrante), comparación antes/después de todas las pantallas (debe ser idéntica) y todas las pruebas sin errores.
@@ -282,6 +284,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - El repositorio se divide: `Agora Mobile/` (release 1.10.14 de nueva.agoradigital.app; el código sigue en la raíz) y `Agora New App/` (ERP 2.1.19 recibido: `public_html/`, `servidor/`). Análisis completo: `Agora New App/ANALISIS.md`. Sin Docker; MySQL.
 - Se deja de llamar «armazón». Lo de abajo es el historial de cuando lo era.
 - **2.2.0 (13 de noviembre)**: estable en MySQL; conexión con la cuenta por subcuenta (token cifrado, Location ID, «Probar conexión»); fuente Author; arreglos de Ajustes, Contactos, Gestión Comercial y logos; paquete de producción sin modo pruebas (`agora-new-app-2.2.0.zip`) y paquete de demo aparte. Siguiente: Conversaciones con el motor de Ágora Mobile.
+- **2.9.6 (18 de noviembre)**: arreglos de la revisión completa: Tareas conectada sin carga por Excel (antes caía en Productos), ventas desde el 1/1/2026, mensualidades sin fin siempre con cobros por delante y sin perder cobros pagados al editar, «Nuevo convenio» lleva a contratos.agoradigital.app, montos de convenio con punto, Tablero comercial coherente (cifras del mes con el motor), sin «null ganados», Excel «0.750» y «2026». Pendientes en `Agora New App/FIXES-PENDIENTES.txt`.
 - **2.9.5 (17 de noviembre)**: mismas herramientas en todas las tablas: «Excel» arriba con el mismo menú, barra Columnas/Excel también en tablas en vivo, sin CSV sueltos ni buscadores repetidos; Ventas registradas con filtros Vendedor y Producto.
 - **2.9.4 (17 de noviembre)**: menú principal: franja «Ágora Digital App / Hola», «Ir a Dashboard», cifras iguales, etiquetas de las tarjetas que llevan a cada herramienta.
 - **2.9.3 (16 de noviembre)**: favicon de Ágora Mobile.

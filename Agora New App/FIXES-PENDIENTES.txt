@@ -1,0 +1,82 @@
+FIXES PENDIENTES · AGORA NEW APP (ERP)
+=====================================
+
+Qué es este archivo
+-------------------
+Lo que encontró una revisión y quedó para después, por decisión del usuario. Cada punto dice qué pasa,
+cómo verlo y una idea para arreglarlo. Cuando se arregla, se borra de aquí y se anota en NOVEDADES.md
+(y en ERRORES.md si era un error).
+
+Origen: revisión completa de la 2.9.5 (18 nov 2026). Lo grave y lo «importantísimo» (Tablero comercial)
+se arregló en la 2.9.6. Lo de abajo sigue abierto.
+
+
+PRIORIDAD MEDIA
+---------------
+
+[9] Registro de actividad de la agencia muestra texto técnico
+    Qué pasa: en Agencia → Registro de actividad, algunas filas muestran el detalle en bruto, por ejemplo
+    {"locationId":"LOC…","companyId":null,"tokenCambiado":true}.
+    Por qué importa: rompe la regla de no mostrar nombres técnicos en pantalla.
+    Cómo verlo: entrar como dueña → Agencia → Registro de actividad (fila «Cambió la conexión con la cuenta»).
+    Idea: traducir los campos conocidos («Se cambió el token», «Se cambió el identificador de la subcuenta»)
+    y no mostrar nunca los identificadores ni el JSON.
+
+[10] Una oportunidad borrada en la cuenta deja el Tablero «en espera» unos 15 segundos
+    Qué pasa: si se abre una venta cuya oportunidad ya no existe en la cuenta, la cuenta responde 404 y la
+    pasarela pausa la subcuenta como si fuera un error de cuota. Durante ~15 s el Tablero dice
+    «El tablero está en espera para respetar la cuota».
+    Cómo verlo: GET workspace/ventas/contexto?oportunidadId=noexiste y luego GET workspace/dashboard.
+    Idea: leer la oportunidad con GhlGateway::execute(..., soft: true) en MotorMobile::oportunidadCuenta,
+    para que un 404 no pause la subcuenta.
+
+[11] Las descargas de ejecutivos y de consulta no quedan en Auditoría
+    Qué pasa: al descargar un Excel, la pantalla avisa a POST workspace/auditoria y el servidor responde 403
+    a quien no tiene el permiso «auditoria.ver». La descarga funciona, pero no queda registrada.
+    Cómo verlo: entrar como ejecutivo1 → Ventas → Excel → Descargar lo que ves (en la consola sale el 403).
+    Idea: separar «registrar una descarga» (cualquiera con datos.consultar) de «ver la auditoría».
+
+[13] Teléfono: el aviso «Una venta ganada por completar» tapa la barra de abajo
+    Qué pasa: a 390 px el aviso queda encima de Inicio · Módulos · Buscar · Cuenta y, en Configuración
+    mensual, encima del botón Guardar. La píldora «Subcuenta activa» también se monta encima.
+    Idea: subir el aviso por encima de la barra (bottom = alto de la barra + zona segura) y dejar un
+    espacio abajo en las pantallas con botón fijo.
+
+[14] Teléfono: el menú oscuro de Agencia ocupa media pantalla en cada página de Agencia
+    Qué pasa: en las páginas de Agencia (Centro de mando, Registro, Consumos, Gestión de usuarios, Perfil)
+    el menú lateral se pinta arriba, abierto, antes del contenido.
+    Idea: en el teléfono, convertirlo en un menú plegable (o en pestañas) como el resto de la app.
+
+
+MENORES
+-------
+
+[M1] Inicio: el logo de Ágora sale dos veces (en la franja «Ágora Digital App / Hola» y otra vez a la
+     derecha o debajo). Cuando la subcuenta no tiene logo propio, no repetir el de Ágora.
+
+[M2] /modulos/general abre un módulo vacío («0 submódulos») si se entra por la dirección.
+     Llevar a /centro o esconder el grupo General cuando no tiene submódulos.
+
+[M3] Rol Consulta sin enlace con la cuenta: el Inicio dice «No se pudieron leer las cifras de hoy» en vez del
+     aviso de enlace, y en Bandeja, Contactos y Tablero se repite «No tienes permiso para consultar esta
+     cuenta» debajo del aviso amarillo. Dejar solo el aviso de enlace.
+
+[M4] Textos: «1 cierres en el mes» (plural con 1) en Desempeño del equipo.
+
+[M5] El Excel de Usuarios trae el rol como código («ADMIN»). Usar el nombre del rol («Administración»).
+
+[M6] Aviso de PHP «Undefined array key "kpi"» en Controllers/Embudos.php línea 56 (no se ve en pantalla).
+     Cambiar `?$s['kpi']` por `?($s['kpi']??'')`.
+
+[M7] Editar una venta importada sin vendedor guarda vendedor '' donde antes era null (no se ve en pantalla).
+
+[M8] La ruta ghl/contactos/buscar (Api.php) ya no la usa ninguna pantalla desde 2.9.6 (Nuevo convenio lleva
+     a contratos.agoradigital.app). Además ignoraba el texto buscado (leía q/query/busqueda y la pantalla
+     mandaba «consulta»). Borrarla en la limpieza de la refactorización.
+
+
+SIN PROBAR (no se puede desde el entorno de desarrollo)
+-------------------------------------------------------
+- Todo contra la cuenta real (escrituras, campañas, cifras de redes). Ver ERRORES.md, punto 11.
+- Firma por enlace de convenios (en local está desactivada: signing_enabled = false).
+- tests/venta-cuenta.py no es repetible: hace falta reiniciar la base de pruebas.

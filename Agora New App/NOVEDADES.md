@@ -1,5 +1,22 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.9.6 · Arreglos de la revisión completa (18 nov):**
+- **Importaciones más seguras:** con la subcuenta conectada, Tareas (como Contactos y Oportunidades) ya no ofrece «Descargar plantilla» ni «Cargar desde Excel». Antes, «Cargar» abría Migración con **Productos y servicios** elegido y el archivo de tareas se podía cargar como productos. Migración nunca vuelve a abrir la carga de un módulo distinto al pedido.
+- **Ventas desde el 1 de enero de 2026** (decisión del usuario): al crear, editar e importar, la fecha de inicio no puede ser anterior. El mensaje lo dice en palabras. (Antes, una venta importada de hace más de 400 días no se podía editar nunca.)
+- **Mensualidades sin fin siempre con cobros por delante:** una importada trae todos sus cobros desde el inicio (los pasados, pagados) más 12 por delante; y cualquier mensualidad sin fin suma 12 más cuando le quedan menos de 3. Antes, una importada antigua quedaba «al día» sin nada por cobrar.
+- **Editar una mensualidad ya no borra cobros pagados:** con más de 12 cobros pagados, editarla los conserva todos.
+- **Nuevo convenio:** ahora solo lleva a **contratos.agoradigital.app** (se abre en otra pestaña). El buscador de clientes de antes ignoraba lo escrito.
+- **Montos de convenio:** «40.50» se lee como 40,50 (antes 4050). Igual con «40,50», «1.200,50» y «1,200.50».
+- **Tablero comercial sin contradicciones** (con la subcuenta conectada, las cifras del mes las calcula el mismo motor que el resto del Tablero, con la configuración del mes de Ágora y la comisión de Ajustes):
+  - Rentabilidad usa lo invertido en Meta que se ve arriba (antes decía «la cuenta no ha informado lo invertido»).
+  - «Campañas por gasto» muestra las campañas de Meta (antes «Sin movimiento»).
+  - El equipo del mes aparece con las personas importadas de la cuenta; quien administra sale solo si cerró algo (como en «Por ejecutivo»).
+  - «Ganadas en la cuenta este mes» y «Ventas del mes · según el reporte mensual» dicen de dónde sale cada cifra, y el avance de la meta dice «según lo ganado en la cuenta».
+- **«Mis ventas del mes»** ya no muestra «null ganados»: sin enlace con la cuenta dice «Tu usuario no está enlazado con la cuenta».
+- **Excel:** «0.750» es 0,75 (antes 750) y «2026» escrito en una fecha ya no se lee como 18/07/1905.
+- Lo que quedó para después está en **FIXES-PENDIENTES.txt**.
+- Prueba nueva: `tests/fixes-296.py` (24).
+
 **Novedades 2.9.5 · Las mismas herramientas en todas las tablas (Ventas y facturación primero):**
 - **Un solo botón «Excel» arriba, con el mismo menú en todas las vistas:** Descargar lo que ves (solo lo filtrado) · Descargar todo · Descargar plantilla · Cargar desde Excel · Ajustar columnas. Cada opción aparece si la vista la admite y si tu rol puede usarla. Ahora también está en Facturación y Catálogo.
 - **Sin botones CSV sueltos** («Descargar CSV», «Exportar CSV», «Descargar Excel · N» de Estudiantes): todo sale por «Excel».
