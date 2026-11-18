@@ -29,6 +29,7 @@ with sync_playwright() as p:
     for role in ['administrator','team']:
         b,page,errors,puts=run(p,role,390)
         assert page.locator('#nav-more').is_visible(),role
+        assert page.locator('.sidebar nav .nav[data-view="contracts"]').is_hidden(),'en el teléfono, Contratos no va en la barra de abajo'
         page.locator('#nav-more').click();page.wait_for_selector('#more-sheet:not([hidden])')
         items=page.locator('#more-sheet [data-more]').all_inner_texts()
         assert 'Contratos' in items,(role,items)
