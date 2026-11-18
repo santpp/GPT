@@ -1206,13 +1206,13 @@ html,body{max-width:100%;overflow-x:hidden}
 .board-tile-go{font-style:normal;margin-left:4px;color:var(--subtle)}
 .board-tile.is-link:hover .board-tile-go{color:#ad103c}
 .contact-tabs{margin:0 0 6px}
-/* 1.10.22 · Contratos a pantalla completa: la página tapa toda Ágora; un botón flotante pequeño devuelve a la app */
+/* 1.10.22–1.10.23 · Contratos a pantalla completa: la página tapa toda Ágora; un botón flotante pequeño (arriba a la derecha) devuelve a la app */
 .contracts-full{position:fixed;inset:0;z-index:60;background:var(--paper);padding-top:env(safe-area-inset-top)}
 .contracts-frame{display:block;width:100%;height:100%;border:0;opacity:0;transition:opacity .25s var(--ease)}
 .contracts-full.loaded .contracts-frame{opacity:1}
 .contracts-loading{position:absolute;inset:env(safe-area-inset-top) 16px auto;padding-top:24px}
 .contracts-full.loaded .contracts-loading{display:none}
-.contracts-back{position:fixed;left:14px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:61;width:44px;height:44px;min-height:44px;padding:0;display:grid;place-items:center;border:0;border-radius:999px;background:#282e49e6;color:#ffffff;box-shadow:0 8px 24px #12151f1f;cursor:pointer;opacity:.9}
+.contracts-back{position:fixed;right:14px;top:calc(12px + env(safe-area-inset-top));z-index:61;width:44px;height:44px;min-height:44px;padding:0;display:grid;place-items:center;border:0;border-radius:999px;background:#282e49e6;color:#ffffff;box-shadow:0 8px 24px #12151f1f;cursor:pointer;opacity:.9}
 .contracts-back:hover,.contracts-back:focus-visible{opacity:1}
 .contracts-back:focus-visible{outline:2px solid #ad103c;outline-offset:2px}
 html.contracts-open body{overflow:hidden}
