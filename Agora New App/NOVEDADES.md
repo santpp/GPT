@@ -1,5 +1,10 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.10.1:**
+- **Sin textos repetidos en los encabezados:** si el texto pequeño de arriba dice lo mismo que el título (por ejemplo «Gestión comercial» sobre «Gestión Comercial»), ya no se muestra.
+- **El botón «Excel» de arriba lleva el ícono de descarga**, igual que el «Excel» de las tablas (antes, un documento).
+- `tests/herramientas.py` lo comprueba (39).
+
 **Novedades 2.10.0 · Orden de los módulos (pedido del usuario):**
 - **Gestión Comercial:** las cifras van en una sola caja, como el «Resumen de hoy» del Inicio (título «Cifras de <mes>», «Elegir cifras» y «Ver las ventas» arriba, cifras separadas por líneas), y cada una conserva su ícono y su color.
 - **«Inversión en anuncios» se mudó del Tablero comercial a Costos** (al final del módulo, con «Campañas por gasto»).

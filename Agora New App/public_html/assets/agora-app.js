@@ -278,7 +278,9 @@ function route() {
    ===================================================================================== */
 /* Esqueleto común de la agencia (2.1.9): cabecera de sección con icono, título y una línea de ayuda. */
 const secH = (ic, titulo, desc = '', acts = '') => `<header class="pf-sec-h"><span class="pf-sec-ic" aria-hidden="true">${icon(ic)}</span><div class="pf-sec-tx"><h2>${titulo}</h2>${desc ? `<p>${desc}</p>` : ''}</div>${acts ? `<div class="pf-sec-acts">${acts}</div>` : ''}</header>`;
-const head = (eyebrow, title, lede = '', acts = '') => `<div class="mod-h"><div><p class="t-label">${eyebrow}</p><h1 class="t-module">${title}</h1>${lede ? `<p class="lede">${lede}</p>` : ''}</div>${acts ? `<div class="acts">${acts}</div>` : ''}</div>`;
+/* 2.10.1 · Pedido del usuario: si el texto pequeño de arriba dice lo mismo que el título («Gestión comercial» / «Gestión Comercial»), no se repite. */
+const headMismo = (a, b) => { const t = x => String(x ?? '').replace(/<[^>]*>/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); return !!t(a) && t(a) === t(b); };
+const head = (eyebrow, title, lede = '', acts = '') => `<div class="mod-h"><div>${headMismo(eyebrow, title) ? '' : `<p class="t-label">${eyebrow}</p>`}<h1 class="t-module">${title}</h1>${lede ? `<p class="lede">${lede}</p>` : ''}</div>${acts ? `<div class="acts">${acts}</div>` : ''}</div>`;
 const panel = (title, sub, body, extra = '', cls = '') => `<section class="panel ${cls}"><div class="panel-h"><div><h2 class="t-panel">${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div>${extra}</div>${body}</section>`;
 const metric = (l, v, f = '', {filter, on, cls = ''} = {}) => filter !== undefined
   ? `<button type="button" class="micro ${on ? 'is-on' : ''} ${cls}" data-filter="${esc(filter)}" aria-pressed="${!!on}"><h3>${l}</h3><p class="t-metric" style="margin:0">${v}</p>${f ? `<span class="f">${f}</span>` : ''}</button>`
@@ -3317,7 +3319,7 @@ const src = s => `<p class="src">Fuente: ${esc(s)}</p>`;
 const panel = (title, sub, body, extra = '', cls = '') => `<section class="panel ${cls}"><div class="panel-h"><div><h2 class="t-panel">${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div>${extra}</div>${body}</section>`;
 const sec = t => `<h2 class="t-sec">${t}</h2>`;
 const flag = v => `<span class="sc sc-warn">${esc(v)}</span>`;
-const head = (eyebrow, title, lede, acts = '') => `<div class="mod-h"><div><p class="t-label">${eyebrow}</p><h1 class="t-module">${title}</h1>${lede ? `<p class="lede">${lede}</p>` : ''}</div>${acts ? `<div class="acts">${acts}</div>` : ''}</div>`;
+const head = (eyebrow, title, lede, acts = '') => `<div class="mod-h"><div>${headMismo(eyebrow, title) ? '' : `<p class="t-label">${eyebrow}</p>`}<h1 class="t-module">${title}</h1>${lede ? `<p class="lede">${lede}</p>` : ''}</div>${acts ? `<div class="acts">${acts}</div>` : ''}</div>`;
 const reportNote = () => !HASREP() ? `<div class="note-gold note-row top"><span>Estás viendo el reporte de <b>${repLabel()}</b>, el más cercano con datos completos. ${isProj(P) ? `${MES[P]} es una proyección.` : `${MES[P]} todavía no tiene reporte de gestión.`}</span><button class="btn btn-sm" type="button" data-period="${repAbs()}">Ver ${repLabel()}</button></div>` : '';
 function seg(key, options, value, label, cls = '') {
   return `<div class="seg ${cls}" role="radiogroup" aria-label="${esc(label)}" data-seg="${key}"><span class="seg-thumb"></span>${options.map(([v, l, n]) => `<button type="button" class="seg-b ${String(v) === String(value) ? 'is-on' : ''}" role="radio" aria-checked="${String(v) === String(value)}" data-v="${esc(v)}">${l}${n != null ? ` <span class="n">${int(n)}</span>` : ''}</button>`).join('')}</div>`;
@@ -4085,7 +4087,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.10.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.10.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -6556,7 +6558,7 @@ AgoraTabla.alPintar(root => {
   const h = root.querySelector('.mod-h'); if (!h) return;
   let acts = h.querySelector(':scope > .acts'); if (!acts) { acts = document.createElement('div'); acts.className = 'acts'; h.append(acts); }
   const b = document.createElement('button'); b.type = 'button'; b.className = 'btn mg-hbtn'; b.setAttribute('aria-haspopup', 'true'); b.setAttribute('aria-expanded', 'false');
-  b.innerHTML = `${icon('invoice')}Excel${icon('chev')}`; b.title = 'Descargar o cargar con Excel';
+  b.innerHTML = `${icon('download')}Excel${icon('chev')}`; // 2.10.1: el ícono de descarga, como el «Excel» de las tablas b.title = 'Descargar o cargar con Excel';
   acts.prepend(b);
   b.onclick = () => {
     const bar = barra(), ed = bar?._ed || null, admin = esAdmin(), edita = !!ed?.puedeEditar?.();
