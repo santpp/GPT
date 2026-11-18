@@ -113,6 +113,7 @@ function closeMore(){
 function show(name,{push=true}={}){
   const target=VIEWS[name]?name:'inbox';
   view.agoraLiveDispose?.();
+  if(currentView!==target&&currentView!=='contracts')workspace.prevView=currentView; // Contratos vuelve adonde estabas
   currentView=target;
   const meta=VIEWS[target];
   if(push&&location.pathname!==meta.path)history.pushState(null,'',meta.path);

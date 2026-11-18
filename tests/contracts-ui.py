@@ -36,9 +36,15 @@ with sync_playwright() as p:
         src=page.locator('.contracts-frame').get_attribute('src')
         assert src.startswith(URL) and 'embed=1' in src,src
         assert page.url.endswith('/contratos')
-        page.wait_for_selector('.contracts-frame-wrap.loaded')
-        assert page.locator('.contracts-bar a[target=_blank]').get_attribute('href')==URL
-        print(f'PASS {role}: «Más» → «Contratos» abre la página dentro de Ágora con ?embed=1 y ofrece pantalla completa')
+        page.wait_for_selector('.contracts-full.loaded')
+        box=page.locator('.contracts-frame').bounding_box()
+        assert box['width']>=389 and box['height']>=800,box
+        assert page.locator('.sidebar').is_hidden() or not page.locator('.sidebar').is_visible()
+        assert page.locator('text=Abrir en pantalla completa').count()==0
+        print(f'PASS {role}: «Más» → «Contratos» abre la página a pantalla completa (?embed=1), sin la barra de Ágora')
+        page.locator('.contracts-back').click();page.wait_for_timeout(500)
+        assert page.url.endswith('/tablero') and page.locator('.sidebar').is_visible(),page.url
+        print(f'PASS {role}: el botón flotante devuelve a donde estaba, con la app completa')
         # Otra subcuenta sin contratos: el botón desaparece; a un vendedor sin nada más, «Más» también.
         page.select_option('#account','2');page.wait_for_timeout(800)
         assert not page.url.endswith('/contratos')

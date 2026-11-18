@@ -13,7 +13,7 @@
 
 **Otros (sin decidir):** módulos del reporte para empresas que no son ASOCIM; límite de intentos de contraseña por correo; Capacitor 6.2.3.
 
-Estado actualizado: 10 de noviembre de 2026. **Versión activa: 1.10.21 (1.10.1 + Consumos + teléfono + Embudos y búsqueda + Entrar como + listas por vendedor + menú «Más»)**, con el cambio de fuente (texto negro y más grande) y el canal de origen a la vista. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 10 de noviembre de 2026. **Versión activa: 1.10.22 (1.10.1 + Consumos + teléfono + Embudos y búsqueda + Entrar como + listas por vendedor + menú «Más»)**, con el cambio de fuente (texto negro y más grande) y el canal de origen a la vista. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 El trabajo de la 1.11.0 y la 1.11.1 (rutas de servidor para el armazón nuevo de Agora Digital App: tareas, recordatorios, auditoría, identidad del espacio, resumen, subcuenta de demostración) **queda en pausa, sin subir**, hasta que el usuario retome ese desarrollo. El código y los paquetes siguen en el repositorio por si se retoma, pero no son la versión activa. El desarrollo sigue a partir de la 1.10.1.
 
@@ -339,6 +339,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## 1.10.4 · Consumos: movimientos de la agencia
 - Bloque «Agencia · movimientos propios», bloques para las subcuentas no conectadas, y selector «Sólo la agencia».
+
+## 1.10.22 · Contratos a pantalla completa
+La página de contratos ocupa toda la pantalla; un botón flotante (abajo a la izquierda) devuelve a la vista anterior. Sin «Abrir en pantalla completa».
 
 ## 1.10.21 · Contratos dentro de Ágora
 Botón «Contratos» (ícono propio) en «Más» y en la barra lateral, solo en la subcuenta que lo activa en Conexiones (`contracts_url`, migración 033); lo ven todos los de esa subcuenta. Abre la página con `?embed=1` dentro de Ágora y ofrece «Abrir en pantalla completa». Sin entrada automática por ahora.
