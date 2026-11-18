@@ -156,6 +156,13 @@ Te pregunta, uno a uno:
 - La **primera** cuenta que crees es la **Master** (dueña principal; solo hay una).
 - Si vuelves a ejecutar el comando, crea un **Superadmin** (otro dueño de Ágora). Después, la Master le asigna subcuentas desde Agencia → Gestión de usuarios.
 - Para ver qué cuentas de dueño existen: `… crear-dueno.php --listar`.
+- **Si una cuenta no puede entrar** (clave olvidada o mal escrita al crearla), ponle una contraseña nueva desde aquí. Sirve para cualquier cuenta, también la Master; cierra sus sesiones abiertas y quita el bloqueo por intentos:
+
+```bash
+sudo -u USUARIO /usr/local/lsws/lsphp83/bin/php servidor/bin/cambiar-clave.php correo@ejemplo.com
+```
+
+- Si solo dice «Demasiados intentos», basta con `… cambiar-clave.php --desbloquear` (o esperar 15 minutos).
 
 ## Paso 9 · Reiniciar el servidor web y cabeceras de seguridad
 
@@ -303,6 +310,9 @@ La pantalla "Oops! Algo ocurre" aparece cuando la app no logra hablar con la API
 | `config` · problema en servidor/config/config.php | Corrige `config.php` (paso 6). Sin `config.php`, la app avisa y no arranca. |
 | `db` · No se pudo conectar a la base de datos | Revisa nombre, usuario y clave de CyberPanel → Databases; prueba host `127.0.0.1`. |
 | `migraciones` · La base está vacía o incompleta | Ejecuta el **paso 7** (`migrate.php`). |
+| Al entrar dice «Correo o contraseña incorrectos» con la clave correcta | Pon una clave nueva con `servidor/bin/cambiar-clave.php correo` (paso 8). Revisa que el correo sea el mismo con el que se creó la cuenta (`crear-dueno.php --listar`). |
+| Al entrar dice «Demasiados intentos» | Son 15 intentos por correo cada 15 minutos. Espera o ejecuta `servidor/bin/cambiar-clave.php --desbloquear`. |
+| La pantalla de entrada dice «Ambiente de pruebas · datos sintéticos» | El servidor no encuentra `servidor/config/config.php` y arrancó en modo pruebas, con cuentas de prueba: las cuentas reales no entran. Revisa que `config.php` siga en su lugar (paso 6). |
 | Al entrar dice "Origen no autorizado…" | `app_url` en `config.php` no coincide con la dirección del navegador. Debe ser exacta: `https://`, con o sin `www` igual que como entras. |
 | `php` / `ext` | Elige PHP 8.3 para el sitio o instala la extensión indicada (paso 2). En pruebas falta `pdo_sqlite`: `dnf install lsphp83-pdo lsphp83-sqlite3` y `systemctl restart lsws`. |
 | `storage` · Modo pruebas: PHP no puede escribir | `chown -R USUARIO_DEL_SITIO:USUARIO_DEL_SITIO /home/TU-DOMINIO/servidor/storage` |

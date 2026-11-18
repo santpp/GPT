@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.10.2:**
+- **Nuevo comando para destrabar la entrada:** `php servidor/bin/cambiar-clave.php correo@ejemplo.com` pone una contraseña nueva a cualquier cuenta (también la Master), la deja activa, cierra sus sesiones y quita el bloqueo por intentos. `… cambiar-clave.php --desbloquear` solo quita los bloqueos. Antes no había forma de cambiar la clave de un dueño.
+- La guía de instalación explica los tres casos en que no deja entrar: clave incorrecta, «Demasiados intentos» y «Ambiente de pruebas» (falta `config.php`).
+
 **Novedades 2.10.1:**
 - **Sin textos repetidos en los encabezados:** si el texto pequeño de arriba dice lo mismo que el título (por ejemplo «Gestión comercial» sobre «Gestión Comercial»), ya no se muestra.
 - **El botón «Excel» de arriba lleva el ícono de descarga**, igual que el «Excel» de las tablas (antes, un documento).
