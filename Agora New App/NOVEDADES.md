@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.9.9:**
+- **Los gráficos de ventas van al final de Gestión Comercial** (pedido del usuario), con reporte y sin él. Antes, sin reporte, salían debajo de las tarjetas.
+- `tests/graficos-gestion.py` lo comprueba (10).
+
 **Novedades 2.9.8 · Conversaciones sin «scroll infinito» en el ordenador:**
 - Con muchas conversaciones, la página se alargaba miles de píxeles en blanco debajo del chat: el texto oculto de «sin leer» de cada conversación se salía de la lista. Ahora la lista lo contiene y la página mide lo que debe.
 - Lo mismo se aplicó a las listas de Contactos y a las columnas de Oportunidades, por si acaso.

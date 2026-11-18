@@ -1,6 +1,6 @@
-"""2.9.7 · Gráficos de ventas en Gestión Comercial: los mismos del Tablero, elegibles con «Editar gráficos».
+"""2.9.7–2.9.9 · Gráficos de ventas en Gestión Comercial: los mismos del Tablero, elegibles con «Editar gráficos».
 Con reporte mensual sale por defecto la tendencia del año (la cabecera del reporte ya trae el mes); se puede sumar «Ventas del mes».
-Quien no ve cifras del equipo (ejecutivo) no los ve. Requiere la API local en :8090 con ASOCIM. Uso: python3 tests/graficos-gestion.py"""
+Van al final del módulo (2.9.9). Quien no ve cifras del equipo (ejecutivo) no los ve. Requiere la API local en :8090 con ASOCIM. Uso: python3 tests/graficos-gestion.py"""
 import sys
 from playwright.sync_api import sync_playwright
 B='http://127.0.0.1:8090';n=0
@@ -13,11 +13,15 @@ def entrar(b,u,vp=(1280,800)):
     pg.goto(B+'/entrar');pg.wait_for_timeout(1200)
     pg.locator('input').first.fill(f'{u}.asocim@agora.test');pg.locator('input[type=password]').fill('Agora-Pruebas-2026!');pg.keyboard.press('Enter');pg.wait_for_timeout(3000)
     pg.goto(B+'/inicio');pg.wait_for_timeout(6000);return pg
+def alFinal(pg):
+    return pg.evaluate("""()=>{const g=document.querySelector('[data-gc-graf]');if(!g)return false;const b=g.getBoundingClientRect().bottom;
+      return [...document.querySelectorAll('main section.panel, main .panel, main .ag-resumen-grid')].filter(e=>!g.contains(e)).every(e=>e.getBoundingClientRect().bottom<=b+1)}""")
 paneles=lambda pg:pg.locator('[data-gc-graf] .vt-panel h2').all_inner_texts()
 with sync_playwright() as p:
     b=p.chromium.launch(executable_path='/opt/pw-browsers/chromium',args=['--no-sandbox'])
     pg=entrar(b,'admin')
     ok(pg.locator('[data-gc-graf]').count()==1,'Gestión Comercial trae la sección «Gráficos de ventas»')
+    ok(alFinal(pg),'los gráficos van al final del módulo')
     ok(paneles(pg)==['Tendencia del año'],f'con reporte, por defecto solo la tendencia del año ({paneles(pg)})')
     pg.click('[data-gc-graf-ed]');pg.wait_for_timeout(600)
     for c in pg.locator('[data-tarj]').all():

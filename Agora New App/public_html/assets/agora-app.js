@@ -4085,7 +4085,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.9.8').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.9.9').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -7051,7 +7051,7 @@ function gcVivoHtml() {
   const elegidas = tarjElegidas('gestion', VG_TARJETAS, GC_DEFECTO);
   const kpis = elegidas.length ? `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">${elegidas.map(id => { const x = VG_TARJETAS[id]; let v; try { v = x.f(d, r, mes); } catch { v = ['', '—', '']; } return tarjeta(v[0], x.ic, esc(x.t), v[1], v[2]); }).join('')}</section>` : '';
   const graf = vtPuede() ? '<div data-gc-graf-aqui></div>' : '';
-  if (!items.length) return cabeza + kpis + graf + `<section class="panel"><p class="empty"><b>Todavía no hay ventas registradas en ${esc(mes)}</b>Cuando se gane una oportunidad y se complete su venta, aparece aquí.</p></section>`;
+  if (!items.length) return cabeza + kpis + `<section class="panel"><p class="empty"><b>Todavía no hay ventas registradas en ${esc(mes)}</b>Cuando se gane una oportunidad y se complete su venta, aparece aquí.</p></section>` + graf;
   const grupo = k => { const m = new Map(); items.forEach(v => { const n = v[k] || (k === 'vendedor' ? 'Sin vendedor' : 'Sin nombre'); if (!m.has(n)) m.set(n, []); m.get(n).push(v); }); return [...m.entries()].map(([n, l]) => ({n, l, total: l.reduce((t, v) => t + (Number(v.monto) || 0), 0)})).sort((a, b) => b.l.length - a.l.length || b.total - a.total); };
   const mensual = l => vgPorMoneda(vgSuma(l.filter(v => v.cobro === 'recurrente'), v => (Number(v.monto) || 0) * (FREC_MES[v.frecuencia] || 1)));
   const barra = (n, max) => `<span class="gc-barra" aria-hidden="true"><i style="width:${Math.max(4, Math.round(100 * n / Math.max(max, 1)))}%"></i></span>`;
@@ -7062,10 +7062,10 @@ function gcVivoHtml() {
   const cobros = [['recurrente', 'Recurrente'], ['unico', 'Pago único'], ['venta', 'Venta única']].map(([k, t]) => [t, items.filter(v => v.cobro === k)]).filter(([, l]) => l.length);
   const formas = `<ul class="gc-formas">${cobros.map(([t, l]) => `<li><span>${esc(t)}</span><b>${int(l.length)}</b><small>${esc(vgPorMoneda(vgSuma(l, v => v.monto)))}</small></li>`).join('')}</ul>`;
   const pend = (d.pendientes || []).length ? `<p class="gc-aviso is-warn">${icon('warn')}<span>${d.pendientes.length === 1 ? 'Hay una oportunidad ganada' : `Hay ${int(d.pendientes.length)} oportunidades ganadas`} sin su venta completada: no cuentan aquí hasta completarla en <a href="${href(MODS.ventas?.path || '/ventas')}">Ventas</a>.</span></p>` : '';
-  return cabeza + pend + kpis + graf
+  return cabeza + pend + kpis
     + `<div class="gc-cols"><section class="panel pf-sec">${secH('team', 'Por vendedor', `Quién vendió en ${esc(mes)}, de más a menos ventas.`)}${tablaVend}</section>
        <section class="panel pf-sec">${secH('wallet', 'Por forma de cobro', 'Cuántas ventas y cuánto, según cómo se cobran.')}${formas}</section></div>`
-    + `<section class="panel pf-sec mt">${secH('receipt', 'Por producto o servicio', 'Lo que más se vendió en el mes.')}${tablaProd}</section>`;
+    + `<section class="panel pf-sec mt">${secH('receipt', 'Por producto o servicio', 'Lo que más se vendió en el mes.')}${tablaProd}</section>` + graf; // 2.9.9: los gráficos van al final del módulo (pedido del usuario)
 }
 function gcVivoMontar(root) {
   root?.querySelector('[data-gc-tarjetas]')?.addEventListener('click', () => tarjEditar('gestion', VG_TARJETAS, GC_DEFECTO, 'Gestión Comercial', repaint));
