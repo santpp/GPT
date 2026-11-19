@@ -1,7 +1,7 @@
 import {searchText} from './format.js';
 import {workspace,friendly} from './workspace.js';
 import {skeleton} from './skeleton.js';
-import {contactForm,readContactForm,bindTagEditor,groupByFolder,bindEditorExtras} from './contact-editor.js';
+import {contactForm,readContactForm,bindTagEditor,groupByFolder,bindEditorExtras,showSaved} from './contact-editor.js';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const initials=name=>String(name||'·').split(/\s+/).slice(0,2).map(part=>[...part][0]||'').join('').toUpperCase()||'··';
@@ -210,11 +210,12 @@ export async function renderContacts(container){
     if(Object.keys(fields).length===0&&!tags.added.length&&!tags.dropped.length){status.textContent='No has cambiado nada todavía.';return}
     button.disabled=true;status.textContent='Guardando la ficha…';
     try{
-      await request(`workspace/record?connectionId=${encodeURIComponent(connection)}&contactId=${encodeURIComponent(selected)}`,'POST',
+      const saved=await request(`workspace/record?connectionId=${encodeURIComponent(connection)}&contactId=${encodeURIComponent(selected)}`,'POST',
         {fields,addTags:tags.added,removeTags:tags.dropped,requestId:crypto.randomUUID().replace(/-/g,'')});
       const fresh=await request(`workspace/record?connectionId=${encodeURIComponent(connection)}&contactId=${encodeURIComponent(selected)}&refresh=1`);
       if(!active())return;
       record=fresh;editing=false;show();
+      showSaved($('#contact-record'),saved?.warning||'');
       const row=container.querySelector(`[data-contact="${CSS.escape(selected)}"] strong`);
       if(row)row.textContent=fresh.contact.name;
     }catch(error){

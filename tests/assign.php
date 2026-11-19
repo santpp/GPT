@@ -60,7 +60,8 @@ try {
 
  $free();$calls=[];
  $service->assign($connection,['assignedTo'=>'ana']+$conversation,$admin,['assignedTo'=>'','requestId'=>str_repeat('d',20)]);
- asg(array_values(array_filter($calls,fn($c)=>$c[0]==='PUT'))[0][2]['assignedTo']==='','dejar sin asignar vacía el responsable');
+ $put=array_values(array_filter($calls,fn($c)=>$c[0]==='PUT'))[0][2];
+ asg(array_key_exists('assignedTo',$put)&&$put['assignedTo']===null,'dejar sin asignar vacía el responsable (se manda nulo: la cuenta ignora el texto vacío)');
  asg(!isset(json_decode((string)query('SELECT payload FROM conversation_index WHERE connection_id=? AND conversation_id=?',[$id,'conv-1'])->fetchColumn(),true)['assignedTo']),'y desaparece de la conversación');
 
  // Las fichas no aceptan un cambio de responsable de quien no es administrador.

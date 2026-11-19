@@ -201,3 +201,18 @@ export function bindEditorExtras(root,contact,tagState,onCancel){
   refresh();
   return {dirty:()=>changedCount()>0};
 }
+
+/** 1.10.31 · Aviso claro tras guardar la ficha: franja verde «Ficha guardada» (o dorada si la cuenta no aplicó todo), arriba
+ *  de la ficha, que se ve aunque se guardara desde el final del formulario y se va sola a los pocos segundos. */
+export function showSaved(panel,warning=''){
+  const header=panel.querySelector('.record-header,.live-profile-header')||panel.firstElementChild;
+  if(!header)return;
+  panel.querySelector('.record-saved')?.remove();
+  const note=document.createElement('p');
+  note.className='record-saved'+(warning?' warn':'');note.setAttribute('role','status');
+  note.innerHTML=warning?`<span aria-hidden="true">!</span>${esc(warning)}`:'<span aria-hidden="true">✓</span>Ficha guardada en la cuenta.';
+  header.after(note);
+  note.scrollIntoView({block:'nearest',behavior:'smooth'});
+  if(!warning)setTimeout(()=>{note.classList.add('gone');setTimeout(()=>note.remove(),400)},6000);
+}
+

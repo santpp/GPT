@@ -1,4 +1,4 @@
-import {contactForm,readContactForm,bindTagEditor,groupByFolder,bindEditorExtras} from './contact-editor.js';
+import {contactForm,readContactForm,bindTagEditor,groupByFolder,bindEditorExtras,showSaved} from './contact-editor.js';
 import {opportunityForm,readOpportunityForm,bindPipelineChoice} from './opportunity-editor.js';
 import {attachmentsOf,attachmentMarkup,bindAttachments,statusMarkup,UI_ICONS} from './message-view.js';
 import {workspace,friendly} from './workspace.js';
@@ -709,11 +709,11 @@ export async function renderLiveInbox(container){
       const fields=readContactForm(form,data.contact);
       const payload={fields,addTags:tags.added,removeTags:tags.dropped,requestId:crypto.randomUUID().replace(/-/g,'')};
       try{
-       await request(`workspace/activity/contact?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`,'POST',me.csrf,payload);
+       const saved=await request(`workspace/activity/contact?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`,'POST',me.csrf,payload);
        const fresh=await request(`workspace/contact?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}&refresh=1`);
        if(!active()||version!==chatGeneration)return;
        data.contact=fresh.contact;data.contact.canEdit=fresh.canEdit===true;
-       editing=false;show();
+       editing=false;show();showSaved(panel,saved?.warning||'');
       }catch(error){
        const failed=panel.querySelector('#live-contact-status');
        if(failed)failed.textContent=friendly(error);

@@ -17,6 +17,7 @@ final class FakeActivityApi {
     public array $events=[];
     public array $fail=[];
     public int $created=0;
+    public bool $keepOwner=false;
     public function __construct(public readonly string $location) {}
     public function gateway():GhlGateway {
         return new GhlGateway(fn():GhlClient=>new GhlClient('fake',function(string $path,string $version,string $method,?array $payload):array {
@@ -29,7 +30,7 @@ final class FakeActivityApi {
             if($method==='POST'&&str_ends_with($path,'/tasks')){$this->created++;return ['status'=>201,'body'=>json_encode(['task'=>['id'=>'task-'.$this->created]])];}
             if($method==='POST'&&str_ends_with($path,'/tags'))return ['status'=>200,'body'=>json_encode(['tags'=>$payload['tags']??[]])];
             if($method==='PUT'&&str_ends_with($path,'/completed'))return ['status'=>200,'body'=>json_encode(['task'=>['id'=>'task-1']])];
-            if($method==='PUT'&&preg_match('~^/contacts/[^/]+$~',$path))return ['status'=>200,'body'=>json_encode(['contact'=>['id'=>'contact-1']])];
+            if($method==='PUT'&&preg_match('~^/contacts/[^/]+$~',$path))return ['status'=>200,'body'=>json_encode(['contact'=>['id'=>'contact-1']+($this->keepOwner?['assignedTo'=>'u-sigue']:[])])];
             if($method==='DELETE'&&str_ends_with($path,'/tags'))return ['status'=>200,'body'=>json_encode(['tags'=>[]])];
             throw new GhlApiException(404);
         }));
@@ -231,7 +232,11 @@ try {
  activityCheck($stranger==='unknown_assignee','a responsible outside the imported team is refused before any request');
  $api->reset();clearBudget($connectionId);
  $actions->contact($connection,'contact-1',$full,['requestId'=>key16(),'fields'=>['assignedTo'=>'','dnd'=>false]]);
- activityCheck($api->calls[0][3]['assignedTo']===''&&$api->calls[0][3]['dnd']===false,'the responsible and the do-not-contact flag can be cleared');
+ activityCheck(array_key_exists('assignedTo',$api->calls[0][3])&&$api->calls[0][3]['assignedTo']===null&&$api->calls[0][3]['dnd']===false,'the responsible and the do-not-contact flag can be cleared');
+ $api->reset();clearBudget($connectionId);$api->keepOwner=true;
+ $kept=$actions->contact($connection,'contact-1',$full,['requestId'=>key16(),'fields'=>['assignedTo'=>'']]);
+ activityCheck(str_contains($kept['warning']??'','mantuvo al responsable'),'1.10.31 · if the account keeps the responsible after «Sin asignar», the answer says so');
+ $api->keepOwner=false;
 
  $api->reset();clearBudget($connectionId);
  $onlyTags=$actions->contact($connection,'contact-1',$full,['requestId'=>key16(),'addTags'=>['Sola']]);

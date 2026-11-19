@@ -1249,3 +1249,11 @@ html.contracts-open .sidebar,html.contracts-open .topbar,html.contracts-open #pu
 .contact-new-form .check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink)}.contact-new-form .check input{width:auto;margin:0}
 .contact-new-form .form-actions{display:flex;gap:8px;justify-content:flex-end}.contact-new-form .form-actions button{min-height:44px;padding:0 16px;border-radius:8px}
 @media(max-width:600px){.contact-new-form .grid-2{grid-template-columns:minmax(0,1fr)}#contact-new{padding:0 12px}}
+/* 1.10.31 · Aviso tras guardar la ficha */
+.record-saved{display:flex;align-items:center;gap:8px;margin:12px 0 0;padding:10px 12px;border-radius:10px;background:var(--success-soft);color:var(--success);font-size:13px;font-weight:600;transition:opacity .4s}
+.record-saved span{display:inline-grid;place-items:center;width:20px;height:20px;flex:none;border-radius:50%;background:var(--success);color:#fff;font-size:12px}
+.record-saved.warn{background:var(--gold-soft);color:var(--gold-ink)}.record-saved.warn span{background:var(--gold-ink)}
+.record-saved.gone{opacity:0}
+@media(prefers-reduced-motion:reduce){.record-saved{transition:none}}
+html[data-theme="dark"] .record-saved{background:#183326;color:#9fdcb8}html[data-theme="dark"] .record-saved.warn{background:#3a3020;color:#f3d38a}html[data-theme="dark"] .record-saved.warn span{background:#f3d38a;color:#1d1f2b}
+

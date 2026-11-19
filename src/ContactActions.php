@@ -86,7 +86,8 @@ final class ContactActions {
         if(array_key_exists('assignedTo',$fields)) {
             if(($membership['can_assign']??false)!==true)throw new ActionProblem('assign_forbidden',403,'Sólo los administradores de esta subcuenta pueden cambiar el responsable.');
             $assignee=$fields['assignedTo'];
-            if($assignee===null||$assignee==='')$payload['assignedTo']='';
+            // 1.10.31 · «Sin asignar» se manda como nulo: la cuenta ignora el texto vacío y dejaba al responsable anterior.
+            if($assignee===null||$assignee==='')$payload['assignedTo']=null;
             elseif(is_string($assignee)&&preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$assignee)
                 &&query('SELECT 1 FROM external_users WHERE connection_id=? AND external_user_id=? AND active=TRUE LIMIT 1',[$connection['id'],$assignee])->fetchColumn())$payload['assignedTo']=$assignee;
             else throw new ActionProblem('unknown_assignee',422,'Ese responsable no pertenece al equipo importado de esta cuenta.');
@@ -115,13 +116,19 @@ final class ContactActions {
         $add=self::tagList($input['addTags']??[]);
         $remove=self::tagList($input['removeTags']??[]);
         if($payload===[]&&$add===[]&&$remove===[])throw new ActionProblem('nothing_to_change',422,'No has cambiado nada en la ficha.');
-        return $this->run($connection,$contactId,$membership,$input,'contact',['fields'=>$payload,'add'=>$add,'remove'=>$remove],
-            function(GhlClient $client)use($contactId,$payload,$add,$remove):array {
-                $response=$payload!==[]?$client->updateContact($contactId,$payload):['contact'=>['id'=>$contactId]];
+        $updated=null;
+        $result=$this->run($connection,$contactId,$membership,$input,'contact',['fields'=>$payload,'add'=>$add,'remove'=>$remove],
+            function(GhlClient $client)use($contactId,$payload,$add,$remove,&$updated):array {
+                $response=$updated=$payload!==[]?$client->updateContact($contactId,$payload):['contact'=>['id'=>$contactId]];
                 if($add)$client->addContactTags($contactId,$add);
                 if($remove)$client->removeContactTags($contactId,$remove);
                 return $response;
             },'contact');
+        // 1.10.31 · Si se pidió quitar el responsable y la cuenta contesta que sigue asignado, se dice en vez de dar por hecho.
+        if(array_key_exists('assignedTo',$payload)&&$payload['assignedTo']===null&&is_array($updated['contact']??null)
+            &&is_string($updated['contact']['assignedTo']??null)&&$updated['contact']['assignedTo']!=='')
+            $result['warning']='La ficha se guardó, pero la cuenta mantuvo al responsable. Puede que una regla automática de la cuenta lo vuelva a asignar.';
+        return $result;
     }
 
     /** @return list<string> */
