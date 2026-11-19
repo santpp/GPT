@@ -36,7 +36,7 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
 
 1. **Se edita donde se ve.** Si un módulo muestra un dato que es nuestro (no de la cuenta ni del reporte), ese dato tiene un botón para cambiarlo en el mismo módulo. Por ejemplo: «Cargar costos / Editar costos» en Costos, «Marcar pagado» en Facturación, «Agregar manual» en Ventas. No se manda a otro módulo para editar lo que se está viendo.
 2. **Un dato, un lugar de verdad.** Si dos módulos muestran el mismo dato, uno lo edita y el otro lo muestra bloqueado con un enlace («Sale de “Costos del mes”. Editar en Costos»). Nunca dos formularios que se pisan.
-3. **Tarjetas siempre editables.** Todo módulo con tarjetas de cifras tiene **«Editar Dashboard»** (sin ícono) con `tarjEditar(vista, CATALOGO, DEFECTO, título, repintar)` y `vivoTarjetas(...)`. El nombre del botón es siempre «Editar Dashboard».
+3. **Tarjetas siempre editables.** Todo módulo con tarjetas de cifras tiene **«Editar Dashboard»** (ícono de lápiz) con `tarjEditar(vista, CATALOGO, DEFECTO, título, repintar)` y `vivoTarjetas(...)`. El nombre del botón es siempre «Editar Dashboard».
 4. **Las tarjetas por defecto miden lo que el módulo promete.** Si una tarjeta solo puede mostrar «—» hasta que se cargue algo, su texto dice dónde cargarlo (en el mismo módulo).
 5. **Permisos:** solo administración (MASTER, SUPERADMIN, ADMIN) edita cifras del mes y costos; el resto ve los datos sin botones. El servidor lo exige (`manage()`), no solo la pantalla.
 6. **El servidor valida todo lo que se guarda** (tipos, largos, montos ≥ 0, listas con tope), aunque la pantalla ya lo valide.
@@ -45,7 +45,7 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
 ## Lenguaje visual
 
 - Usa lo que ya existe: `head()` para la cabecera, `secH()` para cada sección, tarjetas `.ag-resumen`, tablas dentro de `.tw`, píldoras `.sc sc-ok|sc-warn|sc-bad|sc-gray`, botones `.btn`, `.btn-cta`, `.btn-sm`, ventanas con `openModal(modalHead(...))`, filas editables como `.ag-serv`.
-- Nombres de botones fijos en todo el ERP: **«Descargar»** (nunca la palabra «Excel») y **«Editar Dashboard»**, los dos **sin ícono** y en la misma línea, para elegir las tarjetas.
+- Nombres de botones fijos en todo el ERP: **«Descargar»** (ícono de descarga, nunca la palabra «Excel») y **«Editar Dashboard»** (ícono de lápiz), en la misma línea. **Las tarjetas de cifras van sin ícono** (título, cifra y nota, como «Resumen de hoy»), para elegir las tarjetas.
 - Confirmaciones con `toast('…')` cortas («Costos guardados.»). Nada de franjas, insignias o íconos nuevos para confirmar: el usuario lo rechazó por «verse muy IA».
 - Sin textos repetidos (la etiqueta superior no repite el título). **Los gráficos van al final del módulo.**
 - Botones de icono solo cuando su significado es obvio. Si no, icono + texto (por ejemplo, «Ficha» en la Bandeja).

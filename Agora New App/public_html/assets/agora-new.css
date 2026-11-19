@@ -592,3 +592,11 @@ a.inicio-resumen-c:hover .inicio-resumen-l .ic{opacity:.9;transform:translateX(2
   .fc-tot { width: 100%; }
 }
 .vg-prox-l li .fa-lado-fac { grid-column: 1 / -1; justify-self: end; margin-top: -2px; }
+
+/* 2.11.3 · Pedido del usuario: las tarjetas de cifras van sin ícono, como «Resumen de hoy» (título, cifra y nota). */
+.ag-resumen { grid-template-columns: minmax(0, 1fr) !important; grid-template-areas: "t" "v" "d" !important; }
+.ag-resumen-ic { display: none !important; }
+#view.ag .micro.arp-mic { grid-template-columns: minmax(0, 1fr) !important; }
+#view.ag .micro.arp-mic .arp-mic-ic { display: none !important; }
+:root[data-xp="cuenta"] #app .micro.xp-mic { grid-template-columns: minmax(0, 1fr) !important; }
+#app .micro .arp-mic-ic { display: none !important; }

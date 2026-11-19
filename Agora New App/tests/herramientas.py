@@ -23,7 +23,7 @@ with sync_playwright() as p:
     for nombre,path,tab in [('Ventas · reporte','/ventas','reporte'),('Ventas · registradas','/ventas','registradas'),('Facturación','/facturacion',None),('Productos','/productos',None),('Catálogo','/catalogo',None)]:
         vista(path,tab)
         ok(pg.locator('.mod-h .mg-hbtn').count()==1,f'{nombre}: botón «Excel» arriba')
-        ok(pg.locator('.mod-h .mg-hbtn svg').count()==0 and pg.inner_text('.mod-h .mg-hbtn').strip()=='Descargar',f'{nombre}: el botón de arriba dice «Descargar», sin ícono (2.11.2)')
+        ok(pg.locator('.mod-h .mg-hbtn svg path[d^="M12 4v11"]').count()==1,f'{nombre}: «Excel» de arriba con el ícono de descarga (2.10.1)')
         ok(pg.evaluate("(()=>{const m=document.querySelector('.mod-h');const n=x=>(x?.innerText||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().trim();return !m.querySelector('.t-label')||n(m.querySelector('.t-label'))!==n(m.querySelector('.t-module'))})()"),f'{nombre}: el texto de arriba no repite el título (2.10.1)')
         pg.locator('.mod-h .mg-hbtn').click();pg.wait_for_selector('.mg-hpop')
         ops=pg.locator('.mg-hpop [data-op]').evaluate_all('l=>l.map(x=>x.dataset.op)')

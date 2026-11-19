@@ -4089,7 +4089,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.11.2').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.11.3').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -5511,7 +5511,7 @@ function tableroInicioHtml() {
   /* 2.6.1 · un solo tablero: Inicio muestra el resumen de hoy (tres cifras reales) y lleva a ARP Comercial. */
   if (MODS.comercial && moduleAllowed('comercial') && !moduloOculto('comercial')) {
     const mio = !!ESPACIO?.permisos?.soloAsignado;
-    return `<section class="tb-inicio inicio-resumen" aria-labelledby="inicio-resumen-t"><header class="inicio-resumen-h"><h2 id="inicio-resumen-t">${mio ? 'Lo tuyo hoy' : 'Resumen de hoy'}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-ir-editar>Editar Dashboard</button><a class="inicio-resumen-ver" href="${href(MODS.comercial.path)}" aria-label="Ir a Dashboard"><span class="ir-largo">Ir a Dashboard</span><span class="ir-corto">Dashboard</span>${icon('chevR')}</a></span></header>
+    return `<section class="tb-inicio inicio-resumen" aria-labelledby="inicio-resumen-t"><header class="inicio-resumen-h"><h2 id="inicio-resumen-t">${mio ? 'Lo tuyo hoy' : 'Resumen de hoy'}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-ir-editar>${icon('edit')}Editar Dashboard</button><a class="inicio-resumen-ver" href="${href(MODS.comercial.path)}" aria-label="Ir a Dashboard"><span class="ir-largo">Ir a Dashboard</span><span class="ir-corto">Dashboard</span>${icon('chevR')}</a></span></header>
       <div class="inicio-resumen-g">${iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO))}</div></section>`;
   }
   const c = tbConfig(); if (!c.visible) return '';
@@ -6033,7 +6033,7 @@ const AgoraTabla = {
     const bar = document.createElement('div'); bar.className = 'xt-bar' + (externo ? ' is-externo' : ''); bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Herramientas de la tabla' + (nombre ? ' ' + nombre : ''));
     bar.innerHTML = `${sinBuscar ? '' : `<label class="xt-q"><span class="sr-only">Buscar en la tabla</span>${icon('search')}<input type="search" placeholder="Buscar en la tabla" autocomplete="off" value="${esc(st.q)}"></label>`}
       <span class="xt-n" role="status" aria-live="polite"></span>
-      <span class="xt-acts">${ed?.manual?.() && ed.tipo === 'tabla' ? `<button type="button" class="btn btn-sm btn-cta xt-man" title="Agregar una fila con el formulario de estas columnas">${icon('plus')}<span>Agregar manual</span></button>` : ''}<button type="button" class="btn btn-sm xt-cols" aria-haspopup="true" aria-expanded="false" title="${ed?.puedeEditar?.() ? 'Cambiar, agregar o quitar columnas' : 'Elegir columnas'}">${icon('sidebar')}<span>Columnas</span></button><button type="button" class="btn btn-sm xt-xls" ${ed?.puedeEditar?.() ? 'aria-haspopup="true" aria-expanded="false"' : ''} title="${ed?.puedeEditar?.() ? 'Descargar, plantilla o carga masiva' : 'Descargar en Excel lo que ves'}"><span>Descargar</span>${ed?.puedeEditar?.() ? icon('chev') : ''}</button></span>`;
+      <span class="xt-acts">${ed?.manual?.() && ed.tipo === 'tabla' ? `<button type="button" class="btn btn-sm btn-cta xt-man" title="Agregar una fila con el formulario de estas columnas">${icon('plus')}<span>Agregar manual</span></button>` : ''}<button type="button" class="btn btn-sm xt-cols" aria-haspopup="true" aria-expanded="false" title="${ed?.puedeEditar?.() ? 'Cambiar, agregar o quitar columnas' : 'Elegir columnas'}">${icon('sidebar')}<span>Columnas</span></button><button type="button" class="btn btn-sm xt-xls" ${ed?.puedeEditar?.() ? 'aria-haspopup="true" aria-expanded="false"' : ''} title="${ed?.puedeEditar?.() ? 'Descargar, plantilla o carga masiva' : 'Descargar en Excel lo que ves'}">${icon('download')}<span>Descargar</span>${ed?.puedeEditar?.() ? icon('chev') : ''}</button></span>`;
     tw.before(bar); bar.append(estilo);
     let pager = null;
     if (!externo) { pager = document.createElement('div'); pager.className = 'xt-pager'; tw.after(pager); }
@@ -6561,7 +6561,7 @@ AgoraTabla.alPintar(root => {
   const h = root.querySelector('.mod-h'); if (!h) return;
   let acts = h.querySelector(':scope > .acts'); if (!acts) { acts = document.createElement('div'); acts.className = 'acts'; h.append(acts); }
   const b = document.createElement('button'); b.type = 'button'; b.className = 'btn mg-hbtn'; b.setAttribute('aria-haspopup', 'true'); b.setAttribute('aria-expanded', 'false');
-  b.innerHTML = 'Descargar'; // 2.11.2: sin íconos (pedido del usuario) // 2.10.1: el ícono de descarga, como el «Excel» de las tablas b.title = 'Descargar o cargar con Excel';
+  b.innerHTML = `${icon('download')}Descargar${icon('chev')}`; // 2.10.1: el ícono de descarga, como el «Excel» de las tablas b.title = 'Descargar o cargar con Excel';
   acts.prepend(b);
   b.onclick = () => {
     const bar = barra(), ed = bar?._ed || null, admin = esAdmin(), edita = !!ed?.puedeEditar?.();
@@ -7058,7 +7058,7 @@ function gcVivoHtml() {
   const tarjeta = (cls, ic, t, val, det) => `<div class="ag-resumen ${cls}"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span><strong class="ag-resumen-v">${val}</strong><span class="ag-resumen-d">${det}</span></div>`;
   const elegidas = tarjElegidas('gestion', VG_TARJETAS, GC_DEFECTO);
   /* 2.10.0 · Pedido del usuario: las cifras en una sola caja, con la estructura del «Resumen de hoy» del Inicio (título y botones arriba, cifras separadas por líneas), conservando el ícono y el color de cada una. */
-  const kpis = `<section class="inicio-resumen gc-caja" aria-labelledby="gc-caja-t"><header class="inicio-resumen-h"><h2 id="gc-caja-t">Cifras de ${esc(mes)}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-gc-tarjetas>Editar Dashboard</button><a class="inicio-resumen-ver" href="${href(MODS.ventas?.path || '/ventas')}">Ver las ventas${icon('chevR')}</a></span></header>`
+  const kpis = `<section class="inicio-resumen gc-caja" aria-labelledby="gc-caja-t"><header class="inicio-resumen-h"><h2 id="gc-caja-t">Cifras de ${esc(mes)}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-gc-tarjetas>${icon('edit')}Editar Dashboard</button><a class="inicio-resumen-ver" href="${href(MODS.ventas?.path || '/ventas')}">Ver las ventas${icon('chevR')}</a></span></header>`
     + (elegidas.length ? `<div class="gc-caja-g">${elegidas.map(id => { const x = VG_TARJETAS[id]; let v; try { v = x.f(d, r, mes); } catch { v = ['', '—', '']; } return tarjeta(v[0], x.ic, esc(x.t), v[1], v[2]); }).join('')}</div>` : '<p class="inicio-resumen-x">No elegiste cifras para esta vista. Usa «Elegir cifras».</p>') + '</section>';
   const graf = vtPuede() ? '<div data-gc-graf-aqui></div>' : '';
   if (!items.length) return cabeza + kpis + `<section class="panel"><p class="empty"><b>Todavía no hay ventas registradas en ${esc(mes)}</b>Cuando se gane una oportunidad y se complete su venta, aparece aquí.</p></section>` + graf;
@@ -7107,7 +7107,7 @@ const EQ_DEFECTO = ['personas', 'vendedor', 'ganadasCuenta', 'sinLeer'];
 const vivoTarjetas = (vista, catalogo, defecto, args, mes) => { const ids = tarjElegidas(vista, catalogo, defecto); return ids.length ? `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">${ids.map(id => { const x = catalogo[id]; let v; try { v = x.f(...args); } catch { v = ['', '—', '']; } return `<div class="ag-resumen ${v[0]}"><span class="ag-resumen-ic" aria-hidden="true">${icon(x.ic)}</span><span class="ag-resumen-t">${esc(x.t)}</span><strong class="ag-resumen-v">${v[1]}</strong><span class="ag-resumen-d">${v[2] || ''}</span></div>`; }).join('')}</section>` : ''; };
 function eqVivoHtml() {
   const mes = mesNombre(VG.mes || PERIODO);
-  const acts = `<button class="btn" type="button" data-eq-tarjetas>Editar Dashboard</button>`;
+  const acts = `<button class="btn" type="button" data-eq-tarjetas>${icon('edit')}Editar Dashboard</button>`;
   const cabeza = head('Gestión comercial', 'Equipo', `Cómo le va a cada persona en ${esc(mes)}: lo que vendió, lo que ganó en la cuenta y lo que tiene pendiente.`, acts);
   const filas = eqFilas(), hayCuenta = !!(EQ.won || EQ.dia);
   if (!filas.length) return cabeza + vivoTarjetas('equipo', EQ_TARJETAS, EQ_DEFECTO, [], mes) + `<section class="panel"><p class="empty"><b>Todavía no hay actividad del equipo en ${esc(mes)}</b>Cuando haya ventas registradas u oportunidades ganadas, cada persona aparece aquí.</p></section>`;
@@ -7141,7 +7141,7 @@ const CO_TARJETAS = {
 const CO_DEFECTO = ['inversion', 'costoVenta', 'costoGanada', 'retorno'];
 function coVivoHtml() {
   const mes = mesNombre(VG.mes || PERIODO);
-  const cabeza = head('Gestión comercial', 'Costos', `Lo invertido en anuncios y los costos de ${esc(mes)} frente a lo que se vendió.`, `<button class="btn" type="button" data-co-tarjetas>Editar Dashboard</button>`);
+  const cabeza = head('Gestión comercial', 'Costos', `Lo invertido en anuncios y los costos de ${esc(mes)} frente a lo que se vendió.`, `<button class="btn" type="button" data-co-tarjetas>${icon('edit')}Editar Dashboard</button>`);
   const extra = `<p class="camp-nota">La inversión en anuncios sale de la cuenta publicitaria de Meta y de la publicidad cargada en «Costos del mes»; las ventas, de las ventas registradas en Ágora.</p>`;
   const camp = campPuede() ? `<div class="mt costos-vivo">${campanasHtml().replace(/<label class="fld camp-mes">[\s\S]*?<\/label>/, '')}</div>` : `<section class="panel mt"><p class="redes-nota">${conectada() ? 'Tu rol no ve la inversión en anuncios.' : 'Esta subcuenta no está conectada con su cuenta: sin ella no hay inversión en anuncios que mostrar.'}</p></section>`;
   return cabeza + vivoTarjetas('costos', CO_TARJETAS, CO_DEFECTO, [], mes) + coItemsHtml() + extra + camp;
@@ -7186,7 +7186,7 @@ const FA_TARJETAS = {
 const FA_DEFECTO = ['aCobrar', 'cobrado', 'pendiente', 'vencido'];
 function faVivoHtml() {
   const ym = VG.mes || PERIODO, mes = mesNombre(ym), puedeEd = !!FA.datos?.canEdit;
-  const cabeza = head('Facturación', 'Cobros', `Lo que toca cobrar en ${esc(mes)} según el plan de cobros de cada venta, y lo que está atrasado.`, `<button class="btn" type="button" data-fa-tarjetas>Editar Dashboard</button>`);
+  const cabeza = head('Facturación', 'Cobros', `Lo que toca cobrar en ${esc(mes)} según el plan de cobros de cada venta, y lo que está atrasado.`, `<button class="btn" type="button" data-fa-tarjetas>${icon('edit')}Editar Dashboard</button>`);
   if (!FA.datos) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer los cobros</b>Vuelve a intentarlo en un momento.</p></section>';
   const m = faCobros(ym), kpis = vivoTarjetas('facturas', FA_TARJETAS, FA_DEFECTO, [m], mes);
   const base = faCobros(ym, {sinEstado: true}), crudo = faCobros(ym, {crudo: true}), f = FA.f;
@@ -7340,7 +7340,7 @@ V.facturas = {
   need: () => Promise.all([fcCargar(true), tarjCargar('facturasdoc')]),
   render() {
     const r = FC.res, mes = mesNombre(PERIODO), pu = r?.puede || {};
-    const acts = `${pu.emitir ? `<button class="btn btn-cta" type="button" data-fc-nueva>${icon('plus')}Nueva factura</button>` : ''}<button class="btn" type="button" data-fc-tarjetas>Editar Dashboard</button>`;
+    const acts = `${pu.emitir ? `<button class="btn btn-cta" type="button" data-fc-nueva>${icon('plus')}Nueva factura</button>` : ''}<button class="btn" type="button" data-fc-tarjetas>${icon('edit')}Editar Dashboard</button>`;
     const cabeza = head('Facturación', 'Facturas', r?.fiscal ? `Facturas fiscales, facturas simples y notas de ${esc(mes)}.` : `Facturas simples de ${esc(mes)}. Para emitir facturas fiscales, completa los datos fiscales.`, acts);
     if (!r) return cabeza + '<section class="panel"><p class="empty"><b>No se pudo leer la facturación</b>Vuelve a intentarlo en un momento.</p></section>';
     const avisos = [];
@@ -7803,7 +7803,7 @@ const TD_TARJETAS = {
 const TD_DEFECTO = ['vendido', 'ventas', 'promedio', 'mejor'];
 function tdVivoHtml() {
   const mes = mesNombre(VG.mes || PERIODO);
-  const cabeza = head('Gestión comercial', 'Tendencias', `Cómo se mueven las ventas en los 12 meses hasta ${esc(mes)}.`, `<button class="btn" type="button" data-td-tarjetas>Editar Dashboard</button>`);
+  const cabeza = head('Gestión comercial', 'Tendencias', `Cómo se mueven las ventas en los 12 meses hasta ${esc(mes)}.`, `<button class="btn" type="button" data-td-tarjetas>${icon('edit')}Editar Dashboard</button>`);
   if (!FA.datos) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas</b>Vuelve a intentarlo en un momento.</p></section>';
   const m = tdMeses(), max = Math.max(1, ...m.map(x => x.vendido));
   const barras = `<div class="td-barras" role="img" aria-label="Vendido por mes">${m.map(x => `<div class="td-b ${x.ym === m.at(-1).ym ? 'is-on' : ''}"><span class="td-v">${x.vendido ? esc(usd(x.vendido).replace(/,00$/, '')) : ''}</span><i style="height:${Math.max(2, Math.round(100 * x.vendido / max))}%"></i><small>${esc(mesNombre(x.ym).slice(0, 3))}</small></div>`).join('')}</div>`;
@@ -7839,7 +7839,7 @@ const CA_TARJETAS = {
 };
 const CA_DEFECTO = ['enOrden', 'importantes', 'otros'];
 function caVivoHtml() {
-  const cabeza = head('Gestión comercial', 'Calidad de datos', 'Lo que conviene corregir en las ventas registradas y el catálogo antes de cerrar números.', `<button class="btn" type="button" data-ca-tarjetas>Editar Dashboard</button>`);
+  const cabeza = head('Gestión comercial', 'Calidad de datos', 'Lo que conviene corregir en las ventas registradas y el catálogo antes de cerrar números.', `<button class="btn" type="button" data-ca-tarjetas>${icon('edit')}Editar Dashboard</button>`);
   if (!FA.datos) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas</b>Vuelve a intentarlo en un momento.</p></section>';
   const r = caRevisiones(), mal = r.filter(x => x.n), total = (FA.datos.items || []).length;
   const G = {alta: ['Importante', 'sc-bad'], media: ['Conviene', 'sc-warn'], baja: ['Menor', 'sc-gray']};
@@ -8071,7 +8071,7 @@ function gcGraficosInyectar(root) {
   if (ancla) ancla.replaceWith(sec); else { const cab = root.querySelector('.hx-top, .mod-h'); if (!cab?.parentElement) return; cab.parentElement.append(sec); }
   const pintar = () => {
     const sel = tarjElegidas('gestiongraf', GC_GRAFICOS, gcGrafDefecto());
-    sec.innerHTML = `<div class="t-sec-row"><div><h2 class="t-sec">Gráficos de ventas</h2><p>Los mismos del Tablero comercial: del reporte mensual cuando lo trae; si no, de las ventas registradas.</p></div><div class="acts"><button class="btn btn-sm" type="button" data-gc-graf-ed>Editar gráficos</button></div></div>`
+    sec.innerHTML = `<div class="t-sec-row"><div><h2 class="t-sec">Gráficos de ventas</h2><p>Los mismos del Tablero comercial: del reporte mensual cuando lo trae; si no, de las ventas registradas.</p></div><div class="acts"><button class="btn btn-sm" type="button" data-gc-graf-ed>${icon('edit')}Editar gráficos</button></div></div>`
       + (sel.length ? `<div class="vt-cuerpo"><section class="panel"><span class="sk w80"></span><span class="sk w60"></span></section></div>` : '<p class="src gc-graf-vacio">No elegiste gráficos para esta vista.</p>');
     sec.querySelector('[data-gc-graf-ed]').onclick = () => tarjEditar('gestiongraf', GC_GRAFICOS, gcGrafDefecto(), 'Gestión Comercial (gráficos)', pintar);
     if (!sel.length) return;
@@ -8164,7 +8164,7 @@ function vgCsv() {
 }
 function vgRegistradasHtml() {
   const d = VG.datos;
-  const acts = `<button class="btn" type="button" data-vg-tarjetas>Editar Dashboard</button>` ; // 2.9.5: sin «Exportar CSV» aparte: «Excel» → «Descargar lo que ves»
+  const acts = `<button class="btn" type="button" data-vg-tarjetas>${icon('edit')}Editar Dashboard</button>` ; // 2.9.5: sin «Exportar CSV» aparte: «Excel» → «Descargar lo que ves»
   const cabeza = head('Ventas', 'Ventas registradas', 'Lo que se vende al ganar una oportunidad: cliente, producto, cobros y vendedor, en un solo registro.', acts);
   if (!d) return cabeza + loading();
   const r = d.resumen || {}, mes = typeof mesNombre === 'function' ? mesNombre(VG.mes) : VG.mes;
