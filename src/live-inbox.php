@@ -20,18 +20,8 @@ $connection=query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$i
 if(!$connection)respond(['error'=>'Subcuenta no encontrada'],404);
 $membership=Actor::connectionMembership($u,(int)$id);
 if(!$membership||!($membership['capabilities']['viewConversations']??false))respond(['error'=>'No tienes permiso para consultar esta cuenta.'],403);
-// Quién es «yo» en la cuenta: el usuario sincronizado, o el del propietario si lo tiene enlazado.
-$membership['self_id']=$membership['external_user_id']??((($u['identity_type']??'native')==='native'&&is_string($u['ghl_user_id']??null)&&$u['ghl_user_id']!=='')?$u['ghl_user_id']:null);
-// El propietario puede haber elegido quién es entre los usuarios de la subcuenta.
-if($membership['self_id']===null&&($u['identity_type']??'native')==='native'){
-    $chosen=query('SELECT l.external_user_id FROM owner_links l JOIN external_users eu ON eu.connection_id=l.connection_id AND eu.external_user_id=l.external_user_id AND eu.active=TRUE WHERE l.user_id=? AND l.connection_id=?',[$u['id'],$id])->fetchColumn();
-    if(is_string($chosen)&&$chosen!=='')$membership['self_id']=$chosen;
-}
-// El propietario sin enlace manual se reconoce por su correo entre los usuarios de la cuenta.
-if($membership['self_id']===null&&($u['identity_type']??'native')==='native'&&is_string($u['email']??null)){
-    $byMail=query('SELECT external_user_id FROM external_users WHERE connection_id=? AND active=TRUE AND LOWER(email)=LOWER(?) LIMIT 1',[$id,$u['email']])->fetchColumn();
-    if(is_string($byMail)&&$byMail!=='')$membership['self_id']=$byMail;
-}
+// Quién es «yo» en la cuenta (1.10.30: la elección manual del propietario va primero). Ver Actor::selfId.
+$membership['self_id']=Actor::selfId($u,$membership,(int)$id);
 // Quién es el propietario entre los usuarios de esta subcuenta: sólo él, y sólo para sus propias cifras.
 if($path==='/api/workspace/self'&&in_array($method,['GET','PUT'],true)){
     if(($u['identity_type']??'native')!=='native'||($u['role']??null)!=='administrator')respond(['error'=>'Sólo quien administra Ágora puede elegir esto.'],403);
@@ -295,7 +285,10 @@ if($path==='/api/workspace/contacts'&&$method==='GET'){
     // 1.10.19 · «Creados hoy» (fecha de alta en la cuenta, en la zona del dispositivo). Quien solo ve lo suyo, solo los suyos.
     $since=in_array($_GET['since']??'',['hoy','7d','30d'],true)?$_GET['since']:null;
     $zone=is_string($_GET['tz']??null)&&in_array($_GET['tz'],DateTimeZone::listIdentifiers(),true)?$_GET['tz']:'UTC';
-    try{respond($since?(new ContactDirectory())->recientes($connection,$search,$membership,$since,$zone,$page):(new ContactDirectory())->get($connection,$search,$membership,($_GET['refresh']??'')==='1',$page));}
+    // 1.10.30 · Quién es «yo» en la cuenta, con su nombre: «Nuevo contacto» dice a quién se le asigna antes de crearlo.
+    $selfName=is_string($membership['self_id']??null)?query('SELECT display_name FROM external_users WHERE connection_id=? AND external_user_id=? LIMIT 1',[$id,$membership['self_id']])->fetchColumn():false;
+    $self=is_string($membership['self_id']??null)?['id'=>$membership['self_id'],'name'=>is_string($selfName)&&$selfName!==''?$selfName:null]:null;
+    try{respond(($since?(new ContactDirectory())->recientes($connection,$search,$membership,$since,$zone,$page):(new ContactDirectory())->get($connection,$search,$membership,($_GET['refresh']??'')==='1',$page))+['self'=>$self]);}
     catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La lista está en espera para respetar la cuota.','retryAfter'=>$e->retryAfter],429);}
     catch(GhlApiException $e){respond(['error'=>'No se pudo consultar la lista de contactos. Revisa el permiso de contactos.','code'=>'contacts_upstream_'.$e->status],424);}
     catch(Throwable $e){respond(['error'=>'La lista recibida no tiene el formato esperado.','code'=>'contacts_invalid_response'],424);}

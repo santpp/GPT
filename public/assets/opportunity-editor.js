@@ -20,7 +20,7 @@ export function opportunityForm({pipelines=[],assignees=[],opportunity=null,titl
    <label>Embudo<select name="pipelineId">${list.map(p=>`<option value="${esc(p.id)}"${p.id===chosen.id?' selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
    <label>Etapa<select name="pipelineStageId">${stages.map(stage=>`<option value="${esc(stage.id)}"${stage.id===current.pipelineStageId?' selected':''}>${esc(stage.name)}</option>`).join('')}</select></label>
    <label>Valor<input name="monetaryValue" type="number" min="0" max="999999999" step="0.01" value="${esc(typeof current.monetaryValue==='number'?current.monetaryValue:'')}"></label>
-   <label>Responsable<select name="assignedTo"><option value="">Sin asignar</option>${asList(assignees).map(user=>`<option value="${esc(user.id)}"${user.id===current.assignedTo?' selected':''}>${esc(user.name)}</option>`).join('')}</select></label>
+   <label>Responsable<select name="assignedTo"><option value="">Sin asignar</option>${asList(assignees).map(user=>`<option value="${esc(user.id)}"${user.id===current.assignedTo?' selected':''}>${esc(user.name)}</option>`).join('')}${current.assignedTo&&!asList(assignees).some(user=>user.id===current.assignedTo)?`<option value="${esc(current.assignedTo)}" selected>Responsable actual (fuera del equipo de Ágora)</option>`:''}</select></label>
    <label>Estado<select name="status">${STATUSES.map(([value,label])=>`<option value="${value}"${value===(current.status??'open')?' selected':''}>${label}</option>`).join('')}</select></label>
    <div class="opportunity-form-actions"><button class="primary" data-save>${current.id?'Guardar cambios':'Crear oportunidad'}</button><button type="button" data-cancel>Cancelar</button></div>
    <p data-status role="status"></p>

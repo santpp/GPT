@@ -299,7 +299,7 @@ export async function renderLiveInbox(container){
    content.innerHTML=`<h2>Asignar la conversación</h2>
     <p class="dialog-copy">La persona que elijas pasa a ser <b>responsable del contacto</b> y de sus <b>oportunidades abiertas</b>, y lo que cierre contará en sus ventas.</p>
     <form id="assign-form" class="dialog-form">
-     <label>Responsable<select name="assignedTo"><option value="">Sin asignar</option>${asList(assignees).map(user=>`<option value="${esc(user.id)}"${user.id===current?' selected':''}>${esc(user.name)}</option>`).join('')}</select></label>
+     <label>Responsable<select name="assignedTo"><option value="">Sin asignar</option>${asList(assignees).map(user=>`<option value="${esc(user.id)}"${user.id===current?' selected':''}>${esc(user.name)}</option>`).join('')}${current&&!asList(assignees).some(user=>user.id===current)?`<option value="${esc(current)}" selected>Responsable actual (fuera del equipo de Ágora)</option>`:''}</select></label>
      <div class="dialog-actions"><button class="primary">Asignar</button></div>
      <p id="assign-result" class="dialog-copy" role="status"></p>
     </form>`;

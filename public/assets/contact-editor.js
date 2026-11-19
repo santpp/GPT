@@ -42,7 +42,7 @@ export function contactForm(profile,directory=[],assignees=[]){
  const rest=EDITABLE.map(row=>row[0]).filter(key=>!used.has(key));
  const groups=GROUPS.map(([title,keys],i)=>{
   const inner=keys.filter(key=>byKey[key]).map(control).join('')+(i===GROUPS.length-1?rest.map(control).join('')
-   +(asList(assignees).length?`<label class="wide">Responsable<select name="assignedTo"><option value="">Sin asignar</option>${assignees.map(user=>`<option value="${esc(user.id)}"${user.id===profile.assignedTo?' selected':''}>${esc(user.name)}</option>`).join('')}</select></label>`:'')
+   +(asList(assignees).length?`<label class="wide">Responsable<select name="assignedTo"><option value="">Sin asignar</option>${assignees.map(user=>`<option value="${esc(user.id)}"${user.id===profile.assignedTo?' selected':''}>${esc(user.name)}</option>`).join('')}${profile.assignedTo&&!assignees.some(user=>user.id===profile.assignedTo)?`<option value="${esc(profile.assignedTo)}" selected>Responsable actual (fuera del equipo de Ágora)</option>`:''}</select></label>`:'')
    +`<label class="contact-switch wide"><input type="checkbox" name="dnd"${profile.dnd?' checked':''}><span class="switch-track" aria-hidden="true"></span><span>No contactar<small>No se le enviarán mensajes desde ningún canal.</small></span></label>`:'');
   return `<fieldset class="contact-group"><legend>${esc(title)}</legend><div class="contact-grid">${inner}</div></fieldset>`;
  }).join('');

@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
-/** 1.10.27 · «Nuevo contacto» se escribe en la cuenta: validación, duplicados, asignación, permisos y sin dobles. */
+/** 1.10.27 · «Nuevo contacto» se escribe en la cuenta: validación, duplicados, asignación, permisos y sin dobles.
+ *  1.10.30 · «Asignármelo» solo asigna a quien la pantalla mostró como «tú», y se informa a quién quedó asignado en la cuenta. */
 require __DIR__.'/../src/bootstrap.php';
 require __DIR__.'/../src/ContactActivity.php';
 require __DIR__.'/../src/ContactActions.php';
@@ -11,7 +12,7 @@ function key16():string{return bin2hex(random_bytes(12));}
 function problem(callable $f):?ActionProblem{try{$f();}catch(ActionProblem $e){return $e;}return null;}
 
 final class FakeCreateApi {
-    public array $calls=[];public array $existing=[];public int $created=0;public ?int $failCreate=null;
+    public array $calls=[];public array $existing=[];public int $created=0;public ?int $failCreate=null;public ?string $rule=null;
     public function gateway():GhlGateway {
         return new GhlGateway(fn():GhlClient=>new GhlClient('fake',function(string $path,string $version,string $method,?array $payload):array {
             $this->calls[]=[$method,$path,$payload];
@@ -22,7 +23,7 @@ final class FakeCreateApi {
             }
             if($method==='POST'&&$path==='/contacts/'){
                 if($this->failCreate)throw new GhlApiException($this->failCreate);
-                $this->created++;return ['status'=>201,'body'=>json_encode(['contact'=>['id'=>'new-'.$this->created]+$payload])];
+                $this->created++;return ['status'=>201,'body'=>json_encode(['contact'=>['id'=>'new-'.$this->created]+($this->rule!==null?['assignedTo'=>$this->rule]:[])+$payload])];
             }
             throw new GhlApiException(404);
         }));
@@ -37,6 +38,7 @@ try {
  query("INSERT INTO ghl_connections(tenant_id,name,location_id,token_ciphertext,status) VALUES(?,?,?,?,'connected')",[$tenant,'Cuenta',$location,'not-used']);
  $connectionId=(int)db()->lastInsertId();
  $connection=query('SELECT * FROM ghl_connections WHERE id=?',[$connectionId])->fetch();
+ foreach([['owner-1','Dueña'],['seller-1','Lucía'],['seller-9','Carla']] as [$eid,$name])query("INSERT INTO external_users(connection_id,external_user_id,display_name,permissions,scopes) VALUES(?,?,?,'{}','[]')",[$connectionId,$eid,$name]);
  $admin=['external_user_id'=>null,'self_id'=>'owner-1','capabilities'=>['viewContacts'=>true,'editContacts'=>true,'assignedDataOnly'=>false]];
  $seller=['external_user_id'=>'seller-1','capabilities'=>['viewContacts'=>true,'editContacts'=>true,'assignedDataOnly'=>true]];
  $unlinked=['external_user_id'=>null,'capabilities'=>['viewContacts'=>true,'editContacts'=>true,'assignedDataOnly'=>true]];
@@ -89,6 +91,22 @@ try {
  clearBudget($connectionId);
  $actions->create($connection,$admin,['firstName'=>'Mío','email'=>'mio@ejemplo.test','assignToMe'=>true,'requestId'=>key16()]);
  createCheck((end($api->calls)[2]['assignedTo']??null)==='owner-1','«Asignármelo» lo asigna a quien lo crea');
+ clearBudget($connectionId);
+ $r=$actions->create($connection,$admin,['firstName'=>'Mío2','email'=>'mio2@ejemplo.test','assignToMe'=>true,'selfId'=>'owner-1','requestId'=>key16()]);
+ createCheck($r['assignedTo']==='owner-1'&&$r['assignedName']==='Dueña'&&$r['assignedAsAsked']===true,'1.10.30 · la respuesta dice a quién quedó asignado, con su nombre');
+ // Si la pantalla mostró a otra persona como «tú», no se crea nada.
+ clearBudget($connectionId);$before=count($api->creates());
+ $e=problem(fn()=>$actions->create($connection,$admin,['firstName'=>'Otra','email'=>'otra@ejemplo.test','assignToMe'=>true,'selfId'=>'seller-9','requestId'=>key16()]));
+ createCheck($e?->reason==='self_changed'&&count($api->creates())===$before,'1.10.30 · si «tú» no es quien mostró la pantalla, no se crea ni se asigna a otra persona');
+ // Sin saber quién eres, «Asignármelo» no se aplica en silencio.
+ $nobody=['external_user_id'=>null,'self_id'=>null,'capabilities'=>$admin['capabilities']];
+ $e=problem(fn()=>$actions->create($connection,$nobody,['firstName'=>'Nadie','email'=>'nadie@ejemplo.test','assignToMe'=>true,'requestId'=>key16()]));
+ createCheck($e?->reason==='self_unknown'&&str_contains($e->getMessage(),'¿Quién eres en esta subcuenta?'),'1.10.30 · si Ágora no sabe quién eres, lo dice en vez de crear sin avisar');
+ // Una regla automática de la cuenta lo reasigna: se informa.
+ clearBudget($connectionId);$api->rule='seller-9';
+ $r=$actions->create($connection,$admin,['firstName'=>'Regla','email'=>'regla@ejemplo.test','assignToMe'=>true,'selfId'=>'owner-1','requestId'=>key16()]);
+ createCheck($r['assignedTo']==='seller-9'&&$r['assignedName']==='Carla'&&$r['assignedAsAsked']===false,'1.10.30 · si la cuenta lo asigna a otra persona, la respuesta lo dice');
+ $api->rule=null;
 
  // La cuenta rechaza: se explica y no queda nada a medias.
  clearBudget($connectionId);$api->failCreate=422;
@@ -96,5 +114,5 @@ try {
  createCheck($e?->reason==='action_rejected'&&!str_contains($e->getMessage(),'GHL'),'si la cuenta rechaza el contacto, se explica sin nombres técnicos');
  echo "$checks comprobaciones".PHP_EOL;
 } finally {
- foreach($tenants as $id){query('DELETE FROM ghl_connections WHERE tenant_id=?',[$id]);query('DELETE FROM tenants WHERE id=?',[$id]);}
+ foreach($tenants as $id){query('DELETE FROM external_users WHERE connection_id IN (SELECT id FROM ghl_connections WHERE tenant_id=?)',[$id]);query('DELETE FROM ghl_connections WHERE tenant_id=?',[$id]);query('DELETE FROM tenants WHERE id=?',[$id]);}
 }

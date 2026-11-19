@@ -47,7 +47,7 @@ export async function renderContacts(container){
   }
 
   const loadTags=()=>request(`workspace/tags?connectionId=${encodeURIComponent(connection)}`).then(r=>asList(r.items));
-  let shown=[],page=1;
+  let shown=[],page=1,selfInAccount;
   const describe=(data,search)=>{
     if(since&&!data.total)return search?'Ningún contacto creado hoy coincide con esa búsqueda.':(data.restricted?'Hoy no se creó ningún contacto asignado a ti.':'Hoy no se creó ningún contacto.');
     if(since){const n=data.total;return `${n} contacto${n===1?'':'s'} creado${n===1?'':'s'} hoy${data.restricted?' asignado'+(n===1?'':'s')+' a ti':''}${search?' que coinciden':''} · los más nuevos primero`}
@@ -73,6 +73,7 @@ export async function renderContacts(container){
       const items=asList(data.items);
       if(next===1)shown=items;else{const seen=new Set(shown.map(c=>c.id));shown=shown.concat(items.filter(c=>!seen.has(c.id)))}
       page=next;
+      if('self' in data)selfInAccount=data.self||null;
       paint(data,search);
     }catch(error){
       if(!active()||version!==generation)return;
@@ -157,13 +158,15 @@ export async function renderContacts(container){
     container.querySelectorAll('[data-contact]').forEach(b=>b.classList.remove('selected'));
     layout.classList.add('record-open');
     const caps=workspace.me?.user?.capabilities||{},restricted=caps.assignedDataOnly===true,requestId=crypto.randomUUID().replace(/-/g,'');
+    const me=selfInAccount&&selfInAccount.id?selfInAccount:null;
     const panel=$('#contact-record');
     panel.innerHTML=`<header class="record-header"><button class="mobile-back" id="record-back" aria-label="Volver a la lista">←</button><span class="avatar olive">+</span><div><h2>Nuevo contacto</h2><p>Se crea en la cuenta de la subcuenta${restricted?', asignado a ti':''}.</p></div></header>
      <form class="live-contact-form contact-new-form" id="contact-new-form" novalidate>
       <div class="grid-2"><label>Nombre<input name="firstName" autocomplete="given-name" maxlength="90" required></label><label>Apellido<input name="lastName" autocomplete="family-name" maxlength="90"></label></div>
       <label>Teléfono<input name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+584141234567" maxlength="24"><small>Con el código del país. Hace falta el teléfono o el correo.</small></label>
       <label>Correo<input name="email" type="email" autocomplete="email" maxlength="190"></label>
-      ${restricted?'':'<label class="check"><input type="checkbox" name="assignToMe"> Asignármelo</label>'}
+      ${restricted?'':me?`<label class="check"><input type="checkbox" name="assignToMe"> <span>Asignármelo${me.name?` · <b>${esc(me.name)}</b>`:''}</span></label>`
+        :'<p class="contact-new-hint">Para asignártelo al crearlo, elige quién eres en Tablero › «¿Quién eres en esta subcuenta?». Mientras tanto se crea sin asignar.</p>'}
       <p id="contact-new-status" class="live-feedback" role="status"></p>
       <div class="form-actions"><button type="button" class="secondary" id="contact-new-cancel">Cancelar</button><button class="primary" id="contact-new-save">Crear contacto</button></div>
      </form>`;
@@ -180,10 +183,15 @@ export async function renderContacts(container){
       if(phone&&!/^\+\d{7,15}$/.test(phone)){status.textContent='Escribe el teléfono con el código del país, por ejemplo +584141234567.';form.elements.phone.focus();return}
       button.disabled=true;status.textContent='Creando el contacto…';
       try{
-        const r=await request(`workspace/contacts?connectionId=${encodeURIComponent(connection)}`,'POST',{firstName:v('firstName'),lastName:v('lastName'),phone,email:v('email'),assignToMe:!!form.elements.assignToMe?.checked,requestId});
+        const r=await request(`workspace/contacts?connectionId=${encodeURIComponent(connection)}`,'POST',{firstName:v('firstName'),lastName:v('lastName'),phone,email:v('email'),assignToMe:!!form.elements.assignToMe?.checked,...(form.elements.assignToMe?.checked?{selfId:me.id}:{}),requestId});
         if(!active())return;
         await load(searchText($('#contact-search').value));
         if(!active())return;
+        // 1.10.30 · Dice a quién quedó asignado según la cuenta, y avisa si una regla de la cuenta lo cambió.
+        const who=r.assignedName||(r.assignedTo?'otra persona del equipo':'');
+        window.dispatchEvent(new CustomEvent('agora:toast',{detail:r.assignedAsAsked===false
+          ?`Contacto creado, pero la cuenta lo asignó a ${who||'nadie'} (una regla automática de la cuenta lo cambió).`
+          :who?`Contacto creado y asignado a ${who}.`:'Contacto creado sin asignar.'}));
         if(r.id)open(r.id);else{status.textContent='Contacto creado. Búscalo en la lista.';button.disabled=false}
       }catch(error){
         if(!active())return;

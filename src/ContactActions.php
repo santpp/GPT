@@ -163,7 +163,12 @@ final class ContactActions {
         $payload=['locationId'=>(string)$connection['location_id'],'firstName'=>$first,'name'=>trim($first.' '.($last??'')),'source'=>'Ágora']
             +($last!==null?['lastName'=>$last]:[])+($phone!==''?['phone'=>$phone]:[])+($email!==''?['email'=>$email]:[]);
         if($restricted)$payload['assignedTo']=$mine;
-        elseif(($input['assignToMe']??false)===true&&is_string($mine))$payload['assignedTo']=$mine;
+        elseif(($input['assignToMe']??false)===true) {
+            // 1.10.30 · Se asigna solo a quien la pantalla mostró como «tú»; si no coincide (o no se sabe quién eres), no se crea.
+            if(!is_string($mine))throw new ActionProblem('self_unknown',422,'Ágora todavía no sabe quién eres en esta subcuenta. Elígelo en Tablero › «¿Quién eres en esta subcuenta?» o crea el contacto sin asignar.');
+            if(array_key_exists('selfId',$input)&&$input['selfId']!==$mine)throw new ActionProblem('self_changed',409,'Cambió quién eres en esta subcuenta. Vuelve a abrir «Nuevo contacto» y revisa a quién se asigna.');
+            $payload['assignedTo']=$mine;
+        }
         // ¿Ya existe? Una consulta por dato; un fallo de esta lectura no impide crear (la cuenta igual rechaza duplicados si así está configurada).
         foreach([['email',$email],['phone',$phone]] as [$kind,$value]) {
             if($value==='')continue;
@@ -176,10 +181,15 @@ final class ContactActions {
                 throw new ActionProblem('contact_exists',409,($kind==='email'?'Ya existe un contacto con ese correo':'Ya existe un contacto con ese teléfono').($visible?'. Ábrelo en vez de crear otro.':', asignado a otra persona. Pídele a quien administra que te lo asigne.'),0,$visible?$existing:null);
             }
         }
-        $result=$this->run($connection,'nuevo',$membership,$input,'create',$payload,fn(GhlClient $client):array=>$client->createContact($payload),'contact');
+        $created=null;
+        $result=$this->run($connection,'nuevo',$membership,$input,'create',$payload,function(GhlClient $client)use($payload,&$created):array{return $created=$client->createContact($payload);},'contact');
         // La lista de contactos se guarda un momento: se suelta para que el nuevo aparezca enseguida.
         query("DELETE FROM directory_cache WHERE connection_id=? AND cache_key LIKE 'contacts:%'",[(int)$connection['id']]);
-        return $result+['name'=>$payload['name']];
+        // 1.10.30 · A quién quedó asignado según la cuenta (una regla automática de la cuenta puede cambiarlo), con su nombre.
+        $asked=$payload['assignedTo']??null;
+        $got=is_array($created)&&is_array($created['contact']??null)&&array_key_exists('assignedTo',$created['contact'])?self::identifier($created['contact']['assignedTo']):$asked;
+        $name=is_string($got)?query('SELECT display_name FROM external_users WHERE connection_id=? AND external_user_id=? LIMIT 1',[(int)$connection['id'],$got])->fetchColumn():false;
+        return $result+['name'=>$payload['name'],'assignedTo'=>$got,'assignedName'=>is_string($name)&&$name!==''?$name:null,'assignedAsAsked'=>$got===$asked];
     }
 
     private function run(array $connection,string $contactId,array $membership,array $input,string $action,array $payload,Closure $operation,string $resultKey):array {

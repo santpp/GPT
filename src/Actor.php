@@ -35,4 +35,26 @@ final class Actor {
         $externalId=$membership['external_user_id']??'';
         return array_values(array_filter($items,fn($conversation)=>is_array($conversation)&&($conversation['assignedTo']??null)===$externalId));
     }
+
+    /** 1.10.30 · Quién es «yo» en la cuenta: el usuario sincronizado; si es propietario de Ágora, primero lo que eligió a mano
+     *  («¿Quién eres en esta subcuenta?»), luego el usuario guardado en su perfil (solo si existe en esta subcuenta) y por
+     *  último su correo, si coincide con una sola persona. Antes el dato del perfil pasaba por delante de la elección manual. */
+    public static function selfId(array $u,array $membership,int $connectionId):?string {
+        $self=$membership['external_user_id']??null;
+        $native=($u['identity_type']??'native')==='native';
+        if($self===null&&$native){
+            $chosen=query('SELECT l.external_user_id FROM owner_links l JOIN external_users eu ON eu.connection_id=l.connection_id AND eu.external_user_id=l.external_user_id AND eu.active=TRUE WHERE l.user_id=? AND l.connection_id=?',[$u['id'],$connectionId])->fetchColumn();
+            if(is_string($chosen)&&$chosen!=='')$self=$chosen;
+        }
+        if($self===null&&$native&&is_string($u['ghl_user_id']??null)&&$u['ghl_user_id']!==''){
+            // Solo si ese usuario existe en esta subcuenta: un dato viejo no puede asignar a nadie fuera del equipo.
+            $known=query('SELECT 1 FROM external_users WHERE connection_id=? AND external_user_id=? AND active=TRUE',[$connectionId,$u['ghl_user_id']])->fetchColumn();
+            if($known)$self=$u['ghl_user_id'];
+        }
+        if($self===null&&$native&&is_string($u['email']??null)){
+            $byMail=query('SELECT external_user_id FROM external_users WHERE connection_id=? AND active=TRUE AND LOWER(email)=LOWER(?) LIMIT 2',[$connectionId,$u['email']])->fetchAll(PDO::FETCH_COLUMN);
+            if(count($byMail)===1&&is_string($byMail[0])&&$byMail[0]!=='')$self=$byMail[0];
+        }
+        return $self;
+    }
 }
