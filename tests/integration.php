@@ -34,6 +34,8 @@ try {
  check(request('workspace/activity?connectionId=1&conversationId=conv')[0]===403,'contact activity denies a seller without account mapping');
  check(request('workspace/contact?connectionId=1&conversationId=conv')[0]===403,'the contact sheet denies a seller without account mapping');
  check(request('workspace/activity/note?connectionId=1&conversationId=conv','POST',['body'=>'x','requestId'=>str_repeat('k',32)],['X-CSRF-Token: '.$login['csrf']])[0]===403,'quick actions deny a seller without account mapping');
+ check(request('workspace/contacts?connectionId=1','POST',['firstName'=>'Ana','email'=>'ana@example.test','requestId'=>str_repeat('n',32)])[0]===403,'creating a contact needs the CSRF token');
+ check(request('workspace/contacts?connectionId=1','POST',['firstName'=>'Ana','email'=>'ana@example.test','requestId'=>str_repeat('n',32)],['X-CSRF-Token: '.$login['csrf']])[0]===403,'a seller without account access cannot create contacts');
  query("UPDATE users SET role='administrator' WHERE id=?",[$users[0]]);
  $token='pit-test-'.bin2hex(random_bytes(16));
  $headers=['X-CSRF-Token: '.$login['csrf']];
@@ -43,7 +45,7 @@ try {
  check($code===200&&$recovered['ready']===true,'a pending database update is applied on its own, with no button to press');
  check(in_array('directory_cache',array_column(query('SHOW TABLES')->fetchAll(PDO::FETCH_NUM),0),true),'the missing table is back after that single request');
  [$code,$diagnostics]=request('admin/diagnostics');
- check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='1.10.26','administrator sees installation readiness and version');
+ check($code===200 && $diagnostics['ready'] && $diagnostics['version']==='1.10.27','administrator sees installation readiness and version');
  check(!str_contains(json_encode($diagnostics),'APP_KEY_FILE')&&!str_contains(json_encode($diagnostics),'integration.key'),'diagnostics expose no configuration values or key paths');
  check(request('admin/installation/encryption','POST')[0]===403,'preparation requires CSRF');
  [$code,$profile]=request('me');check($code===200&&!array_key_exists('ghl_user_id',$profile['user'])&&$profile['user']['capabilities']['configureConnections'],'public profile exposes capabilities without provider-specific fields');

@@ -4,7 +4,7 @@ require_once __DIR__.'/GhlGateway.php';
 require_once __DIR__.'/ContactActivity.php';
 
 final class ActionProblem extends RuntimeException {
-    public function __construct(public readonly string $reason,public readonly int $httpStatus,string $message,public readonly int $retryAfter=0) {
+    public function __construct(public readonly string $reason,public readonly int $httpStatus,string $message,public readonly int $retryAfter=0,public readonly ?string $contactId=null) {
         parent::__construct($message);
     }
 }
@@ -140,6 +140,48 @@ final class ContactActions {
      * Shared guard: permission, one attempt per key, no identical repeat while a
      * previous one is unresolved, and the stored activity invalidated on success.
      */
+    /**
+     * 1.10.27 · Nuevo contacto, escrito en la cuenta (sin copia en Ágora).
+     * Nombre obligatorio y al menos teléfono o correo. Antes de crear se pregunta a la cuenta si ya existe uno con ese teléfono
+     * o correo: si existe, no se crea otro (ActionProblem 'contact_exists' con su id). Quien solo ve lo suyo lo crea asignado a sí
+     * mismo; quien ve todo puede pedir «asignármelo». Usa el mismo registro de intentos que las demás acciones: pulsar dos veces
+     * o repetir lo mismo con un resultado dudoso nunca crea dos contactos.
+     */
+    public function create(array $connection,array $membership,array $input):array {
+        $first=self::text($input['firstName']??null,90);
+        if($first===null)throw new ActionProblem('invalid_name',422,'Escribe el nombre del contacto (hasta 90 caracteres).');
+        $last=self::text($input['lastName']??null,90);
+        $phone=is_string($input['phone']??null)?preg_replace('/[\s().-]/','',trim($input['phone'])):'';
+        $email=is_string($input['email']??null)?mb_strtolower(trim($input['email'])):'';
+        if($phone===''&&$email==='')throw new ActionProblem('missing_contact_data',422,'Escribe al menos el teléfono o el correo del contacto.');
+        if($phone!==''&&!preg_match('/^\+\d{7,15}$/D',$phone))throw new ActionProblem('invalid_phone',422,'Escribe el teléfono con el código del país, por ejemplo +584141234567.');
+        if($email!==''&&(mb_strlen($email)>190||!filter_var($email,FILTER_VALIDATE_EMAIL)))throw new ActionProblem('invalid_email',422,'El correo no es válido.');
+        if(($membership['capabilities']['editContacts']??false)!==true)throw new ActionProblem('action_forbidden',403,'Tu usuario puede consultar, pero no crear contactos.');
+        $restricted=($membership['capabilities']['assignedDataOnly']??false)===true;
+        $mine=$membership['external_user_id']??($membership['self_id']??null);
+        if($restricted&&!is_string($mine))throw new ActionProblem('not_linked',403,'Tu usuario no está enlazado con la cuenta. Pídele a quien administra tu subcuenta que te enlace.');
+        $payload=['locationId'=>(string)$connection['location_id'],'firstName'=>$first,'name'=>trim($first.' '.($last??'')),'source'=>'Ágora']
+            +($last!==null?['lastName'=>$last]:[])+($phone!==''?['phone'=>$phone]:[])+($email!==''?['email'=>$email]:[]);
+        if($restricted)$payload['assignedTo']=$mine;
+        elseif(($input['assignToMe']??false)===true&&is_string($mine))$payload['assignedTo']=$mine;
+        // ¿Ya existe? Una consulta por dato; un fallo de esta lectura no impide crear (la cuenta igual rechaza duplicados si así está configurada).
+        foreach([['email',$email],['phone',$phone]] as [$kind,$value]) {
+            if($value==='')continue;
+            try{$found=$this->gateway->execute($connection,fn(GhlClient $c):array=>$kind==='email'?$c->duplicateBy($connection['location_id'],$value,null):$c->duplicateBy($connection['location_id'],null,$value),false);}
+            catch(GhlCooldown $e){throw new ActionProblem('action_paused',429,'Acción pausada para respetar la cuota. El contacto todavía no se creó.',$e->retryAfter);}
+            catch(Throwable $e){$found=[];}
+            $existing=self::identifier($found['contact']['id']??null);
+            if($existing!==null) {
+                $visible=!$restricted||($found['contact']['assignedTo']??null)===$mine;
+                throw new ActionProblem('contact_exists',409,($kind==='email'?'Ya existe un contacto con ese correo':'Ya existe un contacto con ese teléfono').($visible?'. Ábrelo en vez de crear otro.':', asignado a otra persona. Pídele a quien administra que te lo asigne.'),0,$visible?$existing:null);
+            }
+        }
+        $result=$this->run($connection,'nuevo',$membership,$input,'create',$payload,fn(GhlClient $client):array=>$client->createContact($payload),'contact');
+        // La lista de contactos se guarda un momento: se suelta para que el nuevo aparezca enseguida.
+        query("DELETE FROM directory_cache WHERE connection_id=? AND cache_key LIKE 'contacts:%'",[(int)$connection['id']]);
+        return $result+['name'=>$payload['name']];
+    }
+
     private function run(array $connection,string $contactId,array $membership,array $input,string $action,array $payload,Closure $operation,string $resultKey):array {
         if(!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$contactId))throw new ActionProblem('invalid_contact',422,'Actualiza la conversación antes de continuar.');
         if(($membership['capabilities']['editContacts']??false)!==true)throw new ActionProblem('action_forbidden',403,'Tu usuario puede consultar, pero no modificar la ficha del contacto.');

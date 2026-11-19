@@ -12,7 +12,7 @@ async function request(path,method='GET',body=null){
   const csrf=method!=='GET'?(workspace.me?.csrf||''):'';
   const r=await fetch('/api/'+path,{method,cache:'no-store',...(body!==null?{body:JSON.stringify(body)}:{}),headers:{'Content-Type':'application/json',...(csrf?{'X-CSRF-Token':csrf}:{})}});
   let data;try{data=await r.json()}catch{throw Object.assign(Error(`El servidor devolvió una respuesta no válida (HTTP ${r.status}).`),{status:r.status})}
-  if(!r.ok)throw Object.assign(Error((data.error||'Error de conexión')+(data.retryAfter?` Espera ${data.retryAfter} segundos.`:'')),{status:r.status,code:data.code});
+  if(!r.ok)throw Object.assign(Error((data.error||'Error de conexión')+(data.retryAfter?` Espera ${data.retryAfter} segundos.`:'')),{status:r.status,code:data.code,contactId:data.contactId});
   return data;
 }
 
@@ -25,7 +25,7 @@ export async function renderContacts(container){
   if(!connection){container.innerHTML=`<p class="empty">${esc(workspace.noAccountText('contactos'))}</p>`;return}
   container.innerHTML=`<div class="records-layout" id="records-layout">
    <div class="records-list">
-    <div class="live-toolbar"><label class="search"><span aria-hidden="true">⌕</span><input id="contact-search" type="search" placeholder="Buscar por nombre, correo o teléfono" aria-label="Buscar contactos"></label></div>
+    <div class="live-toolbar"><label class="search"><span aria-hidden="true">⌕</span><input id="contact-search" type="search" placeholder="Buscar por nombre, correo o teléfono" aria-label="Buscar contactos"></label>${(workspace.me?.user?.capabilities||{}).editContacts!==false?'<button type="button" class="primary contact-new" id="contact-new">Nuevo contacto</button>':''}</div>
     <div class="tabs contact-tabs" role="group" aria-label="Qué contactos ver"><button type="button" data-contact-since="" class="active" aria-pressed="true">Todos</button><button type="button" data-contact-since="hoy" aria-pressed="false">Creados hoy</button></div>
     <p id="contact-feedback" class="live-feedback" role="status"></p>
     <div id="contact-results" role="list">${skeleton('list',7)}</div>
@@ -151,6 +151,50 @@ export async function renderContacts(container){
     };
   }
 
+  /* 1.10.27 · Nuevo contacto: se crea en la cuenta. Un solo identificador por formulario: pulsar dos veces no crea dos. */
+  function newContact(){
+    selected=null;editing=false;record=null;
+    container.querySelectorAll('[data-contact]').forEach(b=>b.classList.remove('selected'));
+    layout.classList.add('record-open');
+    const caps=workspace.me?.user?.capabilities||{},restricted=caps.assignedDataOnly===true,requestId=crypto.randomUUID().replace(/-/g,'');
+    const panel=$('#contact-record');
+    panel.innerHTML=`<header class="record-header"><button class="mobile-back" id="record-back" aria-label="Volver a la lista">←</button><span class="avatar olive">+</span><div><h2>Nuevo contacto</h2><p>Se crea en la cuenta de la subcuenta${restricted?', asignado a ti':''}.</p></div></header>
+     <form class="live-contact-form contact-new-form" id="contact-new-form" novalidate>
+      <div class="grid-2"><label>Nombre<input name="firstName" autocomplete="given-name" maxlength="90" required></label><label>Apellido<input name="lastName" autocomplete="family-name" maxlength="90"></label></div>
+      <label>Teléfono<input name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+584141234567" maxlength="24"><small>Con el código del país. Hace falta el teléfono o el correo.</small></label>
+      <label>Correo<input name="email" type="email" autocomplete="email" maxlength="190"></label>
+      ${restricted?'':'<label class="check"><input type="checkbox" name="assignToMe"> Asignármelo</label>'}
+      <p id="contact-new-status" class="live-feedback" role="status"></p>
+      <div class="form-actions"><button type="button" class="secondary" id="contact-new-cancel">Cancelar</button><button class="primary" id="contact-new-save">Crear contacto</button></div>
+     </form>`;
+    panel.querySelector('#record-back').onclick=()=>{layout.classList.remove('record-open')};
+    panel.querySelector('#contact-new-cancel').onclick=()=>{panel.innerHTML='<p class="empty">Elige una persona de la lista para ver y editar su ficha.</p>';layout.classList.remove('record-open')};
+    const form=panel.querySelector('#contact-new-form');form.elements.firstName.focus();
+    form.onsubmit=async event=>{
+      event.preventDefault();
+      const status=form.querySelector('#contact-new-status'),button=form.querySelector('#contact-new-save');
+      const v=k=>String(form.elements[k]?.value||'').trim();
+      const phone=v('phone').replace(/[\s().-]/g,'');
+      if(!v('firstName')){status.textContent='Escribe el nombre del contacto.';form.elements.firstName.focus();return}
+      if(!phone&&!v('email')){status.textContent='Escribe al menos el teléfono o el correo.';form.elements.phone.focus();return}
+      if(phone&&!/^\+\d{7,15}$/.test(phone)){status.textContent='Escribe el teléfono con el código del país, por ejemplo +584141234567.';form.elements.phone.focus();return}
+      button.disabled=true;status.textContent='Creando el contacto…';
+      try{
+        const r=await request(`workspace/contacts?connectionId=${encodeURIComponent(connection)}`,'POST',{firstName:v('firstName'),lastName:v('lastName'),phone,email:v('email'),assignToMe:!!form.elements.assignToMe?.checked,requestId});
+        if(!active())return;
+        await load(searchText($('#contact-search').value));
+        if(!active())return;
+        if(r.id)open(r.id);else{status.textContent='Contacto creado. Búscalo en la lista.';button.disabled=false}
+      }catch(error){
+        if(!active())return;
+        status.innerHTML=esc(friendly(error))+(error.contactId?' <button type="button" class="link-button" id="contact-new-open">Abrir ficha</button>':'');
+        const go=status.querySelector('#contact-new-open');if(go)go.onclick=()=>open(error.contactId);
+        if(error.status===401)window.dispatchEvent(new Event('agora:logout'));
+        button.disabled=false;
+      }
+    };
+  }
+
   async function save(event){
     event.preventDefault();
     const form=event.target,status=form.querySelector('#live-contact-status'),button=form.querySelector('#live-save-contact');
@@ -177,6 +221,7 @@ export async function renderContacts(container){
   const markTabs=()=>tabs.forEach(b=>{const on=b.dataset.contactSince===since;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on))});
   markTabs();
   tabs.forEach(b=>b.onclick=()=>{if(since===b.dataset.contactSince)return;since=b.dataset.contactSince;markTabs();load(searchText($('#contact-search').value))});
+  const nuevo=$('#contact-new');if(nuevo)nuevo.onclick=newContact;
   $('#contact-search').oninput=e=>{clearTimeout(timer);const value=searchText(e.target.value);timer=setTimeout(()=>load(value),450)};
   container.agoraLiveDispose=()=>{clearTimeout(timer);container.agoraViewInstance=null};
   await load();

@@ -277,6 +277,15 @@ if($path==='/api/workspace/contact-conversation'&&$method==='POST'){
     if(!Actor::filterConversations([$found],$membership))respond(['error'=>'La conversación de este contacto está asignada a otra persona.','code'=>'conversation_not_assigned'],403);
     respond(['conversation'=>$found]);
 }
+// 1.10.27 · Nuevo contacto: se escribe en la cuenta (sin copia en Ágora); si ya existe uno con ese teléfono o correo, no se crea otro.
+if($path==='/api/workspace/contacts'&&$method==='POST'){
+    if(!($membership['capabilities']['viewContacts']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar contactos.'],403);
+    require_once __DIR__.'/ContactActions.php';
+    try{respond((new ContactActions())->create($connection,$membership,body()),201);}
+    catch(ActionProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter]+($e->contactId!==null?['contactId'=>$e->contactId]:[]),$e->httpStatus);}
+    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La cuenta está en espera para respetar la cuota. El contacto todavía no se creó.','retryAfter'=>$e->retryAfter],429);}
+    catch(Throwable $e){respond(['error'=>'No se pudo crear el contacto. Actualiza la lista antes de repetirlo.','code'=>'contact_create_failed'],424);}
+}
 if($path==='/api/workspace/contacts'&&$method==='GET'){
     if(!($membership['capabilities']['viewContacts']??false))respond(['error'=>'Tu usuario no tiene permiso para consultar contactos.'],403);
     require_once __DIR__.'/ContactDirectory.php';

@@ -61,6 +61,13 @@ final class GhlClient {
         return $this->get('/contacts/search/duplicate?'.http_build_query(['locationId'=>$location,'email'=>$email]),'2021-07-28');
     }
     public function upsertContact(array $payload):array {return $this->get('/contacts/upsert','2021-07-28',$payload);}
+    /** 1.10.27 · Nuevo contacto desde Ágora (POST /contacts/, permiso contacts.write). */
+    public function createContact(array $payload):array {return $this->get('/contacts/','2021-07-28',$payload);}
+    /** 1.10.27 · ¿Ya existe un contacto con este correo o teléfono? (GET /contacts/search/duplicate, permiso contacts.readonly). */
+    public function duplicateBy(string $location,?string $email,?string $number):array {
+        $q=['locationId'=>$location]+($email!==null&&$email!==''?['email'=>$email]:[])+($number!==null&&$number!==''?['number'=>$number]:[]);
+        return $this->get('/contacts/search/duplicate?'.http_build_query($q),'2021-07-28');
+    }
     public function addContactTags(string $id,array $tags):array {return $this->get('/contacts/'.rawurlencode($id).'/tags','2021-07-28',['tags'=>$tags]);}
     public function contactOpportunities(string $location,string $contact,int $limit=20):array {
         return $this->get('/opportunities/search?'.http_build_query(['location_id'=>$location,'contact_id'=>$contact,'status'=>'all','limit'=>$limit]),'2021-07-28');
