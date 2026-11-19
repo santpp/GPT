@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.11.4 · Gestión Comercial como «Resumen de hoy» en el teléfono (19 nov):**
+- En el teléfono, la caja «Cifras del mes» de Gestión Comercial pone las cifras en **dos columnas con divisores**, igual que «Resumen de hoy» en Inicio (antes las apilaba en una sola). Los montos largos caben sin partirse.
+- `tests/fixes-2111.py` lo comprueba (14).
+
 **Novedades 2.11.3 · Tarjetas sin íconos (pedido del usuario, 19 nov):**
 - **Las tarjetas de cifras van sin ícono**, como «Resumen de hoy»: título, cifra y nota. Aplica a todos los módulos, a la caja de Gestión Comercial y a las tarjetas del reporte mensual.
 - **«Descargar», «Editar Dashboard» y «Editar gráficos» recuperan sus íconos** (se entendió mal en la 2.11.2: lo que se pedía quitar eran los íconos de las tarjetas).

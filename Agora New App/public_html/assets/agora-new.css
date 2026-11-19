@@ -538,10 +538,11 @@ a.inicio-resumen-c:hover .inicio-resumen-l .ic{opacity:.9;transform:translateX(2
   .gc-caja .gc-caja-g .ag-resumen:nth-child(2n){border-left:1px solid var(--line)!important;padding-left:16px}
   .gc-caja .gc-caja-g .ag-resumen:nth-last-child(-n+2):nth-child(2n+1),.gc-caja .gc-caja-g .ag-resumen:nth-last-child(-n+2):nth-child(2n+1)~.ag-resumen{border-bottom:0!important}
 }
+/* 2.11.4 · En el teléfono, dos columnas como «Resumen de hoy» (antes se apilaban en una). */
 @media (max-width:600px){
-  .gc-caja .gc-caja-g{grid-template-columns:minmax(0,1fr)}
-  .gc-caja .gc-caja-g .ag-resumen,.gc-caja .gc-caja-g .ag-resumen:nth-child(2n){border-left:0!important;padding:12px 0;border-bottom:1px solid var(--line)!important}
-  .gc-caja .gc-caja-g .ag-resumen:last-child{border-bottom:0!important}
+  .gc-caja .gc-caja-g .ag-resumen{padding:12px 10px 12px 0}
+  .gc-caja .gc-caja-g .ag-resumen:nth-child(2n){padding-left:12px}
+  .gc-caja .gc-caja-g .ag-resumen-v{font-size:20px;overflow-wrap:normal;white-space:nowrap}
 }
 
 /* 2.10.3 · Costos del mes: editor por concepto (mismo estilo que los servicios de agencia) */

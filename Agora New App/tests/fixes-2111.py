@@ -5,6 +5,7 @@
 2 «Por forma de cobro» muestra siempre Recurrente, Venta no recurrente y Venta única.
 3 En todos los módulos: el botón de descarga dice «Descargar» (no «Excel») y «Editar Dashboard» lleva el ícono de lápiz (no «Editar tarjetas»).
 4 2.11.3 · Las tarjetas de cifras van sin ícono (título, cifra y nota), con y sin reporte.
+5 2.11.4 · En el teléfono, la caja de cifras de Gestión Comercial va en dos columnas, como «Resumen de hoy».
 Requiere la API local en :8090 y haber corrido tests/facturacion.py. Uso: python3 tests/fixes-2111.py"""
 import sys,subprocess
 from playwright.sync_api import sync_playwright
@@ -56,6 +57,10 @@ with sync_playwright() as p:
             pg.route('**/api/workspace/ventas?mes=*',falsas)
             pg.goto(B+'/inicio');pg.wait_for_timeout(4500)
             t=pg.evaluate("document.querySelector('.gc-formas')?.innerText||''")
+            pg.set_viewport_size({'width':390,'height':844});pg.wait_for_timeout(600)
+            cols=pg.evaluate("[...new Set([...document.querySelectorAll('.gc-caja .ag-resumen')].map(e=>Math.round(e.getBoundingClientRect().left)))].length")
+            ok(cols==2,f'en el teléfono, las cifras de Gestión Comercial van en dos columnas ({cols})')
+            pg.set_viewport_size({'width':1280,'height':900})
             ok('Recurrente' in t and 'Venta no recurrente' in t and 'Venta única' in t,'«Por forma de cobro» muestra las tres formas aunque solo haya recurrentes')
         pg.context.close()
     # ---- 1: bolívares
