@@ -170,7 +170,8 @@ document.addEventListener('click', e => {
    ===================================================================================== */
 const GRUPOS = {
   general: {name: 'General', slug: 'general', icon: 'pie', c: 'var(--mod-vino)', desc: 'Las cifras del día, los anuncios y la rentabilidad.'},
-  ingresos: {name: 'Ventas y facturación', slug: 'ventas', icon: 'coins', c: 'var(--brand)', desc: 'El reporte del mes, el Tablero comercial, las ventas, las facturas y el catálogo.'},
+  ingresos: {name: 'Ventas', slug: 'ventas', icon: 'coins', c: 'var(--brand)', desc: 'El reporte del mes, el Tablero comercial, las ventas y el catálogo.'},
+  facturacion: {name: 'Facturación', slug: 'facturacion', icon: 'invoice', c: 'var(--mod-oro)', desc: 'Cobros del mes, facturas fiscales y simples, libro de ventas, datos fiscales y tasa BCV.'},
   clientes: {name: 'Clientes y atención', slug: 'clientes', icon: 'chat', c: 'var(--mod-azul)', desc: 'Conversaciones, contactos, oportunidades y tareas del equipo.'},
   gestion: {name: 'Gestión y resultados', slug: 'gestion', icon: 'pulse', c: 'var(--mod-oro)', desc: 'Equipo, publicidad, costos, tendencias y calidad de los datos.'},
   contratos: {name: 'Contratos', slug: 'contratos', icon: 'invoice', c: 'var(--ok-solid)', desc: 'Convenios, alumnos con convenio y su registro.'},
@@ -196,8 +197,8 @@ const MODS = {
     desc: 'Campañas de Meta, contactos por canal y ocupación de cupos.', ok: () => tableroHay('marketing') || campPuede()},
   ventas: {g: 'ingresos', view: 'tc_ventas', name: 'Ventas', icon: 'trend', path: '/ventas', c: 'var(--mod-vino)', periodo: true,
     desc: 'El detalle de cada venta con todos sus montos.', ok: () => tableroHay('ventas')},
-  facturacion: {g: 'ingresos', view: 'tc_facturas', name: 'Facturación', icon: 'invoice', path: '/facturacion', c: 'var(--mod-oro)', periodo: true,
-    desc: 'Los registros de los libros mensuales de facturas.', ok: () => tableroHay('facturas')},
+  facturacion: {g: 'facturacion', view: 'tc_facturas', name: 'Cobros', icon: 'wallet', path: '/cobros', c: 'var(--mod-oro)', periodo: true,
+    desc: 'Lo que toca cobrar en el mes, lo pagado y lo vencido.', ok: () => tableroHay('facturas')},
   costos: {g: 'gestion', view: 'tc_costos', name: 'Costos', icon: 'coins', path: '/costos', c: 'var(--mod-azul)', periodo: true,
     desc: 'Gastos fijos, variables y la inversión prevista.', ok: () => tableroHay('costos')},
   catalogo: {g: 'ingresos', view: 'tc_catalogo', name: 'Catálogo', icon: 'receipt', path: '/catalogo', c: 'var(--mod-azul)', periodo: true,
@@ -261,6 +262,7 @@ function route() {
   if (p === '/agencia') return {view: 'agencia'};
   for (const id of Object.keys(MODS)) if (p === MODS[id].path) return {view: MODS[id].view, mod: id};
   if (p === '/tablero') return {view: 'ag_dashboard', mod: 'comercial'};
+  if (p === '/facturacion') return {view: 'tc_facturas', mod: 'facturacion'}; // 2.11.0: Facturación pasó a llamarse Cobros
   if (p === '/personas') return {view: 'usuarios', mod: 'usuarios'};
   if (p === '/conexiones') return {view: 'ag_settings', mod: 'conexiones'};
   if (p === '/contratos/nuevo') return {view: 'nuevo', mod: 'convenios'};
@@ -4087,7 +4089,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.10.3').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.11.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -5318,7 +5320,7 @@ V.productos = {
       <td><span class="sc ${p.activo === false ? 'sc-gray' : 'sc-ok'}">${p.activo === false ? 'Pausado' : 'Activo'}</span></td>
       <td class="n">${canEdit ? `<button type="button" class="icon-btn" data-prod="${esc(p.id)}" aria-label="Editar ${esc(p.nombre)}" title="Editar">${icon('edit')}</button>` : ''}</td></tr>`).join('');
     const vacio = productos.length ? '<b>No hay productos con estos filtros</b>Prueba con otro rubro o forma de cobro.' : `<b>Todavía no hay productos</b>${canEdit ? 'Crea tu primer rubro y luego tus productos o servicios, con su forma de cobro.' : 'Quien administra la subcuenta todavía no cargó productos.'}`;
-    return `<div class="prod-v">${prodPestanas('productos')}${head('Ventas y facturación', 'Productos y servicios', 'Organiza lo que vendes por rubros y define cómo se cobra cada cosa: recurrente, pago único o venta única.',
+    return `<div class="prod-v">${prodPestanas('productos')}${head('Ventas', 'Productos y servicios', 'Organiza lo que vendes por rubros y define cómo se cobra cada cosa: recurrente, pago único o venta única.',
       canEdit ? `${catalogoReporte().length ? `<button class="btn" type="button" data-prog-pasar title="Crea productos a partir de los programas del Catálogo">${icon('download')}Traer del Catálogo</button>` : ''}<button class="btn" type="button" data-rubro-nuevo>${icon('plus')}Nuevo rubro</button><button class="btn btn-cta" type="button" data-prod-nuevo>${icon('plus')}Nuevo producto</button>` : '')}
       <section class="ag-resumen-grid prod-kpis" aria-label="Resumen del catálogo">
         ${tbTarjeta('', 'wallet', 'Productos activos', `${int(activos.length)}<small> de ${int(productos.length)}</small>`, `${int(productos.length - activos.length)} pausados`)}
@@ -5430,6 +5432,7 @@ function productoEditar(p) {
         <div class="pfl-ops pfl-1" role="radiogroup" aria-label="Cómo se cobra">${cobroOp('recurrente', 'Recurrente', 'Se cobra cada cierto tiempo: mensualidad, plan, suscripción.')}${cobroOp('unico', 'Pago único', 'Un solo pago por el servicio: inscripción, instalación.')}${cobroOp('venta', 'Venta única', 'Se vende y se cobra en el momento: equipos, artículos.')}</div>
         <div class="bx-row">
           <label class="fld"><span class="fld-l">Precio <span class="req" aria-hidden="true">*</span></span><input name="precio" inputmode="decimal" value="${v.precio != null ? esc(NF.format(Number(v.precio))) : ''}" placeholder="0,00"></label>
+          <label class="fld">IVA en la factura<select name="iva">${[['G', 'IVA general'], ['R', 'IVA reducido'], ['A', 'IVA general + lujo'], ['E', 'Exento']].map(([k, t]) => `<option value="${k}" ${(v.iva || 'G') === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
           <label class="fld">Moneda<select name="moneda">${['USD', 'VES', 'EUR'].map(m => `<option ${m === (v.moneda || 'USD') ? 'selected' : ''}>${m}</option>`).join('')}</select></label>
         </div>
         <div class="bx-row" data-si="recurrente">
@@ -5462,7 +5465,7 @@ function productoEditar(p) {
     const codigo = f.codigo.value.trim().toUpperCase();
     if (codigo && !/^[A-Z0-9._-]{1,30}$/.test(codigo)) { err.textContent = 'El código solo admite letras, números, punto, guion y guion bajo.'; return; }
     if (codigo && CATALOGO.productos.some(x => x.id !== p?.id && (x.codigo || '').toUpperCase() === codigo)) { err.textContent = `El código ${codigo} ya lo usa otro producto.`; return; }
-    const fila = {id: p?.id || nuevoId('p'), rubroId: f.rubroId.value, nombre, codigo, tipo: f.tipo.value, cobro: c, precio, moneda: f.moneda.value,
+    const fila = {id: p?.id || nuevoId('p'), rubroId: f.rubroId.value, nombre, codigo, tipo: f.tipo.value, cobro: c, precio, moneda: f.moneda.value, iva: f.iva?.value || 'G',
       frecuencia: c === 'recurrente' ? f.frecuencia.value : null, duracion: c === 'recurrente' && dur ? Number(dur) : null, stock: c === 'venta' && stock ? Number(stock) : null,
       descripcion: f.descripcion.value.trim(), activo: f.activo.checked};
     const productos = p ? CATALOGO.productos.map(x => x.id === p.id ? fila : x) : [...CATALOGO.productos, fila];
@@ -7180,7 +7183,7 @@ const FA_TARJETAS = {
 const FA_DEFECTO = ['aCobrar', 'cobrado', 'pendiente', 'vencido'];
 function faVivoHtml() {
   const ym = VG.mes || PERIODO, mes = mesNombre(ym), puedeEd = !!FA.datos?.canEdit;
-  const cabeza = head('Gestión comercial', 'Facturación', `Lo que toca cobrar en ${esc(mes)} según el plan de cobros de cada venta, y lo que está atrasado.`, `<button class="btn" type="button" data-fa-tarjetas>${icon('gear')}Editar tarjetas</button>`);
+  const cabeza = head('Facturación', 'Cobros', `Lo que toca cobrar en ${esc(mes)} según el plan de cobros de cada venta, y lo que está atrasado.`, `<button class="btn" type="button" data-fa-tarjetas>${icon('gear')}Editar tarjetas</button>`);
   if (!FA.datos) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer los cobros</b>Vuelve a intentarlo en un momento.</p></section>';
   const m = faCobros(ym), kpis = vivoTarjetas('facturas', FA_TARJETAS, FA_DEFECTO, [m], mes);
   const base = faCobros(ym, {sinEstado: true}), crudo = faCobros(ym, {crudo: true}), f = FA.f;
@@ -7195,7 +7198,7 @@ function faVivoHtml() {
       <label class="fld"><span class="sr-only">Producto</span><select data-fa-prod>${opciones(todosC.map(x => x.v.producto), f.producto, 'Todos los productos')}</select></label>
       ${hayFiltro ? `<button type="button" class="btn btn-sm" data-fa-limpiar>${icon('plus')}Quitar filtros</button>` : ''}</div></section>`;
   const estado = x => x.c.estado === 'pagado' ? '<span class="sc sc-ok">Pagado</span>' : x.venc ? '<span class="sc sc-warn">Vencido</span>' : '<span class="sc sc-gray">Pendiente</span>';
-  const fila = x => `<tr><td>${esc(vgFecha(x.c.fecha))}</td><td class="wrap"><span class="who-cell"><b>${esc(x.v.cliente?.nombre || '—')}</b><small>${esc(x.v.cliente?.documento || '')}</small></span></td><td class="wrap"><span class="who-cell"><b>${esc(x.v.producto || '')}</b><small>${esc(x.v.vendedor ? 'vende ' + x.v.vendedor : '')}</small></span></td><td class="n">${x.v.sinFin ? `Cobro ${int(x.c.n)}` : `${int(x.c.n)} de ${int((x.v.plan || []).length)}`}</td><td class="n">${esc(vgMonto(x.c.monto, x.v.moneda))}</td><td>${estado(x)}</td><td class="n">${puedeEd && x.c.estado !== 'pagado' ? `<button class="btn btn-sm btn-tint" type="button" data-fa-pagar="${esc(x.v.id)}" data-n="${esc(x.c.n)}">Marcar pagado</button>` : ''}</td></tr>`;
+  const fila = x => `<tr><td>${esc(vgFecha(x.c.fecha))}</td><td class="wrap"><span class="who-cell"><b>${esc(x.v.cliente?.nombre || '—')}</b><small>${esc(x.v.cliente?.documento || '')}</small></span></td><td class="wrap"><span class="who-cell"><b>${esc(x.v.producto || '')}</b><small>${esc(x.v.vendedor ? 'vende ' + x.v.vendedor : '')}</small></span></td><td class="n">${x.v.sinFin ? `Cobro ${int(x.c.n)}` : `${int(x.c.n)} de ${int((x.v.plan || []).length)}`}</td><td class="n">${esc(vgMonto(x.c.monto, x.v.moneda))}</td><td>${estado(x)}</td><td class="n fa-acc">${puedeEd && x.c.estado !== 'pagado' ? `<button class="btn btn-sm btn-tint" type="button" data-fa-pagar="${esc(x.v.id)}" data-n="${esc(x.c.n)}">Marcar pagado</button>` : ''}${faFacturaBtn(x)}</td></tr>`;
   const tabla = l => `<div class="tw"><table data-xt-vivo><thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th class="n">Cuota</th><th class="n">Monto</th><th>Estado</th><th></th></tr></thead><tbody>${l.map(fila).join('')}</tbody></table></div>`;
   const cobrosMes = m.mes.length ? tabla(m.mes) : hayFiltro ? `<p class="empty"><b>Ningún cobro de ${esc(mes)} coincide con los filtros</b>Prueba con otro estado, vendedor o producto, o quita los filtros.</p>` : `<p class="empty"><b>No hay cobros que venzan en ${esc(mes)}</b>Los cobros salen del plan de cada venta registrada.</p>`;
   /* 2.9.1 · Mismo esqueleto que Ventas: tarjetas, tabla con sus filtros y, al lado, lo atrasado de meses anteriores. */
@@ -7210,12 +7213,38 @@ function faVivoMontar(root) {
   root?.querySelector('[data-fa-limpiar]')?.addEventListener('click', () => { FA.f = {estado: '', q: '', vendedor: '', producto: ''}; repaint(); });
   const qi = root?.querySelector('[data-fa-q]');
   if (qi) qi.oninput = () => { FA.f.q = qi.value; clearTimeout(FA.qt); FA.qt = setTimeout(() => { repaint(); const n = $('[data-fa-q]'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); };
-  root?.querySelector('[data-fa-tarjetas]')?.addEventListener('click', () => tarjEditar('facturas', FA_TARJETAS, FA_DEFECTO, 'Facturación', repaint));
+  root?.querySelector('[data-fa-tarjetas]')?.addEventListener('click', () => tarjEditar('facturas', FA_TARJETAS, FA_DEFECTO, 'Cobros', repaint));
+  // 2.11.0 · Facturar un cobro (abre la factura con el cliente, el producto y el monto) o ver la que ya tiene.
+  faFacturarMontar(root);
   root?.querySelectorAll('[data-fa-pagar]').forEach(b => b.onclick = async () => {
     busy(b, true, '');
     try { await agoraApi('workspace/ventas/cobro', {method: 'POST', body: {ventaId: b.dataset.faPagar, n: +b.dataset.n, pagado: true}}); if (typeof vgInvalidar === 'function') vgInvalidar(); await faCargar(true); repaint(); toast('Cobro marcado como pagado.'); }
     catch (x) { busy(b, false); toast(x.message); }
   });
+}
+/* 2.11.0 · Cobros ↔ Facturas: qué cobro ya tiene factura (por la referencia venta:cuota guardada en el documento). */
+async function faFacturasCargar() {
+  FA.fac = {};
+  if (!puede('facturas.ver')) return;
+  try { for (const d of (await agoraApi('workspace/facturas?limite=500')).documentos || []) if (d.venta && d.estado !== 'ANULADA' && ['FAC', 'SIM'].includes(d.tipo)) FA.fac[d.venta] = d; } catch {}
+}
+/** Abre la factura de un cobro: cliente, producto, monto y moneda de la venta (la venta queda enlazada a la factura). */
+async function fcDesdeCobro(ventaId, n) {
+  const buscar = () => [...(FA.datos?.items || []), ...(VG.datos?.items || [])].find(y => y.id === ventaId);
+  if (!buscar()) await faCargar(true); // el cobro puede ser de otro mes: se leen todas las ventas
+  const v = buscar(), c = (v?.plan || []).find(y => String(y.n) === String(n));
+  if (!v || !c) { toast('No se encontró ese cobro. Actualiza la página.'); return; }
+  fcEditar(null, {moneda: ['USD', 'VES', 'EUR'].includes(v.moneda) ? v.moneda : 'USD', venta: `${v.id}:${c.n}`, cliente: {nombre: v.cliente?.nombre || '', rif: v.cliente?.documento || '', correo: v.cliente?.correo || '', telefono: v.cliente?.telefono || ''},
+    lineas: [{descripcion: `${v.producto || 'Servicio'}${(v.plan || []).length > 1 || v.sinFin ? ` · cobro ${c.n}` : ''}`, cantidad: 1, precio: Number(c.monto) || 0, impuesto: (CATALOGO?.productos || []).find(p => p.id === v.productoId)?.iva}]});
+}
+function faFacturarMontar(root) {
+  root?.querySelectorAll('[data-fa-facturar]').forEach(b => b.onclick = () => fcDesdeCobro(b.dataset.faFacturar, b.dataset.n));
+  root?.querySelectorAll('[data-fc-ver]').forEach(b => b.onclick = () => fcVer(b.dataset.fcVer));
+}
+function faFacturaBtn(x) {
+  const d = FA.fac?.[`${x.v.id}:${x.c.n}`];
+  if (d) return `<button class="btn btn-sm" type="button" data-fc-ver="${esc(d.uid)}">${d.estado === 'BORRADOR' ? 'Borrador' : 'Factura ' + esc(d.numero_texto)}</button>`;
+  return puede('facturas.emitir') ? `<button class="btn btn-sm" type="button" data-fa-facturar="${esc(x.v.id)}" data-n="${esc(x.c.n)}">${icon('invoice')}Facturar</button>` : '';
 }
 /* ---------- 2.8.12 · Configuración mensual sin reporte: meta del mes, inversión fuera de la cuenta y costos fijos ----------
    Se guarda en la misma configuración del mes que lee el Tablero comercial (workspace/board-month). */
@@ -7261,6 +7290,382 @@ VG_TARJETAS.meta = {t: 'Meta del mes', ic: 'trend', d: 'Avance de lo vendido fre
   CO_TARJETAS.total = {t: 'Costo total', ic: 'coins', d: 'Inversión en anuncios más costos fijos.', f: () => { const i = coInvTotal(), c = mesCfg('fixedCosts'); return ['', i == null && c == null ? '—' : esc(usd((i || 0) + (c || 0))), 'anuncios + costos fijos']; }};
   CO_TARJETAS.costoVentaTotal = {t: 'Costo total por venta', ic: 'receipt', d: 'Costo total del mes dividido entre las ventas registradas.', f: () => { const i = coInvTotal(), c = mesCfg('fixedCosts'), n = (VG.datos?.items || []).length; return ['', (i != null || c != null) && n ? esc(usd(((i || 0) + (c || 0)) / n)) : '—', `${int(n)} ventas registradas`]; }};
 }
+/* =====================================================================================
+   2.11.0 · Facturación (categoría propia): Facturas (fiscales y simples), Libro de ventas, Datos fiscales y Tasas del día.
+   El motor fiscal (SENIAT) viene de mi.agora y vive en el servidor (servidor/app/src/Fiscal). Aquí solo se muestra y se pide.
+   Sin datos fiscales, la subcuenta solo emite la factura simple (decisión del usuario).
+   ===================================================================================== */
+const FC = {res: null, lista: null, t: 0, f: {estado: '', tipo: '', q: ''}, qt: 0, ventas: null};
+const FC_TIPO = {FAC: ['Factura', 'sc-ok'], SIM: ['Factura simple', 'sc-gray'], NC: ['Nota de crédito', 'sc-warn'], ND: ['Nota de débito', 'sc-warn']};
+const FC_IMP = [['G', 'IVA general'], ['R', 'IVA reducido'], ['A', 'IVA general + lujo'], ['E', 'Exento']];
+const fcMon = (v, m) => v == null ? '—' : (m === 'VES' ? 'Bs. ' : m === 'EUR' ? '€ ' : 'US$ ') + NF.format(Number(v) || 0);
+const fcFecha = d => d ? String(d).slice(0, 10).split('-').reverse().join('/') : '—';
+const fcEstado = d => d.estado === 'BORRADOR' ? '<span class="sc sc-gray">Borrador</span>' : d.estado === 'ANULADA' ? '<span class="sc sc-bad">Anulada</span>'
+  : d.control_pendiente ? '<span class="sc sc-warn">Falta control</span>' : '<span class="sc sc-ok">Emitida</span>';
+async function fcCargar(force) {
+  if (!force && FC.res && Date.now() - FC.t < 20000) return;
+  const ym = PERIODO;
+  const [res, lista] = await Promise.all([agoraApi('workspace/fiscal'), agoraApi(`workspace/facturas?periodo=${encodeURIComponent(ym)}&limite=500`)]);
+  FC.res = res; FC.lista = lista; FC.t = Date.now(); FC.mes = ym;
+}
+const fcDocs = () => (FC.lista?.documentos || []);
+const fcSuma = (l, k = 'total') => l.reduce((t, d) => t + (Number(d.totales?.[k]) || 0), 0);
+const fcEmitidas = () => fcDocs().filter(d => d.estado === 'EMITIDA');
+const FC_TARJETAS = {
+  facturado: {t: 'Facturado en el mes', ic: 'invoice', d: 'Facturas fiscales y simples emitidas en el mes (sin anuladas).', f: () => { const l = fcEmitidas().filter(d => ['FAC', 'SIM'].includes(d.tipo)); return ['is-ok', esc(fcMon(fcSuma(l), 'USD')), `${int(l.length)} ${l.length === 1 ? 'factura' : 'facturas'}`]; }},
+  iva: {t: 'IVA del mes', ic: 'receipt', d: 'IVA de las facturas fiscales emitidas, menos las notas de crédito.', f: () => { const iva = d => (Number(d.totales?.iva_general) || 0) + (Number(d.totales?.iva_reducido) || 0) + (Number(d.totales?.iva_lujo) || 0); const l = fcEmitidas(); const v = l.filter(d => d.tipo !== 'NC' && d.tipo !== 'SIM').reduce((t, d) => t + iva(d), 0) - l.filter(d => d.tipo === 'NC').reduce((t, d) => t + iva(d), 0); return ['', esc(fcMon(v, 'USD')), 'débito fiscal']; }},
+  emitidas: {t: 'Documentos emitidos', ic: 'check', d: 'Facturas y notas emitidas en el mes.', f: () => { const l = fcEmitidas(); return ['', int(l.length), `${int(l.filter(d => d.tipo === 'FAC').length)} fiscales · ${int(l.filter(d => d.tipo === 'SIM').length)} simples`]; }},
+  borradores: {t: 'Borradores', ic: 'edit', d: 'Facturas preparadas que todavía no se emiten.', f: () => { const n = fcDocs().filter(d => d.estado === 'BORRADOR').length; return [n ? 'is-warn' : '', int(n), n ? 'por emitir' : 'nada pendiente']; }},
+  control: {t: 'Sin número de control', ic: 'warn', d: 'Facturas fiscales emitidas a las que falta el número de control de la imprenta.', f: () => { const n = fcDocs().filter(d => d.control_pendiente).length; return [n ? 'is-warn' : 'is-ok', int(n), n ? 'por registrar' : 'todo al día']; }},
+  anuladas: {t: 'Anuladas', ic: 'shield', d: 'Documentos anulados en el mes.', f: () => { const n = fcDocs().filter(d => d.estado === 'ANULADA').length; return ['', int(n), n === 1 ? 'documento' : 'documentos']; }},
+  notas: {t: 'Notas de crédito', ic: 'rate', d: 'Lo acreditado con notas de crédito en el mes.', f: () => { const l = fcEmitidas().filter(d => d.tipo === 'NC'); return ['', esc(fcMon(fcSuma(l), 'USD')), `${int(l.length)} ${l.length === 1 ? 'nota' : 'notas'}`]; }},
+  igtf: {t: 'IGTF', ic: 'coins', d: 'IGTF percibido por pagos en divisas.', f: () => ['', esc(fcMon(fcSuma(fcEmitidas(), 'igtf'), 'USD')), 'pagos en divisas']},
+};
+const FC_DEFECTO = ['facturado', 'iva', 'borradores', 'control'];
+
+V.facturas = {
+  need: () => Promise.all([fcCargar(true), tarjCargar('facturasdoc')]),
+  render() {
+    const r = FC.res, mes = mesNombre(PERIODO), pu = r?.puede || {};
+    const acts = `${pu.emitir ? `<button class="btn btn-cta" type="button" data-fc-nueva>${icon('plus')}Nueva factura</button>` : ''}<button class="btn" type="button" data-fc-tarjetas>${icon('gear')}Editar tarjetas</button>`;
+    const cabeza = head('Facturación', 'Facturas', r?.fiscal ? `Facturas fiscales, facturas simples y notas de ${esc(mes)}.` : `Facturas simples de ${esc(mes)}. Para emitir facturas fiscales, completa los datos fiscales.`, acts);
+    if (!r) return cabeza + '<section class="panel"><p class="empty"><b>No se pudo leer la facturación</b>Vuelve a intentarlo en un momento.</p></section>';
+    const avisos = [];
+    if (!r.fiscal) avisos.push(`<div class="fc-aviso">${icon('info')}<span><b>Esta subcuenta todavía no tiene datos fiscales.</b> Puede emitir facturas simples (sin validez fiscal). ${pu.configurar ? `<a href="${href('/datos-fiscales')}">Completar datos fiscales</a>` : 'Pídele a la administración que complete los datos fiscales.'}</span></div>`);
+    else if (!r.tasa) avisos.push(`<div class="fc-aviso is-warn">${icon('warn')}<span><b>Falta la tasa BCV de los últimos 5 días.</b> Sin ella no se emiten facturas fiscales. <a href="${href('/tasas')}">Ir a Tasas del día</a></span></div>`);
+    if (r.fiscal && r.proteccion && !r.proteccion.ok && pu.configurar) avisos.push(`<div class="fc-aviso">${icon('shield')}<span>La protección de la base de datos no está activa en este servidor. Lo emitido sigue protegido por Ágora y por la cadena de huellas. <a href="${href('/datos-fiscales')}">Ver en Datos fiscales</a></span></div>`);
+    const f = FC.f, q = norm(f.q || '');
+    const todos = fcDocs();
+    const lista = todos.filter(d => (!f.estado || (f.estado === 'control' ? d.control_pendiente : d.estado === f.estado)) && (!f.tipo || d.tipo === f.tipo)
+      && (!q || norm(`${d.cliente?.nombre} ${d.cliente?.rif} ${d.numero_texto || ''} ${d.control || ''}`).includes(q)));
+    const chip = (k, t, n) => `<button type="button" class="agency-chip-btn ${f.estado === k ? 'is-active' : ''}" data-fc-f="${k}" aria-pressed="${f.estado === k}">${t} · ${int(n)}</button>`;
+    const filtros = `<section class="fa-filtros fa-filtros-in" aria-label="Filtros de facturas"><div class="agency-chips" role="group" aria-label="Estado">${chip('', 'Todas', todos.length)}${chip('BORRADOR', 'Borradores', todos.filter(d => d.estado === 'BORRADOR').length)}${chip('EMITIDA', 'Emitidas', todos.filter(d => d.estado === 'EMITIDA').length)}${r.fiscal ? chip('control', 'Sin control', todos.filter(d => d.control_pendiente).length) : ''}${chip('ANULADA', 'Anuladas', todos.filter(d => d.estado === 'ANULADA').length)}</div>
+      <div class="fa-fila"><label class="fld grow"><span class="sr-only">Buscar</span><span class="search-in">${icon('search')}<input type="search" data-fc-q value="${esc(f.q)}" placeholder="Cliente, RIF, número o control" autocomplete="off"></span></label>
+      <label class="fld"><span class="sr-only">Tipo</span><select data-fc-tipo><option value="">Todos los tipos</option>${Object.entries(FC_TIPO).map(([k, [t]]) => `<option value="${k}" ${f.tipo === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label></div></section>`;
+    const fila = d => `<tr><td>${esc(fcFecha(d.fecha || String(d.creada || '').slice(0, 10)))}</td><td><b>${esc(d.numero_texto || '—')}</b>${d.control ? `<small>Control ${esc(d.control)}</small>` : ''}</td><td><span class="sc ${FC_TIPO[d.tipo]?.[1] || 'sc-gray'}">${esc(FC_TIPO[d.tipo]?.[0] || d.tipo)}</span></td><td class="wrap"><span class="who-cell"><b>${esc(d.cliente?.nombre || '—')}</b><small>${esc(d.cliente?.rif || '')}</small></span></td><td class="n">${esc(fcMon(d.totales?.total, d.moneda))}</td><td>${fcEstado(d)}</td><td><button class="btn btn-sm" type="button" data-fc-ver="${esc(d.uid)}">Ver</button></td></tr>`;
+    const tabla = lista.length ? `<div class="tw"><table data-xt-vivo><thead><tr><th>Fecha</th><th>N.°</th><th>Tipo</th><th>Cliente</th><th class="n">Total</th><th>Estado</th><th></th></tr></thead><tbody>${lista.map(fila).join('')}</tbody></table></div>`
+      : `<p class="empty"><b>${todos.length ? 'Ningún documento coincide con los filtros' : `Todavía no hay facturas en ${esc(mes)}`}</b>${todos.length ? 'Prueba con otro estado o tipo.' : pu.emitir ? 'Crea la primera con «Nueva factura» o desde un cobro en Cobros.' : ''}</p>`;
+    return cabeza + avisos.join('') + vivoTarjetas('facturasdoc', FC_TARJETAS, FC_DEFECTO, [], mes) + `<section class="panel pf-sec" data-filtros-propios>${secH('invoice', 'Documentos de ' + esc(mes), `${int(lista.length)} ${lista.length === 1 ? 'documento' : 'documentos'}${r.soloPropios ? ' · los que preparaste tú' : ''}`)}${filtros}${tabla}</section>`;
+  },
+  mounted(root) {
+    root.querySelector('[data-fc-nueva]')?.addEventListener('click', () => fcEditar());
+    root.querySelector('[data-fc-tarjetas]')?.addEventListener('click', () => tarjEditar('facturasdoc', FC_TARJETAS, FC_DEFECTO, 'Facturas', repaint));
+    root.querySelectorAll('[data-fc-f]').forEach(b => b.onclick = () => { FC.f.estado = b.dataset.fcF; repaint(); });
+    root.querySelector('[data-fc-tipo]')?.addEventListener('change', e => { FC.f.tipo = e.target.value; repaint(); });
+    const qi = root.querySelector('[data-fc-q]');
+    if (qi) qi.oninput = () => { FC.f.q = qi.value; clearTimeout(FC.qt); FC.qt = setTimeout(() => { repaint(); const n = $('[data-fc-q]'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); };
+    root.querySelectorAll('[data-fc-ver]').forEach(b => b.onclick = () => fcVer(b.dataset.fcVer));
+  },
+};
+
+/* ---------- Editor: borrador de factura (fiscal o simple). preset = {cliente, lineas, moneda, venta, tipo} ---------- */
+function fcLeerCant(t) { const s = String(t ?? '').trim().replace(/\s/g, '').replace(',', '.'); return /^\d{1,9}(\.\d{1,3})?$/.test(s) && Number(s) > 0 ? s : null; }
+async function fcEditar(doc = null, preset = {}) {
+  if (!FC.res) { try { await fcCargar(true); } catch (x) { toast(x.message || 'No se pudo abrir la facturación.'); return; } }
+  if (typeof cargarCatalogo === 'function' && !CATALOGO) { try { await cargarCatalogo(); } catch {} }
+  const r = FC.res, fiscal = !!r.fiscal, base = doc || preset;
+  let tipo = doc ? doc.tipo : (preset.tipo || (fiscal ? 'FAC' : 'SIM'));
+  if (!fiscal) tipo = 'SIM';
+  if (!doc && tipo === 'SIM' && base.lineas) base.lineas = base.lineas.map(l => ({...l, impuesto: 'E'})); // la factura simple no lleva IVA por defecto
+  const cl = base.cliente || {};
+  const prods = (CATALOGO?.productos || []).filter(p => p.activo !== false);
+  const impOpc = sel => FC_IMP.map(([v, t]) => `<option value="${v}" ${v === sel ? 'selected' : ''}>${t}</option>`).join('');
+  const fila = (l = {}) => `<div class="ag-serv fc-linea">
+      <label class="fld ag-serv-n">Descripción<input data-k="descripcion" maxlength="500" value="${esc(l.descripcion || '')}" placeholder="Mensualidad, curso, servicio…"></label>
+      <label class="fld fc-cant">Cantidad<input data-k="cantidad" inputmode="decimal" value="${esc(l.cantidad != null ? String(l.cantidad).replace('.', ',') : '1')}"></label>
+      <label class="fld ag-serv-m">Precio<input data-k="precio" inputmode="decimal" value="${esc(l.precio != null ? NF.format(Number(l.precio)) : '')}" placeholder="0,00"></label>
+      <label class="fld ag-serv-f">Impuesto<select data-k="impuesto">${impOpc(l.impuesto || (tipo === 'SIM' ? 'E' : 'G'))}</select></label>
+      <button type="button" class="icon-btn ag-serv-x" data-quitar aria-label="Quitar línea">${icon('x')}</button>
+    </div>`;
+  const s = openModal(modalHead(doc ? 'Editar borrador' : 'Nueva factura', fiscal ? 'Se guarda como borrador: no gasta número hasta emitirla.' : 'Esta subcuenta no tiene datos fiscales: emite una factura simple, sin validez fiscal.') + `
+    <form class="form ag-cobros-form fc-form" novalidate>
+      ${fiscal && !doc ? `<div class="fc-tipo" role="radiogroup" aria-label="Tipo de factura"><label><input type="radio" name="tipo" value="FAC" ${tipo === 'FAC' ? 'checked' : ''}><span><b>Factura fiscal</b><small>Con número de control de la imprenta y tasa BCV.</small></span></label><label><input type="radio" name="tipo" value="SIM" ${tipo === 'SIM' ? 'checked' : ''}><span><b>Factura simple</b><small>Sin validez fiscal.</small></span></label></div>` : ''}
+      <fieldset class="bx"><legend>${icon('user')}Cliente</legend>
+        <div class="fc-cli">
+          <label class="fld fc-cli-n">Nombre o razón social<input name="nombre" maxlength="200" value="${esc(cl.nombre || '')}" list="fc-clientes" autocomplete="off"><datalist id="fc-clientes"></datalist></label>
+          <label class="fld">RIF o cédula<input name="rif" maxlength="20" value="${esc(cl.rif || '')}" placeholder="J-12345678-9 o V-12345678"></label>
+          <label class="fld fc-cli-d">Domicilio fiscal<input name="direccion" maxlength="400" value="${esc(cl.direccion || '')}"></label>
+          <label class="fld">Correo<input name="correo" type="email" maxlength="190" value="${esc(cl.correo || '')}"></label>
+          <label class="fld">Teléfono<input name="telefono" maxlength="40" value="${esc(cl.telefono || '')}"></label>
+        </div>
+        <p class="fc-ayuda" data-fc-req></p>
+      </fieldset>
+      <fieldset class="bx"><legend>${icon('receipt')}Productos o servicios</legend>
+        <div data-fc-lineas>${(base.lineas?.length ? base.lineas : [{}]).map(fila).join('')}</div>
+        <div class="co-ed-acts"><button type="button" class="btn btn-sm" data-agregar>${icon('plus')}Agregar línea</button>${prods.length ? `<label class="fld fc-prod"><span class="sr-only">Agregar un producto</span><select data-fc-prod><option value="">Agregar un producto…</option>${prods.map(p => `<option value="${esc(p.id)}">${esc(p.nombre)}</option>`).join('')}</select></label>` : ''}</div>
+      </fieldset>
+      <div class="fc-fila3">
+        <label class="fld">Moneda<select name="moneda">${[['USD', 'Dólares (US$)'], ['VES', 'Bolívares (Bs.)'], ['EUR', 'Euros (€)']].map(([v, t]) => `<option value="${v}" ${(base.moneda || 'USD') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+        <label class="fld">Vence<input name="vence" type="date" value="${esc(base.vence || '')}"></label>
+        <label class="fld">Condiciones<input name="condiciones" maxlength="120" value="${esc(base.condiciones || '')}" placeholder="Contado, 15 días…"></label>
+      </div>
+      ${r.perfil?.igtf?.activo ? `<label class="fc-check"><input type="checkbox" name="pago_divisas" ${base.pago_divisas ? 'checked' : ''}> El cliente paga en divisas (se suma el IGTF de ${NF.format(r.perfil.igtf.alicuota)} %)</label>` : ''}
+      <label class="fld">Observaciones<textarea name="notas" maxlength="600" rows="2">${esc(base.notas || '')}</textarea></label>
+      <div class="ag-cobros-tot is-live"><small>Total</small><b data-total>—</b><span data-desglose></span></div>
+      <p class="fld-err" role="alert"></p>
+      <div class="form-ft"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn" data-modo="borrador">Guardar borrador</button>${r.puede?.emitir ? '<button type="submit" class="btn btn-cta" data-modo="emitir">Guardar y emitir</button>' : ''}</div>
+    </form>`, {wide: true});
+  const form = s.querySelector('form'), lista = s.querySelector('[data-fc-lineas]'), err = s.querySelector('.fld-err');
+  const tipoAct = () => form.querySelector('[name=tipo]:checked')?.value || tipo;
+  const alic = {G: (r.perfil?.iva?.general ?? 16) / 100, R: (r.perfil?.iva?.reducida ?? 8) / 100, A: ((r.perfil?.iva?.general ?? 16) + (r.perfil?.iva?.adicional_lujo ?? 15)) / 100, E: 0};
+  const leer = () => [...lista.querySelectorAll('.fc-linea')].map(x => ({descripcion: x.querySelector('[data-k=descripcion]').value.trim(), cantidad: fcLeerCant(x.querySelector('[data-k=cantidad]').value), precio: agenciaLeerMonto(x.querySelector('[data-k=precio]').value), impuesto: x.querySelector('[data-k=impuesto]').value, fila: x}));
+  const total = () => {
+    const ls = leer().filter(l => l.precio !== null && l.cantidad !== null), mon = form.moneda.value;
+    const base_ = ls.reduce((t, l) => t + Number(l.cantidad) * Number(l.precio), 0), iva = ls.reduce((t, l) => t + Number(l.cantidad) * Number(l.precio) * alic[l.impuesto], 0);
+    s.querySelector('[data-total]').textContent = fcMon(base_ + iva, mon);
+    s.querySelector('[data-desglose]').textContent = `Base ${fcMon(base_, mon)} · IVA ${fcMon(iva, mon)}${tipoAct() === 'FAC' && mon !== 'VES' ? ' · el equivalente en Bs se calcula al emitir, con la tasa BCV' : ''}`;
+    s.querySelector('[data-fc-req]').textContent = tipoAct() === 'FAC' ? 'Para la factura fiscal hacen falta el RIF o la cédula y el domicilio fiscal del cliente.' : 'En la factura simple basta el nombre del cliente.';
+  };
+  s.querySelector('[data-agregar]').onclick = () => { lista.insertAdjacentHTML('beforeend', fila()); lista.lastElementChild.querySelector('input').focus(); total(); };
+  s.querySelector('[data-fc-prod]')?.addEventListener('change', e => {
+    const p = prods.find(x => x.id === e.target.value); e.target.value = ''; if (!p) return;
+    const vacia = [...lista.querySelectorAll('.fc-linea')].find(x => !x.querySelector('[data-k=descripcion]').value.trim());
+    const html = fila({descripcion: p.nombre, precio: p.precio ?? p.monto ?? '', impuesto: tipoAct() === 'SIM' ? 'E' : (p.iva || 'G')});
+    if (vacia) vacia.outerHTML = html; else lista.insertAdjacentHTML('beforeend', html); total();
+  });
+  lista.addEventListener('click', e => { const b = e.target.closest('[data-quitar]'); if (b && lista.children.length > 1) { b.closest('.fc-linea').remove(); total(); } });
+  form.addEventListener('input', total); form.addEventListener('change', total); total();
+  // Clientes con datos fiscales guardados: al elegir uno, se completan RIF y domicilio.
+  let clientes = [], ct = 0;
+  form.nombre.addEventListener('input', () => { clearTimeout(ct); ct = setTimeout(async () => {
+    try { clientes = (await agoraApi('workspace/fiscal/clientes?q=' + encodeURIComponent(form.nombre.value.trim()))).items || []; } catch { clientes = []; }
+    s.querySelector('#fc-clientes').innerHTML = clientes.map(c => `<option value="${esc(c.nombre)}">${esc(c.rif || '')}</option>`).join('');
+    const c = clientes.find(x => x.nombre === form.nombre.value);
+    if (c) { if (!form.rif.value) form.rif.value = c.rif || ''; if (!form.direccion.value) form.direccion.value = c.direccion || ''; if (!form.correo.value) form.correo.value = c.correo || ''; if (!form.telefono.value) form.telefono.value = c.telefono || ''; }
+  }, 250); });
+  let modo = 'borrador';
+  form.querySelectorAll('[type=submit]').forEach(b => b.addEventListener('click', () => { modo = b.dataset.modo; }));
+  form.onsubmit = async e => {
+    e.preventDefault(); err.textContent = '';
+    form.querySelectorAll('[aria-invalid]').forEach(x => x.removeAttribute('aria-invalid'));
+    const marcar = (el, msg) => { el.setAttribute('aria-invalid', 'true'); el.focus(); err.textContent = msg; };
+    const t = tipoAct(), ls = leer().filter(l => l.descripcion || l.precio);
+    if (form.nombre.value.trim().length < 2) return marcar(form.nombre, 'Escribe el nombre o la razón social del cliente.');
+    if (t === 'FAC' && !form.rif.value.trim()) return marcar(form.rif, 'La factura fiscal lleva el RIF o la cédula del cliente.');
+    if (t === 'FAC' && form.direccion.value.trim().length < 3) return marcar(form.direccion, 'La factura fiscal lleva el domicilio fiscal del cliente.');
+    if (!ls.length) return marcar(lista.querySelector('[data-k=descripcion]'), 'Agrega al menos un producto o servicio.');
+    for (const l of ls) {
+      if (!l.descripcion) return marcar(l.fila.querySelector('[data-k=descripcion]'), 'Escribe la descripción o quita la línea.');
+      if (l.cantidad === null) return marcar(l.fila.querySelector('[data-k=cantidad]'), `La cantidad de «${l.descripcion}» no es válida.`);
+      if (l.precio === null || !(Number(l.precio) > 0)) return marcar(l.fila.querySelector('[data-k=precio]'), `El precio de «${l.descripcion}» no es válido. Usa números con hasta dos decimales, por ejemplo 120,50.`);
+    }
+    const body = {tipo: t, moneda: form.moneda.value, vence: form.vence.value || null, condiciones: form.condiciones.value.trim(), notas: form.notas.value.trim(), pago_divisas: !!form.pago_divisas?.checked,
+      venta: base.venta || null, cliente: {nombre: form.nombre.value.trim(), rif: form.rif.value.trim(), direccion: form.direccion.value.trim(), correo: form.correo.value.trim(), telefono: form.telefono.value.trim()},
+      lineas: ls.map(l => ({descripcion: l.descripcion, cantidad: l.cantidad, precio: l.precio, impuesto: l.impuesto}))};
+    const btn = form.querySelector(`[data-modo="${modo}"]`); busy(btn, true, modo === 'emitir' ? 'Emitiendo…' : 'Guardando…');
+    try {
+      let d = doc ? await agoraApi('workspace/facturas/doc?uid=' + encodeURIComponent(doc.uid), {method: 'PUT', body}) : await agoraApi('workspace/facturas', {method: 'POST', body});
+      if (modo === 'emitir') {
+        try { d = await agoraApi('workspace/facturas/emitir', {method: 'POST', body: {uid: d.uid}}); }
+        catch (x) { await fcCargar(true); closeModal(); repaint(); toast('Quedó como borrador: ' + (x.message || 'no se pudo emitir.')); return; }
+      }
+      await fcCargar(true); if (typeof faCargar === 'function') FA.t = 0;
+      closeModal(); repaint();
+      toast(d.estado === 'EMITIDA' ? `${FC_TIPO[d.tipo]?.[0] || 'Documento'} N.° ${d.numero_texto} emitida.` : 'Borrador guardado.');
+      if (d.estado === 'EMITIDA') fcVer(d.uid);
+    } catch (x) { busy(btn, false); err.textContent = x.message || 'No se pudo guardar.'; }
+  };
+}
+
+/* ---------- Ver un documento: resumen, imprimir y acciones según su estado y el rol ---------- */
+async function fcVer(uid) {
+  let d; try { d = await agoraApi('workspace/facturas/doc?uid=' + encodeURIComponent(uid)); } catch (x) { toast(x.message || 'No se pudo abrir el documento.'); return; }
+  const pu = FC.res?.puede || {}, m = d.moneda, t = d.totales || {};
+  const lineas = (d.lineas || []).map(l => `<tr><td class="wrap">${esc(l.descripcion)}</td><td class="n">${esc(NF.format(l.cantidad).replace(/,00$/, ''))}</td><td class="n">${esc(fcMon(l.precio, m))}</td><td>${esc(FC_IMP.find(x => x[0] === l.impuesto)?.[1] || l.impuesto)}</td><td class="n">${esc(fcMon(l.total, m))}</td></tr>`).join('');
+  const totRow = (k, v) => v ? `<div><span>${k}</span><b>${esc(fcMon(v, m))}</b></div>` : '';
+  const acts = [];
+  if (d.estado === 'BORRADOR') {
+    if (pu.emitir) acts.push(`<button class="btn btn-cta" type="button" data-a="emitir">${icon('check')}Emitir</button>`, `<button class="btn" type="button" data-a="editar">${icon('edit')}Editar</button>`, `<button class="btn" type="button" data-a="borrar">Borrar borrador</button>`);
+  } else {
+    acts.push(`<button class="btn" type="button" data-a="imprimir">${icon('download')}Imprimir o guardar PDF</button>`);
+    if (d.estado === 'EMITIDA' && d.tipo === 'FAC') acts.push(`<button class="btn" type="button" data-a="copia">${icon('download')}Copia</button>`);
+    if (d.control_pendiente && pu.emitir) acts.push(`<button class="btn btn-tint" type="button" data-a="control">${icon('edit')}Registrar número de control</button>`);
+    if (d.estado === 'EMITIDA' && d.tipo === 'FAC' && pu.anular) acts.push(`<button class="btn" type="button" data-a="NC">Nota de crédito</button>`, `<button class="btn" type="button" data-a="ND">Nota de débito</button>`);
+    if (d.estado === 'EMITIDA' && pu.anular) acts.push(`<button class="btn fc-peligro" type="button" data-a="anular">Anular</button>`);
+  }
+  const s = openModal(modalHead(`${esc(FC_TIPO[d.tipo]?.[0] || 'Documento')} ${d.numero_texto ? 'N.° ' + esc(d.numero_texto) : '(borrador)'}`, `${esc(d.cliente?.nombre || '')}${d.cliente?.rif ? ' · ' + esc(d.cliente.rif) : ''}`) + `<div class="fc-ver">
+    <div class="fc-ver-est">${fcEstado(d)}${d.control ? `<span>Control <b>${esc(d.control)}</b></span>` : ''}${d.fecha ? `<span>Emitida el <b>${esc(fcFecha(d.fecha))}</b></span>` : ''}${d.tasa_bcv ? `<span>Tasa BCV <b>${esc(NF.format(d.tasa_bcv))}</b></span>` : ''}${d.afecta ? `<span>Afecta la factura <b>${esc(d.afecta.numero)}</b></span>` : ''}</div>
+    ${d.estado === 'ANULADA' ? `<p class="fc-aviso is-warn">${icon('warn')}<span>Anulada${d.motivo_anulacion ? ': ' + esc(d.motivo_anulacion) : ''}.</span></p>` : ''}
+    <div class="tw"><table data-xt-vivo><thead><tr><th>Descripción</th><th class="n">Cant.</th><th class="n">Precio</th><th>Impuesto</th><th class="n">Total</th></tr></thead><tbody>${lineas}</tbody></table></div>
+    <div class="fc-tot">${totRow('Subtotal', t.subtotal)}${totRow('IVA general', t.iva_general)}${totRow('IVA reducido', t.iva_reducido)}${totRow('IVA lujo', t.iva_lujo)}${totRow('IGTF', t.igtf)}<div class="is-total"><span>Total</span><b>${esc(fcMon(t.total_con_igtf ?? t.total, m))}</b></div>${t.total_bs != null && m !== 'VES' ? `<div><span>Equivalente en Bs</span><b>${esc(fcMon(t.total_bs, 'VES'))}</b></div>` : ''}</div>
+    ${(d.notas_emitidas || []).length ? `<p class="fc-ayuda">Notas sobre esta factura: ${d.notas_emitidas.map(n => `${esc(FC_TIPO[n.tipo]?.[0])} ${esc(n.numero || '')} (${esc(fcMon(n.total, m))})`).join(' · ')}</p>` : ''}
+    <div class="form-ft fc-acts">${acts.join('')}</div></div>`, {wide: true});
+  const recargar = async (msg, abrir = d.uid) => { await fcCargar(true); closeModal(true); repaint(); if (msg) toast(msg); if (abrir) fcVer(abrir); };
+  s.querySelectorAll('[data-a]').forEach(b => b.onclick = async () => {
+    const a = b.dataset.a;
+    try {
+      if (a === 'editar') { closeModal(true); fcEditar(d); return; }
+      if (a === 'imprimir' || a === 'copia') { fcImprimir(d.uid, a === 'copia'); return; }
+      if (a === 'emitir') { busy(b, true, 'Emitiendo…'); const e = await agoraApi('workspace/facturas/emitir', {method: 'POST', body: {uid: d.uid}}); await recargar(`${FC_TIPO[e.tipo]?.[0]} N.° ${e.numero_texto} emitida.`); return; }
+      if (a === 'borrar') { if (!confirm('¿Borrar este borrador? No gasta número.')) return; await agoraApi('workspace/facturas/doc?uid=' + encodeURIComponent(d.uid), {method: 'DELETE'}); await recargar('Borrador borrado.', null); return; }
+      if (a === 'control') { closeModal(true); fcControl(d); return; }
+      if (a === 'anular' || a === 'NC' || a === 'ND') { closeModal(true); fcCorregir(d, a); return; }
+    } catch (x) { busy(b, false); toast(x.message || 'No se pudo completar.'); }
+  });
+}
+async function fcImprimir(uid, copia) {
+  let h; try { h = (await agoraApi(`workspace/facturas/ver?uid=${encodeURIComponent(uid)}${copia ? '&copia=1' : ''}`)).html; } catch (x) { toast(x.message || 'No se pudo preparar la impresión.'); return; }
+  const s = openModal(modalHead(copia ? 'Copia' : 'Imprimir', 'Usa «Imprimir» y elige «Guardar como PDF» para tener el archivo.') + `<div class="fc-print"><iframe title="Documento" sandbox="allow-same-origin allow-modals"></iframe></div><div class="form-ft"><button type="button" class="btn" data-close>Cerrar</button><button type="button" class="btn btn-cta" data-print>${icon('download')}Imprimir</button></div>`, {wide: true});
+  const fr = s.querySelector('iframe'); fr.srcdoc = h;
+  s.querySelector('[data-print]').onclick = () => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch { toast('Tu navegador no dejó imprimir desde aquí.'); } };
+}
+function fcControl(d) {
+  const s = openModal(modalHead('Número de control', `Factura N.° ${esc(d.numero_texto)}. Escribe el número que asignó la imprenta digital. Una vez registrado no se cambia.`) + `<form class="form" novalidate>
+    <label class="fld">Número de control<input name="control" placeholder="00-00000123" maxlength="12" autocomplete="off"></label>
+    <label class="fld">Fecha y hora de asignación (opcional)<input name="asignado" type="datetime-local"></label>
+    <p class="fld-err" role="alert"></p><div class="form-ft"><button type="button" class="btn" data-close>Cancelar</button><button class="btn btn-cta" type="submit">Registrar</button></div></form>`);
+  const f = s.querySelector('form');
+  f.onsubmit = async e => { e.preventDefault(); const b = f.querySelector('[type=submit]'); busy(b, true, 'Registrando…');
+    try { await agoraApi('workspace/facturas/control', {method: 'POST', body: {uid: d.uid, control: f.control.value, asignado: f.asignado.value ? f.asignado.value.replace('T', ' ') + ':00' : ''}}); await fcCargar(true); closeModal(); repaint(); toast('Número de control registrado.'); }
+    catch (x) { busy(b, false); f.querySelector('.fld-err').textContent = x.message; } };
+}
+/** Anular, o corregir con nota de crédito o débito: siempre con motivo escrito (queda en la auditoría). */
+function fcCorregir(d, a) {
+  const titulo = a === 'anular' ? 'Anular el documento' : a === 'NC' ? 'Nota de crédito' : 'Nota de débito';
+  const ayuda = a === 'anular' ? 'El documento conserva su número y queda marcado como anulado. Esto no se deshace.' : a === 'NC' ? 'Descuenta de la factura (devoluciones, descuentos, errores a favor del cliente).' : 'Suma a la factura (intereses, recargos, diferencias).';
+  const s = openModal(modalHead(titulo, `${esc(FC_TIPO[d.tipo]?.[0])} N.° ${esc(d.numero_texto)} · ${esc(ayuda)}`) + `<form class="form ag-cobros-form" novalidate>
+    ${a !== 'anular' ? `<div class="fc-fila3"><label class="fld fc-cli-n">Concepto<input name="desc" maxlength="500" value="${a === 'NC' ? 'Ajuste a la factura ' : 'Recargo sobre la factura '}${esc(d.numero_texto)}"></label><label class="fld">Monto (${esc(d.moneda)})<input name="monto" inputmode="decimal" placeholder="0,00"></label><label class="fld">Impuesto<select name="imp">${FC_IMP.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></label></div>` : ''}
+    <label class="fld">Motivo<textarea name="motivo" rows="2" maxlength="400" placeholder="Explica por qué. Queda en la auditoría."></textarea></label>
+    <p class="fld-err" role="alert"></p><div class="form-ft"><button type="button" class="btn" data-close>Cancelar</button><button class="btn ${a === 'anular' ? 'fc-peligro' : 'btn-cta'}" type="submit">${a === 'anular' ? 'Anular' : 'Emitir la nota'}</button></div></form>`);
+  const f = s.querySelector('form'), err = s.querySelector('.fld-err');
+  f.onsubmit = async e => {
+    e.preventDefault(); err.textContent = '';
+    if (f.motivo.value.trim().length < 5) { err.textContent = 'Escribe el motivo (al menos 5 caracteres).'; f.motivo.focus(); return; }
+    const b = f.querySelector('[type=submit]');
+    try {
+      let r;
+      if (a === 'anular') { busy(b, true, 'Anulando…'); r = await agoraApi('workspace/facturas/anular', {method: 'POST', body: {uid: d.uid, motivo: f.motivo.value.trim()}}); }
+      else {
+        const monto = agenciaLeerMonto(f.monto.value); if (!monto || !(Number(monto) > 0)) { err.textContent = 'Escribe el monto de la nota.'; f.monto.focus(); return; }
+        busy(b, true, 'Emitiendo…'); r = await agoraApi('workspace/facturas/nota', {method: 'POST', body: {uid: d.uid, tipo: a, motivo: f.motivo.value.trim(), lineas: [{descripcion: f.desc.value.trim() || titulo, cantidad: 1, precio: monto, impuesto: f.imp.value}]}});
+      }
+      await fcCargar(true); closeModal(); repaint();
+      toast(a === 'anular' ? 'Documento anulado.' : `${titulo} N.° ${r.numero_texto} emitida.`); fcVer(r.uid);
+    } catch (x) { busy(b, false); err.textContent = x.message || 'No se pudo completar.'; }
+  };
+}
+
+/* ---------- Libro de ventas (para el contador) ---------- */
+const LV = {datos: null, mes: ''};
+V.libroVentas = {
+  need: async () => { await fcCargar().catch(() => null); try { LV.datos = await agoraApi('workspace/libro-ventas?periodo=' + encodeURIComponent(PERIODO)); LV.mes = PERIODO; } catch (x) { LV.datos = {error: x.message}; } },
+  render() {
+    const mes = mesNombre(PERIODO), d = LV.datos;
+    const cabeza = head('Facturación', 'Libro de ventas', `Las facturas y notas fiscales de ${esc(mes)}, con sus bases, IVA e IGTF. Las facturas simples no entran.`, d?.csv ? `<button class="btn" type="button" data-lv-csv>${icon('download')}Descargar (CSV)</button>` : '');
+    if (!d || d.error) return cabeza + `<section class="panel"><p class="empty"><b>No se pudo leer el libro</b>${esc(d?.error || 'Vuelve a intentarlo en un momento.')}</p></section>`;
+    const L = d.libro || {}, filas = L.filas || [], T = L.totales || {};
+    const bs = c => c ? NF.format(c / 100) : '—';
+    // Columnas del libro (montos en Bs); las de alícuota reducida y lujo solo si se usaron en el mes.
+    const usa = k => filas.some(f => f[k]);
+    const cols = [['fecha', 'Fecha'], ['tipo', 'Tipo'], ['numero', 'N.°'], ['control', 'Control'], ['rif', 'RIF'], ['nombre', 'Cliente'], ['afectada', 'Afecta'], ['total_bs', 'Total Bs', 1], ['exento_bs', 'Exento', 1], ['base_g_bs', 'Base general', 1], ['iva_g_bs', 'IVA general', 1],
+      ...(usa('base_r_bs') ? [['base_r_bs', 'Base reducida', 1], ['iva_r_bs', 'IVA reducido', 1]] : []), ...(usa('base_a_bs') ? [['base_a_bs', 'Base lujo', 1], ['iva_a_bs', 'IVA lujo', 1]] : []), ...(usa('igtf_bs') ? [['igtf_bs', 'IGTF', 1]] : [])];
+    const tabla = filas.length ? `<div class="tw"><table data-xt-vivo><thead><tr>${cols.map(([, t, n]) => `<th${n ? ' class="n"' : ''}>${esc(t)}</th>`).join('')}</tr></thead><tbody>${filas.map(f => `<tr${f.estado === 'ANULADA' ? ' class="is-muted"' : ''}>${cols.map(([k, , n]) => `<td${n ? ' class="n"' : ''}>${esc(n ? bs(f[k]) : (k === 'control' && f[k] === 'PENDIENTE' ? 'Pendiente' : f[k] ?? ''))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
+      : `<p class="empty"><b>Sin documentos fiscales en ${esc(mes)}</b>Cuando se emitan facturas fiscales, aparecen aquí.</p>`;
+    const k = (t, v, dsc) => `<div class="ag-resumen"><span class="ag-resumen-ic" aria-hidden="true">${icon('receipt')}</span><span class="ag-resumen-t">${t}</span><strong class="ag-resumen-v">${v}</strong><span class="ag-resumen-d">${dsc}</span></div>`;
+    const tots = filas.length ? k('Ventas del mes', 'Bs. ' + esc(bs(T.total_bs)), `${int(L.documentos)} documentos`) + k('Base imponible', 'Bs. ' + esc(bs((T.base_g_bs || 0) + (T.base_r_bs || 0) + (T.base_a_bs || 0))), 'general, reducida y lujo') + k('IVA débito fiscal', 'Bs. ' + esc(bs((T.iva_g_bs || 0) + (T.iva_r_bs || 0) + (T.iva_a_bs || 0))), 'del mes') + k('Exento', 'Bs. ' + esc(bs(T.exento_bs)), 'operaciones exentas') : '';
+    return cabeza + (tots ? `<section class="ag-resumen-grid vg-kpis">${tots}</section>` : '') + `<section class="panel pf-sec">${secH('invoice', 'Libro de ventas de ' + esc(mes), `${int(filas.length)} ${filas.length === 1 ? 'renglón' : 'renglones'}`)}${tabla}</section>`;
+  },
+  mounted(root) {
+    root.querySelector('[data-lv-csv]')?.addEventListener('click', () => {
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + LV.datos.csv], {type: 'text/csv;charset=utf-8'})); a.download = `libro-de-ventas-${PERIODO}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    });
+  },
+};
+
+/* ---------- Datos fiscales (administración): emisor, imprenta, impuestos, números de control y verificación ---------- */
+const DF = {rangos: null, verif: null};
+V.datosFiscales = {
+  need: async () => { await fcCargar(true); DF.rangos = (await agoraApi('workspace/fiscal/rangos').catch(() => ({rangos: []}))).rangos; },
+  render() {
+    const r = FC.res, p = r?.perfil || {}, ed = !!r?.puede?.configurar, dis = ed ? '' : 'disabled';
+    const cabeza = head('Facturación', 'Datos fiscales', 'Los datos de la empresa que van en cada factura fiscal. Sin ellos, la subcuenta solo emite facturas simples.');
+    if (!r) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer los datos fiscales</b>Vuelve a intentarlo.</p></section>';
+    const v = (k, d = '') => esc(p[k] ?? d), imp = p.imprenta || {};
+    const estado = p.completo ? `<p class="fc-aviso is-ok">${icon('check')}<span><b>Lista para facturar fiscalmente.</b>${p.emitidos ? ` ${int(p.emitidos)} documentos emitidos: cambiar estos datos solo afecta a los nuevos.` : ''}</span></p>`
+      : `<p class="fc-aviso">${icon('info')}<span><b>Faltan datos para la factura fiscal:</b> ${esc((p.faltan || []).filter(x => x !== 'todo').join(', ') || 'todos')}.</span></p>`;
+    const rangos = (DF.rangos || []);
+    const libre = p.modo === 'FORMA_LIBRE';
+    return cabeza + estado + `<form class="panel pf-sec form ag-cobros-form" data-df-form novalidate>${secH('shield', 'Empresa', ed ? 'Tal como aparecen en el RIF.' : 'Solo la administración los cambia.')}
+      <div class="fc-cli"><label class="fld fc-cli-n">Razón social<input name="razon_social" maxlength="200" value="${v('razon_social')}" ${dis}></label><label class="fld">RIF<input name="rif" maxlength="20" value="${v('rif')}" placeholder="J-12345678-9" ${dis}></label>
+      <label class="fld fc-cli-d">Domicilio fiscal<input name="domicilio" maxlength="400" value="${v('domicilio')}" ${dis}></label><label class="fld">Teléfono<input name="telefono" maxlength="40" value="${v('telefono')}" ${dis}></label><label class="fld">Correo<input name="correo" type="email" maxlength="190" value="${v('correo')}" ${dis}></label></div>
+      <label class="fc-check"><input type="checkbox" name="contribuyente_especial" ${p.contribuyente_especial ? 'checked' : ''} ${dis}> Contribuyente especial</label>
+      <fieldset class="bx"><legend>${icon('invoice')}Imprenta</legend>
+        <div class="fc-tipo"><label><input type="radio" name="modo" value="IMPRENTA_DIGITAL" ${!libre ? 'checked' : ''} ${dis}><span><b>Imprenta digital</b><small>Asigna el número de control de cada factura (por ejemplo SERDIMPRE).</small></span></label><label><input type="radio" name="modo" value="FORMA_LIBRE" ${libre ? 'checked' : ''} ${dis}><span><b>Formas libres</b><small>Rangos de números de control entregados por la imprenta.</small></span></label></div>
+        <div class="fc-fila3"><label class="fld">Nombre de la imprenta<input name="imp_nombre" maxlength="200" value="${esc(imp.nombre || '')}" placeholder="SERDIMPRE" ${dis}></label><label class="fld">RIF de la imprenta<input name="imp_rif" maxlength="20" value="${esc(imp.rif || '')}" ${dis}></label><label class="fld">Providencia<input name="imp_prov" maxlength="80" value="${esc(imp.providencia || '')}" ${dis}></label></div>
+        <div class="fc-fila3"><label class="fld">Fecha de la providencia<input name="imp_fecha" type="date" value="${esc(imp.fecha || '')}" ${dis}></label><label class="fld">Serie (opcional)<input name="serie" maxlength="4" value="${v('serie')}" placeholder="A" ${dis}></label><span></span></div>
+      </fieldset>
+      <fieldset class="bx"><legend>${icon('coins')}Impuestos</legend>
+        <div class="fc-fila3"><label class="fld">IVA general (%)<input name="iva_g" inputmode="decimal" value="${esc(NF.format(p.iva?.general ?? 16))}" ${dis}></label><label class="fld">IVA reducido (%)<input name="iva_r" inputmode="decimal" value="${esc(NF.format(p.iva?.reducida ?? 8))}" ${dis}></label><label class="fld">Adicional de lujo (%)<input name="iva_a" inputmode="decimal" value="${esc(NF.format(p.iva?.adicional_lujo ?? 15))}" ${dis}></label></div>
+        <label class="fc-check"><input type="checkbox" name="igtf_on" ${p.igtf?.activo ? 'checked' : ''} ${dis}> Cobrar IGTF a los pagos en divisas (<input name="igtf" class="fc-mini" inputmode="decimal" value="${esc(NF.format(p.igtf?.alicuota ?? 3))}" ${dis}> %)</label>
+      </fieldset>
+      <label class="fld">Leyendas al pie de la factura (una por línea)<textarea name="leyendas" rows="2" maxlength="600" ${dis}>${v('leyendas')}</textarea></label>
+      <p class="fld-err" role="alert"></p>${ed ? '<div class="form-ft"><button class="btn btn-cta" type="submit">Guardar datos fiscales</button></div>' : ''}</form>`
+      + (libre ? `<section class="panel pf-sec">${secH('receipt', 'Números de control', 'Los rangos de formas libres que entregó la imprenta. Cada factura toma el siguiente.', ed ? `<button class="btn" type="button" data-df-rango>${icon('plus')}Registrar rango</button>` : '')}
+        ${rangos.length ? `<div class="tw"><table data-xt-vivo><thead><tr><th>Rango</th><th>Imprenta</th><th class="n">Disponibles</th><th>Estado</th><th></th></tr></thead><tbody>${rangos.map(x => `<tr><td>${esc(x.prefijo)}-${esc(String(x.desde).padStart(8, '0'))} a ${esc(String(x.hasta).padStart(8, '0'))}</td><td>${esc(x.imprenta)}</td><td class="n">${int(x.disponibles)}</td><td>${esc(x.estado === 'ACTIVO' ? 'Activo' : x.estado === 'AGOTADO' ? 'Agotado' : 'Anulado')}</td><td>${ed && x.estado === 'ACTIVO' ? `<button class="btn btn-sm" type="button" data-df-anular="${x.id}">Anular</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty"><b>Sin rangos registrados</b>Registra el rango que te entregó la imprenta antes de emitir.</p>'}</section>` : '')
+      + (ed ? `<section class="panel pf-sec">${secH('shield', 'Verificación', 'Comprueba que ningún documento emitido se haya alterado y que la numeración no tenga saltos.', `<button class="btn" type="button" data-df-verif>${icon('shield')}Verificar ahora</button>`)}<div data-df-verif-r>${DF.verif ? (DF.verif.integro ? `<p class="fc-aviso is-ok">${icon('check')}<span>${int(DF.verif.documentos)} documentos revisados: todo en orden.</span></p>` : `<p class="fc-aviso is-warn">${icon('warn')}<span>${DF.verif.problemas.map(x => `${esc(x.documento)}: ${esc(x.problema)}`).join(' · ')}</span></p>`) : ''}</div>${r.proteccion && !r.proteccion.ok ? `<p class="fc-ayuda">La protección de la base de datos no está activa. <button class="link-btn" type="button" data-df-proteger>Intentar activarla</button></p>` : ''}</section>` : '');
+  },
+  mounted(root) {
+    const f = root.querySelector('[data-df-form]');
+    if (f && FC.res?.puede?.configurar) f.onsubmit = async e => {
+      e.preventDefault(); const err = f.querySelector('.fld-err'); err.textContent = ''; const b = f.querySelector('[type=submit]');
+      const num = x => String(x || '').trim().replace(/\./g, '').replace(',', '.');
+      const body = {razon_social: f.razon_social.value.trim(), rif: f.rif.value.trim().toUpperCase(), domicilio: f.domicilio.value.trim(), telefono: f.telefono.value.trim(), correo: f.correo.value.trim(),
+        contribuyente_especial: f.contribuyente_especial.checked, modo: f.modo.value, serie: f.serie.value.trim(),
+        imprenta: {nombre: f.imp_nombre.value.trim(), rif: f.imp_rif.value.trim().toUpperCase(), providencia: f.imp_prov.value.trim(), fecha: f.imp_fecha.value || ''},
+        iva: {general: num(f.iva_g.value), reducida: num(f.iva_r.value), adicional_lujo: num(f.iva_a.value)}, igtf: {activo: f.igtf_on.checked, alicuota: num(f.igtf.value)}, leyendas: f.leyendas.value};
+      busy(b, true, 'Guardando…');
+      try { await agoraApi('workspace/fiscal/perfil', {method: 'PUT', body}); await fcCargar(true); repaint(); toast('Datos fiscales guardados.'); }
+      catch (x) { busy(b, false); err.textContent = x.message || 'No se pudieron guardar.'; }
+    };
+    root.querySelector('[data-df-rango]')?.addEventListener('click', () => {
+      const s = openModal(modalHead('Registrar rango de números de control', 'Tal como lo entregó la imprenta autorizada.') + `<form class="form" novalidate><div class="fc-fila3"><label class="fld">Prefijo<input name="prefijo" value="00" maxlength="2" inputmode="numeric"></label><label class="fld">Desde<input name="desde" inputmode="numeric"></label><label class="fld">Hasta<input name="hasta" inputmode="numeric"></label></div>
+        <div class="fc-fila3"><label class="fld">Imprenta<input name="imprenta" value="${esc(FC.res?.perfil?.imprenta?.nombre || '')}"></label><label class="fld">RIF de la imprenta<input name="rif_imprenta" value="${esc(FC.res?.perfil?.imprenta?.rif || '')}"></label><label class="fld">Providencia<input name="providencia" value="${esc(FC.res?.perfil?.imprenta?.providencia || '')}"></label></div>
+        <label class="fld">Fecha de entrega<input name="fecha" type="date"></label><p class="fld-err" role="alert"></p><div class="form-ft"><button type="button" class="btn" data-close>Cancelar</button><button class="btn btn-cta" type="submit">Registrar</button></div></form>`, {wide: true});
+      const g = s.querySelector('form');
+      g.onsubmit = async e => { e.preventDefault(); const b = g.querySelector('[type=submit]'); busy(b, true, 'Registrando…');
+        try { DF.rangos = (await agoraApi('workspace/fiscal/rangos', {method: 'POST', body: {prefijo: g.prefijo.value.trim(), desde: Number(g.desde.value), hasta: Number(g.hasta.value), imprenta: g.imprenta.value.trim(), rif_imprenta: g.rif_imprenta.value.trim().toUpperCase(), providencia: g.providencia.value.trim(), fecha: g.fecha.value}})).rangos; closeModal(); repaint(); toast('Rango registrado.'); }
+        catch (x) { busy(b, false); g.querySelector('.fld-err').textContent = x.message; } };
+    });
+    root.querySelectorAll('[data-df-anular]').forEach(b => b.onclick = async () => { if (!confirm('¿Anular los números de control sin usar de este rango?')) return; try { DF.rangos = (await agoraApi('workspace/fiscal/rangos/anular', {method: 'POST', body: {id: Number(b.dataset.dfAnular)}})).rangos; repaint(); toast('Rango anulado.'); } catch (x) { toast(x.message); } });
+    root.querySelector('[data-df-verif]')?.addEventListener('click', async e => { busy(e.currentTarget, true, 'Verificando…'); try { DF.verif = await agoraApi('workspace/fiscal/verificar'); } catch (x) { toast(x.message); } repaint(); });
+    root.querySelector('[data-df-proteger]')?.addEventListener('click', async () => { try { const r = await agoraApi('workspace/fiscal/proteccion', {method: 'POST', body: {}}); await fcCargar(true); repaint(); toast(r.mensaje); } catch (x) { toast(x.message); } });
+  },
+};
+
+/* ---------- Tasas del día (BCV) ---------- */
+const TB_TASA = {datos: null};
+V.tasasBcv = {
+  need: async () => { await fcCargar().catch(() => null); TB_TASA.datos = await agoraApi('workspace/fiscal/tasas').catch(x => ({error: x.message})); },
+  render() {
+    const d = TB_TASA.datos, pu = FC.res?.puede || {};
+    const cabeza = head('Facturación', 'Tasas del día', 'La tasa oficial del BCV con la que se calcula el equivalente en bolívares de cada factura. Llega sola cada día; si no llega, escríbela aquí.', pu.configurar ? `<button class="btn" type="button" data-tb-act>${icon('refresh')}Traer ahora</button>` : '');
+    if (!d || d.error) return cabeza + `<section class="panel"><p class="empty"><b>No se pudieron leer las tasas</b>${esc(d?.error || '')}</p></section>`;
+    const v = d.vigente;
+    const tarj = `<section class="ag-resumen-grid vg-kpis"><div class="ag-resumen ${v ? 'is-ok' : 'is-warn'}"><span class="ag-resumen-ic" aria-hidden="true">${icon('rate')}</span><span class="ag-resumen-t">Tasa BCV vigente</span><strong class="ag-resumen-v">${v ? 'Bs. ' + esc(NF.format(v.tasa)) : '—'}</strong><span class="ag-resumen-d">${v ? 'del ' + esc(fcFecha(v.fecha)) : 'Sin tasa de los últimos 5 días: las facturas fiscales no se emiten'}</span></div></section>`;
+    const form = pu.emitir ? `<form class="panel pf-sec form" data-tb-form novalidate>${secH('edit', 'Escribir la tasa', 'Solo si la automática no llegó. Usa la publicada por el BCV.')}<div class="fc-fila3"><label class="fld">Fecha<input name="fecha" type="date" value="${esc(d.hoy)}" max="${esc(d.hoy)}"></label><label class="fld">Bs. por US$ 1<input name="tasa" inputmode="decimal" placeholder="245,6789"></label><div class="form-ft"><button class="btn btn-cta" type="submit">Guardar tasa</button></div></div><p class="fld-err" role="alert"></p></form>` : '';
+    const hist = (d.historial || []).length ? `<div class="tw"><table data-xt-vivo><thead><tr><th>Fecha</th><th class="n">Bs. por US$ 1</th><th>Origen</th></tr></thead><tbody>${d.historial.map(x => `<tr><td>${esc(fcFecha(x.fecha))}</td><td class="n">${esc(NF.format(x.tasa))}</td><td>${esc(x.origen)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty"><b>Sin tasas en los últimos 30 días</b></p>';
+    return cabeza + tarj + form + `<section class="panel pf-sec">${secH('history', 'Últimos 30 días')}${hist}</section>`;
+  },
+  mounted(root) {
+    const f = root.querySelector('[data-tb-form]');
+    if (f) f.onsubmit = async e => { e.preventDefault(); const b = f.querySelector('[type=submit]'); busy(b, true, 'Guardando…');
+      try { TB_TASA.datos = await agoraApi('workspace/fiscal/tasas', {method: 'POST', body: {fecha: f.fecha.value, tasa: f.tasa.value.trim()}}); FC.t = 0; repaint(); toast('Tasa guardada.'); }
+      catch (x) { busy(b, false); f.querySelector('.fld-err').textContent = x.message; } };
+    root.querySelector('[data-tb-act]')?.addEventListener('click', async e => { busy(e.currentTarget, true, 'Consultando…'); try { const r = await agoraApi('workspace/fiscal/tasas/actualizar', {method: 'POST', body: {}}); TB_TASA.datos = r; FC.t = 0; toast(r.ok ? 'Tasa BCV actualizada.' : (r.error || 'No se pudo traer la tasa.')); } catch (x) { toast(x.message); } repaint(); });
+  },
+};
+
+IC.x = '<path d="M6 6l12 12M18 6L6 18"/>';
+const fcOk = () => (!!ME || agoraReady()) && puede('facturas.ver');
+MODS.facturas = {g: 'facturacion', view: 'facturas', name: 'Facturas', icon: 'invoice', path: '/facturas', c: 'var(--mod-oro)', periodo: true,
+  desc: 'Facturas fiscales y simples, notas de crédito y débito.', ok: fcOk};
+MODS.libroVentas = {g: 'facturacion', view: 'libroVentas', name: 'Libro de ventas', icon: 'receipt', path: '/libro-ventas', c: 'var(--mod-oro)', periodo: true,
+  desc: 'El libro del mes para el contador.', ok: () => fcOk() && puede('libro.ventas')};
+MODS.datosFiscales = {g: 'facturacion', view: 'datosFiscales', name: 'Datos fiscales', icon: 'shield', path: '/datos-fiscales', c: 'var(--mod-oro)',
+  desc: 'Empresa, imprenta, impuestos y números de control.', ok: () => fcOk() && puede('fiscal.configurar')};
+MODS.tasasBcv = {g: 'facturacion', view: 'tasasBcv', name: 'Tasas del día', icon: 'rate', path: '/tasas', c: 'var(--mod-oro)',
+  desc: 'La tasa BCV para el equivalente en bolívares.', ok: fcOk};
+
 /* ---------- 2.10.3 · Costos se editan en Costos ----------
    Sin reporte mensual, los costos del mes se cargan aquí mismo, concepto por concepto (fijo, variable o publicidad fuera de la cuenta).
    Se guardan en las cifras del mes (board.<mes>.costItems) y de ahí salen los totales que usan Configuración mensual y el Tablero:
@@ -7534,7 +7939,7 @@ const esEducativa = () => /educaci|academ|escuela|colegio|instituto|universidad|
 function estInsertar(html) {
   const t = document.createElement('template'); t.innerHTML = html;
   let h = t.content.querySelector('.mod-h');
-  if (!h) { const ref = t.content.querySelector('.prod-tabs'); const w = document.createElement('template'); w.innerHTML = head('Ventas y facturación', 'Catálogo', esEducativa() ? 'Tus programas, sus estudiantes y la recurrencia de los activos.' : 'Tus productos y servicios, con lo vendido en cada uno.'); h = w.content.firstElementChild; if (ref) ref.after(h); else t.content.prepend(h); }
+  if (!h) { const ref = t.content.querySelector('.prod-tabs'); const w = document.createElement('template'); w.innerHTML = head('Ventas', 'Catálogo', esEducativa() ? 'Tus programas, sus estudiantes y la recurrencia de los activos.' : 'Tus productos y servicios, con lo vendido en cada uno.'); h = w.content.firstElementChild; if (ref) ref.after(h); else t.content.prepend(h); }
   if (esEducativa()) { const w = document.createElement('template'); w.innerHTML = estHtml(); h.after(...w.content.childNodes); }
   return t.innerHTML;
 }
@@ -7707,7 +8112,7 @@ var TB_VIVO = {
   tendencias: {need: () => Promise.all([vgCargar().catch(() => null), faCargar(), tarjCargar('tendencias')]), render: tdVivoHtml, montar: r => r?.querySelector('[data-td-tarjetas]')?.addEventListener('click', () => tarjEditar('tendencias', TD_TARJETAS, TD_DEFECTO, 'Tendencias', repaint))},
   calidad: {need: () => Promise.all([vgCargar().catch(() => null), faCargar(), cargarCatalogo().catch(() => null), tarjCargar('calidad')]), render: caVivoHtml, montar: r => r?.querySelector('[data-ca-tarjetas]')?.addEventListener('click', () => tarjEditar('calidad', CA_TARJETAS, CA_DEFECTO, 'Calidad de datos', repaint))},
   catalogo: {need: () => Promise.all([faCargar(), cargarCatalogo().catch(() => null)]), render: ctVivoHtml, montar() {}},
-  facturas: {need: () => Promise.all([faCargar(), tarjCargar('facturas'), vgCargar().catch(() => null)]), render: faVivoHtml, montar: faVivoMontar},
+  facturas: {need: () => Promise.all([faCargar(), tarjCargar('facturas'), vgCargar().catch(() => null), faFacturasCargar()]), render: faVivoHtml, montar: faVivoMontar},
   costos: {need: coVivoNeed, render: coVivoHtml, montar: r => { r?.querySelector('[data-co-tarjetas]')?.addEventListener('click', () => tarjEditar('costos', CO_TARJETAS, CO_DEFECTO, 'Costos', repaint)); r?.querySelector('[data-co-editar]')?.addEventListener('click', coItemsEditar); }},
   resumen: {need: () => Promise.all([vgCargar().catch(() => null), tarjCargar('gestion')]).then(() => mesCfgCargar(VG.mes, true)), render: () => gcVivoHtml(), montar: r => gcVivoMontar(r)},
   equipo: {need: eqVivoNeed, render: eqVivoHtml, montar: r => r?.querySelector('[data-eq-tarjetas]')?.addEventListener('click', () => tarjEditar('equipo', EQ_TARJETAS, EQ_DEFECTO, 'Equipo', repaint))},
@@ -7815,17 +8220,18 @@ if (typeof V === 'object' && V.tc_ventas) {
 window.agoraCobrosLado = () => {
   const p = VG.datos?.proximos || []; if (!p.length) return '';
   return `<section class="panel pf-sec vg-prox fa-lado">${secH('clock', 'Cobros por recibir', `${p.length} ${p.length === 1 ? 'cobro' : 'cobros'} de las ventas registradas · ${esc(vgPorMoneda(p.reduce((o, c) => { o[c.moneda] = (o[c.moneda] || 0) + c.monto; return o; }, {})))}`)}
-    <ul class="vg-prox-l">${p.slice(0, 12).map(c => `<li class="${c.vencido ? 'is-venc' : ''}"><span class="vg-prox-f"><b>${esc(vgFecha(c.fecha).slice(0, 5))}</b><small>${c.vencido ? 'Vencido' : 'Vence'}</small></span><span class="vg-prox-t"><b>${esc(c.cliente)}</b><small>${esc(c.producto)}</small></span><strong>${esc(vgMonto(c.monto, c.moneda))}</strong></li>`).join('')}</ul>
+    <ul class="vg-prox-l">${p.slice(0, 12).map(c => `<li class="${c.vencido ? 'is-venc' : ''}"><span class="vg-prox-f"><b>${esc(vgFecha(c.fecha).slice(0, 5))}</b><small>${c.vencido ? 'Vencido' : 'Vence'}</small></span><span class="vg-prox-t"><b>${esc(c.cliente)}</b><small>${esc(c.producto)}</small></span><strong>${esc(vgMonto(c.monto, c.moneda))}</strong>${faFacturaBtn({v: {id: c.ventaId}, c: {n: c.n}}).replace('btn btn-sm', 'btn btn-sm fa-lado-fac')}</li>`).join('')}</ul>
     <a class="btn btn-sm fa-lado-ir" href="${href('/ventas')}" data-vg-ir-ventas>${icon('receipt')}Ver en Ventas</a></section>`;
 };
 if (typeof V === 'object' && V.tc_facturas) {
   const base = V.tc_facturas;
   V.tc_facturas = {
-    need: () => Promise.allSettled([base.need ? base.need() : null, vgCargar()]).then(r => { if (r[0].status === 'rejected') throw r[0].reason; }),
+    need: () => Promise.allSettled([base.need ? base.need() : null, vgCargar(), faFacturasCargar()]).then(r => { if (r[0].status === 'rejected') throw r[0].reason; }),
     render() { return base.render(); },
     mounted(root) {
       base.mounted?.(root);
       root?.addEventListener('click', e => { if (e.target.closest('[data-vg-ir-ventas]')) { try { store.set('vg.tab', 'registradas'); } catch { /* sin almacenamiento */ } } });
+      faFacturarMontar(root);
     },
   };
 }

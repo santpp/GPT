@@ -55,7 +55,7 @@ final class Personalizar {
    if($cobro==='recurrente'){$frec=$p['frecuencia']??'mensual';if(!in_array($frec,self::FRECUENCIAS,true))Http::fail('Frecuencia inválida.');$d=$p['duracion']??null;$dur=($d===null||$d==='')?null:Http::integer($d,1,600);}
    if($cobro==='venta'){$s=$p['stock']??null;$stock=($s===null||$s==='')?null:Http::integer($s,0,10000000);}
    $tipo=in_array($p['tipo']??'servicio',['servicio','producto'],true)?($p['tipo']??'servicio'):'servicio';
-   $productos[]=['id'=>$id,'rubroId'=>$rubro,'nombre'=>$nombre,'codigo'=>$codigo,'tipo'=>$tipo,'cobro'=>$cobro,'precio'=>round((float)$precio,2),'moneda'=>$moneda,'frecuencia'=>$frec,'duracion'=>$dur,'stock'=>$stock,'descripcion'=>Http::text($p,'descripcion',500,false),'activo'=>($p['activo']??true)!==false];
+   $productos[]=['id'=>$id,'rubroId'=>$rubro,'nombre'=>$nombre,'codigo'=>$codigo,'tipo'=>$tipo,'cobro'=>$cobro,'precio'=>round((float)$precio,2),'moneda'=>$moneda,'frecuencia'=>$frec,'duracion'=>$dur,'stock'=>$stock,'descripcion'=>Http::text($p,'descripcion',500,false),'iva'=>in_array($p['iva']??'G',['G','R','A','E'],true)?($p['iva']??'G'):'G','activo'=>($p['activo']??true)!==false];
   }
   $antes=$this->db->setting($t,'catalogo.productos',['rubros'=>[],'productos'=>[]]);
   // 2.1.17: los campos propios (Migración de datos) no se editan aquí: se conservan por id.

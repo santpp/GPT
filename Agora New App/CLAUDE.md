@@ -67,7 +67,14 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
 - Cuentas: dueña `duena@example.test` / `Clave-Local-2026!`; ASOCIM (con reporte) `admin|supervisor|ejecutivo1|ejecutivo2|consulta.asocim@agora.test` / `Agora-Pruebas-2026!`.
 - **Subcuenta sin reporte:** la 1 («Prueba SA»), con la dueña. En Playwright, después de entrar: `fetch('/api/workspace/active', {method:'POST', body:{connectionId:1}})`.
 - Entre una prueba y otra: 11 s de pausa y `delete from agora_rate_limits`.
-- Orden de las pruebas: `motor-puente.py duena@example.test 'Clave-Local-2026!'`, `permisos.py` (mismos argumentos), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `tarjetas.py`, `ventas-importadas.py`, `estudiantes.py`, `venta-cuenta.py` (no se puede repetir), `ui-estados.py`, `menu-principal.py`, `herramientas.py`, `fixes-296.py`, `graficos-gestion.py`, `costos-editar.py`, `ghl-conexion.php`.
+- Orden de las pruebas: `motor-puente.py duena@example.test 'Clave-Local-2026!'`, `permisos.py` (mismos argumentos), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `tarjetas.py`, `ventas-importadas.py`, `estudiantes.py`, `venta-cuenta.py` (no se puede repetir), `ui-estados.py`, `menu-principal.py`, `herramientas.py`, `fixes-296.py`, `graficos-gestion.py`, `costos-editar.py`, `facturacion.py`, `facturacion-ui.py` (necesita la anterior), `ghl-conexion.php`.
+
+## Facturación (2.11.0)
+
+- Categoría propia: Cobros (`tc_facturas`, ruta `/cobros`), Facturas, Libro de ventas, Datos fiscales y Tasas del día. Plan y decisiones: `PLAN-FACTURACION-FISCAL.md` y `../docs/decisiones.md`.
+- Motor fiscal traído de mi.agora en `servidor/app/src/Fiscal/` (Documents, Calculator, Money, LibroVentas, Representation, FxSources) con la capa `Fiscal/Base`, que lo conecta al ERP. **Se cambia lo menos posible**: la lógica fiscal (correlativo, inmutabilidad, cadena de huellas, cálculos en céntimos) ya está probada. Controlador: `Controllers/Facturacion.php` (rutas `workspace/fiscal/*`, `workspace/facturas*`, `workspace/libro-ventas`). Tablas `agora_fiscal_*` (migración 007). Disparadores: `Fiscal/Esquema`.
+- Tipos de documento: `FAC` (fiscal), `NC`, `ND` y `SIM` (factura simple, sin validez fiscal; la única de una subcuenta sin datos fiscales).
+- Imprenta digital: SERDIMPRE, sin conexión todavía (el número de control se registra a mano). Tasa BCV: la trae `bin/worker.php`; también se puede escribir a mano.
 
 ## Decisiones vigentes del ERP
 

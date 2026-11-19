@@ -13,7 +13,7 @@ RewriteRule ^api(/.*)?$ /api/index.php [L,QSA]
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
-RewriteRule ^(centro|modulos|inicio|comercial|bandeja|contactos|oportunidades|tareas|equipo|publicidad|ventas|facturacion|costos|catalogo|tendencias|calidad|configuracion|contratos|con-convenio|registro|auditoria|usuarios|ajustes|ayuda|agencia|perfil|tablero|personas|conexiones|entrar|conversations)(/.*)?$ index.html [L]
+RewriteRule ^(centro|modulos|inicio|comercial|bandeja|contactos|oportunidades|tareas|equipo|publicidad|ventas|facturacion|cobros|facturas|libro-ventas|datos-fiscales|tasas|costos|catalogo|tendencias|calidad|configuracion|contratos|con-convenio|registro|auditoria|usuarios|ajustes|ayuda|agencia|perfil|tablero|personas|conexiones|entrar|conversations)(/.*)?$ index.html [L]
 # 2.1.17 · datos: Migración de datos (y Productos/Personalizar de 2.1.16, que faltaban)
 RewriteRule ^(migracion|productos|personalizar|redes)(/.*)?$ index.html [L]
 </IfModule>

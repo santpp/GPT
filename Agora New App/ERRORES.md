@@ -54,6 +54,7 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 51 | El ícono de la pestaña del navegador no era el de Ágora. | El `favicon.ico` del ERP venía de los archivos originales con un ícono ajeno, y el navegador lo usa antes que los PNG. | Se usa el de Ágora Mobile, en `assets/` y en la raíz. | Corregido en 2.9.3 |
 | 52 | Costos (sin reporte): «No me deja editar» y las tarjetas en «—». | Los costos solo se podían escribir en Configuración mensual, otro módulo que el cliente no relacionaba. Las tarjetas por defecto dependían de la inversión en Meta, que una subcuenta sin conexión no tiene. | «Cargar costos» por concepto dentro de Costos; tarjetas por defecto Costo total, Inversión, Costos fijos y Margen; Configuración mensual muestra los totales bloqueados y lleva a Costos; el servidor valida los conceptos. | Corregido en 2.10.3 |
 | 53 | Bandeja: «falta la opción de editar contactos y agregar observaciones». | Existían, pero la ficha se abría con un ícono de persona sin texto que nadie reconocía. | Botón «Ficha» con texto; «Notas» pasa a «Observaciones». | Corregido en 2.10.3 |
+| 54 | Los botones para quitar una fila (costos, servicios de agencia) salían vacíos, sin la «x». | El ícono «x» no existía en el juego de íconos. | Se agregó el ícono. | Corregido en 2.11.0 |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 

@@ -35,7 +35,13 @@ final class Auth {
   'conversaciones.atender'=>['MASTER','SUPERADMIN','ADMIN','SUPERVISOR','EJECUTIVO','REMITENTE'],
   'convenios.enviar'=>['MASTER','SUPERADMIN','ADMIN','SUPERVISOR','EJECUTIVO','REMITENTE'],
   'datos.consultar'=>['MASTER','SUPERADMIN','ADMIN','SUPERVISOR','EJECUTIVO','REMITENTE','CONSULTA','USUARIO','VISOR'],
-  'subcuentas.cambiar'=>['MASTER','SUPERADMIN']
+  'subcuentas.cambiar'=>['MASTER','SUPERADMIN'],
+  // 2.11.0 · Facturación. Facturan también vendedores y usuarios (decisión del usuario); anular y notas, administración y supervisión.
+  'facturas.ver'=>['MASTER','SUPERADMIN','ADMIN','SUPERVISOR','EJECUTIVO','REMITENTE','CONSULTA','USUARIO'],
+  'facturas.emitir'=>['MASTER','SUPERADMIN','ADMIN','SUPERVISOR','EJECUTIVO','REMITENTE','USUARIO'],
+  'facturas.anular'=>['MASTER','SUPERADMIN','ADMIN','SUPERVISOR'],
+  'fiscal.configurar'=>['MASTER','SUPERADMIN','ADMIN'],
+  'libro.ventas'=>['MASTER','SUPERADMIN','ADMIN','SUPERVISOR']
  ];
  public function permit(string $key):void{
   $role=$this->requireUser()['role'];if(!in_array($role,self::POLICY[$key]??[],true))Http::fail('Tu rol no permite esta función.',403);

@@ -2,7 +2,8 @@
 
 Pedido del usuario (19 nov 2026): sacar Facturación de «Ventas y facturación» y darle **su propia categoría con submódulos**. Dentro, traer el **facturero de mi.agora**: facturación y facturación fiscal (SENIAT), porque se va a facturar fiscalmente.
 
-Estado: **plan, sin código todavía.** Las decisiones marcadas con ❓ son del usuario.
+Estado: **fases 1 a 4 hechas en la 2.11.0** (19 nov). Respuestas del usuario: imprenta digital **SERDIMPRE**, todavía sin conexión; **todas** las subcuentas facturan (sin datos fiscales, solo la factura simple); **vendedores y usuarios facturan**; mi.agora era una prueba de desarrollo, **no se trae nada**; el facturero simple **sí** (se hizo con el mismo motor, porque su archivo no venía en el ZIP); la **moneda** está pendiente de confirmar (por ahora USD, VES o EUR por factura).
+Queda: la conexión con SERDIMPRE cuando exista, la moneda definitiva y la revisión de un contador.
 
 ---
 

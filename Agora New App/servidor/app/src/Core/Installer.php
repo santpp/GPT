@@ -17,7 +17,10 @@ final class Installer {
     // Migrations contain simple DDL, no procedures or data values with semicolons.
     foreach(explode(';',$sql) as $statement)if(trim($statement)!=='')$db->pdo->exec($statement);
     $db->run('INSERT INTO agora_schema(version,checksum) VALUES(?,?)',[$name,$sha]);$done[]=$name;
-   }return $done;
+   }
+   // 2.11.0 · Facturación: los disparadores que protegen lo emitido (no caben en el DDL simple de las migraciones).
+   if($done&&in_array('007_facturacion.sql',array_map('basename',glob(dirname(__DIR__,2).'/database/migrations/*.sql')),true))\Agora\Fiscal\Esquema::instalar($db->pdo);
+   return $done;
   }finally{$db->run("SELECT RELEASE_LOCK('agora_migration')");}
  }
  public static function owner(DB $db,array $b):void{$db->transaction(function()use($db,$b){if($db->one("SELECT id FROM agora_users WHERE role='MASTER'"))Http::fail('Ya existe un dueño. Instalador cerrado.',409);$db->run("INSERT INTO agora_users(name,email,password_hash,role) VALUES(?,?,?,'MASTER')",[Http::text($b,'nombre'),Http::email($b),password_hash(Http::password($b['clave']??''),PASSWORD_DEFAULT)]);});}

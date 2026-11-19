@@ -1,0 +1,193 @@
+-- Agora New App 2.11.0 · Facturación: facturas fiscales (SENIAT), notas de crédito y débito, factura simple y tasas BCV.
+-- Traído del módulo 05 de mi.agora (Providencia SNAT/2011/00071 y SNAT/2024/000102). org_id = id de la subcuenta (agora_tenants).
+-- Los disparadores que impiden cambiar lo emitido los crea Agora\Fiscal\Esquema (este archivo solo lleva DDL simple).
+CREATE TABLE IF NOT EXISTS agora_fiscal_profiles (
+  org_id BIGINT UNSIGNED NOT NULL,
+  legal_name VARCHAR(200) NOT NULL,
+  rif VARCHAR(20) NOT NULL,
+  fiscal_address VARCHAR(400) NOT NULL,
+  phone VARCHAR(40) NULL,
+  email VARCHAR(190) NULL,
+  special_taxpayer TINYINT(1) NOT NULL DEFAULT 0,
+  issuance_mode VARCHAR(16) NOT NULL DEFAULT 'IMPRENTA_DIGITAL',
+  series VARCHAR(4) NOT NULL DEFAULT '',
+  printer_name VARCHAR(200) NULL,
+  printer_rif VARCHAR(20) NULL,
+  printer_authorization VARCHAR(80) NULL,
+  printer_authorization_date DATE NULL,
+  iva_general_bp INT UNSIGNED NOT NULL DEFAULT 1600,
+  iva_reduced_bp INT UNSIGNED NOT NULL DEFAULT 800,
+  iva_luxury_bp INT UNSIGNED NOT NULL DEFAULT 1500,
+  igtf_bp INT UNSIGNED NOT NULL DEFAULT 300,
+  igtf_enabled TINYINT(1) NOT NULL DEFAULT 0,
+  legends TEXT NULL,
+  updated_at DATETIME(3) NOT NULL,
+  updated_by BIGINT UNSIGNED NULL,
+  PRIMARY KEY (org_id),
+  CONSTRAINT fk_afprof_org FOREIGN KEY (org_id) REFERENCES agora_tenants (id) ON DELETE CASCADE,
+  CONSTRAINT ck_afprof_mode CHECK (issuance_mode IN ('IMPRENTA_DIGITAL','FORMA_LIBRE'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS agora_fiscal_ranges (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  org_id BIGINT UNSIGNED NOT NULL,
+  series VARCHAR(4) NOT NULL DEFAULT '',
+  prefix CHAR(2) NOT NULL DEFAULT '00',
+  range_from BIGINT UNSIGNED NOT NULL,
+  range_to BIGINT UNSIGNED NOT NULL,
+  next_value BIGINT UNSIGNED NOT NULL,
+  printer_name VARCHAR(200) NOT NULL,
+  printer_rif VARCHAR(20) NOT NULL,
+  printer_authorization VARCHAR(80) NOT NULL,
+  assigned_date DATE NOT NULL,
+  status VARCHAR(10) NOT NULL DEFAULT 'ACTIVO',
+  created_at DATETIME(3) NOT NULL,
+  created_by BIGINT UNSIGNED NULL,
+  PRIMARY KEY (id),
+  KEY ix_afctrl_org (org_id, series, status),
+  CONSTRAINT fk_afctrl_org FOREIGN KEY (org_id) REFERENCES agora_tenants (id) ON DELETE CASCADE,
+  CONSTRAINT ck_afctrl_range CHECK (range_from >= 1 AND range_to >= range_from AND range_to <= 99999999),
+  CONSTRAINT ck_afctrl_status CHECK (status IN ('ACTIVO','AGOTADO','ANULADO'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS agora_fiscal_sequences (
+  org_id BIGINT UNSIGNED NOT NULL,
+  doc_type VARCHAR(8) NOT NULL,
+  series VARCHAR(4) NOT NULL DEFAULT '',
+  last_number BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  updated_at DATETIME(3) NOT NULL,
+  PRIMARY KEY (org_id, doc_type, series),
+  CONSTRAINT fk_afseq_org FOREIGN KEY (org_id) REFERENCES agora_tenants (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS agora_fiscal_documents (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  uid CHAR(26) NOT NULL,
+  org_id BIGINT UNSIGNED NOT NULL,
+  doc_type VARCHAR(3) NOT NULL,
+  series VARCHAR(4) NOT NULL DEFAULT '',
+  number BIGINT UNSIGNED NULL,
+  number_text VARCHAR(16) NULL,
+  control_number VARCHAR(16) NULL,
+  status VARCHAR(10) NOT NULL DEFAULT 'BORRADOR',
+  legacy TINYINT(1) NOT NULL DEFAULT 0,
+  issue_date DATE NULL,
+  issue_time CHAR(8) NULL,
+  due_date DATE NULL,
+  currency VARCHAR(4) NOT NULL DEFAULT 'USD',
+  rate_bcv DECIMAL(18,6) NULL,
+  rate_bcv_date DATE NULL,
+  client_id BIGINT UNSIGNED NULL,
+  client_app_id VARCHAR(40) NULL,
+  client_name VARCHAR(200) NOT NULL DEFAULT '',
+  client_rif VARCHAR(20) NOT NULL DEFAULT '',
+  client_address VARCHAR(400) NOT NULL DEFAULT '',
+  client_email VARCHAR(190) NULL,
+  client_phone VARCHAR(40) NULL,
+  payment_terms VARCHAR(120) NULL,
+  foreign_payment TINYINT(1) NOT NULL DEFAULT 0,
+  sale_ref VARCHAR(80) NULL,
+  subtotal_cents BIGINT NOT NULL DEFAULT 0,
+  exempt_cents BIGINT NOT NULL DEFAULT 0,
+  base_general_cents BIGINT NOT NULL DEFAULT 0,
+  base_reduced_cents BIGINT NOT NULL DEFAULT 0,
+  base_luxury_cents BIGINT NOT NULL DEFAULT 0,
+  iva_general_cents BIGINT NOT NULL DEFAULT 0,
+  iva_reduced_cents BIGINT NOT NULL DEFAULT 0,
+  iva_luxury_cents BIGINT NOT NULL DEFAULT 0,
+  total_cents BIGINT NOT NULL DEFAULT 0,
+  total_bs_cents BIGINT NULL,
+  igtf_base_cents BIGINT NOT NULL DEFAULT 0,
+  igtf_cents BIGINT NOT NULL DEFAULT 0,
+  control_assigned_at DATETIME(3) NULL,
+  affected_document_id BIGINT UNSIGNED NULL,
+  affected_number VARCHAR(16) NULL,
+  affected_date DATE NULL,
+  affected_total_cents BIGINT NULL,
+  reason VARCHAR(400) NULL,
+  notes VARCHAR(600) NULL,
+  fiscal_snapshot MEDIUMTEXT NULL,
+  representation_html MEDIUMTEXT NULL,
+  hash CHAR(64) NULL,
+  prev_hash CHAR(64) NULL,
+  printer_reference VARCHAR(255) NULL,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME(3) NOT NULL,
+  updated_at DATETIME(3) NOT NULL,
+  emitted_by BIGINT UNSIGNED NULL,
+  emitted_at DATETIME(3) NULL,
+  annulled_by BIGINT UNSIGNED NULL,
+  annulled_at DATETIME(3) NULL,
+  annul_reason VARCHAR(400) NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_afdoc_uid (uid),
+  UNIQUE KEY uq_afdoc_number (org_id, doc_type, series, number),
+  UNIQUE KEY uq_afdoc_control (org_id, control_number),
+  KEY ix_afdoc_status_date (org_id, status, issue_date),
+  KEY ix_afdoc_sale (org_id, sale_ref),
+  KEY ix_afdoc_creator (org_id, created_by),
+  KEY ix_afdoc_affected (org_id, affected_document_id),
+  CONSTRAINT fk_afdoc_org FOREIGN KEY (org_id) REFERENCES agora_tenants (id) ON DELETE RESTRICT,
+  CONSTRAINT fk_afdoc_affected FOREIGN KEY (affected_document_id) REFERENCES agora_fiscal_documents (id) ON DELETE RESTRICT,
+  CONSTRAINT ck_afdoc_type CHECK (doc_type IN ('FAC','NC','ND','SIM')),
+  CONSTRAINT ck_afdoc_status CHECK (status IN ('BORRADOR','EMITIDA','ANULADA')),
+  CONSTRAINT ck_afdoc_currency CHECK (currency IN ('USD','VES','EUR')),
+  CONSTRAINT ck_afdoc_number CHECK (status = 'BORRADOR' OR number IS NOT NULL),
+  CONSTRAINT ck_afdoc_note_ref CHECK (doc_type IN ('FAC','SIM') OR status = 'BORRADOR' OR affected_number IS NOT NULL)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS agora_fiscal_lines (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  document_id BIGINT UNSIGNED NOT NULL,
+  line_no INT UNSIGNED NOT NULL,
+  product_code VARCHAR(60) NULL,
+  description VARCHAR(500) NOT NULL,
+  quantity_milli BIGINT NOT NULL DEFAULT 1000,
+  unit_price_cents BIGINT NOT NULL,
+  discount_cents BIGINT NOT NULL DEFAULT 0,
+  tax_code CHAR(1) NOT NULL DEFAULT 'G',
+  base_cents BIGINT NOT NULL,
+  iva_cents BIGINT NOT NULL,
+  total_cents BIGINT NOT NULL,
+  recurring TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_afline_doc (document_id, line_no),
+  CONSTRAINT fk_afline_doc FOREIGN KEY (document_id) REFERENCES agora_fiscal_documents (id) ON DELETE CASCADE,
+  CONSTRAINT ck_afline_tax CHECK (tax_code IN ('G','R','A','E')),
+  CONSTRAINT ck_afline_qty CHECK (quantity_milli > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tasa BCV del día (la misma para todas las subcuentas), traída por la tarea programada.
+CREATE TABLE IF NOT EXISTS agora_fiscal_fx (
+  day DATE NOT NULL,
+  source VARCHAR(14) NOT NULL,
+  rate_last DECIMAL(18,6) NOT NULL,
+  origin VARCHAR(40) NOT NULL DEFAULT '',
+  updated_at DATETIME(3) NOT NULL,
+  PRIMARY KEY (day, source)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tasa BCV escrita a mano por una subcuenta (cuando la automática no llegó).
+CREATE TABLE IF NOT EXISTS agora_fiscal_tasas (
+  org_id BIGINT UNSIGNED NOT NULL,
+  day DATE NOT NULL,
+  rate DECIMAL(18,6) NOT NULL,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME(3) NOT NULL,
+  PRIMARY KEY (org_id, day),
+  CONSTRAINT fk_aftasa_org FOREIGN KEY (org_id) REFERENCES agora_tenants (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Datos fiscales de cada cliente (RIF y domicilio), para no escribirlos cada vez.
+CREATE TABLE IF NOT EXISTS agora_fiscal_clients (
+  org_id BIGINT UNSIGNED NOT NULL,
+  doc_key VARCHAR(60) NOT NULL,
+  name VARCHAR(200) NOT NULL,
+  rif VARCHAR(20) NOT NULL DEFAULT '',
+  address VARCHAR(400) NOT NULL DEFAULT '',
+  email VARCHAR(190) NULL,
+  phone VARCHAR(40) NULL,
+  updated_at DATETIME(3) NOT NULL,
+  PRIMARY KEY (org_id, doc_key),
+  CONSTRAINT fk_afcli_org FOREIGN KEY (org_id) REFERENCES agora_tenants (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci

@@ -29,8 +29,8 @@ with sync_playwright() as p:
         vs=[cs.nth(i).locator('.inicio-resumen-v').bounding_box() for i in range(cs.count())]
         ok(all(v and c and v['x']-c['x']<30 for v,c in zip(vs,xs)),f'el número va debajo del título en todas, también en el teléfono ({W})')
         if W>600:
-            ch=pg.locator('.mod-tile-subs a',has_text='Facturación').first;ch.click();pg.wait_for_timeout(1500)
-            ok(pg.url.endswith('/facturacion'),'la etiqueta «Facturación» lleva directo a Facturación')
+            ch=pg.locator('.mod-tile-subs a',has_text='Cobros').first;ch.click();pg.wait_for_timeout(1500)
+            ok(pg.url.endswith('/cobros'),'2.11.0 · la etiqueta «Cobros» (categoría Facturación) lleva directo a Cobros')
             pg.goto(B+'/centro');pg.wait_for_timeout(2500)
             pg.locator('.mod-tile',has_text='Clientes y atención').locator('h3').click(force=True);pg.wait_for_timeout(1200)
             ok('/modulos/' in pg.url,'el resto de la tarjeta lleva al módulo')

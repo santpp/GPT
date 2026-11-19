@@ -193,6 +193,12 @@ Envía los mensajes en cola, limpia sesiones vencidas y, una vez al día, vuelve
   /usr/local/lsws/lsphp83/bin/php /home/TU-DOMINIO/servidor/bin/worker.php --max-jobs=50 >/dev/null 2>&1
   ```
 
+Desde la 2.11.0 esta misma tarea trae también la **tasa BCV del día** para la facturación. La pide a `ve.dolarapi.com` y, si falla, a `www.bcv.org.ve`; lo reintenta cada hora hasta tenerla. El servidor debe poder salir a esas dos direcciones. Si no llega, en Facturación → Tasas del día se escribe a mano.
+
+### Facturación fiscal: protección de lo emitido
+
+Al instalar la 2.11.0, Ágora crea en la base de datos unos **disparadores** que impiden cambiar o borrar una factura emitida, aunque alguien entre por phpMyAdmin. En algunos servidores el usuario de la base no tiene permiso para crearlos. No pasa nada grave: Ágora igual impide cambiarlas y cada factura queda sellada en una cadena que se puede verificar. Facturación → Datos fiscales avisa si falta y trae el botón «Intentar activarla». Para activarla a mano, el administrador del servidor puede dar el permiso `TRIGGER` al usuario de la base (y, si el servidor tiene registro binario, poner `log_bin_trust_function_creators = 1`).
+
 ## Paso 11 · Comprobar
 
 Abre en el navegador:

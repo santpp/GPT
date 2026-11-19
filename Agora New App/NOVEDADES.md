@@ -1,5 +1,26 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.11.0 · Facturación con su propia categoría y facturación fiscal (19 nov):**
+- **Categoría nueva «Facturación»** con cinco submódulos: **Cobros** (el antiguo «Facturación»; la dirección vieja sigue funcionando), **Facturas**, **Libro de ventas**, **Datos fiscales** y **Tasas del día**. «Ventas y facturación» pasa a llamarse «Ventas».
+- **Facturas fiscales (SENIAT)**, con el motor de facturación de mi.agora:
+  - Factura, nota de crédito y nota de débito.
+  - Correlativo sin saltos, que se asigna al emitir (un borrador no gasta número).
+  - Número de control de la imprenta digital (SERDIMPRE): mientras no haya conexión con ella, se registra a mano. También admite formas libres con rangos de números de control.
+  - Tasa BCV y equivalente en bolívares. IVA general, reducido, de lujo o exento, e IGTF si se activa.
+  - Factura lista para imprimir o guardar en PDF.
+  - Lo emitido no se cambia: se anula (con motivo) o se corrige con una nota. La base de datos lo impide y cada documento queda sellado en una cadena que se puede verificar.
+- **Factura simple** (sin validez fiscal): la que emiten las subcuentas sin datos fiscales. No pide RIF, domicilio ni tasa.
+- **Facturar desde Cobros:** cada cobro tiene «Facturar», que abre la factura con el cliente, el producto y el monto. Una vez facturado, el cobro muestra el número de la factura.
+- **Roles:**
+  - Los vendedores y usuarios facturan, y ven solo las facturas que prepararon.
+  - Anular y emitir notas: administración y supervisión.
+  - Datos fiscales: solo administración.
+  - Libro de ventas: administración y supervisión.
+  - Consulta: solo ve.
+- **IVA por producto:** en Productos y servicios cada producto dice qué IVA lleva, y la factura lo toma solo.
+- La tasa BCV llega sola cada día (tarea programada). Si no llega, se escribe en Tasas del día.
+- Pruebas nuevas: `tests/facturacion.py` (34) y `tests/facturacion-ui.py` (26).
+
 **Novedades 2.10.3 · Correcciones del cliente (19 nov):**
 - **Costos se editan en Costos.** Antes las tarjetas mostraban «—» y no había dónde cargar nada en el módulo. Ahora «Cargar costos» abre una lista por concepto: sueldos, alquiler, comisiones o publicidad fuera de la cuenta, cada uno como fijo, variable o publicidad, con «Copiar del mes anterior». Con eso las tarjetas miden: **Costo total, Inversión en anuncios, Costos fijos y Margen del mes**, y también Costos variables y Costo total por venta si se eligen. Configuración mensual muestra esos totales sin poder pisarlos y lleva a Costos.
 - **Criterio único de edición en todos los módulos:** se edita donde se ve, un dato tiene un solo lugar donde se cambia y toda caja de cifras tiene «Editar tarjetas». Calidad de datos ya lo tiene, y «Elegir cifras» pasó a llamarse «Editar tarjetas» en todos los módulos.

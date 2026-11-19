@@ -52,4 +52,14 @@ try{
    try{$r=Agora\Core\MotorMobile::sincronizar($db,$config,$t);$db->saveSetting($t,'equipo.diario',['dia'=>$hoy,'estado'=>'ok','personas'=>$r['equipo']??null]);echo 'Equipo de la subcuenta '.$t.': actualizado'.PHP_EOL;}
    catch(Throwable $e){$db->saveSetting($t,'equipo.diario',['dia'=>$hoy,'estado'=>'error']);error_log('Agora: equipo diario de la subcuenta '.$t.' ('.get_class($e).')');}
   }
+  // 2.11.0 · Tasa BCV del día para la facturación: se intenta cada hora hasta tenerla (la página del BCV a veces falla).
+  try{
+   $hoyCcs=(new DateTimeImmutable('now',new DateTimeZone('America/Caracas')))->format('Y-m-d');$ult=$db->setting(0,'fiscal.tasa.intento',[]);
+   $ya=$db->one("SELECT 1 ok FROM agora_fiscal_fx WHERE source='BCV' AND day=?",[$hoyCcs]);
+   if(!$ya&&(($ult['dia']??'')!==$hoyCcs||time()-(int)($ult['t']??0)>3600)){
+    $db->saveSetting(0,'fiscal.tasa.intento',['dia'=>$hoyCcs,'t'=>time()]);
+    $r=(new Agora\Fiscal\Tasas(new Agora\Fiscal\Base\Db($db->pdo)))->actualizar();
+    if(!$r['ok'])error_log('Agora: no se pudo traer la tasa BCV ('.$r['origen'].')');
+   }
+  }catch(Throwable $e){error_log('Agora: tasa BCV ('.get_class($e).')');}
 }finally{$db->run('SELECT RELEASE_LOCK(?)',[$lock]);}
