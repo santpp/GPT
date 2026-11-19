@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.11.2 · Botones sin íconos (pedido del usuario, 19 nov):**
+- «Descargar», «Editar Dashboard» y «Editar gráficos» van sin ícono, solo con el texto, y quedan en la misma línea también en el teléfono.
+- `tests/fixes-2111.py` lo comprueba (12).
+
 **Novedades 2.11.1 · Correcciones del usuario (19 nov):**
 - **Facturación solo en bolívares.** El editor ya no ofrece otra moneda. «Facturar» un cobro en dólares pasa el monto a bolívares con la tasa BCV vigente y lo anota en la línea. La factura en bolívares se emite aunque falte la tasa.
 - **Dólares y euros quedan listos para activar:** al activarlos, la administración de cada subcuenta (y los dueños) elige en Datos fiscales en qué monedas factura.

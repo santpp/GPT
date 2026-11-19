@@ -3,7 +3,7 @@
 1 Facturación solo en bolívares (dólares y euros preparados, desactivados): el editor no ofrece otra moneda y «Facturar» un cobro en dólares
   lo pasa a Bs con la tasa BCV.
 2 «Por forma de cobro» muestra siempre Recurrente, Venta no recurrente y Venta única.
-3 En todos los módulos: el botón de descarga dice «Descargar» (no «Excel») y «Editar Dashboard» lleva el ícono de lápiz (no «Editar tarjetas»).
+3 En todos los módulos: el botón de descarga dice «Descargar» (no «Excel») y «Editar Dashboard» (no «Editar tarjetas»). 2.11.2: los dos sin ícono y en la misma línea.
 Requiere la API local en :8090 y haber corrido tests/facturacion.py. Uso: python3 tests/fixes-2111.py"""
 import sys,subprocess
 from playwright.sync_api import sync_playwright
@@ -19,7 +19,7 @@ def entrar(br,u,pw,ws=None,vp={'width':1280,'height':900}):
     pg.locator('input').first.fill(u);pg.locator('input[type=password]').fill(pw);pg.keyboard.press('Enter');pg.wait_for_timeout(3000)
     if ws:pg.evaluate("async id=>{await fetch('/api/workspace/active',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({connectionId:id})})}",ws)
     return pg,errs
-BOTONES="""()=>[...document.querySelectorAll('main button, main a.btn')].map(b=>({t:b.innerText.trim(),edit:!!b.querySelector('svg')&&b.querySelector('svg').innerHTML.includes('M4 20h4L19 9l-4-4L4 16z')}))"""
+BOTONES="""()=>[...document.querySelectorAll('main button, main a.btn')].map(b=>({t:b.innerText.trim(),edit:!b.querySelector('svg'),top:Math.round(b.getBoundingClientRect().top)}))"""
 with sync_playwright() as p:
     br=p.chromium.launch(executable_path='/opt/pw-browsers/chromium',args=['--no-sandbox'])
     # ---- 3: todos los módulos, con y sin reporte
@@ -36,12 +36,12 @@ with sync_playwright() as p:
                     if not b['edit']:sinLapiz.append(r)
         quien='con reporte' if ws is None else 'sin reporte'
         ok(not malos,f'{quien}: ningún botón dice «Excel» ni «Editar tarjetas» {malos}')
-        ok(dash>=(1 if ws is None else 4) and not sinLapiz,f'{quien}: «Editar Dashboard» con lápiz en {dash} lugares {sinLapiz}')
+        ok(dash>=(1 if ws is None else 4) and not sinLapiz,f'{quien}: «Editar Dashboard» sin ícono en {dash} lugares {sinLapiz}')
         ok(not errs,f'{quien}: sin errores {errs}')
         if ws:
             pg.goto(B+'/costos');pg.wait_for_timeout(3500)
             hb=pg.locator('.mod-h .mg-hbtn')
-            ok(hb.count()==0 or 'Descargar' in hb.inner_text(),'el botón de arriba dice «Descargar» con su ícono')
+            ok(hb.count()==0 or (hb.inner_text().strip()=='Descargar' and hb.locator('svg').count()==0),'el botón de arriba dice «Descargar», sin ícono')
             # ---- 2: Por forma de cobro, con ventas de ejemplo (la subcuenta sin conexión no puede registrar ventas)
             import json as _j
             def falsas(route):
@@ -54,6 +54,10 @@ with sync_playwright() as p:
             pg.goto(B+'/inicio');pg.wait_for_timeout(4500)
             t=pg.evaluate("document.querySelector('.gc-formas')?.innerText||''")
             ok('Recurrente' in t and 'Venta no recurrente' in t and 'Venta única' in t,'«Por forma de cobro» muestra las tres formas aunque solo haya recurrentes')
+        if ws:
+            pg.set_viewport_size({'width':390,'height':844});pg.goto(B+'/tendencias');pg.wait_for_timeout(3500)
+            tops={b['t']:b['top'] for b in pg.evaluate(BOTONES) if b['t'] in ('Descargar','Editar Dashboard')}
+            ok(len(tops)==2 and abs(tops['Descargar']-tops['Editar Dashboard'])<4,f'en el teléfono «Descargar» y «Editar Dashboard» quedan en la misma línea {tops}')
         pg.context.close()
     # ---- 1: bolívares
     pg,errs=entrar(br,'admin.asocim@agora.test','Agora-Pruebas-2026!')
