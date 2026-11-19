@@ -13,7 +13,10 @@ require_once __DIR__.'/Actor.php';
  */
 final class DeviceSession {
     public const COOKIE='agora_device';
-    public const DAYS=60;
+    /** 1.10.29 · Decisión del usuario: una sesión dura 15 días desde que se entra; usarla no la alarga. Después se vuelve a entrar. */
+    public const DAYS=15;
+    /** El vencimiento real de una fila: también recorta las sesiones abiertas antes de 1.10.29 (que duraban 60 días y se alargaban). */
+    private const VENCE="LEAST(expires_at,UNIX_TIMESTAMP(created_at)+1296000)";
     private const ROTATE_AFTER=86400;
     private const GRACE=120;
     public const LOCK_CHOICES=[5,15,30,60];
@@ -27,7 +30,7 @@ final class DeviceSession {
             query('INSERT INTO device_sessions(tenant_id,identity_type,actor_id,selector,verifier_hash,rotated_at,csrf,label,last_used_at,expires_at) VALUES(?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?)',
                 [$tenant,$type,$actor,$selector,hash('sha256',$secret),time(),$csrf,self::label($userAgent),time()+self::DAYS*86400]);
         } catch(PDOException $e) {return null;}
-        self::cookie($selector.'.'.$secret);
+        self::cookie($selector.'.'.$secret,time()+self::DAYS*86400);
         return (int)db()->lastInsertId();
     }
 
@@ -38,19 +41,20 @@ final class DeviceSession {
     public static function resume(?string $cookie):?array {
         if($cookie===null||$cookie==='')return null;
         if(!preg_match('/^([A-Za-z0-9_-]{24})\.([A-Za-z0-9_-]{43})$/D',$cookie,$m)){self::forget();return null;}
-        try {$row=query('SELECT * FROM device_sessions WHERE selector=?',[$m[1]])->fetch();}
+        try {$row=query('SELECT *,'.self::VENCE.' AS vence FROM device_sessions WHERE selector=?',[$m[1]])->fetch();}
         catch(PDOException $e) {return null;}
         $now=time();$given=hash('sha256',$m[2]);
         $current=$row&&hash_equals($row['verifier_hash'],$given);
         $previous=$row&&!$current&&$row['previous_hash']!==null&&hash_equals($row['previous_hash'],$given)&&(int)$row['rotated_at']>$now-self::GRACE;
-        if(!$row||(!$current&&!$previous)||$row['revoked_at']!==null||(int)$row['expires_at']<$now){self::forget();return null;}
+        if(!$row||(!$current&&!$previous)||$row['revoked_at']!==null||(int)$row['vence']<$now){self::forget();return null;}
         $session=self::sessionFor($row);
         // Quien fue dado de baja en la cuenta deja de entrar aunque tenga la cookie.
         if(!Actor::fromSession($session)){query('UPDATE device_sessions SET revoked_at=CURRENT_TIMESTAMP WHERE id=?',[$row['id']]);self::forget();return null;}
         if($current&&(int)$row['rotated_at']<$now-self::ROTATE_AFTER) {
             $secret=self::encode(random_bytes(32));
-            query('UPDATE device_sessions SET previous_hash=verifier_hash,verifier_hash=?,rotated_at=?,expires_at=?,last_used_at=CURRENT_TIMESTAMP WHERE id=?',[hash('sha256',$secret),$now,$now+self::DAYS*86400,$row['id']]);
-            self::cookie($row['selector'].'.'.$secret);
+            // Se cambia la clave secreta cada día, pero el vencimiento no se mueve (15 días desde que se entró).
+            query('UPDATE device_sessions SET previous_hash=verifier_hash,verifier_hash=?,rotated_at=?,expires_at=?,last_used_at=CURRENT_TIMESTAMP WHERE id=?',[hash('sha256',$secret),$now,(int)$row['vence'],$row['id']]);
+            self::cookie($row['selector'].'.'.$secret,(int)$row['vence']);
         } else query('UPDATE device_sessions SET last_used_at=CURRENT_TIMESTAMP WHERE id=?',[$row['id']]);
         return $session;
     }
@@ -69,7 +73,7 @@ final class DeviceSession {
      */
     public static function refresh(array &$session):bool {
         if(empty($session['device_id'])){$session['lock_minutes']=null;return true;}
-        try {$row=query('SELECT revoked_at,expires_at,lock_minutes FROM device_sessions WHERE id=?',[(int)$session['device_id']])->fetch();}
+        try {$row=query('SELECT revoked_at,'.self::VENCE.' AS expires_at,lock_minutes FROM device_sessions WHERE id=?',[(int)$session['device_id']])->fetch();}
         catch(PDOException $e) {return true;}
         if(!$row||$row['revoked_at']!==null||(int)$row['expires_at']<time())return false;
         $session['lock_minutes']=$row['lock_minutes']===null?null:(int)$row['lock_minutes'];
@@ -109,7 +113,7 @@ final class DeviceSession {
     public static function list(array $actor,bool $everyone,?int $current):array {
         $sql="SELECT d.id,d.identity_type,d.actor_id,d.label,d.lock_minutes,UNIX_TIMESTAMP(d.created_at) AS created_at,UNIX_TIMESTAMP(d.last_used_at) AS last_used_at,COALESCE(u.email,i.email) AS email
               FROM device_sessions d LEFT JOIN users u ON d.identity_type='native' AND u.id=d.actor_id LEFT JOIN external_identities i ON d.identity_type='external' AND i.id=d.actor_id
-              WHERE d.tenant_id=? AND d.revoked_at IS NULL AND d.expires_at>=?";
+              WHERE d.tenant_id=? AND d.revoked_at IS NULL AND LEAST(d.expires_at,UNIX_TIMESTAMP(d.created_at)+1296000)>=?";
         $args=[$actor['tenant_id'],time()];
         if(!$everyone){$sql.=' AND d.identity_type=? AND d.actor_id=?';$args[]=$actor['identity_type'];$args[]=$actor['id'];}
         $rows=query($sql.' ORDER BY d.last_used_at DESC,d.id DESC LIMIT 200',$args)->fetchAll();
@@ -146,9 +150,9 @@ final class DeviceSession {
         return [$actor['identity_type'],(int)$actor['id'],(int)$actor['tenant_id']];
     }
 
-    private static function cookie(string $value):void {
+    private static function cookie(string $value,int $expires):void {
         if(headers_sent())return;
-        setcookie(self::COOKIE,$value,['expires'=>time()+self::DAYS*86400,'path'=>'/','httponly'=>true,'secure'=>getenv('APP_ENV')!=='development','samesite'=>'Strict']);
+        setcookie(self::COOKIE,$value,['expires'=>$expires,'path'=>'/','httponly'=>true,'secure'=>getenv('APP_ENV')!=='development','samesite'=>'Strict']);
     }
 
     public static function forget():void {

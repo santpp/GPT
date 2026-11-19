@@ -75,7 +75,7 @@ try {
  [$code,$login]=$phone->call('login','POST',['email'=>$email,'password'=>$password]);
  check($code===200&&isset($phone->jar['agora_device']),'entering leaves a device cookie next to the server session');
  $raw=$phone->setCookie('agora_device');
- check(stripos($raw,'HttpOnly')!==false&&stripos($raw,'SameSite=Strict')!==false&&preg_match('/Max-Age=(\d+)/i',$raw,$age)&&(int)$age[1]>59*86400,'the cookie is out of reach of the page, never sent from other sites, and lasts 60 days');
+ check(stripos($raw,'HttpOnly')!==false&&stripos($raw,'SameSite=Strict')!==false&&preg_match('/Max-Age=(\d+)/i',$raw,$age)&&(int)$age[1]>14*86400&&(int)$age[1]<=15*86400,'the cookie is out of reach of the page, never sent from other sites, and lasts 15 days (1.10.29)');
  [$selector,$secret]=explode('.',$phone->jar['agora_device']);
  $row=query('SELECT * FROM device_sessions WHERE selector=?',[$selector])->fetch();
  check($row&&$row['verifier_hash']===hash('sha256',$secret)&&!str_contains(json_encode($row),$secret),'the database keeps only a fingerprint of the secret, never the secret');
