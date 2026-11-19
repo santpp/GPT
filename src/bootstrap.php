@@ -4,7 +4,11 @@ require_once __DIR__.'/SetupException.php';
 require_once __DIR__.'/config.php';
 function db(): PDO {
     static $db;
-    return $db ??= new PDO(getenv('DB_DSN') ?: '', getenv('DB_USER') ?: '', getenv('DB_PASSWORD') ?: '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false]);
+    if ($db) return $db;
+    $db = new PDO(getenv('DB_DSN') ?: '', getenv('DB_USER') ?: '', getenv('DB_PASSWORD') ?: '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false]);
+    // 1.10.28 · La conexión siempre en utf8mb4: flechas, emojis y cualquier letra viajan igual aunque la dirección de la base no lo diga.
+    if (str_starts_with((string)getenv('DB_DSN'), 'mysql:')) $db->exec('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
+    return $db;
 }
 function respond(array $body, int $status = 200): never {
     http_response_code($status);

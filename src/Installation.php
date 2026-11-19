@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/TokenVault.php';
 final class Installation {
-    public const VERSION='1.10.27';
+    public const VERSION='1.10.28';
     public static function checks(bool $autoMigrate=true):array {
         $checks=[];
         $runtime=PHP_VERSION_ID>=80300;
@@ -59,11 +59,36 @@ final class Installation {
             query('SELECT tenant_id,connection_id,identity_type,actor_id,shared,name,body,attachments,updated_at FROM quick_replies LIMIT 0');
             query('SELECT connection_id,request_id,contact_id,action,request_hash,state,result_id,error_code FROM contact_action_attempts LIMIT 0');
             query('SELECT connection_id,request_id,subject_id,action,request_hash,state,result_id,error_code FROM opportunity_action_attempts LIMIT 0');
+            // 1.10.28 · Las tablas con texto escrito por personas deben guardar cualquier carácter (en latin1, «→» o un emoji hacían fallar el guardado).
+            if(self::tablasAntiguas(self::TEXTO)&&self::tocaConvertir())throw new class('Charset pending') extends PDOException { public function __construct(string $m){parent::__construct($m);$this->code='42S22';} };
             $checks[]=['name'=>'schema','ready'=>true,'code'=>null];
         }catch(PDOException $e){$checks[]=['name'=>'schema','ready'=>false,'code'=>in_array($e->getCode(),['42S02','42S22'],true)?'schema_pending':'database_unavailable'];}
         if($autoMigrate)$checks=self::ensureSchema($checks);
         foreach($checks as &$check)$check['message']=$check['ready']?'Correcto':(SetupException::MESSAGES[$check['code']]??'Revisión necesaria');
         return $checks;
+    }
+    /** Tablas con texto que escriben las personas (novedades, respuestas propias, avisos, citas de mensajes, cifras del mes). */
+    private const TEXTO=['announcements','quick_replies','push_queue','message_replies','board_settings'];
+    /** Tablas de la lista que siguen en un juego de caracteres que no es utf8mb4. */
+    private static function tablasAntiguas(array $tablas):array {
+        try{
+            $in=implode(',',array_fill(0,count($tablas),'?'));
+            return query("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ($in) AND TABLE_COLLATION NOT LIKE 'utf8mb4%'",$tablas)->fetchAll(PDO::FETCH_COLUMN);
+        }catch(PDOException $e){return [];}
+    }
+    /** Si una conversión falló, no se reintenta en cada visita: como mucho una vez por hora. */
+    private static function tocaConvertir():bool {
+        try{$t=(int)query("SELECT value FROM app_state WHERE name='charset_attempt'")->fetchColumn();}catch(PDOException $e){return true;}
+        return time()-$t>3600;
+    }
+    /** 1.10.28 · Pasa a utf8mb4 la base (para las tablas futuras) y las tablas de texto que estén en otro juego de caracteres. */
+    private static function convertirTexto():void {
+        try{query("INSERT INTO app_state(name,value) VALUES('charset_attempt',?) ON DUPLICATE KEY UPDATE value=VALUES(value)",[(string)time()]);}catch(PDOException $e){}
+        try{db()->exec('ALTER DATABASE CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');}catch(PDOException $e){/* sin permiso: se convierten igual las tablas */}
+        foreach(self::tablasAntiguas(self::TEXTO) as $tabla){
+            if(!preg_match('/^[a-z_]{1,64}$/D',$tabla))continue;
+            try{db()->exec('ALTER TABLE `'.$tabla.'` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');}catch(PDOException $e){/* se reintenta en una hora */}
+        }
     }
     public static function applyMigrations():void {
         $lock='agora-install-migrations';
@@ -75,6 +100,7 @@ final class Installation {
                 if($sql===false)throw new SetupException('schema_pending');
                 db()->exec($sql);
             }
+            if(self::tablasAntiguas(self::TEXTO))self::convertirTexto();
         }catch(PDOException $e){throw new SetupException('database_unavailable');}
         finally{query('SELECT RELEASE_LOCK(?)',[$lock]);}
     }
