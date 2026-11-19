@@ -57,7 +57,7 @@ with sync_playwright() as p:
     ok(pg.locator('.fc-form [name=tipo][value=FAC]').is_checked(),'con datos fiscales, la factura fiscal viene elegida')
     pg.fill('.fc-form [name=rif]','V-12345678');pg.fill('.fc-form [name=direccion]','Caracas')
     pg.click('.fc-form [data-modo=emitir]');pg.wait_for_selector('.fc-ver',timeout=10000)
-    v=pg.inner_text('.fc-ver');ok('Falta control' in v and 'Equivalente en Bs' in v,'se emite fiscal: queda pendiente el número de control y muestra el equivalente en Bs')
+    v=pg.inner_text('.fc-ver');ok('Falta control' in v and 'Bs.' in v,'se emite fiscal en bolívares: queda pendiente el número de control')
     pg.keyboard.press('Escape');pg.goto(B+'/cobros');pg.wait_for_timeout(5000)
     ok(pg.locator(f'[data-fa-facturar="{venta}"][data-n="{cuota}"]').count()==0 and pg.locator('[data-fc-ver]').count()>=1,'el cobro facturado muestra su factura en vez de «Facturar»')
     pg.goto(B+'/facturas');pg.wait_for_timeout(4000);t=txt(pg)

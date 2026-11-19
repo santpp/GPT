@@ -4089,7 +4089,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.11.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.11.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -5511,7 +5511,7 @@ function tableroInicioHtml() {
   /* 2.6.1 · un solo tablero: Inicio muestra el resumen de hoy (tres cifras reales) y lleva a ARP Comercial. */
   if (MODS.comercial && moduleAllowed('comercial') && !moduloOculto('comercial')) {
     const mio = !!ESPACIO?.permisos?.soloAsignado;
-    return `<section class="tb-inicio inicio-resumen" aria-labelledby="inicio-resumen-t"><header class="inicio-resumen-h"><h2 id="inicio-resumen-t">${mio ? 'Lo tuyo hoy' : 'Resumen de hoy'}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-ir-editar>${icon('gear')}Editar tarjetas</button><a class="inicio-resumen-ver" href="${href(MODS.comercial.path)}" aria-label="Ir a Dashboard"><span class="ir-largo">Ir a Dashboard</span><span class="ir-corto">Dashboard</span>${icon('chevR')}</a></span></header>
+    return `<section class="tb-inicio inicio-resumen" aria-labelledby="inicio-resumen-t"><header class="inicio-resumen-h"><h2 id="inicio-resumen-t">${mio ? 'Lo tuyo hoy' : 'Resumen de hoy'}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-ir-editar>${icon('edit')}Editar Dashboard</button><a class="inicio-resumen-ver" href="${href(MODS.comercial.path)}" aria-label="Ir a Dashboard"><span class="ir-largo">Ir a Dashboard</span><span class="ir-corto">Dashboard</span>${icon('chevR')}</a></span></header>
       <div class="inicio-resumen-g">${iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO))}</div></section>`;
   }
   const c = tbConfig(); if (!c.visible) return '';
@@ -6033,7 +6033,7 @@ const AgoraTabla = {
     const bar = document.createElement('div'); bar.className = 'xt-bar' + (externo ? ' is-externo' : ''); bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Herramientas de la tabla' + (nombre ? ' ' + nombre : ''));
     bar.innerHTML = `${sinBuscar ? '' : `<label class="xt-q"><span class="sr-only">Buscar en la tabla</span>${icon('search')}<input type="search" placeholder="Buscar en la tabla" autocomplete="off" value="${esc(st.q)}"></label>`}
       <span class="xt-n" role="status" aria-live="polite"></span>
-      <span class="xt-acts">${ed?.manual?.() && ed.tipo === 'tabla' ? `<button type="button" class="btn btn-sm btn-cta xt-man" title="Agregar una fila con el formulario de estas columnas">${icon('plus')}<span>Agregar manual</span></button>` : ''}<button type="button" class="btn btn-sm xt-cols" aria-haspopup="true" aria-expanded="false" title="${ed?.puedeEditar?.() ? 'Cambiar, agregar o quitar columnas' : 'Elegir columnas'}">${icon('sidebar')}<span>Columnas</span></button><button type="button" class="btn btn-sm xt-xls" ${ed?.puedeEditar?.() ? 'aria-haspopup="true" aria-expanded="false"' : ''} title="${ed?.puedeEditar?.() ? 'Descargar, plantilla o carga masiva' : 'Descargar en Excel lo que ves'}">${icon('download')}<span>Excel</span>${ed?.puedeEditar?.() ? icon('chev') : ''}</button></span>`;
+      <span class="xt-acts">${ed?.manual?.() && ed.tipo === 'tabla' ? `<button type="button" class="btn btn-sm btn-cta xt-man" title="Agregar una fila con el formulario de estas columnas">${icon('plus')}<span>Agregar manual</span></button>` : ''}<button type="button" class="btn btn-sm xt-cols" aria-haspopup="true" aria-expanded="false" title="${ed?.puedeEditar?.() ? 'Cambiar, agregar o quitar columnas' : 'Elegir columnas'}">${icon('sidebar')}<span>Columnas</span></button><button type="button" class="btn btn-sm xt-xls" ${ed?.puedeEditar?.() ? 'aria-haspopup="true" aria-expanded="false"' : ''} title="${ed?.puedeEditar?.() ? 'Descargar, plantilla o carga masiva' : 'Descargar en Excel lo que ves'}">${icon('download')}<span>Descargar</span>${ed?.puedeEditar?.() ? icon('chev') : ''}</button></span>`;
     tw.before(bar); bar.append(estilo);
     let pager = null;
     if (!externo) { pager = document.createElement('div'); pager.className = 'xt-pager'; tw.after(pager); }
@@ -6561,7 +6561,7 @@ AgoraTabla.alPintar(root => {
   const h = root.querySelector('.mod-h'); if (!h) return;
   let acts = h.querySelector(':scope > .acts'); if (!acts) { acts = document.createElement('div'); acts.className = 'acts'; h.append(acts); }
   const b = document.createElement('button'); b.type = 'button'; b.className = 'btn mg-hbtn'; b.setAttribute('aria-haspopup', 'true'); b.setAttribute('aria-expanded', 'false');
-  b.innerHTML = `${icon('download')}Excel${icon('chev')}`; // 2.10.1: el ícono de descarga, como el «Excel» de las tablas b.title = 'Descargar o cargar con Excel';
+  b.innerHTML = `${icon('download')}Descargar${icon('chev')}`; // 2.10.1: el ícono de descarga, como el «Excel» de las tablas b.title = 'Descargar o cargar con Excel';
   acts.prepend(b);
   b.onclick = () => {
     const bar = barra(), ed = bar?._ed || null, admin = esAdmin(), edita = !!ed?.puedeEditar?.();
@@ -6972,7 +6972,7 @@ function tarjElegidas(vista, catalogo, defecto) {
 function tarjEditar(vista, catalogo, defecto, titulo, alGuardar) {
   let sel = [...tarjElegidas(vista, catalogo, defecto)];
   const admin = puede('ajustes.editar'), propia = !!TARJ[vista]?.mia;
-  const s = openModal(modalHead('Editar tarjetas', `Elige qué datos ver arriba de ${esc(titulo)} y en qué orden. Solo cambia tu vista${admin ? ', salvo que la guardes para el equipo' : ''}.`) + `<div class="tarj-ed"></div>
+  const s = openModal(modalHead('Editar Dashboard', `Elige qué datos ver arriba de ${esc(titulo)} y en qué orden. Solo cambia tu vista${admin ? ', salvo que la guardes para el equipo' : ''}.`) + `<div class="tarj-ed"></div>
     ${admin ? `<label class="bx-check tarj-eq"><input type="checkbox" data-tarj-eq> Guardar también como vista del equipo (la ven quienes no hayan elegido la suya)</label>` : ''}
     <p class="fld-err" role="alert"></p>
     <div class="form-ft tarj-ft"><button class="btn" type="button" data-tarj-def>${icon('refresh')}${propia ? 'Volver a la vista del equipo' : 'Restaurar'}</button><span class="grow"></span><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="button" data-tarj-ok>Guardar</button></div>`, {wide: true});
@@ -7037,6 +7037,8 @@ const VG_TARJETAS = {
   mensual: {t: 'Ingreso recurrente al mes', ic: 'sync', d: 'Lo que suman al mes las ventas recurrentes (semanal, anual… llevado a un mes).', f: d => { const rec = d.items.filter(v => v.cobro === 'recurrente'); return ['is-ok', esc(vgPorMoneda(vgSuma(rec, v => (Number(v.monto) || 0) * (FREC_MES[v.frecuencia] || 1)))), `${int(rec.length)} ${rec.length === 1 ? 'venta recurrente' : 'ventas recurrentes'}`]; }},
   recurrentes: {t: 'Ventas recurrentes', ic: 'sync', d: 'Cuántas ventas son de cobro recurrente.', f: d => { const n = d.items.filter(v => v.cobro === 'recurrente').length, t = d.items.length; return ['', int(n), t ? `${Math.round(100 * n / t)} % de las ventas` : 'Sin ventas']; }},
   unicas: {t: 'Pagos y ventas únicas', ic: 'receipt', d: 'Ventas de pago único o de venta única.', f: d => { const u = d.items.filter(v => v.cobro !== 'recurrente'); return ['', int(u.length), esc(vgPorMoneda(vgSuma(u, v => v.total ?? v.monto)))]; }},
+  noRecurrentes: {t: 'Ventas no recurrentes', ic: 'receipt', d: 'Ventas de pago único (un pago, o repartido en cuotas).', f: d => { const u = d.items.filter(v => v.cobro === 'unico'); return ['', int(u.length), esc(vgPorMoneda(vgSuma(u, v => v.total ?? v.monto)))]; }},
+  ventaUnica: {t: 'Ventas únicas', ic: 'wallet', d: 'Se venden y se cobran en el momento.', f: d => { const u = d.items.filter(v => v.cobro === 'venta'); return ['', int(u.length), esc(vgPorMoneda(vgSuma(u, v => v.total ?? v.monto)))]; }},
   pagadas: {t: 'Ventas pagadas', ic: 'check', d: 'Ventas con todos sus cobros pagados.', f: d => { const n = d.items.filter(v => v.estado === 'pagada').length; return ['', int(n), `de ${int(d.items.length)} del mes`]; }},
   clientes: {t: 'Clientes', ic: 'users', d: 'Clientes distintos que compraron en el mes.', f: d => { const n = new Set(d.items.map(v => v.contactoId ? 'c:' + v.contactoId : norm(v.cliente?.documento || v.cliente?.correo || v.cliente?.nombre || v.id))).size; /* 2.9.0: el contacto de la cuenta identifica al cliente */ return ['', int(n), n && d.items.length > n ? `${int(d.items.length - n)} compraron más de una vez` : 'Una compra cada uno']; }},
   vendedor: {t: 'Quien más vendió', ic: 'team', d: 'La persona con más ventas en el mes.', f: d => { const x = vgTop(d.items, 'vendedor'); return ['', x ? esc(x[0]) : '—', x ? `${int(x[1])} ${x[1] === 1 ? 'venta' : 'ventas'}` : 'Sin vendedor indicado']; }},
@@ -7056,7 +7058,7 @@ function gcVivoHtml() {
   const tarjeta = (cls, ic, t, val, det) => `<div class="ag-resumen ${cls}"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span><strong class="ag-resumen-v">${val}</strong><span class="ag-resumen-d">${det}</span></div>`;
   const elegidas = tarjElegidas('gestion', VG_TARJETAS, GC_DEFECTO);
   /* 2.10.0 · Pedido del usuario: las cifras en una sola caja, con la estructura del «Resumen de hoy» del Inicio (título y botones arriba, cifras separadas por líneas), conservando el ícono y el color de cada una. */
-  const kpis = `<section class="inicio-resumen gc-caja" aria-labelledby="gc-caja-t"><header class="inicio-resumen-h"><h2 id="gc-caja-t">Cifras de ${esc(mes)}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-gc-tarjetas>${icon('gear')}Editar tarjetas</button><a class="inicio-resumen-ver" href="${href(MODS.ventas?.path || '/ventas')}">Ver las ventas${icon('chevR')}</a></span></header>`
+  const kpis = `<section class="inicio-resumen gc-caja" aria-labelledby="gc-caja-t"><header class="inicio-resumen-h"><h2 id="gc-caja-t">Cifras de ${esc(mes)}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-gc-tarjetas>${icon('edit')}Editar Dashboard</button><a class="inicio-resumen-ver" href="${href(MODS.ventas?.path || '/ventas')}">Ver las ventas${icon('chevR')}</a></span></header>`
     + (elegidas.length ? `<div class="gc-caja-g">${elegidas.map(id => { const x = VG_TARJETAS[id]; let v; try { v = x.f(d, r, mes); } catch { v = ['', '—', '']; } return tarjeta(v[0], x.ic, esc(x.t), v[1], v[2]); }).join('')}</div>` : '<p class="inicio-resumen-x">No elegiste cifras para esta vista. Usa «Elegir cifras».</p>') + '</section>';
   const graf = vtPuede() ? '<div data-gc-graf-aqui></div>' : '';
   if (!items.length) return cabeza + kpis + `<section class="panel"><p class="empty"><b>Todavía no hay ventas registradas en ${esc(mes)}</b>Cuando se gane una oportunidad y se complete su venta, aparece aquí.</p></section>` + graf;
@@ -7067,7 +7069,8 @@ function gcVivoHtml() {
   const tablaVend = `<div class="tw"><table data-xt-vivo><thead><tr><th>Vendedor</th><th class="n">Ventas</th><th class="n">Vendido</th><th class="n">Recurrente al mes</th><th class="n">Ticket promedio</th></tr></thead><tbody>${vend.map(g => `<tr><td><b>${esc(g.n)}</b>${barra(g.l.length, maxV)}</td><td class="n">${int(g.l.length)}</td><td class="n">${esc(vgPorMoneda(vgSuma(g.l, v => v.monto)))}</td><td class="n">${esc(mensual(g.l))}</td><td class="n">${esc(vgPorMoneda(Object.fromEntries(Object.entries(vgSuma(g.l, v => v.monto)).map(([m, t]) => [m, t / Math.max(1, g.l.filter(v => (v.moneda || 'USD') === m).length)]))))}</td></tr>`).join('')}</tbody></table></div>`;
   const prod = grupo('producto'), maxP = prod[0]?.l.length || 1;
   const tablaProd = `<div class="tw"><table data-xt-vivo><thead><tr><th>Producto o servicio</th><th class="n">Ventas</th><th class="n">Vendido</th><th class="n">% de las ventas</th></tr></thead><tbody>${prod.map(g => `<tr><td><b>${esc(g.n)}</b>${barra(g.l.length, maxP)}</td><td class="n">${int(g.l.length)}</td><td class="n">${esc(vgPorMoneda(vgSuma(g.l, v => v.monto)))}</td><td class="n">${Math.round(100 * g.l.length / items.length)} %</td></tr>`).join('')}</tbody></table></div>`;
-  const cobros = [['recurrente', 'Recurrente'], ['unico', 'Pago único'], ['venta', 'Venta única']].map(([k, t]) => [t, items.filter(v => v.cobro === k)]).filter(([, l]) => l.length);
+  // 2.11.1 · Pedido del usuario: siempre las tres formas de cobro, aunque alguna no tenga ventas en el mes.
+  const cobros = [['recurrente', 'Recurrente'], ['unico', 'Venta no recurrente'], ['venta', 'Venta única']].map(([k, t]) => [t, items.filter(v => v.cobro === k)]);
   const formas = `<ul class="gc-formas">${cobros.map(([t, l]) => `<li><span>${esc(t)}</span><b>${int(l.length)}</b><small>${esc(vgPorMoneda(vgSuma(l, v => v.monto)))}</small></li>`).join('')}</ul>`;
   const pend = (d.pendientes || []).length ? `<p class="gc-aviso is-warn">${icon('warn')}<span>${d.pendientes.length === 1 ? 'Hay una oportunidad ganada' : `Hay ${int(d.pendientes.length)} oportunidades ganadas`} sin su venta completada: no cuentan aquí hasta completarla en <a href="${href(MODS.ventas?.path || '/ventas')}">Ventas</a>.</span></p>` : '';
   return cabeza + pend + kpis
@@ -7104,7 +7107,7 @@ const EQ_DEFECTO = ['personas', 'vendedor', 'ganadasCuenta', 'sinLeer'];
 const vivoTarjetas = (vista, catalogo, defecto, args, mes) => { const ids = tarjElegidas(vista, catalogo, defecto); return ids.length ? `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">${ids.map(id => { const x = catalogo[id]; let v; try { v = x.f(...args); } catch { v = ['', '—', '']; } return `<div class="ag-resumen ${v[0]}"><span class="ag-resumen-ic" aria-hidden="true">${icon(x.ic)}</span><span class="ag-resumen-t">${esc(x.t)}</span><strong class="ag-resumen-v">${v[1]}</strong><span class="ag-resumen-d">${v[2] || ''}</span></div>`; }).join('')}</section>` : ''; };
 function eqVivoHtml() {
   const mes = mesNombre(VG.mes || PERIODO);
-  const acts = `<button class="btn" type="button" data-eq-tarjetas>${icon('gear')}Editar tarjetas</button>`;
+  const acts = `<button class="btn" type="button" data-eq-tarjetas>${icon('edit')}Editar Dashboard</button>`;
   const cabeza = head('Gestión comercial', 'Equipo', `Cómo le va a cada persona en ${esc(mes)}: lo que vendió, lo que ganó en la cuenta y lo que tiene pendiente.`, acts);
   const filas = eqFilas(), hayCuenta = !!(EQ.won || EQ.dia);
   if (!filas.length) return cabeza + vivoTarjetas('equipo', EQ_TARJETAS, EQ_DEFECTO, [], mes) + `<section class="panel"><p class="empty"><b>Todavía no hay actividad del equipo en ${esc(mes)}</b>Cuando haya ventas registradas u oportunidades ganadas, cada persona aparece aquí.</p></section>`;
@@ -7138,7 +7141,7 @@ const CO_TARJETAS = {
 const CO_DEFECTO = ['inversion', 'costoVenta', 'costoGanada', 'retorno'];
 function coVivoHtml() {
   const mes = mesNombre(VG.mes || PERIODO);
-  const cabeza = head('Gestión comercial', 'Costos', `Lo invertido en anuncios y los costos de ${esc(mes)} frente a lo que se vendió.`, `<button class="btn" type="button" data-co-tarjetas>${icon('gear')}Editar tarjetas</button>`);
+  const cabeza = head('Gestión comercial', 'Costos', `Lo invertido en anuncios y los costos de ${esc(mes)} frente a lo que se vendió.`, `<button class="btn" type="button" data-co-tarjetas>${icon('edit')}Editar Dashboard</button>`);
   const extra = `<p class="camp-nota">La inversión en anuncios sale de la cuenta publicitaria de Meta y de la publicidad cargada en «Costos del mes»; las ventas, de las ventas registradas en Ágora.</p>`;
   const camp = campPuede() ? `<div class="mt costos-vivo">${campanasHtml().replace(/<label class="fld camp-mes">[\s\S]*?<\/label>/, '')}</div>` : `<section class="panel mt"><p class="redes-nota">${conectada() ? 'Tu rol no ve la inversión en anuncios.' : 'Esta subcuenta no está conectada con su cuenta: sin ella no hay inversión en anuncios que mostrar.'}</p></section>`;
   return cabeza + vivoTarjetas('costos', CO_TARJETAS, CO_DEFECTO, [], mes) + coItemsHtml() + extra + camp;
@@ -7183,7 +7186,7 @@ const FA_TARJETAS = {
 const FA_DEFECTO = ['aCobrar', 'cobrado', 'pendiente', 'vencido'];
 function faVivoHtml() {
   const ym = VG.mes || PERIODO, mes = mesNombre(ym), puedeEd = !!FA.datos?.canEdit;
-  const cabeza = head('Facturación', 'Cobros', `Lo que toca cobrar en ${esc(mes)} según el plan de cobros de cada venta, y lo que está atrasado.`, `<button class="btn" type="button" data-fa-tarjetas>${icon('gear')}Editar tarjetas</button>`);
+  const cabeza = head('Facturación', 'Cobros', `Lo que toca cobrar en ${esc(mes)} según el plan de cobros de cada venta, y lo que está atrasado.`, `<button class="btn" type="button" data-fa-tarjetas>${icon('edit')}Editar Dashboard</button>`);
   if (!FA.datos) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer los cobros</b>Vuelve a intentarlo en un momento.</p></section>';
   const m = faCobros(ym), kpis = vivoTarjetas('facturas', FA_TARJETAS, FA_DEFECTO, [m], mes);
   const base = faCobros(ym, {sinEstado: true}), crudo = faCobros(ym, {crudo: true}), f = FA.f;
@@ -7234,8 +7237,17 @@ async function fcDesdeCobro(ventaId, n) {
   if (!buscar()) await faCargar(true); // el cobro puede ser de otro mes: se leen todas las ventas
   const v = buscar(), c = (v?.plan || []).find(y => String(y.n) === String(n));
   if (!v || !c) { toast('No se encontró ese cobro. Actualiza la página.'); return; }
-  fcEditar(null, {moneda: ['USD', 'VES', 'EUR'].includes(v.moneda) ? v.moneda : 'USD', venta: `${v.id}:${c.n}`, cliente: {nombre: v.cliente?.nombre || '', rif: v.cliente?.documento || '', correo: v.cliente?.correo || '', telefono: v.cliente?.telefono || ''},
-    lineas: [{descripcion: `${v.producto || 'Servicio'}${(v.plan || []).length > 1 || v.sinFin ? ` · cobro ${c.n}` : ''}`, cantidad: 1, precio: Number(c.monto) || 0, impuesto: (CATALOGO?.productos || []).find(p => p.id === v.productoId)?.iva}]});
+  if (!FC.res) { try { await fcCargar(true); } catch {} }
+  const ok = FC.res?.monedas || ['VES'], mv = ['USD', 'VES', 'EUR'].includes(v.moneda) ? v.moneda : 'USD';
+  // 2.11.1 · Si la subcuenta no factura en la moneda de la venta (por ahora solo Bs), el monto se pasa a Bs con la tasa BCV vigente.
+  let moneda = mv, precio = Number(c.monto) || 0, nota = '';
+  if (!ok.includes(mv)) {
+    moneda = ok[0]; const t = FC.res?.tasa?.tasa;
+    if (mv !== 'VES' && moneda === 'VES' && t) { nota = ` (${vgMonto(precio, mv)} a tasa BCV ${NF.format(t)})`; precio = Math.round(precio * t * 100) / 100; }
+    else { precio = null; toast('No hay tasa BCV para pasar el monto a bolívares: escríbelo en la factura.'); }
+  }
+  fcEditar(null, {moneda, venta: `${v.id}:${c.n}`, cliente: {nombre: v.cliente?.nombre || '', rif: v.cliente?.documento || '', correo: v.cliente?.correo || '', telefono: v.cliente?.telefono || ''},
+    lineas: [{descripcion: `${v.producto || 'Servicio'}${(v.plan || []).length > 1 || v.sinFin ? ` · cobro ${c.n}` : ''}${nota}`, cantidad: 1, precio, impuesto: (CATALOGO?.productos || []).find(p => p.id === v.productoId)?.iva}]});
 }
 function faFacturarMontar(root) {
   root?.querySelectorAll('[data-fa-facturar]').forEach(b => b.onclick = () => fcDesdeCobro(b.dataset.faFacturar, b.dataset.n));
@@ -7299,6 +7311,7 @@ const FC = {res: null, lista: null, t: 0, f: {estado: '', tipo: '', q: ''}, qt: 
 const FC_TIPO = {FAC: ['Factura', 'sc-ok'], SIM: ['Factura simple', 'sc-gray'], NC: ['Nota de crédito', 'sc-warn'], ND: ['Nota de débito', 'sc-warn']};
 const FC_IMP = [['G', 'IVA general'], ['R', 'IVA reducido'], ['A', 'IVA general + lujo'], ['E', 'Exento']];
 const fcMon = (v, m) => v == null ? '—' : (m === 'VES' ? 'Bs. ' : m === 'EUR' ? '€ ' : 'US$ ') + NF.format(Number(v) || 0);
+const fcBase = () => FC.res?.monedas?.[0] || 'VES'; // 2.11.1: por ahora, solo bolívares
 const fcFecha = d => d ? String(d).slice(0, 10).split('-').reverse().join('/') : '—';
 const fcEstado = d => d.estado === 'BORRADOR' ? '<span class="sc sc-gray">Borrador</span>' : d.estado === 'ANULADA' ? '<span class="sc sc-bad">Anulada</span>'
   : d.control_pendiente ? '<span class="sc sc-warn">Falta control</span>' : '<span class="sc sc-ok">Emitida</span>';
@@ -7312,14 +7325,14 @@ const fcDocs = () => (FC.lista?.documentos || []);
 const fcSuma = (l, k = 'total') => l.reduce((t, d) => t + (Number(d.totales?.[k]) || 0), 0);
 const fcEmitidas = () => fcDocs().filter(d => d.estado === 'EMITIDA');
 const FC_TARJETAS = {
-  facturado: {t: 'Facturado en el mes', ic: 'invoice', d: 'Facturas fiscales y simples emitidas en el mes (sin anuladas).', f: () => { const l = fcEmitidas().filter(d => ['FAC', 'SIM'].includes(d.tipo)); return ['is-ok', esc(fcMon(fcSuma(l), 'USD')), `${int(l.length)} ${l.length === 1 ? 'factura' : 'facturas'}`]; }},
-  iva: {t: 'IVA del mes', ic: 'receipt', d: 'IVA de las facturas fiscales emitidas, menos las notas de crédito.', f: () => { const iva = d => (Number(d.totales?.iva_general) || 0) + (Number(d.totales?.iva_reducido) || 0) + (Number(d.totales?.iva_lujo) || 0); const l = fcEmitidas(); const v = l.filter(d => d.tipo !== 'NC' && d.tipo !== 'SIM').reduce((t, d) => t + iva(d), 0) - l.filter(d => d.tipo === 'NC').reduce((t, d) => t + iva(d), 0); return ['', esc(fcMon(v, 'USD')), 'débito fiscal']; }},
+  facturado: {t: 'Facturado en el mes', ic: 'invoice', d: 'Facturas fiscales y simples emitidas en el mes (sin anuladas).', f: () => { const l = fcEmitidas().filter(d => ['FAC', 'SIM'].includes(d.tipo)); return ['is-ok', esc(fcMon(fcSuma(l), fcBase())), `${int(l.length)} ${l.length === 1 ? 'factura' : 'facturas'}`]; }},
+  iva: {t: 'IVA del mes', ic: 'receipt', d: 'IVA de las facturas fiscales emitidas, menos las notas de crédito.', f: () => { const iva = d => (Number(d.totales?.iva_general) || 0) + (Number(d.totales?.iva_reducido) || 0) + (Number(d.totales?.iva_lujo) || 0); const l = fcEmitidas(); const v = l.filter(d => d.tipo !== 'NC' && d.tipo !== 'SIM').reduce((t, d) => t + iva(d), 0) - l.filter(d => d.tipo === 'NC').reduce((t, d) => t + iva(d), 0); return ['', esc(fcMon(v, fcBase())), 'débito fiscal']; }},
   emitidas: {t: 'Documentos emitidos', ic: 'check', d: 'Facturas y notas emitidas en el mes.', f: () => { const l = fcEmitidas(); return ['', int(l.length), `${int(l.filter(d => d.tipo === 'FAC').length)} fiscales · ${int(l.filter(d => d.tipo === 'SIM').length)} simples`]; }},
   borradores: {t: 'Borradores', ic: 'edit', d: 'Facturas preparadas que todavía no se emiten.', f: () => { const n = fcDocs().filter(d => d.estado === 'BORRADOR').length; return [n ? 'is-warn' : '', int(n), n ? 'por emitir' : 'nada pendiente']; }},
   control: {t: 'Sin número de control', ic: 'warn', d: 'Facturas fiscales emitidas a las que falta el número de control de la imprenta.', f: () => { const n = fcDocs().filter(d => d.control_pendiente).length; return [n ? 'is-warn' : 'is-ok', int(n), n ? 'por registrar' : 'todo al día']; }},
   anuladas: {t: 'Anuladas', ic: 'shield', d: 'Documentos anulados en el mes.', f: () => { const n = fcDocs().filter(d => d.estado === 'ANULADA').length; return ['', int(n), n === 1 ? 'documento' : 'documentos']; }},
-  notas: {t: 'Notas de crédito', ic: 'rate', d: 'Lo acreditado con notas de crédito en el mes.', f: () => { const l = fcEmitidas().filter(d => d.tipo === 'NC'); return ['', esc(fcMon(fcSuma(l), 'USD')), `${int(l.length)} ${l.length === 1 ? 'nota' : 'notas'}`]; }},
-  igtf: {t: 'IGTF', ic: 'coins', d: 'IGTF percibido por pagos en divisas.', f: () => ['', esc(fcMon(fcSuma(fcEmitidas(), 'igtf'), 'USD')), 'pagos en divisas']},
+  notas: {t: 'Notas de crédito', ic: 'rate', d: 'Lo acreditado con notas de crédito en el mes.', f: () => { const l = fcEmitidas().filter(d => d.tipo === 'NC'); return ['', esc(fcMon(fcSuma(l), fcBase())), `${int(l.length)} ${l.length === 1 ? 'nota' : 'notas'}`]; }},
+  igtf: {t: 'IGTF', ic: 'coins', d: 'IGTF percibido por pagos en divisas.', f: () => ['', esc(fcMon(fcSuma(fcEmitidas(), 'igtf'), fcBase())), 'pagos en divisas']},
 };
 const FC_DEFECTO = ['facturado', 'iva', 'borradores', 'control'];
 
@@ -7327,12 +7340,12 @@ V.facturas = {
   need: () => Promise.all([fcCargar(true), tarjCargar('facturasdoc')]),
   render() {
     const r = FC.res, mes = mesNombre(PERIODO), pu = r?.puede || {};
-    const acts = `${pu.emitir ? `<button class="btn btn-cta" type="button" data-fc-nueva>${icon('plus')}Nueva factura</button>` : ''}<button class="btn" type="button" data-fc-tarjetas>${icon('gear')}Editar tarjetas</button>`;
+    const acts = `${pu.emitir ? `<button class="btn btn-cta" type="button" data-fc-nueva>${icon('plus')}Nueva factura</button>` : ''}<button class="btn" type="button" data-fc-tarjetas>${icon('edit')}Editar Dashboard</button>`;
     const cabeza = head('Facturación', 'Facturas', r?.fiscal ? `Facturas fiscales, facturas simples y notas de ${esc(mes)}.` : `Facturas simples de ${esc(mes)}. Para emitir facturas fiscales, completa los datos fiscales.`, acts);
     if (!r) return cabeza + '<section class="panel"><p class="empty"><b>No se pudo leer la facturación</b>Vuelve a intentarlo en un momento.</p></section>';
     const avisos = [];
     if (!r.fiscal) avisos.push(`<div class="fc-aviso">${icon('info')}<span><b>Esta subcuenta todavía no tiene datos fiscales.</b> Puede emitir facturas simples (sin validez fiscal). ${pu.configurar ? `<a href="${href('/datos-fiscales')}">Completar datos fiscales</a>` : 'Pídele a la administración que complete los datos fiscales.'}</span></div>`);
-    else if (!r.tasa) avisos.push(`<div class="fc-aviso is-warn">${icon('warn')}<span><b>Falta la tasa BCV de los últimos 5 días.</b> Sin ella no se emiten facturas fiscales. <a href="${href('/tasas')}">Ir a Tasas del día</a></span></div>`);
+    else if (!r.tasa && (r.monedas || []).some(m => m !== 'VES')) avisos.push(`<div class="fc-aviso is-warn">${icon('warn')}<span><b>Falta la tasa BCV de los últimos 5 días.</b> Sin ella no se emiten facturas fiscales. <a href="${href('/tasas')}">Ir a Tasas del día</a></span></div>`);
     if (r.fiscal && r.proteccion && !r.proteccion.ok && pu.configurar) avisos.push(`<div class="fc-aviso">${icon('shield')}<span>La protección de la base de datos no está activa en este servidor. Lo emitido sigue protegido por Ágora y por la cadena de huellas. <a href="${href('/datos-fiscales')}">Ver en Datos fiscales</a></span></div>`);
     const f = FC.f, q = norm(f.q || '');
     const todos = fcDocs();
@@ -7363,7 +7376,7 @@ function fcLeerCant(t) { const s = String(t ?? '').trim().replace(/\s/g, '').rep
 async function fcEditar(doc = null, preset = {}) {
   if (!FC.res) { try { await fcCargar(true); } catch (x) { toast(x.message || 'No se pudo abrir la facturación.'); return; } }
   if (typeof cargarCatalogo === 'function' && !CATALOGO) { try { await cargarCatalogo(); } catch {} }
-  const r = FC.res, fiscal = !!r.fiscal, base = doc || preset;
+  const r = FC.res, fiscal = !!r.fiscal, base = doc || preset, monedas = r.monedas?.length ? r.monedas : ['VES'];
   let tipo = doc ? doc.tipo : (preset.tipo || (fiscal ? 'FAC' : 'SIM'));
   if (!fiscal) tipo = 'SIM';
   if (!doc && tipo === 'SIM' && base.lineas) base.lineas = base.lineas.map(l => ({...l, impuesto: 'E'})); // la factura simple no lleva IVA por defecto
@@ -7395,7 +7408,7 @@ async function fcEditar(doc = null, preset = {}) {
         <div class="co-ed-acts"><button type="button" class="btn btn-sm" data-agregar>${icon('plus')}Agregar línea</button>${prods.length ? `<label class="fld fc-prod"><span class="sr-only">Agregar un producto</span><select data-fc-prod><option value="">Agregar un producto…</option>${prods.map(p => `<option value="${esc(p.id)}">${esc(p.nombre)}</option>`).join('')}</select></label>` : ''}</div>
       </fieldset>
       <div class="fc-fila3">
-        <label class="fld">Moneda<select name="moneda">${[['USD', 'Dólares (US$)'], ['VES', 'Bolívares (Bs.)'], ['EUR', 'Euros (€)']].map(([v, t]) => `<option value="${v}" ${(base.moneda || 'USD') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+        ${monedas.length > 1 ? `<label class="fld">Moneda<select name="moneda">${[['VES', 'Bolívares (Bs.)'], ['USD', 'Dólares (US$)'], ['EUR', 'Euros (€)']].filter(([v]) => monedas.includes(v)).map(([v, t]) => `<option value="${v}" ${(monedas.includes(base.moneda) ? base.moneda : monedas[0]) === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>` : `<label class="fld">Moneda<input value="Bolívares (Bs.)" disabled><input type="hidden" name="moneda" value="VES"></label>`}
         <label class="fld">Vence<input name="vence" type="date" value="${esc(base.vence || '')}"></label>
         <label class="fld">Condiciones<input name="condiciones" maxlength="120" value="${esc(base.condiciones || '')}" placeholder="Contado, 15 días…"></label>
       </div>
@@ -7599,6 +7612,7 @@ V.datosFiscales = {
         <label class="fc-check"><input type="checkbox" name="igtf_on" ${p.igtf?.activo ? 'checked' : ''} ${dis}> Cobrar IGTF a los pagos en divisas (<input name="igtf" class="fc-mini" inputmode="decimal" value="${esc(NF.format(p.igtf?.alicuota ?? 3))}" ${dis}> %)</label>
       </fieldset>
       <label class="fld">Leyendas al pie de la factura (una por línea)<textarea name="leyendas" rows="2" maxlength="600" ${dis}>${v('leyendas')}</textarea></label>
+      ${r.divisasDisponibles ? `<fieldset class="bx"><legend>${icon('rate')}Monedas en que factura</legend><div class="fc-check">${[['VES', 'Bolívares'], ['USD', 'Dólares'], ['EUR', 'Euros']].map(([k, t]) => `<label class="fc-check"><input type="checkbox" name="mon_${k}" ${(r.monedas || []).includes(k) ? 'checked' : ''} ${k === 'VES' || !ed ? 'disabled' : ''}> ${t}</label>`).join('')}</div><p class="fc-ayuda">En dólares o euros, cada factura lleva su equivalente en bolívares a la tasa BCV del día.</p></fieldset>` : `<p class="fc-ayuda">Las facturas se emiten en bolívares.</p>`}
       <p class="fld-err" role="alert"></p>${ed ? '<div class="form-ft"><button class="btn btn-cta" type="submit">Guardar datos fiscales</button></div>' : ''}</form>`
       + (libre ? `<section class="panel pf-sec">${secH('receipt', 'Números de control', 'Los rangos de formas libres que entregó la imprenta. Cada factura toma el siguiente.', ed ? `<button class="btn" type="button" data-df-rango>${icon('plus')}Registrar rango</button>` : '')}
         ${rangos.length ? `<div class="tw"><table data-xt-vivo><thead><tr><th>Rango</th><th>Imprenta</th><th class="n">Disponibles</th><th>Estado</th><th></th></tr></thead><tbody>${rangos.map(x => `<tr><td>${esc(x.prefijo)}-${esc(String(x.desde).padStart(8, '0'))} a ${esc(String(x.hasta).padStart(8, '0'))}</td><td>${esc(x.imprenta)}</td><td class="n">${int(x.disponibles)}</td><td>${esc(x.estado === 'ACTIVO' ? 'Activo' : x.estado === 'AGOTADO' ? 'Agotado' : 'Anulado')}</td><td>${ed && x.estado === 'ACTIVO' ? `<button class="btn btn-sm" type="button" data-df-anular="${x.id}">Anular</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty"><b>Sin rangos registrados</b>Registra el rango que te entregó la imprenta antes de emitir.</p>'}</section>` : '')
@@ -7614,7 +7628,11 @@ V.datosFiscales = {
         imprenta: {nombre: f.imp_nombre.value.trim(), rif: f.imp_rif.value.trim().toUpperCase(), providencia: f.imp_prov.value.trim(), fecha: f.imp_fecha.value || ''},
         iva: {general: num(f.iva_g.value), reducida: num(f.iva_r.value), adicional_lujo: num(f.iva_a.value)}, igtf: {activo: f.igtf_on.checked, alicuota: num(f.igtf.value)}, leyendas: f.leyendas.value};
       busy(b, true, 'Guardando…');
-      try { await agoraApi('workspace/fiscal/perfil', {method: 'PUT', body}); await fcCargar(true); repaint(); toast('Datos fiscales guardados.'); }
+      try {
+        await agoraApi('workspace/fiscal/perfil', {method: 'PUT', body});
+        if (FC.res?.divisasDisponibles) await agoraApi('workspace/fiscal/monedas', {method: 'PUT', body: {monedas: ['VES', 'USD', 'EUR'].filter(k => k === 'VES' || f['mon_' + k]?.checked)}});
+        await fcCargar(true); repaint(); toast('Datos fiscales guardados.');
+      }
       catch (x) { busy(b, false); err.textContent = x.message || 'No se pudieron guardar.'; }
     };
     root.querySelector('[data-df-rango]')?.addEventListener('click', () => {
@@ -7638,10 +7656,11 @@ V.tasasBcv = {
   need: async () => { await fcCargar().catch(() => null); TB_TASA.datos = await agoraApi('workspace/fiscal/tasas').catch(x => ({error: x.message})); },
   render() {
     const d = TB_TASA.datos, pu = FC.res?.puede || {};
-    const cabeza = head('Facturación', 'Tasas del día', 'La tasa oficial del BCV con la que se calcula el equivalente en bolívares de cada factura. Llega sola cada día; si no llega, escríbela aquí.', pu.configurar ? `<button class="btn" type="button" data-tb-act>${icon('refresh')}Traer ahora</button>` : '');
+    const soloBs = !(FC.res?.monedas || []).some(m => m !== 'VES');
+    const cabeza = head('Facturación', 'Tasas del día', soloBs ? 'La tasa oficial del BCV del día. Las facturas se emiten en bolívares: la tasa sirve para pasar a Bs los cobros en divisas al facturarlos.' : 'La tasa oficial del BCV con la que se calcula el equivalente en bolívares de cada factura. Llega sola cada día; si no llega, escríbela aquí.', pu.configurar ? `<button class="btn" type="button" data-tb-act>${icon('refresh')}Traer ahora</button>` : '');
     if (!d || d.error) return cabeza + `<section class="panel"><p class="empty"><b>No se pudieron leer las tasas</b>${esc(d?.error || '')}</p></section>`;
     const v = d.vigente;
-    const tarj = `<section class="ag-resumen-grid vg-kpis"><div class="ag-resumen ${v ? 'is-ok' : 'is-warn'}"><span class="ag-resumen-ic" aria-hidden="true">${icon('rate')}</span><span class="ag-resumen-t">Tasa BCV vigente</span><strong class="ag-resumen-v">${v ? 'Bs. ' + esc(NF.format(v.tasa)) : '—'}</strong><span class="ag-resumen-d">${v ? 'del ' + esc(fcFecha(v.fecha)) : 'Sin tasa de los últimos 5 días: las facturas fiscales no se emiten'}</span></div></section>`;
+    const tarj = `<section class="ag-resumen-grid vg-kpis"><div class="ag-resumen ${v ? 'is-ok' : 'is-warn'}"><span class="ag-resumen-ic" aria-hidden="true">${icon('rate')}</span><span class="ag-resumen-t">Tasa BCV vigente</span><strong class="ag-resumen-v">${v ? 'Bs. ' + esc(NF.format(v.tasa)) : '—'}</strong><span class="ag-resumen-d">${v ? 'del ' + esc(fcFecha(v.fecha)) : (soloBs ? 'Sin tasa de los últimos 5 días' : 'Sin tasa de los últimos 5 días: las facturas en divisas no se emiten')}</span></div></section>`;
     const form = pu.emitir ? `<form class="panel pf-sec form" data-tb-form novalidate>${secH('edit', 'Escribir la tasa', 'Solo si la automática no llegó. Usa la publicada por el BCV.')}<div class="fc-fila3"><label class="fld">Fecha<input name="fecha" type="date" value="${esc(d.hoy)}" max="${esc(d.hoy)}"></label><label class="fld">Bs. por US$ 1<input name="tasa" inputmode="decimal" placeholder="245,6789"></label><div class="form-ft"><button class="btn btn-cta" type="submit">Guardar tasa</button></div></div><p class="fld-err" role="alert"></p></form>` : '';
     const hist = (d.historial || []).length ? `<div class="tw"><table data-xt-vivo><thead><tr><th>Fecha</th><th class="n">Bs. por US$ 1</th><th>Origen</th></tr></thead><tbody>${d.historial.map(x => `<tr><td>${esc(fcFecha(x.fecha))}</td><td class="n">${esc(NF.format(x.tasa))}</td><td>${esc(x.origen)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty"><b>Sin tasas en los últimos 30 días</b></p>';
     return cabeza + tarj + form + `<section class="panel pf-sec">${secH('history', 'Últimos 30 días')}${hist}</section>`;
@@ -7784,7 +7803,7 @@ const TD_TARJETAS = {
 const TD_DEFECTO = ['vendido', 'ventas', 'promedio', 'mejor'];
 function tdVivoHtml() {
   const mes = mesNombre(VG.mes || PERIODO);
-  const cabeza = head('Gestión comercial', 'Tendencias', `Cómo se mueven las ventas en los 12 meses hasta ${esc(mes)}.`, `<button class="btn" type="button" data-td-tarjetas>${icon('gear')}Editar tarjetas</button>`);
+  const cabeza = head('Gestión comercial', 'Tendencias', `Cómo se mueven las ventas en los 12 meses hasta ${esc(mes)}.`, `<button class="btn" type="button" data-td-tarjetas>${icon('edit')}Editar Dashboard</button>`);
   if (!FA.datos) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas</b>Vuelve a intentarlo en un momento.</p></section>';
   const m = tdMeses(), max = Math.max(1, ...m.map(x => x.vendido));
   const barras = `<div class="td-barras" role="img" aria-label="Vendido por mes">${m.map(x => `<div class="td-b ${x.ym === m.at(-1).ym ? 'is-on' : ''}"><span class="td-v">${x.vendido ? esc(usd(x.vendido).replace(/,00$/, '')) : ''}</span><i style="height:${Math.max(2, Math.round(100 * x.vendido / max))}%"></i><small>${esc(mesNombre(x.ym).slice(0, 3))}</small></div>`).join('')}</div>`;
@@ -7809,7 +7828,7 @@ function caRevisiones() {
     {id: 'sinPrecio', g: 'baja', t: 'Productos activos sin precio', d: 'Al registrar una venta habrá que escribir el monto a mano.', l: productos.filter(x => x.activo !== false && !(Number(x.precio) > 0)).map(x => x.nombre)},
   ].map(r => ({...r, n: r.l.length})).sort((a, b) => (b.n > 0) - (a.n > 0) || ['alta', 'media', 'baja'].indexOf(a.g) - ['alta', 'media', 'baja'].indexOf(b.g));
 }
-/* 2.10.3 · Calidad de datos: sus tarjetas también se eligen («Editar tarjetas»), como en los demás módulos. */
+/* 2.10.3 · Calidad de datos: sus tarjetas también se eligen («Editar Dashboard»), como en los demás módulos. */
 const caCasos = (r, f) => r.filter(f).reduce((t, x) => t + x.n, 0);
 const CA_TARJETAS = {
   enOrden: {t: 'Revisiones en orden', ic: 'check', d: 'Cuántas revisiones no encontraron nada que corregir.', f: (r, total) => { const mal = r.filter(x => x.n); return [mal.length ? '' : 'is-ok', `${int(r.length - mal.length)}<small> de ${int(r.length)}</small>`, `${int(total)} ventas revisadas`]; }},
@@ -7820,7 +7839,7 @@ const CA_TARJETAS = {
 };
 const CA_DEFECTO = ['enOrden', 'importantes', 'otros'];
 function caVivoHtml() {
-  const cabeza = head('Gestión comercial', 'Calidad de datos', 'Lo que conviene corregir en las ventas registradas y el catálogo antes de cerrar números.', `<button class="btn" type="button" data-ca-tarjetas>${icon('gear')}Editar tarjetas</button>`);
+  const cabeza = head('Gestión comercial', 'Calidad de datos', 'Lo que conviene corregir en las ventas registradas y el catálogo antes de cerrar números.', `<button class="btn" type="button" data-ca-tarjetas>${icon('edit')}Editar Dashboard</button>`);
   if (!FA.datos) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas</b>Vuelve a intentarlo en un momento.</p></section>';
   const r = caRevisiones(), mal = r.filter(x => x.n), total = (FA.datos.items || []).length;
   const G = {alta: ['Importante', 'sc-bad'], media: ['Conviene', 'sc-warn'], baja: ['Menor', 'sc-gray']};
@@ -8052,7 +8071,7 @@ function gcGraficosInyectar(root) {
   if (ancla) ancla.replaceWith(sec); else { const cab = root.querySelector('.hx-top, .mod-h'); if (!cab?.parentElement) return; cab.parentElement.append(sec); }
   const pintar = () => {
     const sel = tarjElegidas('gestiongraf', GC_GRAFICOS, gcGrafDefecto());
-    sec.innerHTML = `<div class="t-sec-row"><div><h2 class="t-sec">Gráficos de ventas</h2><p>Los mismos del Tablero comercial: del reporte mensual cuando lo trae; si no, de las ventas registradas.</p></div><div class="acts"><button class="btn btn-sm" type="button" data-gc-graf-ed>${icon('gear')}Editar gráficos</button></div></div>`
+    sec.innerHTML = `<div class="t-sec-row"><div><h2 class="t-sec">Gráficos de ventas</h2><p>Los mismos del Tablero comercial: del reporte mensual cuando lo trae; si no, de las ventas registradas.</p></div><div class="acts"><button class="btn btn-sm" type="button" data-gc-graf-ed>${icon('edit')}Editar gráficos</button></div></div>`
       + (sel.length ? `<div class="vt-cuerpo"><section class="panel"><span class="sk w80"></span><span class="sk w60"></span></section></div>` : '<p class="src gc-graf-vacio">No elegiste gráficos para esta vista.</p>');
     sec.querySelector('[data-gc-graf-ed]').onclick = () => tarjEditar('gestiongraf', GC_GRAFICOS, gcGrafDefecto(), 'Gestión Comercial (gráficos)', pintar);
     if (!sel.length) return;
@@ -8145,7 +8164,7 @@ function vgCsv() {
 }
 function vgRegistradasHtml() {
   const d = VG.datos;
-  const acts = `<button class="btn" type="button" data-vg-tarjetas>${icon('gear')}Editar tarjetas</button>` ; // 2.9.5: sin «Exportar CSV» aparte: «Excel» → «Descargar lo que ves»
+  const acts = `<button class="btn" type="button" data-vg-tarjetas>${icon('edit')}Editar Dashboard</button>` ; // 2.9.5: sin «Exportar CSV» aparte: «Excel» → «Descargar lo que ves»
   const cabeza = head('Ventas', 'Ventas registradas', 'Lo que se vende al ganar una oportunidad: cliente, producto, cobros y vendedor, en un solo registro.', acts);
   if (!d) return cabeza + loading();
   const r = d.resumen || {}, mes = typeof mesNombre === 'function' ? mesNombre(VG.mes) : VG.mes;

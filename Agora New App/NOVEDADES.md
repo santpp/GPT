@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.11.1 · Correcciones del usuario (19 nov):**
+- **Facturación solo en bolívares.** El editor ya no ofrece otra moneda. «Facturar» un cobro en dólares pasa el monto a bolívares con la tasa BCV vigente y lo anota en la línea. La factura en bolívares se emite aunque falte la tasa.
+- **Dólares y euros quedan listos para activar:** al activarlos, la administración de cada subcuenta (y los dueños) elige en Datos fiscales en qué monedas factura.
+- **«Por forma de cobro» muestra siempre las tres formas:** Recurrente, Venta no recurrente y Venta única, aunque alguna esté en cero. Además, hay dos tarjetas nuevas para elegir: «Ventas no recurrentes» y «Ventas únicas».
+- **En todos los módulos:** el botón de descarga dice **«Descargar»** con su ícono (antes «Excel»), y **«Editar Dashboard»** lleva un lápiz (antes «Editar tarjetas» con engranaje). «Editar gráficos» también lleva el lápiz.
+- Prueba nueva: `tests/fixes-2111.py` (11).
+
 **Novedades 2.11.0 · Facturación con su propia categoría y facturación fiscal (19 nov):**
 - **Categoría nueva «Facturación»** con cinco submódulos: **Cobros** (el antiguo «Facturación»; la dirección vieja sigue funcionando), **Facturas**, **Libro de ventas**, **Datos fiscales** y **Tasas del día**. «Ventas y facturación» pasa a llamarse «Ventas».
 - **Facturas fiscales (SENIAT)**, con el motor de facturación de mi.agora:

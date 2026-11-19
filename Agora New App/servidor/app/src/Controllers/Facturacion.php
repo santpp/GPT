@@ -13,6 +13,13 @@ use Agora\Fiscal\Base\{Db as FDb,Audit as FAudit,Env as FEnv,HttpError as FError
  * Sin datos fiscales completos, la subcuenta solo emite la factura simple.
  */
 final class Facturacion {
+ /**
+  * 2.11.1 · Monedas. Decisión del usuario: por ahora se factura SOLO en bolívares.
+  * Para habilitar dólares y euros basta con poner DIVISAS en true: entonces la administración de cada subcuenta
+  * (y los dueños) eligen en Datos fiscales en qué monedas factura esa subcuenta. Bolívares siempre está.
+  */
+ public const DIVISAS=false;
+ private const MONEDAS=['VES','USD','EUR'];
  private FDb $f; private Documents $docs;
  public function __construct(public DB $db,public Auth $auth,public array $config){
   if($db->sqlite())Http::fail('La facturación necesita la base de datos MySQL del servidor.',409);
@@ -23,6 +30,19 @@ final class Facturacion {
   }));
  }
  private function t():int{return (int)$this->auth->tenant;}
+ /** @return list<string> monedas en que factura esta subcuenta (la primera es la de siempre) */
+ private function monedas():array{
+  if(!self::DIVISAS)return ['VES'];
+  $l=$this->db->setting($this->t(),'fiscal.monedas',['VES']);$l=is_array($l)?array_values(array_intersect(self::MONEDAS,$l)):[];
+  return in_array('VES',$l,true)?$l:array_merge(['VES'],$l);
+ }
+ /** La moneda de un borrador: la pedida, si la subcuenta factura en ella; si no, se rechaza. */
+ private function conMoneda(array $b):array{
+  $m=strtoupper((string)($b['moneda']??''));$ok=$this->monedas();
+  if($m==='')$m=$ok[0];
+  if(!in_array($m,$ok,true))Http::fail(count($ok)===1?'Esta subcuenta factura solo en bolívares.':'Esta subcuenta no factura en esa moneda.');
+  return ['moneda'=>$m]+$b;
+ }
  private function puede(string $k):bool{try{$this->auth->permit($k);return true;}catch(HttpError){return false;}}
  private function actor():array{$u=$this->auth->requireUser();return ['user_id'=>(int)$u['id'],'email'=>(string)($u['email']??'')];}
  /** Quien solo ve lo suyo (ejecutivos, usuarios) ve y toca solo los documentos que preparó. */
@@ -51,7 +71,8 @@ final class Facturacion {
    $perfil=$this->docs->profileOut($t);
    return ['perfil'=>$perfil,'fiscal'=>$perfil['completo'],'tasa'=>(new Tasas($this->f))->estado($t)['vigente'],
     'puede'=>['emitir'=>$this->puede('facturas.emitir'),'anular'=>$this->puede('facturas.anular'),'configurar'=>$this->puede('fiscal.configurar'),'libro'=>$this->puede('libro.ventas')],
-    'proteccion'=>['ok'=>!Esquema::faltan($this->db->pdo)],'soloPropios'=>$this->auth->assignedOnly()];
+    'proteccion'=>['ok'=>!Esquema::faltan($this->db->pdo)],'soloPropios'=>$this->auth->assignedOnly(),
+    'monedas'=>$this->monedas(),'divisasDisponibles'=>self::DIVISAS];
   }
   // ---------- Datos fiscales, números de control y protección (administración)
   if($p==='workspace/fiscal/perfil'){
@@ -65,6 +86,15 @@ final class Facturacion {
   if($p==='workspace/fiscal/rangos/anular'&&$m==='POST'){$this->auth->permit('fiscal.configurar');$this->docs->annulRange($t,Http::integer($b['id']??0,1,PHP_INT_MAX));$this->auth->audit('facturacion','facturacion','rango',['detalle'=>'anuló un rango de números de control sin usar']);return ['rangos'=>$this->docs->ranges($t)];}
   if($p==='workspace/fiscal/verificar'&&$m==='GET'){$this->auth->permit('fiscal.configurar');return $this->docs->verifyChain($t);}
   if($p==='workspace/fiscal/proteccion'&&$m==='POST'){$this->auth->permit('fiscal.configurar');$r=Esquema::instalar($this->db->pdo);return ['ok'=>$r['ok'],'mensaje'=>$r['ok']?'Protección activa.':'El usuario de la base de datos no tiene permiso para crearla. Lo emitido sigue protegido por Ágora y por la cadena de huellas.'];}
+  // ---------- Monedas de la subcuenta (solo cuando las divisas están habilitadas)
+  if($p==='workspace/fiscal/monedas'&&$m==='PUT'){
+   $this->auth->permit('fiscal.configurar');
+   if(!self::DIVISAS)Http::fail('Por ahora la facturación es solo en bolívares.',409);
+   $l=is_array($b['monedas']??null)?array_values(array_intersect(self::MONEDAS,array_map('strval',$b['monedas']))):[];
+   if(!in_array('VES',$l,true))array_unshift($l,'VES');
+   $this->db->saveSetting($this->t(),'fiscal.monedas',$l);$this->auth->audit('facturacion','facturacion','monedas',['detalle'=>'facturará en: '.implode(', ',$l)]);
+   return ['monedas'=>$this->monedas()];
+  }
   // ---------- Tasas BCV
   if($p==='workspace/fiscal/tasas'){
    $tasas=new Tasas($this->f);
@@ -80,13 +110,13 @@ final class Facturacion {
   // ---------- Documentos
   if($p==='workspace/facturas'){
    if($m==='GET'){$q=$_GET;if($this->auth->assignedOnly())$q['creador']=(string)$this->actor()['user_id'];return $this->docs->list($t,$q);}
-   if($m==='POST'){$this->auth->permit('facturas.emitir');return $this->docs->createDraft($t,$b,$this->actor()['user_id']);}
+   if($m==='POST'){$this->auth->permit('facturas.emitir');return $this->docs->createDraft($t,$this->conMoneda($b),$this->actor()['user_id']);}
   }
   if($p==='workspace/facturas/doc'){
    $uid=$this->uid($b);$this->propio($uid);
    if($m==='GET')return $this->docs->get($t,$uid);
    $this->auth->permit('facturas.emitir');
-   if($m==='PUT')return $this->docs->updateDraft($t,$uid,$b);
+   if($m==='PUT')return $this->docs->updateDraft($t,$uid,$this->conMoneda($b));
    if($m==='DELETE'){$this->docs->deleteDraft($t,$uid);return ['ok'=>true];}
   }
   if($p==='workspace/facturas/emitir'&&$m==='POST'){$this->auth->permit('facturas.emitir');$uid=$this->uid($b);$this->propio($uid);$d=$this->docs->emit($t,$uid,$this->actor());$this->recordarCliente($d);return $d;}

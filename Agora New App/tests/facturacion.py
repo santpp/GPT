@@ -40,13 +40,13 @@ try:
     # ---- sin datos fiscales: solo la factura simple
     sql(f"DELETE FROM agora_fiscal_profiles WHERE org_id={T}")
     st,f=adm.call('workspace/fiscal');ok(st==200 and f['fiscal'] is False and f['puede']['emitir'],'sin datos fiscales la subcuenta no es fiscal, pero puede facturar')
-    st,d=adm.call('workspace/facturas','POST',{'tipo':'SIM','moneda':'USD','cliente':{'nombre':'Ana Pérez'},'lineas':[linea('Mensualidad',40,'E')]})
+    st,d=adm.call('workspace/facturas','POST',{'tipo':'SIM','moneda':'VES','cliente':{'nombre':'Ana Pérez'},'lineas':[linea('Mensualidad',40,'E')]})
     ok(st==200 and d['estado']=='BORRADOR' and d['tipo']=='SIM','se crea un borrador de factura simple (sin RIF ni domicilio)')
     st,e=adm.call('workspace/facturas/emitir','POST',{'uid':d['uid']})
     ok(st==200 and e['estado']=='EMITIDA' and e['numero_texto'] and e['control'] is None,f'la factura simple se emite sin datos fiscales ni tasa (N.° {e.get("numero_texto")})')
     st,v=adm.call('workspace/facturas/ver?uid='+d['uid'])
     ok(st==200 and 'Documento sin validez fiscal' in v['html'] and 'N.° de control' not in v['html'],'la factura simple impresa dice «sin validez fiscal» y no lleva número de control')
-    st,d=adm.call('workspace/facturas','POST',{'tipo':'FAC','moneda':'USD','cliente':cliente,'lineas':[linea('Diplomado',100)]})
+    st,d=adm.call('workspace/facturas','POST',{'tipo':'FAC','moneda':'VES','cliente':cliente,'lineas':[linea('Diplomado',100)]})
     st,e=adm.call('workspace/facturas/emitir','POST',{'uid':d['uid']});ok(st==409 and 'datos fiscales' in e.get('error',''),'sin datos fiscales, la factura fiscal no se emite y lo explica')
     fac_pend=d['uid']
     # ---- datos fiscales (solo administración)
@@ -55,13 +55,17 @@ try:
     st,r=adm.call('workspace/fiscal/perfil','PUT',pf);ok(st==200 and r['completo'],'la administración completa los datos fiscales (imprenta digital SERDIMPRE)')
     # ---- tasa BCV
     sql("DELETE FROM agora_fiscal_fx WHERE day>=CURDATE()-INTERVAL 6 DAY")
-    st,e=adm.call('workspace/facturas/emitir','POST',{'uid':fac_pend});ok(st==409 and 'tasa BCV' in e.get('error',''),'sin tasa BCV de los últimos 5 días no se emite la factura fiscal')
+    st,r=adm.call('workspace/facturas','POST',{'tipo':'FAC','moneda':'USD','cliente':cliente,'lineas':[linea('En dólares',10)]});ok(st==422 and 'solo en bolívares' in r.get('error',''),'2.11.1 · por ahora se factura solo en bolívares: una factura en dólares se rechaza')
+    st,f=adm.call('workspace/fiscal');ok(f.get('monedas')==['VES'],'la subcuenta factura en bolívares (dólares y euros quedan listos para activarse)')
     hoy=subprocess.run(['php','-r','echo (new DateTimeImmutable("now",new DateTimeZone("America/Caracas")))->format("Y-m-d");'],capture_output=True,text=True).stdout
     st,r=con.call('workspace/fiscal/tasas','POST',{'fecha':hoy,'tasa':'245,5'});ok(st==403,'la consulta no escribe tasas')
     st,r=adm.call('workspace/fiscal/tasas','POST',{'fecha':hoy,'tasa':'245,5'});ok(st==200 and r['vigente'] and abs(r['vigente']['tasa']-245.5)<1e-6,'la tasa BCV de hoy se escribe a mano (245,5)')
+    sql(f"DELETE FROM agora_fiscal_tasas WHERE org_id={T}")
     st,e=adm.call('workspace/facturas/emitir','POST',{'uid':fac_pend})
+    ok(st==200 and e['moneda']=='VES','la factura en bolívares se emite aunque falte la tasa BCV')
+    adm.call('workspace/fiscal/tasas','POST',{'fecha':hoy,'tasa':'245,5'})  # para la prueba de pantalla (cobros en dólares → Bs)
     ok(st==200 and e['estado']=='EMITIDA' and e['control_pendiente'] and abs(e['totales']['iva_general']-16)<1e-6 and abs(e['totales']['total']-116)<1e-6,'la factura fiscal se emite: IVA 16 % y control pendiente de la imprenta')
-    ok(abs(e['totales']['total_bs']-116*245.5)<0.01,'con su equivalente en Bs a la tasa BCV')
+    ok(e['totales']['total_bs'] is None or abs(e['totales']['total_bs']-116)<0.01,'en bolívares el total es el mismo, sin conversión')
     fac=e
     cn=random.randint(100000,99999999)
     st,r=adm.call('workspace/facturas/control','POST',{'uid':fac['uid'],'control':f'00-{cn}'});ok(st==200 and r['control']==f'00-{cn:08d}',f'se registra el número de control de la imprenta (00-{cn:08d})')
@@ -71,7 +75,7 @@ try:
     r=sql(f"DELETE FROM agora_fiscal_documents WHERE uid='{fac['uid']}'");ok('INMUTABLE' in r.stderr,'y también borrarla')
     st,r=adm.call('workspace/facturas/doc?uid='+fac['uid'],'PUT',{'cliente':cliente,'lineas':[linea('Otro',1)]});ok(st==409,'por la app tampoco se edita: se corrige con una nota')
     # ---- correlativo sin saltos, también al mismo tiempo
-    uids=[adm.call('workspace/facturas','POST',{'tipo':'FAC','moneda':'USD','cliente':cliente,'lineas':[linea(f'Curso {i}',10)]})[1]['uid'] for i in range(5)]
+    uids=[adm.call('workspace/facturas','POST',{'tipo':'FAC','moneda':'VES','cliente':cliente,'lineas':[linea(f'Curso {i}',10)]})[1]['uid'] for i in range(5)]
     borrado=adm.call('workspace/facturas','POST',{'tipo':'FAC','cliente':cliente,'lineas':[linea('Se borra',5)]})[1]['uid']
     st,r=adm.call('workspace/facturas/doc?uid='+borrado,'DELETE');ok(st==200,'un borrador se puede borrar (no gasta número)')
     nums=[];hs=[threading.Thread(target=lambda u=u:nums.append(adm.call('workspace/facturas/emitir','POST',{'uid':u})[1].get('numero'))) for u in uids]
@@ -88,7 +92,7 @@ try:
     st,r=eje.call('workspace/facturas/anular','POST',{'uid':otra,'motivo':'Error en el monto'});ok(st==403,'un vendedor no anula')
     st,r=sup.call('workspace/facturas/anular','POST',{'uid':otra,'motivo':'Error en el monto'});ok(st==200 and r['estado']=='ANULADA' and r['numero_texto'],'la supervisión anula con motivo y el número se conserva')
     # ---- vendedores facturan; solo ven lo suyo; la consulta no factura
-    st,d=eje.call('workspace/facturas','POST',{'tipo':'FAC','moneda':'USD','cliente':cliente,'lineas':[linea('Inscripción',50)]})
+    st,d=eje.call('workspace/facturas','POST',{'tipo':'FAC','moneda':'VES','cliente':cliente,'lineas':[linea('Inscripción',50)]})
     st,e=eje.call('workspace/facturas/emitir','POST',{'uid':d['uid']});ok(st==200 and e['estado']=='EMITIDA','un vendedor prepara y emite su factura fiscal')
     st,l=eje.call('workspace/facturas');ok(st==200 and l.get('documentos') and all(x['creado_por']==e['creado_por'] for x in l['documentos']),'el vendedor solo ve las facturas que preparó')
     st,r=eje.call('workspace/facturas/ver?uid='+fac['uid']);ok(st==403,'y no abre las de otra persona')

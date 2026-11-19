@@ -328,8 +328,8 @@ final class Documents
         $today = Clock::today();
         $time = Clock::localNow()->format('H:i:s');
         $due = $doc['due_date'] && strcmp((string) $doc['due_date'], $today) >= 0 ? (string) $doc['due_date'] : $today;
-        if ($simple) {
-            // La factura simple no exige tasa BCV: si la hay, se muestra el equivalente en Bs.
+        if ($simple || $doc['currency'] === 'VES') {
+            // La factura simple no exige tasa BCV, ni la factura en bolívares (Agora New App 2.11.1): si la hay, queda registrada.
             try { [$rateStr, $rateDay] = $this->bcvRate($orgId, $today); $rateMicro = Money::rateMicro($rateStr); } catch (HttpError) { $rateDay = null; $rateMicro = null; }
         } else {
             [$rateStr, $rateDay] = $this->bcvRate($orgId, $today);
