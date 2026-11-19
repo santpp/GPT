@@ -4087,7 +4087,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.10.2').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.10.3').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -5508,7 +5508,7 @@ function tableroInicioHtml() {
   /* 2.6.1 · un solo tablero: Inicio muestra el resumen de hoy (tres cifras reales) y lleva a ARP Comercial. */
   if (MODS.comercial && moduleAllowed('comercial') && !moduloOculto('comercial')) {
     const mio = !!ESPACIO?.permisos?.soloAsignado;
-    return `<section class="tb-inicio inicio-resumen" aria-labelledby="inicio-resumen-t"><header class="inicio-resumen-h"><h2 id="inicio-resumen-t">${mio ? 'Lo tuyo hoy' : 'Resumen de hoy'}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-ir-editar>${icon('gear')}Elegir cifras</button><a class="inicio-resumen-ver" href="${href(MODS.comercial.path)}" aria-label="Ir a Dashboard"><span class="ir-largo">Ir a Dashboard</span><span class="ir-corto">Dashboard</span>${icon('chevR')}</a></span></header>
+    return `<section class="tb-inicio inicio-resumen" aria-labelledby="inicio-resumen-t"><header class="inicio-resumen-h"><h2 id="inicio-resumen-t">${mio ? 'Lo tuyo hoy' : 'Resumen de hoy'}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-ir-editar>${icon('gear')}Editar tarjetas</button><a class="inicio-resumen-ver" href="${href(MODS.comercial.path)}" aria-label="Ir a Dashboard"><span class="ir-largo">Ir a Dashboard</span><span class="ir-corto">Dashboard</span>${icon('chevR')}</a></span></header>
       <div class="inicio-resumen-g">${iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO))}</div></section>`;
   }
   const c = tbConfig(); if (!c.visible) return '';
@@ -7053,7 +7053,7 @@ function gcVivoHtml() {
   const tarjeta = (cls, ic, t, val, det) => `<div class="ag-resumen ${cls}"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span><strong class="ag-resumen-v">${val}</strong><span class="ag-resumen-d">${det}</span></div>`;
   const elegidas = tarjElegidas('gestion', VG_TARJETAS, GC_DEFECTO);
   /* 2.10.0 · Pedido del usuario: las cifras en una sola caja, con la estructura del «Resumen de hoy» del Inicio (título y botones arriba, cifras separadas por líneas), conservando el ícono y el color de cada una. */
-  const kpis = `<section class="inicio-resumen gc-caja" aria-labelledby="gc-caja-t"><header class="inicio-resumen-h"><h2 id="gc-caja-t">Cifras de ${esc(mes)}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-gc-tarjetas>${icon('gear')}Elegir cifras</button><a class="inicio-resumen-ver" href="${href(MODS.ventas?.path || '/ventas')}">Ver las ventas${icon('chevR')}</a></span></header>`
+  const kpis = `<section class="inicio-resumen gc-caja" aria-labelledby="gc-caja-t"><header class="inicio-resumen-h"><h2 id="gc-caja-t">Cifras de ${esc(mes)}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-gc-tarjetas>${icon('gear')}Editar tarjetas</button><a class="inicio-resumen-ver" href="${href(MODS.ventas?.path || '/ventas')}">Ver las ventas${icon('chevR')}</a></span></header>`
     + (elegidas.length ? `<div class="gc-caja-g">${elegidas.map(id => { const x = VG_TARJETAS[id]; let v; try { v = x.f(d, r, mes); } catch { v = ['', '—', '']; } return tarjeta(v[0], x.ic, esc(x.t), v[1], v[2]); }).join('')}</div>` : '<p class="inicio-resumen-x">No elegiste cifras para esta vista. Usa «Elegir cifras».</p>') + '</section>';
   const graf = vtPuede() ? '<div data-gc-graf-aqui></div>' : '';
   if (!items.length) return cabeza + kpis + `<section class="panel"><p class="empty"><b>Todavía no hay ventas registradas en ${esc(mes)}</b>Cuando se gane una oportunidad y se complete su venta, aparece aquí.</p></section>` + graf;
@@ -7124,7 +7124,7 @@ var coInvTotal = coInv;
 const coDiv = (a, b) => a != null && b ? a / b : null;
 const coVendido = () => { const o = vgSuma(VG.datos?.items || [], v => v.monto); return o.USD ?? Object.values(o)[0] ?? 0; };
 const CO_TARJETAS = {
-  inversion: {t: 'Inversión en anuncios', ic: 'coins', d: 'Lo invertido en Meta en el mes, más lo cargado a mano en Configuración mensual.', f: () => { const i = coInv(); return ['', i == null ? '—' : esc(usd(i)), i == null ? 'La cuenta publicitaria no lo informó' : 'según la cuenta publicitaria']; }},
+  inversion: {t: 'Inversión en anuncios', ic: 'coins', d: 'Lo invertido en Meta en el mes, más la publicidad cargada en «Costos del mes».', f: () => { const i = coInv(); return ['', i == null ? '—' : esc(usd(i)), i == null ? 'La cuenta publicitaria no lo informó' : 'según la cuenta publicitaria']; }},
   costoVenta: {t: 'Costo por venta', ic: 'receipt', d: 'Inversión en anuncios dividida entre las ventas registradas del mes.', f: () => { const n = (VG.datos?.items || []).length, c = coDiv(coInvTotal(), n); return ['', c == null ? '—' : esc(usd(c)), `${int(n)} ventas registradas`]; }},
   costoGanada: {t: 'Costo por oportunidad ganada', ic: 'check', d: 'Inversión en anuncios dividida entre las ganadas del mes en la cuenta.', f: () => { if (!EQ.won) return ['', '—', 'La cuenta no informó las ganadas']; const n = EQ.won?.totals?.count || 0, c = coDiv(coInvTotal(), n); return ['', c == null ? '—' : esc(usd(c)), `${int(n)} ${n === 1 ? 'ganada' : 'ganadas'} en la cuenta`]; }},
   costoResultado: {t: 'Costo por resultado', ic: 'trend', d: 'Lo que informa Meta: inversión entre resultados (formularios, mensajes…).', f: () => { const t = CAMP.datos?.totales || {}; return ['', t.costoPorResultado == null ? '—' : esc(usd(t.costoPorResultado)), t.resultados == null ? 'Sin resultados informados' : `${int(t.resultados)} resultados`]; }},
@@ -7136,9 +7136,9 @@ const CO_DEFECTO = ['inversion', 'costoVenta', 'costoGanada', 'retorno'];
 function coVivoHtml() {
   const mes = mesNombre(VG.mes || PERIODO);
   const cabeza = head('Gestión comercial', 'Costos', `Lo invertido en anuncios y los costos de ${esc(mes)} frente a lo que se vendió.`, `<button class="btn" type="button" data-co-tarjetas>${icon('gear')}Editar tarjetas</button>`);
-  const extra = `<p class="camp-nota">La inversión sale de la cuenta publicitaria de Meta y de lo cargado en Configuración mensual; las ventas, de las ventas registradas en Ágora. Los costos fijos (sueldos, alquiler, herramientas) se cargan en Configuración mensual.</p>`;
+  const extra = `<p class="camp-nota">La inversión en anuncios sale de la cuenta publicitaria de Meta y de la publicidad cargada en «Costos del mes»; las ventas, de las ventas registradas en Ágora.</p>`;
   const camp = campPuede() ? `<div class="mt costos-vivo">${campanasHtml().replace(/<label class="fld camp-mes">[\s\S]*?<\/label>/, '')}</div>` : `<section class="panel mt"><p class="redes-nota">${conectada() ? 'Tu rol no ve la inversión en anuncios.' : 'Esta subcuenta no está conectada con su cuenta: sin ella no hay inversión en anuncios que mostrar.'}</p></section>`;
-  return cabeza + vivoTarjetas('costos', CO_TARJETAS, CO_DEFECTO, [], mes) + extra + camp;
+  return cabeza + vivoTarjetas('costos', CO_TARJETAS, CO_DEFECTO, [], mes) + coItemsHtml() + extra + camp;
 }
 async function coVivoNeed() {
   await vgCargar().catch(() => null);
@@ -7231,7 +7231,9 @@ function cfVivoHtml() {
   const ym = VG.mes || PERIODO, mes = mesNombre(ym), d = MESCFG.datos, puedeEd = !!d?.canEdit;
   const cabeza = head('Administración', 'Configuración mensual', `Las cifras de ${esc(mes)} que no están en ninguna otra parte: la meta, lo invertido fuera de la cuenta y los costos fijos.`);
   if (!d) return cabeza + '<section class="panel"><p class="empty"><b>No se pudo leer la configuración del mes</b>Vuelve a intentarlo en un momento.</p></section>';
-  const campo = (k, t, ayuda) => `<label class="fld"><span class="fld-l">${t}</span><span class="cf-monto"><span>US$</span><input name="${k}" type="number" inputmode="decimal" min="0" step="0.01" value="${mesCfg(k) ?? ''}" placeholder="Sin definir" ${puedeEd ? '' : 'disabled'}></span><small class="fld-h">${ayuda}</small></label>`;
+  // 2.10.3: con costos por concepto en Costos, estos dos totales salen de allí (se muestran, no se escriben aquí).
+  const desdeCostos = k => ['otherAds', 'fixedCosts'].includes(k) && Array.isArray(d.settings?.costItems);
+  const campo = (k, t, ayuda) => `<label class="fld"><span class="fld-l">${t}</span><span class="cf-monto"><span>US$</span><input name="${k}" type="number" inputmode="decimal" min="0" step="0.01" value="${mesCfg(k) ?? ''}" placeholder="Sin definir" ${puedeEd && !desdeCostos(k) ? '' : 'disabled'}></span><small class="fld-h">${desdeCostos(k) ? `Sale de «Costos del mes». <a href="${href('/costos')}">Editar en Costos</a>` : ayuda}</small></label>`;
   return cabeza + `<form class="panel pf-sec cf-form" data-cf-form>${secH('gear', 'Cifras de ' + esc(mes), puedeEd ? 'Se usan en Gestión Comercial, Costos y el Tablero comercial. Deja vacío lo que no aplique.' : 'Solo la administración puede cambiarlas.')}
     <div class="cf-campos">${campo('teamGoal', 'Meta de ventas del mes', 'Lo que el equipo quiere vender en el mes. El Tablero comercial y Gestión Comercial muestran el avance.')}
     ${campo('otherAds', 'Inversión en anuncios fuera de la cuenta', 'Lo pautado que la cuenta no informa: Google, otras redes o Meta mientras la cuenta publicitaria no esté conectada. Se suma a la inversión de Meta en Costos.')}
@@ -7243,7 +7245,7 @@ function cfVivoMontar(root) {
   f.onsubmit = async e => {
     e.preventDefault(); const b = f.querySelector('[type=submit]'); if (!b) return; busy(b, true, 'Guardando…');
     const ym = VG.mes || PERIODO, base = {...(MESCFG.datos?.settings || {})};
-    for (const k of ['teamGoal', 'otherAds', 'fixedCosts']) { const v = f.elements[k].value.trim(); base[k] = v === '' ? null : Math.max(0, Number(v)); if (v !== '' && !isFinite(Number(v))) { busy(b, false); f.querySelector('.fld-err').textContent = 'Revisa los montos: solo números.'; return; } }
+    for (const k of ['teamGoal', 'otherAds', 'fixedCosts']) { if (f.elements[k].disabled) continue; const v = f.elements[k].value.trim(); base[k] = v === '' ? null : Math.max(0, Number(v)); if (v !== '' && !isFinite(Number(v))) { busy(b, false); f.querySelector('.fld-err').textContent = 'Revisa los montos: solo números.'; return; } }
     try { await agoraApi('workspace/board-month?period=' + encodeURIComponent(ym), {method: 'POST', body: {...base, period: ym}}); await mesCfgCargar(ym, true); if (typeof TABLERO_DATOS !== 'undefined') TABLERO_DATOS = null; repaint(); toast('Cifras del mes guardadas.'); }
     catch (x) { busy(b, false); f.querySelector('.fld-err').textContent = x.message; }
   };
@@ -7254,10 +7256,106 @@ VG_TARJETAS.meta = {t: 'Meta del mes', ic: 'trend', d: 'Avance de lo vendido fre
 {
   const metaInv = coInv;
   coInvTotal = () => { const m = metaInv(), o = mesCfg('otherAds'); return m == null && o == null ? null : (m || 0) + (o || 0); };
-  CO_TARJETAS.inversion.f = () => { const m = metaInv(), o = mesCfg('otherAds'), t = coInvTotal(); return ['', t == null ? '—' : esc(usd(t)), t == null ? 'Ni la cuenta publicitaria ni Configuración mensual la informan' : m != null && o ? `Meta ${esc(usd(m))} + otras ${esc(usd(o))}` : m != null ? 'según la cuenta publicitaria' : 'cargada en Configuración mensual']; };
+  CO_TARJETAS.inversion.f = () => { const m = metaInv(), o = mesCfg('otherAds'), t = coInvTotal(); return ['', t == null ? '—' : esc(usd(t)), t == null ? 'Ni la cuenta publicitaria ni «Costos del mes» la informan' : m != null && o ? `Meta ${esc(usd(m))} + otras ${esc(usd(o))}` : m != null ? 'según la cuenta publicitaria' : 'cargada en «Costos del mes»']; };
   CO_TARJETAS.fijos = {t: 'Costos fijos', ic: 'wallet', d: 'Los costos fijos del mes cargados en Configuración mensual.', f: () => { const c = mesCfg('fixedCosts'); return ['', c == null ? '—' : esc(usd(c)), c == null ? 'Cárgalos en Configuración mensual' : 'del mes']; }};
   CO_TARJETAS.total = {t: 'Costo total', ic: 'coins', d: 'Inversión en anuncios más costos fijos.', f: () => { const i = coInvTotal(), c = mesCfg('fixedCosts'); return ['', i == null && c == null ? '—' : esc(usd((i || 0) + (c || 0))), 'anuncios + costos fijos']; }};
   CO_TARJETAS.costoVentaTotal = {t: 'Costo total por venta', ic: 'receipt', d: 'Costo total del mes dividido entre las ventas registradas.', f: () => { const i = coInvTotal(), c = mesCfg('fixedCosts'), n = (VG.datos?.items || []).length; return ['', (i != null || c != null) && n ? esc(usd(((i || 0) + (c || 0)) / n)) : '—', `${int(n)} ventas registradas`]; }};
+}
+/* ---------- 2.10.3 · Costos se editan en Costos ----------
+   Sin reporte mensual, los costos del mes se cargan aquí mismo, concepto por concepto (fijo, variable o publicidad fuera de la cuenta).
+   Se guardan en las cifras del mes (board.<mes>.costItems) y de ahí salen los totales que usan Configuración mensual y el Tablero:
+   fixedCosts = fijos + variables, otherAds = publicidad fuera de la cuenta. Así las tarjetas de Costos tienen qué medir. */
+const CO_TIPOS = [['fijo', 'Fijo', 'Sueldos, alquiler, herramientas…'], ['variable', 'Variable', 'Comisiones, envíos, materiales…'], ['publicidad', 'Publicidad fuera de la cuenta', 'Google, otras redes o Meta sin conectar']];
+const coItems = () => { const l = MESCFG.datos?.settings?.costItems; return Array.isArray(l) ? l.filter(x => x && typeof x === 'object') : null; };
+const coSumaTipo = t => { const l = coItems(); if (!l) return null; return l.filter(x => x.tipo === t).reduce((n, x) => n + (Number(x.monto) || 0), 0); };
+const coFijos = () => coItems() ? coSumaTipo('fijo') : mesCfg('fixedCosts');
+const coVariables = () => coItems() ? coSumaTipo('variable') : null;
+const coOperativo = () => { const f = coFijos(), v = coVariables(); return f == null && v == null ? null : (f || 0) + (v || 0); };
+const coTotal = () => { const i = coInvTotal(), o = coOperativo(); return i == null && o == null ? null : (i || 0) + (o || 0); };
+CO_TARJETAS.fijos = {t: 'Costos fijos', ic: 'wallet', d: 'Los costos fijos del mes: sueldos, alquiler, herramientas.', f: () => { const c = coFijos(); return ['', c == null ? '—' : esc(usd(c)), c == null ? 'Cárgalos abajo, en «Costos del mes»' : 'del mes']; }};
+CO_TARJETAS.variables = {t: 'Costos variables', ic: 'receipt', d: 'Lo que cambia con las ventas: comisiones, envíos, materiales.', f: () => { const c = coVariables(); return ['', c == null ? '—' : esc(usd(c)), c == null ? 'Cárgalos abajo, en «Costos del mes»' : 'del mes']; }};
+CO_TARJETAS.total = {t: 'Costo total', ic: 'coins', d: 'Inversión en anuncios más costos fijos y variables.', f: () => { const t = coTotal(); return ['', t == null ? '—' : esc(usd(t)), t == null ? 'Carga los costos del mes' : 'anuncios + costos del mes']; }};
+CO_TARJETAS.costoVentaTotal = {t: 'Costo total por venta', ic: 'receipt', d: 'Costo total del mes dividido entre las ventas registradas.', f: () => { const t = coTotal(), n = (VG.datos?.items || []).length; return ['', t != null && n ? esc(usd(t / n)) : '—', `${int(n)} ${n === 1 ? 'venta registrada' : 'ventas registradas'}`]; }};
+CO_TARJETAS.margen = {t: 'Margen del mes', ic: 'trend', d: 'Lo vendido menos el costo total del mes.', f: () => { const t = coTotal(); if (t == null) return ['', '—', 'Carga los costos del mes']; const m = coVendido() - t; return [m >= 0 ? 'is-ok' : 'is-warn', esc(usd(m)), `${esc(usd(coVendido()))} vendido − ${esc(usd(t))} de costo`]; }};
+CO_DEFECTO.splice(0, CO_DEFECTO.length, 'total', 'inversion', 'fijos', 'margen');
+function coItemsHtml() {
+  const mes = mesNombre(VG.mes || PERIODO), d = MESCFG.datos, puedeEd = !!d?.canEdit, l = coItems() || [];
+  const legado = !coItems() && (mesCfg('fixedCosts') != null || mesCfg('otherAds') != null);
+  const btn = puedeEd ? `<button class="btn ${l.length || legado ? '' : 'btn-cta'}" type="button" data-co-editar>${icon('edit')}${l.length || legado ? 'Editar costos' : 'Cargar costos'}</button>` : '';
+  const tipo = t => (CO_TIPOS.find(x => x[0] === t) || [, '—'])[1];
+  const total = l.reduce((n, x) => n + (Number(x.monto) || 0), 0);
+  const cuerpo = l.length
+    ? `<div class="tw"><table data-xt-vivo><thead><tr><th>Concepto</th><th>Tipo</th><th class="n">Monto</th></tr></thead><tbody>${l.map(x => `<tr><td class="wrap"><b>${esc(x.concepto || '—')}</b></td><td><span class="sc sc-gray">${esc(tipo(x.tipo))}</span></td><td class="n">${esc(usd(Number(x.monto) || 0))}</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="2"><b>Total</b></td><td class="n"><b>${esc(usd(total))}</b></td></tr></tfoot></table></div>`
+    : legado ? `<p class="empty"><b>Costos de ${esc(mes)} sin desglose</b>Hay ${mesCfg('fixedCosts') != null ? `${esc(usd(mesCfg('fixedCosts')))} en costos fijos` : ''}${mesCfg('fixedCosts') != null && mesCfg('otherAds') != null ? ' y ' : ''}${mesCfg('otherAds') != null ? `${esc(usd(mesCfg('otherAds')))} en publicidad fuera de la cuenta` : ''}. ${puedeEd ? '«Editar costos» los separa por concepto.' : ''}</p>`
+    : `<p class="empty"><b>Todavía no hay costos de ${esc(mes)}</b>${puedeEd ? 'Carga sueldos, alquiler, herramientas o publicidad fuera de la cuenta para ver el costo total, el costo por venta y el margen.' : 'Quien administra la subcuenta los carga aquí.'}</p>`;
+  return `<section class="panel pf-sec co-items" data-co-items>${secH('coins', 'Costos de ' + esc(mes), l.length ? `${int(l.length)} ${l.length === 1 ? 'concepto' : 'conceptos'} · ${esc(usd(total))}` : 'Lo que cuesta operar en el mes.', btn)}${cuerpo}</section>`;
+}
+async function coItemsEditar() {
+  const ym = VG.mes || PERIODO, mes = mesNombre(ym);
+  if (!MESCFG.datos?.canEdit) { toast('Solo la administración puede cambiar los costos.'); return; }
+  let l = coItems();
+  if (!l) l = [mesCfg('fixedCosts') != null ? {concepto: 'Costos fijos', tipo: 'fijo', monto: mesCfg('fixedCosts')} : null, mesCfg('otherAds') != null ? {concepto: 'Publicidad fuera de la cuenta', tipo: 'publicidad', monto: mesCfg('otherAds')} : null].filter(Boolean);
+  const montoTx = v => Number(v) ? NF.format(Number(v)) : '';
+  const opciones = sel => CO_TIPOS.map(([v, t]) => `<option value="${v}" ${v === sel ? 'selected' : ''}>${t}</option>`).join('');
+  const fila = (x = {}) => `<div class="ag-serv co-fila">
+      <label class="fld ag-serv-n">Concepto<input data-k="concepto" maxlength="80" value="${esc(x.concepto || '')}" placeholder="Alquiler"></label>
+      <label class="fld ag-serv-f">Tipo<select data-k="tipo">${opciones(x.tipo || 'fijo')}</select></label>
+      <label class="fld ag-serv-m">Monto (US$)<input data-k="monto" inputmode="decimal" value="${esc(montoTx(x.monto))}" placeholder="0,00"></label>
+      <button type="button" class="icon-btn ag-serv-x" data-quitar aria-label="Quitar concepto">${icon('x')}</button>
+    </div>`;
+  const s = openModal(modalHead('Costos de ' + esc(mes), 'Lo que cuesta operar en el mes. Con esto Costos calcula el costo total, el costo por venta y el margen.') + `
+    <form class="form ag-cobros-form" novalidate>
+      <fieldset class="bx"><legend>${icon('coins')}Conceptos</legend>
+        <div data-co-filas>${(l.length ? l : [{}]).map(fila).join('')}</div>
+        <div class="co-ed-acts"><button type="button" class="btn btn-sm" data-agregar>${icon('plus')}Agregar concepto</button><button type="button" class="btn btn-sm" data-anterior>${icon('history')}Copiar de ${esc(mesNombre(mesSuma(ym, -1)))}</button></div>
+      </fieldset>
+      <div class="ag-cobros-tot is-live"><small>Total del mes</small><b data-total>—</b><span data-desglose></span></div>
+      <p class="fld-err" role="alert"></p>
+      <div class="form-ft"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn btn-cta">Guardar costos</button></div>
+    </form>`, {wide: true});
+  const form = s.querySelector('form'), lista = s.querySelector('[data-co-filas]'), err = s.querySelector('.fld-err');
+  const leer = () => [...lista.querySelectorAll('.co-fila')].map(r => ({concepto: r.querySelector('[data-k=concepto]').value.trim(), tipo: r.querySelector('[data-k=tipo]').value, monto: agenciaLeerMonto(r.querySelector('[data-k=monto]').value), fila: r}));
+  const total = () => {
+    const xs = leer().filter(x => x.monto !== null), suma = t => xs.filter(x => !t || x.tipo === t).reduce((n, x) => n + Number(x.monto), 0);
+    s.querySelector('[data-total]').textContent = usd(suma());
+    s.querySelector('[data-desglose]').textContent = `Fijos ${usd(suma('fijo'))} · variables ${usd(suma('variable'))} · publicidad ${usd(suma('publicidad'))}`;
+  };
+  s.querySelector('[data-agregar]').onclick = () => { lista.insertAdjacentHTML('beforeend', fila()); lista.lastElementChild.querySelector('input').focus(); total(); };
+  s.querySelector('[data-anterior]').onclick = async e => {
+    const b = e.currentTarget; busy(b, true, 'Leyendo…');
+    try {
+      const prev = await agoraApi('workspace/board-month?period=' + encodeURIComponent(mesSuma(ym, -1)));
+      const pl = Array.isArray(prev?.settings?.costItems) ? prev.settings.costItems : [];
+      busy(b, false);
+      if (!pl.length) { err.textContent = `${mesNombre(mesSuma(ym, -1))} no tiene costos por concepto para copiar.`; return; }
+      lista.innerHTML = pl.map(fila).join(''); err.textContent = ''; total();
+    } catch (x) { busy(b, false); err.textContent = x.message || 'No se pudo leer el mes anterior.'; }
+  };
+  lista.addEventListener('click', e => { const b = e.target.closest('[data-quitar]'); if (b) { b.closest('.co-fila').remove(); total(); } });
+  form.addEventListener('input', total); form.addEventListener('change', total); total();
+  form.onsubmit = async e => {
+    e.preventDefault(); err.textContent = '';
+    form.querySelectorAll('[aria-invalid]').forEach(x => x.removeAttribute('aria-invalid'));
+    const marcar = (el, msg) => { el.setAttribute('aria-invalid', 'true'); el.focus(); err.textContent = msg; };
+    const xs = leer().filter(x => x.concepto || Number(x.monto));
+    if (xs.length > 60) { err.textContent = 'Hasta 60 conceptos por mes.'; return; }
+    for (const x of xs) {
+      if (!x.concepto) return marcar(x.fila.querySelector('[data-k=concepto]'), 'Escribe el concepto o quita la fila.');
+      if (x.monto === null) return marcar(x.fila.querySelector('[data-k=monto]'), `El monto de «${x.concepto}» no es válido. Usa números con hasta dos decimales, por ejemplo 120,50.`);
+    }
+    const items = xs.map(x => ({concepto: x.concepto, tipo: x.tipo, monto: Number(x.monto)}));
+    const suma = t => items.filter(x => t.includes(x.tipo)).reduce((n, x) => n + x.monto, 0);
+    const base = {...(MESCFG.datos?.settings || {})};
+    base.costItems = items;
+    base.fixedCosts = items.some(x => x.tipo !== 'publicidad') ? Math.round(suma(['fijo', 'variable']) * 100) / 100 : null;
+    base.otherAds = items.some(x => x.tipo === 'publicidad') ? Math.round(suma(['publicidad']) * 100) / 100 : null;
+    const btn = form.querySelector('[type=submit]'); busy(btn, true, 'Guardando…');
+    try {
+      await agoraApi('workspace/board-month?period=' + encodeURIComponent(ym), {method: 'POST', body: {...base, period: ym}});
+      await mesCfgCargar(ym, true); if (typeof TABLERO_DATOS !== 'undefined') TABLERO_DATOS = null;
+      closeModal(); repaint(); toast('Costos guardados.');
+    } catch (x) { busy(btn, false); err.textContent = x.message || 'No se pudieron guardar los costos.'; }
+  };
 }
 /* ---------- 2.8.12 · Tendencias sin reporte: las ventas registradas mes a mes (últimos 12 meses) ---------- */
 function tdMeses() {
@@ -7306,14 +7404,22 @@ function caRevisiones() {
     {id: 'sinPrecio', g: 'baja', t: 'Productos activos sin precio', d: 'Al registrar una venta habrá que escribir el monto a mano.', l: productos.filter(x => x.activo !== false && !(Number(x.precio) > 0)).map(x => x.nombre)},
   ].map(r => ({...r, n: r.l.length})).sort((a, b) => (b.n > 0) - (a.n > 0) || ['alta', 'media', 'baja'].indexOf(a.g) - ['alta', 'media', 'baja'].indexOf(b.g));
 }
+/* 2.10.3 · Calidad de datos: sus tarjetas también se eligen («Editar tarjetas»), como en los demás módulos. */
+const caCasos = (r, f) => r.filter(f).reduce((t, x) => t + x.n, 0);
+const CA_TARJETAS = {
+  enOrden: {t: 'Revisiones en orden', ic: 'check', d: 'Cuántas revisiones no encontraron nada que corregir.', f: (r, total) => { const mal = r.filter(x => x.n); return [mal.length ? '' : 'is-ok', `${int(r.length - mal.length)}<small> de ${int(r.length)}</small>`, `${int(total)} ventas revisadas`]; }},
+  importantes: {t: 'Importantes por corregir', ic: 'warn', d: 'Casos que cambian las cifras: conviene corregirlos primero.', f: r => { const n = caCasos(r, x => x.g === 'alta'); return [n ? 'is-warn' : 'is-ok', int(n), n === 1 ? 'caso' : 'casos']; }},
+  otros: {t: 'Otros por revisar', ic: 'info', d: 'Casos menores o que conviene revisar.', f: r => { const n = caCasos(r, x => x.g !== 'alta'); return ['', int(n), n === 1 ? 'caso' : 'casos']; }},
+  total: {t: 'Casos en total', ic: 'shield', d: 'Todo lo que las revisiones encontraron.', f: r => { const n = caCasos(r, () => true); return [n ? '' : 'is-ok', int(n), n ? 'por revisar' : 'todo en orden']; }},
+  revisadas: {t: 'Ventas revisadas', ic: 'receipt', d: 'Las ventas registradas que se revisaron.', f: (r, total) => ['', int(total), 'ventas registradas']},
+};
+const CA_DEFECTO = ['enOrden', 'importantes', 'otros'];
 function caVivoHtml() {
-  const cabeza = head('Gestión comercial', 'Calidad de datos', 'Lo que conviene corregir en las ventas registradas y el catálogo antes de cerrar números.');
+  const cabeza = head('Gestión comercial', 'Calidad de datos', 'Lo que conviene corregir en las ventas registradas y el catálogo antes de cerrar números.', `<button class="btn" type="button" data-ca-tarjetas>${icon('gear')}Editar tarjetas</button>`);
   if (!FA.datos) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas</b>Vuelve a intentarlo en un momento.</p></section>';
   const r = caRevisiones(), mal = r.filter(x => x.n), total = (FA.datos.items || []).length;
   const G = {alta: ['Importante', 'sc-bad'], media: ['Conviene', 'sc-warn'], baja: ['Menor', 'sc-gray']};
-  const resumen = `<section class="ag-resumen-grid vg-kpis"><div class="ag-resumen ${mal.length ? '' : 'is-ok'}"><span class="ag-resumen-ic" aria-hidden="true">${icon('check')}</span><span class="ag-resumen-t">Revisiones en orden</span><strong class="ag-resumen-v">${int(r.length - mal.length)}<small> de ${int(r.length)}</small></strong><span class="ag-resumen-d">${int(total)} ventas revisadas</span></div>
-    <div class="ag-resumen ${mal.some(x => x.g === 'alta') ? 'is-warn' : ''}"><span class="ag-resumen-ic" aria-hidden="true">${icon('warn')}</span><span class="ag-resumen-t">Importantes por corregir</span><strong class="ag-resumen-v">${int(mal.filter(x => x.g === 'alta').reduce((t, x) => t + x.n, 0))}</strong><span class="ag-resumen-d">casos</span></div>
-    <div class="ag-resumen"><span class="ag-resumen-ic" aria-hidden="true">${icon('info')}</span><span class="ag-resumen-t">Otros por revisar</span><strong class="ag-resumen-v">${int(mal.filter(x => x.g !== 'alta').reduce((t, x) => t + x.n, 0))}</strong><span class="ag-resumen-d">casos</span></div></section>`;
+  const resumen = vivoTarjetas('calidad', CA_TARJETAS, CA_DEFECTO, [r, total], 'el mes');
   const lista = `<ul class="ca-lista">${r.map(x => `<li class="${x.n ? '' : 'is-ok'}"><span class="ca-n">${x.n ? int(x.n) : icon('check')}</span><span class="ca-t"><b>${esc(x.t)}</b><small>${esc(x.d)}</small>${x.n ? `<small class="ca-ej">${esc([...new Set(x.l)].slice(0, 5).join(' · '))}${x.n > 5 ? ' …' : ''}</small>` : ''}</span>${x.n ? `<span class="sc ${G[x.g][1]}">${G[x.g][0]}</span>` : '<span class="sc sc-ok">En orden</span>'}</li>`).join('')}</ul>`;
   return cabeza + resumen + `<section class="panel pf-sec">${secH('shield', 'Revisiones', 'Se corrigen en Ventas (editar la venta) o en Productos y servicios.', `<a class="btn btn-sm" href="${href(MODS.ventas?.path || '/ventas')}">${icon('receipt')}Ir a Ventas</a>`)}${lista}</section>`;
 }
@@ -7599,10 +7705,10 @@ function opEmbudoInyectar(root) {
 var TB_VIVO = {
   configuracion: {need: () => Promise.all([vgCargar().catch(() => null)]).then(() => mesCfgCargar(null, true)), render: cfVivoHtml, montar: cfVivoMontar},
   tendencias: {need: () => Promise.all([vgCargar().catch(() => null), faCargar(), tarjCargar('tendencias')]), render: tdVivoHtml, montar: r => r?.querySelector('[data-td-tarjetas]')?.addEventListener('click', () => tarjEditar('tendencias', TD_TARJETAS, TD_DEFECTO, 'Tendencias', repaint))},
-  calidad: {need: () => Promise.all([vgCargar().catch(() => null), faCargar(), cargarCatalogo().catch(() => null)]), render: caVivoHtml, montar() {}},
+  calidad: {need: () => Promise.all([vgCargar().catch(() => null), faCargar(), cargarCatalogo().catch(() => null), tarjCargar('calidad')]), render: caVivoHtml, montar: r => r?.querySelector('[data-ca-tarjetas]')?.addEventListener('click', () => tarjEditar('calidad', CA_TARJETAS, CA_DEFECTO, 'Calidad de datos', repaint))},
   catalogo: {need: () => Promise.all([faCargar(), cargarCatalogo().catch(() => null)]), render: ctVivoHtml, montar() {}},
   facturas: {need: () => Promise.all([faCargar(), tarjCargar('facturas'), vgCargar().catch(() => null)]), render: faVivoHtml, montar: faVivoMontar},
-  costos: {need: coVivoNeed, render: coVivoHtml, montar: r => r?.querySelector('[data-co-tarjetas]')?.addEventListener('click', () => tarjEditar('costos', CO_TARJETAS, CO_DEFECTO, 'Costos', repaint))},
+  costos: {need: coVivoNeed, render: coVivoHtml, montar: r => { r?.querySelector('[data-co-tarjetas]')?.addEventListener('click', () => tarjEditar('costos', CO_TARJETAS, CO_DEFECTO, 'Costos', repaint)); r?.querySelector('[data-co-editar]')?.addEventListener('click', coItemsEditar); }},
   resumen: {need: () => Promise.all([vgCargar().catch(() => null), tarjCargar('gestion')]).then(() => mesCfgCargar(VG.mes, true)), render: () => gcVivoHtml(), montar: r => gcVivoMontar(r)},
   equipo: {need: eqVivoNeed, render: eqVivoHtml, montar: r => r?.querySelector('[data-eq-tarjetas]')?.addEventListener('click', () => tarjEditar('equipo', EQ_TARJETAS, EQ_DEFECTO, 'Equipo', repaint))},
 };
@@ -9263,7 +9369,7 @@ V.redes = {
   render() {
     const r = REDES.resumen;
     const cabeza = head('Gestión y resultados', 'Redes y anuncios', 'Las campañas de Meta, y las cifras y publicaciones de las redes de la empresa.');
-    if (REDES.error) return cabeza + campanasHtml() + `<section class="panel mt"><p class="redes-aviso">${icon('warn')}<span>${esc(REDES.error)}</span></p><div class="form-ft" style="justify-content:flex-start"><button class="btn" type="button" data-redes-reintentar>${icon('refresh')}Reintentar</button></div></section>`;
+    if (REDES.error) return cabeza + campanasHtml() + `<section class="panel mt"><p class="redes-aviso">${icon('warn')}<span>${esc(REDES.error)}</span></p><div class="form-ft" style="justify-content:flex-start">${!conectada() ? (moduleAllowed('conexiones') ? `<a class="btn btn-tint" href="${href('/ajustes')}">${icon('gear')}Conectar en Ajustes</a>` : '') : `<button class="btn" type="button" data-redes-reintentar>${icon('refresh')}Reintentar</button>`}</div></section>`;
     if (!r) return loading('Redes y anuncios');
     const cuentas = r.cuentas || [];
     const chips = cuentas.length ? cuentas.map(c => `<li class="redes-cuenta${c.vencida ? ' is-vencida' : ''}"><span class="redes-red redes-${esc(c.plataforma)}">${esc(c.red)}</span><b>${esc(c.nombre)}</b>${c.vencida ? '<small>La conexión venció: hay que volver a conectarla en la cuenta</small>' : ''}</li>`).join('')

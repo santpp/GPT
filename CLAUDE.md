@@ -35,7 +35,7 @@ Resumen de cómo trabajamos. El detalle por módulo y las decisiones de cada ver
 |---|---|---|
 | Qué es | App del vendedor (bandeja, contactos, oportunidades, tablero), PWA y Android | Gestión completa (ventas, facturación, reporte mensual, contratos, agencia) |
 | Dónde | Producción: nueva.agoradigital.app | Pruebas: tests.agoradigital.app (CyberPanel + OpenLiteSpeed) |
-| Versión | **1.10.32** | **2.10.2** |
+| Versión | **1.10.32** | **2.10.3** |
 | Código | 23 módulos ES (`public/assets/*.js`), `src/` PHP 8.3 | `public_html/assets/agora-app.js` (un archivo grande, se va a refactorizar), `agora-modulos.js` (pantallas de Mobile empaquetadas), `servidor/` |
 | Paquete | `python3 deploy/native/package.py "Agora Mobile/agora-update-X.zip" --update` + `deploy/native/UPDATE-X.md`; versión en `src/Installation.php`, pie de `public/index.html` y `tests/integration.php`; `.sha256` con `sha256sum` | `python3 tools/package.py` (revisa secretos, excluye config, storage, pruebas y demos) |
 | Pruebas | `tests/*.php` y `tests/*-ui.py` (servidor :8080) | `Agora New App/tests/*.py` (API :8090) |
@@ -57,11 +57,8 @@ Cuando el usuario pide «prueba todo / no arregles nada»:
 
 ## ERP · lo esencial
 
-- API: `public_html/api/index.php` → `servidor/app/src/Controllers/Api.php`. Tablas `agora_*`; migraciones en `servidor/app/database/migrations/` (última `006_espejo.sql`), el arranque aplica la más nueva.
-- Roles: MASTER y SUPERADMIN (dueños, **solo por terminal** con `servidor/bin/crear-dueno.php`; ven todos los módulos). Clave nueva o desbloqueo de cualquier cuenta: `servidor/bin/cambiar-clave.php correo` / `--desbloquear`, ADMIN, SUPERVISOR, EJECUTIVO, CONSULTA. Permisos en `Security/Auth.php::POLICY`; en pantalla usa `moduleAllowed`, **nunca `MODS[x].ok()` directo**.
-- Con la subcuenta conectada, `Core/MotorMobile.php` manda al motor las rutas en vivo. Lo que vive en la cuenta se escribe en la cuenta, sin copias locales; Contactos, Oportunidades y Tareas no tienen «Agregar manual» ni Excel.
-- `agora-app.js` es un solo bloque que termina en `render();`: **el código nuevo va antes del arranque**. Estilos nuevos en `assets/agora-new.css`. Rutas nuevas: `public_html/.htaccess` y `dev-router.php`.
-- **Al cambiar de versión** actualiza a la vez: `?v=X` en `index.html` y en el `import` de `motor/consumption.js` dentro de `agora-app.js`, `CACHE` en `sw.js`, `version.json`, `'version'` de `health` en `Api.php`, la versión por defecto de `tools/package.py`, `ANALISIS.md`, `NOVEDADES.md`, `ERRORES.md` y `docs/roadmap.md`. `tests/ui-estados.py` comprueba que coincidan.
+- **Contexto e instrucciones de desarrollo del ERP: `Agora New App/CLAUDE.md`.** Incluye el mapa del código, los dos modos de cada módulo (con y sin reporte), el **criterio único de edición**, el lenguaje visual, los pasos para cambiar de versión y las pruebas locales.
+- Lo mínimo para no romper nada: `agora-app.js` termina en `render();` (lo nuevo va antes); permisos con `moduleAllowed`; con la subcuenta conectada, lo de la cuenta se escribe en la cuenta.
 
 ## Pruebas en local
 
@@ -73,7 +70,8 @@ Cuando el usuario pide «prueba todo / no arregles nada»:
 
 ## Estado y decisiones vigentes (detalle en `docs/decisiones.md`)
 
-- **Lo más urgente · ERP: refactorizar `agora-app.js`** (Etapa 1: separar con una herramienta que lee el archivo y escribe los archivos; primero archivos en orden sin importaciones, luego importaciones y router generados por la herramienta; verificar con revisión de nombres sin definir, HTML de cada pantalla idéntico antes/después y todas las pruebas). Durante la Etapa 1 no se agregan funciones nuevas a ese archivo. Mobile no entra.
+- **Refactorización de `agora-app.js` (ERP): después del lanzamiento, cuando el usuario avise.** Plan (Etapa 1): una herramienta lee el archivo y escribe los archivos; primero en orden sin importaciones, luego importaciones y router generados; se verifica con nombres sin definir, HTML idéntico antes y después y todas las pruebas. Mobile no entra.
+- **ERP en espera:** módulo de agenda de citas (pedido del cliente).
 - **Por confirmar con la cuenta real:** escrituras (enviar, asignar, editar contacto, mover/crear oportunidad, marcar ganada, tareas, nuevo contacto), cifras de redes y Campañas de Meta.
 - **No hacer por ahora:** avisos al teléfono, publicar o borrar publicaciones desde Ágora, conexión directa con Meta.
 - **No afirmes que algo no existe en la cuenta sin evidencia**; si el usuario muestra lo contrario, créele y corrige.

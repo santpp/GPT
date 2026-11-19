@@ -6,7 +6,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.10.2'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.10.3'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -126,7 +126,7 @@ final class Api {
   if(preg_match('~^workspace/opportunity/(new|edit|status)$~D',$p,$match)&&$m==='POST')return $this->w->opportunity($b,$match[1]);
   if($p==='workspace/won'&&$m==='GET')return $this->metrics->won();
   if($p==='workspace/dashboard'&&$m==='GET')return $this->metrics->dashboard();
-  if($p==='workspace/board-month'){if($m==='GET')return $this->metrics->month();if($m==='POST'){$this->a->manage();$period=Http::period($_GET['period']??$b['period']??gmdate('Y-m'));if(strlen(DB::json($b))>10000)Http::fail('Configuración demasiado grande.');$this->db->saveSetting($this->a->tenant,'board.'.$period,$b);$this->a->audit('metas.actualizadas','ajuste',$period);return ['saved'=>true];}}
+  if($p==='workspace/board-month'){if($m==='GET')return $this->metrics->month();if($m==='POST'){$this->a->manage();$period=Http::period($_GET['period']??$b['period']??gmdate('Y-m'));if(strlen(DB::json($b))>10000)Http::fail('Configuración demasiado grande.');$b=self::costosMes($b);$this->db->saveSetting($this->a->tenant,'board.'.$period,$b);$this->a->audit('metas.actualizadas','ajuste',$period);return ['saved'=>true];}}
   if($p==='workspace/resumen'&&$m==='GET')return ['mrr'=>null,'mrrAnterior'=>null,'clientesActivos'=>null,'recaudado'=>null,'arr'=>null,'caja'=>null,'churn'=>null,'churnPct'=>null,'egresos'=>null,'inversion'=>null,'serie'=>[],'espacios'=>[$this->ag->branding('GET',[])],'superadmins'=>[],'porVencer'=>[]];
   if($p==='workspace/ads'&&$m==='GET')return ['estado'=>'not_connected'];
   if($p==='workspace/dia'&&$m==='GET'){$d=$this->metrics->dashboard();return ['conversacionesDia'=>null,'atendidas'=>null,'sinLeer'=>$d['conversations']['unread'],'sinLeerPorAsesor'=>[],'slaIncumplido'=>null,'slaPromedio'=>'Sin medición','slaPromedioSeg'=>null,'slaMetaTexto'=>'Sin configurar','peorRespuesta'=>'Sin medición','leads'=>null,'leadsPorFuente'=>[],'leadsPorUsuario'=>[]];}
@@ -155,5 +155,24 @@ final class Api {
   if($m==='GET'&&$p==='devices')return ['items'=>[],'configured'=>false,'vapidPublicKey'=>null];
   if($p==='devices/test'||str_starts_with($p,'passkeys')||str_starts_with($p,'team-login'))Http::fail('Esta integración requiere configuración adicional. Usa acceso por contraseña.',503);
   Http::fail('Ruta o método no implementado: '.$p,404);
+ }
+
+ /** 2.10.3 · Costos del mes por concepto (Costos): lista limpia; fixedCosts y otherAds salen de ella. */
+ private static function costosMes(array $b):array{
+  if(!array_key_exists('costItems',$b))return $b;
+  if($b['costItems']===null){unset($b['costItems']);return $b;}
+  if(!is_array($b['costItems'])||!array_is_list($b['costItems'])||count($b['costItems'])>60)Http::fail('Hasta 60 conceptos de costo por mes.');
+  $l=[];$fijo=0.0;$pub=0.0;$hayOp=false;$hayPub=false;
+  foreach($b['costItems'] as $x){
+   if(!is_array($x))Http::fail('Un concepto de costo no es válido.');
+   $c=trim(preg_replace('/\s+/u',' ',(string)($x['concepto']??'')));
+   if($c===''||mb_strlen($c)>80)Http::fail('Cada costo necesita un concepto de hasta 80 caracteres.');
+   $t=(string)($x['tipo']??'');if(!in_array($t,['fijo','variable','publicidad'],true))Http::fail("El tipo de «{$c}» no es válido.");
+   $m=$x['monto']??null;if(!is_numeric($m)||(float)$m<0||(float)$m>1000000000)Http::fail("El monto de «{$c}» no es válido.");
+   $m=round((float)$m,2);$l[]=['concepto'=>$c,'tipo'=>$t,'monto'=>$m];
+   if($t==='publicidad'){$pub+=$m;$hayPub=true;}else{$fijo+=$m;$hayOp=true;}
+  }
+  $b['costItems']=$l;$b['fixedCosts']=$hayOp?round($fijo,2):null;$b['otherAds']=$hayPub?round($pub,2):null;
+  return $b;
  }
 }

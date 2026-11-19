@@ -1,5 +1,13 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.10.3 · Correcciones del cliente (19 nov):**
+- **Costos se editan en Costos.** Antes las tarjetas mostraban «—» y no había dónde cargar nada en el módulo. Ahora «Cargar costos» abre una lista por concepto: sueldos, alquiler, comisiones o publicidad fuera de la cuenta, cada uno como fijo, variable o publicidad, con «Copiar del mes anterior». Con eso las tarjetas miden: **Costo total, Inversión en anuncios, Costos fijos y Margen del mes**, y también Costos variables y Costo total por venta si se eligen. Configuración mensual muestra esos totales sin poder pisarlos y lleva a Costos.
+- **Criterio único de edición en todos los módulos:** se edita donde se ve, un dato tiene un solo lugar donde se cambia y toda caja de cifras tiene «Editar tarjetas». Calidad de datos ya lo tiene, y «Elegir cifras» pasó a llamarse «Editar tarjetas» en todos los módulos.
+- **Bandeja: la ficha del contacto se encuentra.** El ícono sin texto que la abría es ahora el botón «Ficha». Allí están «Editar» (datos del contacto) y **«Agregar observación»** (antes «Crear nota»), y la sección se llama «Observaciones».
+- Redes y anuncios, en una subcuenta sin conexión, ofrece «Conectar en Ajustes» en vez de un «Reintentar» que no servía.
+- Revisión visual de los 27 módulos, en teléfono y escritorio, con y sin reporte: sin desbordes, sin textos técnicos y sin errores.
+- Prueba nueva: `tests/costos-editar.py` (17).
+
 **Novedades 2.10.2:**
 - **Nuevo comando para destrabar la entrada:** `php servidor/bin/cambiar-clave.php correo@ejemplo.com` pone una contraseña nueva a cualquier cuenta (también la Master), la deja activa, cierra sus sesiones y quita el bloqueo por intentos. `… cambiar-clave.php --desbloquear` solo quita los bloqueos. Antes no había forma de cambiar la clave de un dueño.
 - La guía de instalación explica los tres casos en que no deja entrar: clave incorrecta, «Demasiados intentos» y «Ambiente de pruebas» (falta `config.php`).

@@ -285,6 +285,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - El repositorio se divide: `Agora Mobile/` (release 1.10.14 de nueva.agoradigital.app; el código sigue en la raíz) y `Agora New App/` (ERP 2.1.19 recibido: `public_html/`, `servidor/`). Análisis completo: `Agora New App/ANALISIS.md`. Sin Docker; MySQL.
 - Se deja de llamar «armazón». Lo de abajo es el historial de cuando lo era.
 - **2.2.0 (13 de noviembre)**: estable en MySQL; conexión con la cuenta por subcuenta (token cifrado, Location ID, «Probar conexión»); fuente Author; arreglos de Ajustes, Contactos, Gestión Comercial y logos; paquete de producción sin modo pruebas (`agora-new-app-2.2.0.zip`) y paquete de demo aparte. Siguiente: Conversaciones con el motor de Ágora Mobile.
+- **2.10.3 (19 de noviembre)**: Costos se editan en Costos (conceptos fijos, variables y publicidad; tarjetas de costo total y margen); criterio único de edición («Editar tarjetas» en todo módulo con cifras); Bandeja con botón «Ficha» y «Observaciones»; contexto propio del ERP en `Agora New App/CLAUDE.md`.
 - **2.10.2 (18 de noviembre)**: comando `cambiar-clave.php` para poner clave nueva y quitar bloqueos por intentos.
 - **2.10.1 (18 de noviembre)**: encabezados sin texto repetido; «Excel» de arriba con el ícono de descarga.
 - **2.10.0 (18 de noviembre)**: Gestión Comercial con las cifras en una caja como el Inicio (íconos y colores); «Inversión en anuncios» a Costos y «Embudo por etapa» a Oportunidades → Embudos (movidas desde el Tablero).

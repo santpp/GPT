@@ -112,7 +112,9 @@ final class MotorMobile {
   \Board::save($tenant,$period,$s);
   $_GET['period']=$period;
   $edita=in_array($a->user['role']??'',['MASTER','SUPERADMIN','ADMIN'],true);
-  self::atender($erp,$config,$a,'workspace/board-month','GET',static fn(array $b):array=>['canEdit'=>$edita]+$b);
+  // 2.10.3 · Los costos por concepto (Costos) los guarda Ágora; el motor no los conoce: se añaden a su respuesta.
+  $items=is_array($s['costItems']??null)?$s['costItems']:null;
+  self::atender($erp,$config,$a,'workspace/board-month','GET',static function(array $b)use($edita,$items):array{if($items!==null&&is_array($b['settings']??null))$b['settings']['costItems']=$items;return ['canEdit'=>$edita]+$b;});
  }
 
  public static function atender(DB $erp,array $config,Auth $a,string $p,string $m,?\Closure $transformar=null):never{

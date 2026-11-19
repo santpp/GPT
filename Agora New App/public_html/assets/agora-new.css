@@ -543,3 +543,14 @@ a.inicio-resumen-c:hover .inicio-resumen-l .ic{opacity:.9;transform:translateX(2
   .gc-caja .gc-caja-g .ag-resumen,.gc-caja .gc-caja-g .ag-resumen:nth-child(2n){border-left:0!important;padding:12px 0;border-bottom:1px solid var(--line)!important}
   .gc-caja .gc-caja-g .ag-resumen:last-child{border-bottom:0!important}
 }
+
+/* 2.10.3 · Costos del mes: editor por concepto (mismo estilo que los servicios de agencia) */
+.co-fila { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, .8fr) auto; }
+.co-ed-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.co-items { margin-top: 16px; }
+.co-items tfoot td { border-top: 1px solid var(--line); }
+@media (max-width: 640px) {
+  .co-fila { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+  .co-fila .ag-serv-n { grid-column: 1 / -1; }
+  .co-fila .ag-serv-x { grid-column: 3; }
+}
