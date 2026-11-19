@@ -1,5 +1,5 @@
-"""1.10.31 · Guardar la ficha: «Sin asignar» se manda a nuestro servidor y, al guardar, una franja verde «Ficha guardada en la cuenta»
-arriba de la ficha (o dorada si la cuenta mantuvo al responsable). Teléfono y escritorio, sin errores ni desborde."""
+"""1.10.31 · Guardar la ficha: «Sin asignar» se manda a nuestro servidor y, al guardar, el aviso breve de la app «Ficha guardada.»
+(o el motivo si la cuenta mantuvo al responsable). Teléfono y escritorio, sin errores ni desborde."""
 import json,os
 from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright
@@ -27,16 +27,16 @@ def run(p,vp,warn,name):
     page.evaluate("document.querySelector('[data-view=\"contacts\"]').click()");page.wait_for_selector('#contact-results .record-row')
     page.click('#contact-results [data-contact="k1"]');page.wait_for_selector('#record-edit');page.click('#record-edit')
     page.select_option('#live-contact-form [name=assignedTo]','');page.click('#live-save-contact')
-    page.wait_for_selector('.record-saved')
-    note=page.inner_text('.record-saved')
+    page.wait_for_selector('#toast:not([hidden])')
+    note=page.inner_text('#toast')
     if SHOTS:page.screenshot(path=f'{SHOTS}/{name}.png')
     overflow=page.evaluate('document.documentElement.scrollWidth>innerWidth+2')
     b.close();return sent,note,errors,overflow
 with sync_playwright() as p:
     sent,note,errors,overflow=run(p,{'width':390,'height':844},False,'guardada-telefono')
     assert sent and sent[0]['fields'].get('assignedTo')=='',sent;print('PASS «Sin asignar» se manda a nuestro servidor como quitar el responsable')
-    assert 'Ficha guardada en la cuenta' in note,note;print('PASS al guardar aparece «Ficha guardada en la cuenta» arriba de la ficha')
+    assert note=='Ficha guardada.',note;print('PASS al guardar aparece el aviso breve «Ficha guardada.»')
     assert not overflow and not errors,errors;print('PASS en el teléfono, sin desborde ni errores')
     sent,note,errors,overflow=run(p,{'width':1280,'height':800},True,'mantuvo-escritorio')
-    assert 'mantuvo al responsable' in note,note;print('PASS si la cuenta mantuvo al responsable, la franja lo dice')
+    assert 'mantuvo al responsable' in note,note;print('PASS si la cuenta mantuvo al responsable, el aviso lo dice')
     assert not errors,errors;print('PASS sin errores de pantalla')
