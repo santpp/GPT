@@ -55,7 +55,7 @@ with sync_playwright() as p:
     malos=[]
     for r in ['/comercial','/costos','/centro']:
         pg.goto(B+r);pg.wait_for_timeout(4500)
-        malos+=[f'{r}: {x}' for x in pg.evaluate("""()=>[...document.querySelectorAll('main .cel')].filter(c=>c.offsetParent).flatMap(c=>{const r=c.getBoundingClientRect(),a=c.querySelector('.cel-acc');if(!a)return ['sin botón'];const b=a.getBoundingClientRect();const l=c.querySelector('.ag-resumen-t, :scope > h3, .inicio-resumen-l');const o=[];if(b.right>r.right+1)o.push('botón fuera');if(l){const t=l.getBoundingClientRect();if(t.right-parseFloat(getComputedStyle(l).paddingRight)>b.left+2&&t.top<b.bottom-2)o.push('rótulo bajo el botón: '+l.textContent.trim().slice(0,15))}return o})""")]
+        malos+=[f'{r}: {x}' for x in pg.evaluate("""()=>[...document.querySelectorAll('main .cel')].filter(c=>c.offsetParent).flatMap(c=>{const r=c.getBoundingClientRect(),a=c.querySelector('.cel-acc');if(!a)return ['sin botón'];const b=a.getBoundingClientRect();const l=c.querySelector('.ag-resumen-t, :scope > h3, .inicio-resumen-l');const o=[];if(b.right>r.right+1)o.push('botón fuera');if(l){const t=l.getBoundingClientRect();if(t.right-parseFloat(getComputedStyle(l).paddingRight)>b.left+2&&t.left+parseFloat(getComputedStyle(l).paddingLeft)<b.right-2&&t.top<b.bottom-2&&t.bottom>b.top+2)o.push('rótulo bajo el botón: '+l.textContent.trim().slice(0,15))}return o})""")]
         if pg.evaluate('document.documentElement.scrollWidth>innerWidth+2'):malos.append(r+' se desborda')
     ok(not malos,f'teléfono: botón y rótulo caben sin taparse {malos[:5]}')
     ok(not errs,f'teléfono: sin errores {errs}');br.close()
