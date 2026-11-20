@@ -1,5 +1,15 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.4 · Armonía jerárquica: las mismas medidas en todos los módulos (20 nov):**
+- Se midieron las 27 pantallas (con y sin reporte) y se igualó todo:
+  - **Esquinas:** 16 px en todas las cajas. Antes había 22, 20, 16 y 14.
+  - **Relleno de los paneles:** 20 × 24 px (16 en el teléfono). Antes había siete combinaciones.
+  - **Espacio entre cajas seguidas:** 16 px siempre. Antes, 16, 18, 20 o 32.
+  - **Del título del módulo a la primera caja:** 20 px.
+  - **Encabezados de sección:** 32 px de aire arriba y 12 px hasta su caja.
+- Los rótulos pequeños del Inicio («Acceso reciente») dejan las mayúsculas y pasan a 13 px. Los títulos de panel quedan todos en 16,5 px.
+- `tests/fixes-2123.py` lo comprueba en todos los módulos.
+
 **Novedades 2.12.3 · Todos los módulos con la misma caja de cifras, sin carnaval y con orden editable (20 nov):**
 - **Todos los módulos:** cada grupo de cifras es una sola tarjeta blanca con las cifras separadas por líneas finas (Ventas, Cobros, Facturas, Costos, Equipo, Tendencias, Calidad, Tasas, Embudo y publicidad, Redes, Tablero…), con y sin reporte mensual. Ya no hay cuadrículas de tarjetas sueltas.
 - **Sin carnaval de colores:** los íconos de los módulos usan solo vino, vino oscuro, azul profundo y azul medio (sin oro ni verde). Los gráficos de reparto (asesores, fuentes) y las etapas del embudo, vino, azul profundo y sus tonos. El verde y el ámbar quedan solo para estados.

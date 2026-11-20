@@ -111,7 +111,7 @@ Lo de arriba es de Ágora Mobile. El ERP (`Agora New App/`) **no** pasa por `mak
 | Nota | 12,5 px, 400 | igual |
 | Ícono | ninguno: solo rótulo, cifra y nota | ninguno |
 
-**Paneles:** relleno 22 × 24 px (18 × 16 en el teléfono) y radio 22 px. **Área de trabajo:** relleno 28 px (20 × 16 en el teléfono).
+**Paneles (2.12.4):** relleno 20 × 24 px (16 en el teléfono) y radio 16 px, igual que todas las cajas. **Ritmo:** 16 px entre cajas seguidas; encabezado de sección con 32 px arriba y 12 px hasta su caja; 20 px del título del módulo a la primera caja. **Área de trabajo:** relleno 28 px (20 × 16 en el teléfono).
 
 **Colores (2.12.3, reemplaza a 2.12.0):** solo vino y azul profundo con sus tonos (sin oro en gráficos ni íconos de módulos; verde y ámbar solo para estados).
 

@@ -63,6 +63,7 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 60 | Al cambiar el período del Tablero comercial salía un error en la consola. | Un manejador general suponía que todo botón de período estaba dentro de un selector antiguo. | Solo actúa sobre ese selector; el Tablero maneja el suyo. | Corregido en 2.12.0 |
 | 61 | Factura en US$: «el precio y el monto calculado al final no cuadran». | El resumen multiplicaba el total en US$ por la tasa redondeada a 2 decimales, mientras que la factura convierte cada línea con la tasa completa. | El resumen muestra base + IVA en Bs (que suma el total) y la tasa completa; cada línea muestra su equivalente. | Corregido en 2.12.1 |
 | 62 | «Sigue el carnaval de colores» y cifras en tarjetas sueltas en varios módulos. | Los íconos de módulos usaban oro, verde y azul grisáceo, y los gráficos metían el oro; la caja única solo se había aplicado a Gestión Comercial, Inicio y Tablero. | Dos familias de color (vino y azul profundo) en toda la app y la caja única en todos los grupos de cifras. | Corregido en 2.12.3 |
+| 63 | «No tiene armonía jerárquica»: cajas, letras y espacios variaban entre módulos. | Cada pantalla traía sus radios (14 a 22 px), rellenos y márgenes. | Un solo ritmo (bloque 2.12.4 de `agora-new.css`): radio 16, panel 20 × 24, 16 px entre cajas, 32/12 en los encabezados de sección. | Corregido en 2.12.4 |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 

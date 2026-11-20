@@ -750,3 +750,32 @@ main#app .ag-resumen-grid > a.ag-resumen.is-link:hover,main#app .grid:has(> .mic
 @media(max-width:600px){
   main#app .ag-resumen-grid > .ag-resumen,main#app .g-hero > .hero,main#app .g-hero .micro,main#app .grid:has(> .micro) > .micro{padding:12px 12px 10px!important}
 }
+
+/* 2.12.4 · Armonía jerárquica: un solo ritmo de medidas en todos los módulos.
+   Cajas: radio 16 px · paneles con relleno 20 × 24 px (16 en el teléfono) · 16 px entre cajas seguidas ·
+   encabezado de sección con 32 px de aire arriba y 12 px hasta su caja · 20 px del título del módulo a la primera caja. */
+main#app :is(.panel,.ag-resumen-grid,.g-hero,.grid:has(> .micro),.inicio-resumen,.xp-origen,.cons-block,.fc-ver){border-radius:16px!important}
+main#app .panel{padding:20px 24px!important}
+main#app .xp-origen{padding:16px 20px!important}
+main#app :is(div,section,form):has(> :is(.panel,.ag-resumen-grid,.g-hero,.grid:has(> .micro),.inicio-resumen,.xp-origen)){row-gap:0!important}
+main#app :is(.panel,.ag-resumen-grid,.g-hero,.grid:has(> .micro),.inicio-resumen,.xp-origen){margin-top:0!important;margin-bottom:16px!important}
+main#app :is(.t-sec-row,.arp-sec,.vt-sec > .t-sec-row){margin-top:32px!important;margin-bottom:12px!important}
+main#app :is(.t-sec-row,.arp-sec):first-child{margin-top:0!important}
+main#app .mod-h{margin-bottom:20px!important}
+main#app .inicio-resumen-h h2,main#app .tb-inicio-h h2{font-size:16.5px!important}
+main#app :is(.launch-recent h2,.launch-section-label,.operations-group h2,.operations-group > h2){font:650 13px/1.3 var(--font-text)!important;text-transform:none!important;letter-spacing:0!important;color:var(--muted)!important}
+@media(max-width:600px){
+  main#app .panel{padding:16px!important}
+  main#app .xp-origen{padding:14px 16px!important}
+  main#app :is(.t-sec-row,.arp-sec){margin-top:24px!important}
+}
+main#app :is(.pz-perfil,.pz-pie,.records-record,.hx,.tw,.cfg-ft,main#app > section,#view > section){border-radius:16px!important}
+main#app :is(.pz-perfil,.records-record,.hx,.inicio-resumen){padding:20px 24px!important}
+main#app :is(.pz-pie,.cfg-ft){padding:16px 20px!important}
+@media(max-width:600px){main#app :is(.pz-perfil,.records-record,.hx,.inicio-resumen){padding:16px!important}}
+main#app .live-inbox-layout > section,main#app .live-inbox-layout{border-radius:16px!important}
+main#app .camp-movible{margin-bottom:16px!important}
+main#app .camp-nota{margin:0 0 12px!important}
+/* Filas de varias columnas: el espacio lo pone la fila (16 px entre filas y columnas); los paneles de dentro no suman margen. */
+main#app :is(.grid,[class*="-cols"]):has(> .panel){row-gap:16px!important;column-gap:16px!important;margin-bottom:16px!important}
+main#app :is(.grid,[class*="-cols"]):has(> .panel) > .panel{margin-bottom:0!important}

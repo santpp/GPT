@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Agora New App 2.12.3 · Pedidos del usuario (20 nov, tarde):
+"""Agora New App 2.12.3 y 2.12.4 · Pedidos del usuario (20 nov, tarde):
 1 TODOS los módulos: cada grupo de cifras es UNA tarjeta blanca con las cifras separadas por líneas (sin tarjetas sueltas ni huecos).
 2 Sin «carnaval»: los íconos de los módulos y los gráficos usan solo vino y azul profundo (y sus tonos); nada de oro ni verde en el menú.
 3 Los gráficos de ventas van en Gestión Comercial, no en el Tablero comercial.
+5 2.12.4 · Armonía jerárquica: todas las cajas con radio 16 px, paneles con relleno 20 × 24 px y 16 px entre cajas seguidas.
 4 «Editar Dashboard» en todo módulo con cifras (también el Tablero y las vistas del reporte mensual): elegir qué ver y cambiar el orden.
 Requiere la API local en :8090. Uso: python3 tests/fixes-2123.py"""
 import sys,subprocess
@@ -36,6 +37,13 @@ with sync_playwright() as p:
                 if not (g['gap'] in ('0px','normal') and g['borde']=='1px' and g['celdas']):sueltas.append(f"{r}: {g['cls'][:40]}")
             if pg.evaluate(CIFRAS)>=2 and not pg.evaluate(TIENE):sinBoton.append(r)
         ok(not sueltas,f'{quien}: todas las cifras van en una sola tarjeta con líneas {sueltas[:5]}')
+        ritmo=[];RIT="""()=>{const m=document.querySelector('main#app');const W=m.getBoundingClientRect().width;const box=e=>{if(!e.offsetParent)return false;const c=getComputedStyle(e);const r=e.getBoundingClientRect();return parseFloat(c.borderTopLeftRadius)>=8&&(c.borderTopStyle!=='none'&&parseFloat(c.borderTopWidth)>0||c.boxShadow!=='none')&&/255, 255, 255/.test(c.backgroundColor)&&r.width>W*0.42&&r.height>40};
+          const top=[...m.querySelectorAll('*')].filter(e=>{if(!box(e))return false;let p=e.parentElement;while(p&&p!==m){if(box(p))return false;p=p.parentElement}return true}).sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top);const out=[];
+          top.forEach((e,i)=>{const c=getComputedStyle(e);if(Math.round(parseFloat(c.borderTopLeftRadius))!==16)out.push('radio '+Math.round(parseFloat(c.borderTopLeftRadius))+' '+e.className);if(e.classList.contains('panel')&&c.paddingLeft!=='24px')out.push('relleno '+c.paddingLeft+' '+e.className);
+            if(i&&e.previousElementSibling===top[i-1]){const a=top[i-1].getBoundingClientRect(),b=e.getBoundingClientRect();const g=Math.round(b.top-a.bottom);if(b.top>a.bottom-2&&Math.abs(a.left-b.left)<4&&g<40&&g!==16)out.push('hueco '+g+' '+e.className)}});return out}"""
+        for r in R:
+            pg.goto(B+r);pg.wait_for_timeout(3000);ritmo+=[f'{r}: {x[:60]}' for x in pg.evaluate(RIT)]
+        ok(not ritmo,f'{quien}: 2.12.4 · mismo radio, relleno y espacio entre cajas en todos los módulos {ritmo[:6]}')
         ok(not sinBoton,f'{quien}: todo módulo con cifras tiene «Editar Dashboard» {sinBoton}')
         colores=pg.evaluate("[...new Set([...document.querySelectorAll('.side .mdm-ic, .acc-b .mdm-ic')].filter(e=>e.offsetParent).map(e=>getComputedStyle(e).backgroundColor))]")
         ok(not any(c in colores for c in ['rgb(201, 151, 31)','rgb(52, 199, 89)','rgb(250, 189, 75)']) and len(colores)<=4,f'{quien}: el menú usa solo vino y azul profundo (sin oro ni verde) {colores}')

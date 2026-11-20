@@ -53,9 +53,9 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
   - Botones de cabecera: 13,5 px; alto 36 px; forma de píldora.
   - Tarjetas de cifras:
     - Rótulo y nota: 12,5 px. Cifra: 26 px (22 en el teléfono).
-    - Caja: relleno 18 px (14 en el teléfono), radio 20 px.
+    - Caja: radio 16 px; cada cifra con relleno 16 × 20 px (12 en el teléfono).
     - Rejilla: 4 columnas con 14 px de separación (2 columnas con 10 px en el teléfono).
-  - Paneles: relleno 22 × 24 px, radio 22 px.
+  - **Ritmo único (2.12.4):** toda caja con radio 16 px; paneles con relleno 20 × 24 px (16 en el teléfono); 16 px entre cajas seguidas (en filas de varias columnas, el espacio lo pone la fila); encabezado de sección con 32 px arriba y 12 px hasta su caja; 20 px del título del módulo a la primera caja. `tests/fixes-2123.py` lo revisa.
 - **Atajos en las tarjetas (criterio único):**
   - Si el dato de una tarjeta vive en otro módulo, la tarjeta lleva a ese módulo, con chevron en el rótulo y el filtro puesto.
   - Las tarjetas del propio módulo no llevan a ningún lado.
