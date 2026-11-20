@@ -3,7 +3,7 @@
 1 TODOS los módulos: cada grupo de cifras es UNA tarjeta blanca con las cifras separadas por líneas (sin tarjetas sueltas ni huecos).
 2 Sin «carnaval»: los íconos de los módulos y los gráficos usan solo vino y azul profundo (y sus tonos); nada de oro ni verde en el menú.
 3 Los gráficos de ventas van en Gestión Comercial, no en el Tablero comercial.
-6 2.12.6 · Estilo de las cifras (idea del usuario): a la izquierda, descripción breve, ícono lineal arriba a la derecha, sin huecos.
+6 2.12.8 · Estilo de las cifras (referencia del usuario): centradas, descripción breve, «Editar» arriba a la derecha, sin huecos.
 5 2.12.4 · Armonía jerárquica: todas las cajas con radio 16 px, paneles con relleno 20 × 24 px y 16 px entre cajas seguidas.
 4 «Editar Dashboard» en todo módulo con cifras (también el Tablero y las vistas del reporte mensual): elegir qué ver y cambiar el orden.
 Requiere la API local en :8090. Uso: python3 tests/fixes-2123.py"""
@@ -21,8 +21,8 @@ CAJA="""()=>[...document.querySelectorAll('main .ag-resumen-grid, main .g-hero, 
 TIENE="""()=>[...document.querySelectorAll('main button')].some(b=>b.offsetParent&&/Editar Dashboard/.test(b.textContent))"""
 CIFRAS="""()=>[...document.querySelectorAll('main .micro, main .ag-resumen, main .g-hero > .hero')].filter(e=>e.offsetParent).length"""
 ESTILO="""()=>{const out=[];const cel=[...document.querySelectorAll('main .ag-resumen-grid > .ag-resumen, main .g-hero > .hero, main .grid:has(> .micro) > .micro, main .inicio-resumen-c')].filter(e=>e.offsetParent);
-  cel.forEach(c=>{const r=c.getBoundingClientRect();const l=c.querySelector('.ag-resumen-t, :scope > h3, .t-label, .inicio-resumen-l');if(l){const b=l.getBoundingClientRect();if(b.left-r.left>40)out.push('rótulo no está a la izquierda: '+l.textContent.trim().slice(0,20))}
-   const ic=c.querySelector(':scope > .cel-acc');if(ic&&ic.offsetParent){const b=ic.getBoundingClientRect();if(r.right-b.right>30||b.top-r.top>30)out.push('ícono fuera de la esquina: '+(l?.textContent||'').trim().slice(0,20))}});
+  cel.forEach(c=>{const r=c.getBoundingClientRect();const l=c.querySelector('.ag-resumen-t, :scope > h3, .t-label, .inicio-resumen-l');if(l){const b=l.getBoundingClientRect();if(Math.abs((b.left+b.right)/2-(r.left+r.right)/2)>14)out.push('rótulo no está centrado: '+l.textContent.trim().slice(0,20))}
+   const ic=c.querySelector(':scope > .cel-acc');if(ic&&ic.offsetParent&&innerWidth>600){const b=ic.getBoundingClientRect();if(r.right-b.right>30||b.top-r.top>30)out.push('ícono fuera de la esquina: '+(l?.textContent||'').trim().slice(0,20))}});
   document.querySelectorAll('main .ag-resumen-grid, main .g-hero, main .grid:has(> .micro), main .inicio-resumen-g').forEach(g=>{if(!g.offsetParent)return;const k=[...g.children].filter(e=>e.offsetParent&&e.getBoundingClientRect().height>20);if(k.length<2)return;const R=g.getBoundingClientRect();
    const bot=Math.max(...k.map(e=>e.getBoundingClientRect().bottom));const ult=k.filter(e=>Math.abs(e.getBoundingClientRect().bottom-bot)<3);const der=Math.max(...ult.map(e=>e.getBoundingClientRect().right));if(R.right-der>30)out.push('hueco en la última fila de '+g.className.slice(0,30))});return out}"""
 def entrar(br,u,pw,vp,ws=None):
@@ -58,7 +58,7 @@ with sync_playwright() as p:
         for r in ['/comercial','/ventas','/costos','/centro']:
             pg.goto(B+r);pg.wait_for_timeout(4500)
             est+=[f'{r}: {x}' for x in pg.evaluate(ESTILO)]
-        ok(not est,f'{quien}: 2.12.6 · cifras a la izquierda, ícono arriba a la derecha y sin huecos {est[:5]}')
+        ok(not est,f'{quien}: 2.12.8 · cifras centradas, «Editar» arriba a la derecha y sin huecos {est[:5]}')
         ok(not errs,f'{quien}: sin errores {errs}');pg.context.close()
     # ---- Tablero: sin gráficos, y «Editar Dashboard» que ordena y oculta
     pg,errs=entrar(br,'admin.asocim@agora.test','Agora-Pruebas-2026!',{'width':1280,'height':900})

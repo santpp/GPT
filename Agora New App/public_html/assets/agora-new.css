@@ -853,3 +853,23 @@ main#app .tarj-ed .pz-item.pz-foco,.tarj-ed .pz-item.pz-foco{box-shadow:inset 3p
 :is(.modal,.sheet,dialog,[role=dialog]) :is(.x,.btn:not(.btn-cta):not(.btn-danger)):is(:hover,:focus-visible,:active),.modal-h .x:is(:hover,:focus-visible,:active){background:var(--ag-1)!important;border-color:var(--ag-1)!important;color:#fff!important}
 :is(.modal,.sheet,dialog,[role=dialog]) :is(.x,.btn:not(.btn-cta):not(.btn-danger)):is(:hover,:focus-visible,:active) svg,.modal-h .x:is(:hover,:focus-visible,:active) svg{color:#fff;stroke:currentColor}
 main#app .cel :is(button,.btn,[role=button]):not(.cel,.lnk):active{background:var(--ag-1)!important;border-color:var(--ag-1)!important;color:#fff!important}
+
+/* 2.12.8 · Cifras como la referencia del usuario, en TODOS los módulos: celdas compactas y centradas, sin íconos ni degradado;
+   línea roja de Ágora arriba de cada cifra que se ilumina al pasar; «Editar» solo con la palabra, arriba a la derecha. */
+main#app#app .cel{align-items:center!important;text-align:center!important;padding:16px 20px 18px!important;justify-content:center!important}
+main#app#app .cel :is(.ag-resumen-t,h3,.inicio-resumen-l,.t-label){align-self:center!important;justify-content:center!important;text-align:center!important;padding:0 66px!important;font:650 14px/1.3 var(--font-text)!important;color:var(--ink)!important}
+main#app#app .cel .ag-resumen-s{padding:0!important;margin-top:3px;text-align:center}
+main#app#app .cel :is(.ag-resumen-v,.t-metric,.inicio-resumen-v,.t-hero){margin:8px 0 0!important;text-align:center!important}
+main#app#app .cel :is(.ag-resumen-d,.micro > .f,.inicio-resumen-d){margin-top:4px!important;text-align:center!important}
+main#app#app .cel > div{align-items:center!important;text-align:center}
+main#app#app .cel :is(.ag-resumen-ic,.arp-mic-ic){display:none!important}
+main#app#app .g-hero > .hero.cel,main#app#app .g-hero > .hero{background:transparent!important}
+main#app#app .cel::before{background:color-mix(in srgb,var(--ag-1) 72%,#fff)!important;box-shadow:none;transition:background-color var(--dur-2,.28s) var(--ease-out,ease),box-shadow var(--dur-2,.28s) var(--ease-out,ease)}
+main#app#app .cel:is(.is-hot,:hover)::before{background:var(--ag-1)!important;box-shadow:0 0 10px 1px color-mix(in srgb,var(--ag-1) 55%,transparent)}
+main#app#app .cel-acc{top:14px;right:16px}
+main#app#app .cel .cel-ed{height:26px!important;min-height:26px!important;padding:0 11px!important;border-radius:7px!important;font:600 12px/1 var(--font-text)!important;width:auto!important}
+@media(max-width:600px){
+  main#app#app .cel{padding:14px 10px 14px!important}
+  main#app#app .cel :is(.ag-resumen-t,h3,.inicio-resumen-l,.t-label){padding:0!important;font-size:13px!important}
+  main#app#app .cel-acc{position:static!important;order:99;margin-top:10px;align-self:center}
+}

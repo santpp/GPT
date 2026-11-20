@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.8 · Cifras como la referencia del usuario y «Dashboard» (20 nov):**
+- **En todos los módulos**, las cifras van **centradas** y compactas: rótulo, descripción breve, cifra y nota, sin íconos y sin el degradado de la tarjeta grande. En las filas con una tarjeta más alta, el contenido de las demás queda centrado en vertical (sin hueco abajo).
+- **Línea roja de Ágora** arriba de cada cifra (antes azul), que **se ilumina** al pasar: vino intenso con un brillo suave.
+- **«Editar»** solo con la palabra, sin lápiz: arriba a la derecha en el ordenador y debajo de la cifra en el teléfono.
+- **«Tablero comercial» ahora se llama «Dashboard»** en el menú, la cabecera, Athena y los textos de ayuda.
+
 **Novedades 2.12.7 · Más color en el menú y respuesta de color en «Cancelar» y la X (20 nov):**
 - **Menú con más variedad, dentro del manual y sin oro:** cada sección tiene su color y sus módulos lo heredan. Ventas en vino, Facturación en vino oscuro, Clientes y atención en azul profundo, Gestión y resultados en azul medio, Contratos en rosa vino y Administración en pizarra.
 - **«Cancelar», «Cerrar», «Restaurar» y la X de las ventanas** se llenan de vino con letra blanca al pasar, enfocar o tocar, con las mismas animaciones que «Editar».

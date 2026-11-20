@@ -3,7 +3,7 @@
 1 Facturación solo en bolívares: el editor no ofrece otra moneda de factura; «Facturar» un cobro en dólares abre con precios en US$ y tasa BCV (2.12.0).
 2 «Por forma de cobro» muestra siempre Recurrente, Venta no recurrente y Venta única.
 3 En todos los módulos: el botón de descarga dice «Descargar» (no «Excel») y «Editar Dashboard» lleva el ícono de lápiz (no «Editar tarjetas»).
-4 2.12.6 · Las tarjetas de cifras llevan solo un ícono lineal pequeño, sin recuadro (antes, 2.11.3: sin ícono).
+4 2.12.8 · Las tarjetas de cifras van sin ícono, como la referencia del usuario (2.12.6 llevó un ícono lineal).
 5 2.11.4 · En el teléfono, la caja de cifras de Gestión Comercial va en dos columnas, como «Resumen de hoy».
 Requiere la API local en :8090 y haber corrido tests/facturacion.py. Uso: python3 tests/fixes-2111.py"""
 import sys,subprocess
@@ -30,14 +30,14 @@ with sync_playwright() as p:
         malos=[];dash=0;sinLapiz=[];conIcono=[]
         for r in rutas:
             pg.goto(B+r);pg.wait_for_timeout(3500)
-            if pg.evaluate("[...document.querySelectorAll('.ag-resumen-ic,.arp-mic-ic')].some(e=>e.offsetParent&&(e.getBoundingClientRect().width>18.5||getComputedStyle(e).backgroundColor!=='rgba(0, 0, 0, 0)'))"):conIcono.append(r)
+            if pg.evaluate("[...document.querySelectorAll('.ag-resumen-ic,.arp-mic-ic')].some(e=>e.offsetParent)"):conIcono.append(r)
             for b in pg.evaluate(BOTONES):
                 if b['t'].split('\n')[0].strip() in ('Excel',) or b['t'].startswith('Excel') or 'Editar tarjetas' in b['t']:malos.append(f"{r}: {b['t'][:30]}")
                 if b['t'].startswith('Editar Dashboard'):
                     dash+=1
                     if not b['edit']:sinLapiz.append(r)
         quien='con reporte' if ws is None else 'sin reporte'
-        ok(not conIcono,f'{quien}: 2.12.6 · el ícono de las cifras es lineal y pequeño (18 px, sin recuadro) {conIcono}')
+        ok(not conIcono,f'{quien}: 2.12.8 · las tarjetas de cifras van sin ícono {conIcono}')
         ok(not malos,f'{quien}: ningún botón dice «Excel» ni «Editar tarjetas» {malos}')
         ok(dash>=(1 if ws is None else 4) and not sinLapiz,f'{quien}: «Editar Dashboard» con lápiz en {dash} lugares {sinLapiz}')
         ok(not errs,f'{quien}: sin errores {errs}')

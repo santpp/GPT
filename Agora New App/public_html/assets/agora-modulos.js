@@ -427,7 +427,7 @@
         ${tile("Impresiones", num(a.impresiones), a.clics !== void 0 ? `${num(a.clics)} clics` : "")}
         ${tile("Coste por conversión", esc2(dinero(a.costePorConversion)), `${num(a.conversiones)} conversiones`)}
         ${tile("Coste por lead", esc2(dinero(a.costePorLead)), "Inversión entre leads del día")}
-        ${tile("Retorno por cada 100", esc2(dinero(a.retornoPorCien)), a.retornoPorCien == null ? "Se calcula con lo vendido del mes: «Ventas por cada 100 invertido», en Rentabilidad del Tablero comercial" : "Vendido entre invertido, por cien")}
+        ${tile("Retorno por cada 100", esc2(dinero(a.retornoPorCien)), a.retornoPorCien == null ? "Se calcula con lo vendido del mes: «Ventas por cada 100 invertido», en Rentabilidad del Dashboard" : "Vendido entre invertido, por cien")}
       </div>
     </div>
     <div class="mt">${panelx(
@@ -744,7 +744,7 @@
     } catch {
     }
     container.innerHTML = `<div class="tv3 enter">
-    <header class="mod-h"><div><p class="t-label">Tablero</p><h1 class="t-module">Así va tu cuenta.</h1><p id="dashboard-feedback" class="lede" role="status" hidden></p></div><div id="period-bar" class="acts"></div></header>
+    <header class="mod-h"><div><p class="t-label">Dashboard</p><h1 class="t-module">Así va tu cuenta.</h1><p id="dashboard-feedback" class="lede" role="status" hidden></p></div><div id="period-bar" class="acts"></div></header>
     <div id="dashboard-body">${skeleton("tiles", 4)}</div></div>`;
     const $ = (s) => container.querySelector(s);
     let csrf2 = "", month = null, period = periodOf(sel).month, range = periodOf(sel);
