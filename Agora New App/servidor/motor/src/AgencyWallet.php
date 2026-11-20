@@ -158,28 +158,68 @@ final class AgencyWallet
     }
 
     /** Una transacción en una forma única; lo que no se entiende queda en «unknown» para que la depuración lo muestre. */
-    public static function normalize(array $tx): array
+    /** Agora New App 2.11.8 · La transacción aplanada (ruta => valor), para atribuirla y para las pistas. */
+    public static function flat(array $tx, string $pre = '', int $depth = 0): array
+    {
+        $out = [];
+        foreach ($tx as $k => $v) {
+            $key = $pre === '' ? (string)$k : $pre.'.'.$k;
+            if (is_array($v)) { if ($depth < 3) $out += self::flat($v, $key, $depth + 1); }
+            elseif (is_scalar($v) && (string)$v !== '') $out[$key] = (string)$v;
+        }
+        return $out;
+    }
+
+    /** Agora New App 2.11.8 · Nombre del tipo de cargo en palabras («whatsapp_marketing_message» → «WhatsApp · marketing»). */
+    public static function label(string $kind): string
+    {
+        $k = strtolower(trim($kind));
+        $map = ['whatsapp_marketing_message' => 'WhatsApp · marketing', 'whatsapp_utility_message' => 'WhatsApp · avisos', 'whatsapp_service_message' => 'WhatsApp · atención',
+            'whatsapp_authentication_message' => 'WhatsApp · códigos de acceso', 'whatsapp_authentication_international_message' => 'WhatsApp · códigos de acceso',
+            'sms' => 'SMS', 'mms' => 'MMS', 'email' => 'Correos', 'call' => 'Llamadas', 'calls' => 'Llamadas', 'phone' => 'Teléfono', 'recharge' => 'Recarga'];
+        if (isset($map[$k])) return $map[$k];
+        if (str_starts_with($k, 'whatsapp')) return 'WhatsApp · '.str_replace('_', ' ', preg_replace('/^whatsapp_?|_?message$/', '', $k));
+        if ($k === '' || !preg_match('/^[a-z0-9_ .-]+$/', $k)) return $kind;
+        return ucfirst(str_replace(['_', '-'], ' ', $k));
+    }
+
+    /** @param array<string,true> $known identificadores de las subcuentas conectadas */
+    public static function normalize(array $tx, array $known = []): array
     {
         $loc = self::pick($tx, ['locationId', 'location_id', 'altId', 'subAccountId', 'subaccountId']);
+        // Agora New App 2.11.8: si no vino en un campo conocido, se busca el identificador de una subcuenta conectada en cualquier dato del movimiento.
+        $flat = $loc === null ? self::flat($tx) : [];
+        if ($loc === null && $known) foreach ($flat as $v) if (isset($known[$v])) { $loc = $v; break; }
         $name = self::pick($tx, ['locationName', 'location_name', 'subAccountName']);
         $amount = self::pick($tx, ['amount', 'total', 'value', 'cost', 'price']);
         $kind = strtolower((string)(self::pick($tx, ['chargeType', 'type', 'transactionType', 'category', 'product', 'productType', 'usageType']) ?? ''));
         $desc = (string)(self::pick($tx, ['description', 'title', 'name', 'memo']) ?? '');
+        $ref = null;
+        if (preg_match('/^(.*?)\s*\bref:\s*(\S+)\s*$/is', $desc, $mm)) { $desc = trim($mm[1]); $ref = $mm[2]; }
         $when = self::pick($tx, ['settlementTime', 'createdAt', 'date', 'timestamp', 'updatedAt']);
         $time = is_numeric($when) ? (int)((float)$when > 1e11 ? (float)$when / 1000 : $when) : (is_string($when) ? strtotime($when) : false);
         $hay = $kind.' '.strtolower($desc);
         $recharge = (bool)preg_match('/recharge|top.?up|topup|deposit|payment|refund|credit(?!\s*card)|reload|add.?fund|auto.?recharge|complimentary/', $hay);
         $n = is_numeric($amount) ? (float)$amount : null;
         $direction = $recharge ? 'recarga' : ($n !== null && ($n < 0 || preg_match('/usage|charge|debit|deduct|sms|email|call|phone|whatsapp|ai|conversation|rebill|verified|lookup|domain|premium/', $hay)) ? 'gasto' : ($n === null ? 'unknown' : 'gasto'));
+        $tipo = $kind !== '' ? $kind : ($desc !== '' ? $desc : 'sin tipo');
+        if (strtolower($desc) === strtolower($tipo)) $desc = '';
+        // Datos sueltos de lo que no tiene subcuenta: sirven para las pistas y las reglas de la agencia (sin montos, fechas ni textos largos).
+        $campos = [];
+        if ($loc === null) {
+            foreach ($flat as $k => $v) if (!preg_match('/amount|total|value|cost|price|balance|time|date|createdAt|updatedAt|description|title|memo|^_?id$|\.id$/i', $k) && mb_strlen($v) <= 80) $campos[$k] = $v;
+            if ($ref !== null) $campos['ref'] = mb_substr($ref, 0, 80);
+            $campos = array_slice($campos, 0, 25, true);
+        }
         return ['locationId' => $loc !== null ? (string)$loc : null, 'locationName' => $name !== null ? (string)$name : null, 'amount' => $n === null ? null : abs($n), 'rawAmount' => $n,
-            'kind' => $kind !== '' ? $kind : ($desc !== '' ? $desc : 'sin tipo'), 'description' => $desc, 'direction' => $direction, 'at' => $time ? gmdate('c', (int)$time) : null];
+            'kind' => self::label($tipo), 'description' => $desc, 'direction' => $direction, 'at' => $time ? gmdate('c', (int)$time) : null, 'campos' => $campos];
     }
 
     /**
      * Todo el mes, con paginación (de 1000 en 1000).
      * @return array{rows:list<array<string,mixed>>,pages:int,partial:bool,error:?array}
      */
-    public function monthRows(string $month, ?string $location): array
+    public function monthRows(string $month, ?string $location, array $known = []): array
     {
         $rows = []; $skip = 0; $pages = 0;
         do {
@@ -188,7 +228,7 @@ final class AgencyWallet
             if (!self::ok($r)) return ['rows' => [], 'pages' => 0, 'partial' => false, 'error' => ['status' => $r['status'], 'message' => $this->redact(mb_substr($r['body'], 0, 300)) ?: ($r['error'] ?? 'Sin respuesta')]];
             $data = json_decode($r['body'], true);
             $got = is_array($data) ? self::rows($data) : [];
-            foreach ($got as $tx) $rows[] = self::normalize($tx);
+            foreach ($got as $tx) $rows[] = self::normalize($tx, $known);
             $skip += self::PAGE;
         } while (count($got) === self::PAGE && $pages < self::MAX_PAGES);
         return ['rows' => $rows, 'pages' => $pages, 'partial' => $pages >= self::MAX_PAGES, 'error' => null];
@@ -245,5 +285,40 @@ final class AgencyWallet
             }
         } else $out['errores'][] = 'suscripción: HTTP '.$sub['status'];
         return $out;
+    }
+
+    /**
+     * Agora New App 2.11.8 · Reglas de la agencia: «los cargos con este dato son de esta subcuenta».
+     * @param list<array{campo:string,valor:string,locationId:string}> $rules
+     */
+    public static function applyRules(array $rows, array $rules): array
+    {
+        if (!$rules) return $rows;
+        foreach ($rows as &$r) {
+            if ($r['locationId'] !== null) continue;
+            foreach ($rules as $x) if (($r['campos'][$x['campo']] ?? null) === $x['valor']) { $r['locationId'] = $x['locationId']; $r['porRegla'] = true; break; }
+        }
+        unset($r);
+        return $rows;
+    }
+
+    /** Agora New App 2.11.8 · Pistas: qué datos traen los cargos sin subcuenta y cuántas veces se repite cada valor. */
+    public static function hints(array $rows, int $max = 10): array
+    {
+        $gastos = array_values(array_filter($rows, fn($r) => $r['locationId'] === null && $r['direction'] === 'gasto'));
+        $n = count($gastos); if (!$n) return ['movimientos' => 0, 'monto' => 0.0, 'campos' => [], 'unicos' => []];
+        $acc = [];
+        foreach ($gastos as $r) foreach ($r['campos'] as $k => $v) { $acc[$k][$v][0] = ($acc[$k][$v][0] ?? 0) + 1; $acc[$k][$v][1] = ($acc[$k][$v][1] ?? 0.0) + (float)$r['amount']; }
+        $campos = []; $unicos = [];
+        foreach ($acc as $k => $vals) {
+            $con = array_sum(array_column($vals, 0)); $dist = count($vals);
+            if ($dist > 20 && $dist >= 0.5 * $con) { $unicos[] = (string)$k; continue; } // distinto en cada cargo (como la referencia del mensaje): no sirve para agrupar
+            uasort($vals, fn($a, $b) => $b[1] <=> $a[1]);
+            $campos[] = ['campo' => (string)$k, 'movimientos' => $con, 'distintos' => $dist,
+                'valores' => array_map(fn($v, $x) => ['valor' => (string)$v, 'texto' => preg_match('/type|category|product|usage/i', (string)$k) ? self::label((string)$v) : (string)$v, 'movimientos' => $x[0], 'monto' => round($x[1], 4)], array_keys(array_slice($vals, 0, 8, true)), array_slice($vals, 0, 8, true))];
+        }
+        // Primero los datos que reparten el gasto en pocos grupos (como un número de WhatsApp por subcuenta).
+        usort($campos, fn($a, $b) => [($a['distintos'] > 1 ? 0 : 1), $a['distintos'], -$a['movimientos']] <=> [($b['distintos'] > 1 ? 0 : 1), $b['distintos'], -$b['movimientos']]);
+        return ['movimientos' => $n, 'monto' => round(array_sum(array_column($gastos, 'amount')), 4), 'campos' => array_slice($campos, 0, $max), 'unicos' => array_slice($unicos, 0, 10)];
     }
 }

@@ -46,6 +46,9 @@ class H(BaseHTTPRequestHandler):
             tx=[{'locationId':LOC,'locationName':'ASOCIM Admisiones','amount':-1.25,'type':'SMS','description':'SMS salientes','settlementTime':'2026-11-10T10:00:00Z'},
                 {'locationId':LOC,'locationName':'ASOCIM Admisiones','amount':-3.40,'type':'WhatsApp','description':'Conversaciones de WhatsApp','settlementTime':'2026-11-11T10:00:00Z'},
                 {'locationId':None,'locationName':None,'amount':50,'type':'Recharge','description':'Recarga de saldo','settlementTime':'2026-11-02T10:00:00Z'}]
+            # Agora New App 2.11.8: cargos de WhatsApp sin subcuenta (como en la cuenta real), con el número de cada línea y una referencia distinta.
+            tx+=[{'amount':-0.074,'chargeType':'whatsapp_marketing_message','description':f'whatsapp_marketing_message ref: wamid.HBg{i:04d}','meta':{'phoneNumber':'+584140000001' if i%3 else '+584240000002'},'settlementTime':'2026-11-12T10:00:00Z'} for i in range(30)]
+            tx+=[{'amount':-0.5,'chargeType':'conversation_ai','description':'IA','entity':{'type':'location','id':LOC},'settlementTime':'2026-11-13T10:00:00Z'}]
             return self.out(201,{'transactions':tx if b.get('skip',0)==0 else [],'total':len(tx)})
         if p.startswith('/locations/'+LOC+'/tags'):return self.out(200,{'tags':[{'name':'cliente'}]})
         if p.startswith('/locations/'+LOC+'/customFields') or p.startswith('/custom-fields'):return self.out(200,{'customFields':[],'fields':[]})

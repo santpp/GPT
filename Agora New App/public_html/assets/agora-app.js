@@ -4085,7 +4085,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.11.7').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.11.8').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -4434,6 +4434,7 @@ const ACCION_LEGIBLE = {
   'usuario.editado': 'Editó a una persona', 'usuario.actualizado': 'Editó a una persona', 'usuario.revocado': 'Quitó el acceso a una persona',
   'clave.cambiada': 'Cambió una clave', 'permisos.actualizados': 'Cambió permisos', 'estado.actualizado': 'Cambió un estado',
   'texto.editado': 'Editó un texto del panel', 'textos.actualizados': 'Editó textos del panel', 'perfil.actualizado': 'Actualizó su perfil',
+  'consumos.regla': 'Asignó un gasto a una subcuenta', 'consumos.regla.quitada': 'Quitó una regla de gastos',
   entro: 'Entró', salio: 'Salió', creo: 'Creó un registro', edito: 'Editó un registro', elimino: 'Eliminó un registro', envio: 'Envió un mensaje', firmo: 'Firmó', asigno: 'Asignó', exporto: 'Descargó datos', bloqueo: 'Bloqueó un acceso',
   'identidad.actualizada': 'Cambió la imagen de la empresa', 'configuracion.actualizada': 'Cambió la configuración', 'ia.borrador': 'Pidió un borrador con IA',
 };

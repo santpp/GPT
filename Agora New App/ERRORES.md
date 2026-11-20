@@ -59,6 +59,7 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 56 | «Leads de hoy» daba una cifra distinta en el ERP y en Mobile con la misma subcuenta. | El ERP pedía el tablero de la cuenta sin la zona horaria, y el servidor contaba «hoy» en hora universal. Mobile manda la zona del teléfono. | El ERP manda la zona y el día de quien mira. | Corregido en 2.11.7 |
 | 57 | El menú de la agencia «parece mucho IA» y no se parecía al de las subcuentas. | Venía del diseño original: fondo oscuro, mayúsculas espaciadas, franja dorada y un aviso «Próximamente» con destellos. | Mismo lenguaje que el menú de las subcuentas. | Corregido en 2.11.7 |
 | 58 | «Seguridad de la agencia» mostraba «entro». | El código interno de la acción se mostraba tal cual. | Se traduce («Entró», «Salió»…). | Corregido en 2.11.7 |
+| 59 | Consumos: todo el gasto de WhatsApp quedaba en «Agencia · movimientos propios», sin saber de qué subcuenta era. | La cuenta no pone el identificador de la subcuenta en esos cargos, y Ágora solo lo buscaba en cinco campos fijos. | Búsqueda en todos los datos del cargo, pistas y reglas «este dato → esta subcuenta». Hay que confirmar con la cuenta real qué dato trae cada cargo. | Por confirmar (2.11.8) |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 

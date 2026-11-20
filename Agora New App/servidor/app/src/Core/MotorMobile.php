@@ -309,6 +309,7 @@ final class MotorMobile {
    \respond($s);
   }
   if($p==='admin/consumption/token'&&$m==='DELETE'){$a->audit('agencia.conexion.quitada','agencia','consumos');}
+  if($p==='admin/consumption/reglas'&&in_array($m,['POST','DELETE'],true)){$rb=\body();$a->audit($m==='POST'?'consumos.regla':'consumos.regla.quitada','agencia','consumos',['dato'=>mb_substr((string)($rb['campo']??''),0,120),'subcuenta'=>(string)($rb['locationId']??'')]);}
   if($p==='admin/consumption/probar'&&$m==='POST'){
    $w=new \AgencyWallet(self::AGENCIA,$GLOBALS['agencyTransport']??null);$s=$w->settings();
    if($s['companyId']===''||!$s['tokenSaved'])\respond(['estado'=>'sin_conexion','error'=>'Falta el Company ID o el token de agencia.']+$s);

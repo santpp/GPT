@@ -1,5 +1,15 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.11.8 · Consumos: de qué subcuenta es cada gasto (20 nov):**
+- Antes, un cargo solo se asignaba a una subcuenta si la cuenta ponía su identificador en el campo de siempre. Si no, iba a «Agencia · movimientos propios»: así cayeron los 6.465 cargos de WhatsApp.
+- **Búsqueda completa:** Ágora busca el identificador de cualquier subcuenta conectada en *todos* los datos del cargo. Si aparece en otro lugar, el cargo se suma a esa subcuenta sin hacer nada más.
+- **«¿De qué subcuenta es el gasto sin identificar?»** (Agencia → Consumos): muestra los datos que traen esos cargos y cuánto suma cada valor. Por ejemplo, el número de WhatsApp de cada línea. Al elegir la subcuenta y tocar «Asignar», queda una **regla**: desde ese momento, esos cargos suman a esa subcuenta, en este mes y en los demás. Las reglas se pueden quitar y quedan en el Registro de actividad.
+- La referencia de cada mensaje es distinta en cada cargo, así que no sirve para agrupar y no se ofrece.
+- Los tipos se leen en palabras («WhatsApp · marketing») y sin la referencia técnica («ref: wamid…»).
+- El grupo de la agencia se llama «Agencia · sin subcuenta identificada».
+- Solo la dueña ve y cambia las reglas; el servidor lo exige.
+- Prueba nueva: `tests/consumos-reparto.py`.
+
 **Novedades 2.11.7 · Mismas cifras que Mobile y menú de la agencia unificado (20 nov):**
 - **«Leads de hoy» igual que en Mobile.** El ERP contaba «hoy» en hora universal: en Venezuela, de 8 de la noche a 8 de la noche. Mobile lo cuenta con el día del teléfono. Ahora el ERP manda la zona horaria y el día de quien mira, igual que Mobile. Las demás cifras (sin leer, conversaciones, ganadas) ya eran las mismas: salen de la misma cuenta con el mismo código.
 - **Menú de la agencia** (Subcuentas y Centro de mando) con el mismo lenguaje que el menú de las subcuentas:
