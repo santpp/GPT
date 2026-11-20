@@ -299,7 +299,9 @@ try {
             respond(['key'=>null,'ready'=>false,'code'=>'push_key_failed','error'=>'No se pudieron preparar las claves de avisos en el servidor.']);
         }
     }
-    if ($path === '/api/devices' && $method === 'GET') {
+    // 1.10.34: con ?token= es la pregunta del navegador («¿sigo registrado?»), que se contesta más abajo para cualquiera.
+    // Antes este diagnóstico la tapaba: a una vendedora le respondía 403 y la app rehacía (y a veces perdía) sus avisos cada vez que volvía a Ágora.
+    if ($path === '/api/devices' && $method === 'GET' && !isset($_GET['token'])) {
         if(($u['identity_type'] ?? 'native')!=='native' || $u['role']!=='administrator')respond(['error'=>'Acceso restringido'],403);
         require_once $appRoot.'/src/PushDelivery.php';
         try {$rows=query('SELECT id,platform,label,created_at,last_seen_at,last_sent_at FROM push_devices WHERE tenant_id=? ORDER BY last_seen_at DESC LIMIT 100',[$u['tenant_id']])->fetchAll();}

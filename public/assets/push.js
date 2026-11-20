@@ -73,14 +73,15 @@ export async function heal(csrf){
     let subscription=await registration.pushManager.getSubscription();
     if(subscription){
       const known=await api('devices?token='+encodeURIComponent(subscription.endpoint),undefined,'','GET').catch(()=>null);
-      if(known&&known.registered)return 'ok';
-      // El servidor no la tiene a nombre de quien está dentro: se empieza de cero con una suscripción nueva.
-      try{await subscription.unsubscribe()}catch{}
-      subscription=null;
+      // 1.10.34: si no se pudo preguntar, no se toca nada. Nunca se borra la suscripción del teléfono: borrarla y pedir
+      // otra en cada visita hacía que Android la perdiera, dejara de avisar y volviera a pedir «Activar avisos».
+      if(!known||known.registered!==false)return known?'ok':'failed';
+      // El servidor no la tiene a nombre de quien está dentro: se registra la misma, sin crear otra.
+    }else{
+      const answer=await api('push-key',undefined,'','GET');
+      if(!answer.ready||!answer.key)return 'skipped';
+      subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decode(answer.key)});
     }
-    const answer=await api('push-key',undefined,'','GET');
-    if(!answer.ready||!answer.key)return 'skipped';
-    subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decode(answer.key)});
     const json=subscription.toJSON();
     await api('devices',{token:subscription.endpoint,platform:'web',label:label(),
       keys:{p256dh:json.keys?.p256dh||encode(subscription.getKey('p256dh')),auth:json.keys?.auth||encode(subscription.getKey('auth'))}},csrf);

@@ -16,7 +16,7 @@
 
 **Otros (sin decidir):** módulos del reporte para empresas que no son ASOCIM; límite de intentos de contraseña por correo; Capacitor 6.2.3.
 
-Estado actualizado: 10 de noviembre de 2026. **Versión activa: 1.10.33 (1.10.1 + Consumos + teléfono + Embudos y búsqueda + Entrar como + listas por vendedor + menú «Más»)**, con el cambio de fuente (texto negro y más grande) y el canal de origen a la vista. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 10 de noviembre de 2026. **Versión activa: 1.10.34 (1.10.1 + Consumos + teléfono + Embudos y búsqueda + Entrar como + listas por vendedor + menú «Más»)**, con el cambio de fuente (texto negro y más grande) y el canal de origen a la vista. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 El trabajo de la 1.11.0 y la 1.11.1 (rutas de servidor para el armazón nuevo de Agora Digital App: tareas, recordatorios, auditoría, identidad del espacio, resumen, subcuenta de demostración) **queda en pausa, sin subir**, hasta que el usuario retome ese desarrollo. El código y los paquetes siguen en el repositorio por si se retoma, pero no son la versión activa. El desarrollo sigue a partir de la 1.10.1.
 
@@ -359,6 +359,9 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## 1.10.4 · Consumos: movimientos de la agencia
 - Bloque «Agencia · movimientos propios», bloques para las subcuentas no conectadas, y selector «Sólo la agencia».
+
+## 1.10.34 · Los avisos del teléfono ya no se pierden (Android)
+Error nuestro desde 1.7.1: la pregunta «¿sigue registrado este teléfono?» la tapaba el diagnóstico de la propietaria (403 a las vendedoras). La app borraba y rehacía la suscripción en cada visita, Android a veces la perdía y volvía a pedir «Activar avisos». Ahora la ruta contesta a cualquiera y la app nunca borra la suscripción. Pruebas: `tests/push-heal.php` y `tests/push-heal-ui.py`.
 
 ## 1.10.33 · Consumos: de qué subcuenta es cada gasto
 Igual que el ERP 2.11.8. El identificador de la subcuenta se busca en todos los datos del cargo. Los cargos sin subcuenta (como los 6.465 de WhatsApp) muestran pistas (el número de cada línea) y reglas «este dato → esta subcuenta». Los tipos se leen en palabras y el grupo de la agencia se llama «Agencia · sin subcuenta identificada». Pruebas: `tests/consumption-reparto.php` y `tests/consumption-reparto-ui.py`.
