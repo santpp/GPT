@@ -1,5 +1,10 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.7 · Más color en el menú y respuesta de color en «Cancelar» y la X (20 nov):**
+- **Menú con más variedad, dentro del manual y sin oro:** cada sección tiene su color y sus módulos lo heredan. Ventas en vino, Facturación en vino oscuro, Clientes y atención en azul profundo, Gestión y resultados en azul medio, Contratos en rosa vino y Administración en pizarra.
+- **«Cancelar», «Cerrar», «Restaurar» y la X de las ventanas** se llenan de vino con letra blanca al pasar, enfocar o tocar, con las mismas animaciones que «Editar».
+- En el teléfono, el lápiz de cada cifra también da ese destello al tocarlo.
+
 **Novedades 2.12.6 · Nuevo estilo de las cifras, celdas vivas y «Resumen del día» (20 nov):**
 - **Estilo de las cifras (idea del usuario), en todos los módulos:** a la izquierda; rótulo con flecha y debajo una línea breve que explica la cifra («Leads del día», «Conversaciones de la cuenta»); la cifra grande y su nota. Ícono de trazado lineal pequeño en vino arriba a la derecha. La tarjeta grande del Tablero lleva un degradado muy suave y su fecha como etiqueta («Hoy · 20 nov»).
 - **Sin huecos:** la última fila de cada caja se estira hasta llenar el ancho, también al ocultar o reordenar cifras. Si una caja tiene menos cifras que columnas, se reparten en partes iguales.

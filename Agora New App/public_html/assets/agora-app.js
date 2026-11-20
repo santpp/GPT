@@ -169,13 +169,13 @@ document.addEventListener('click', e => {
    /conversations/{id}); /tablero y /conexiones quedan como alias de las nuevas.
    ===================================================================================== */
 const GRUPOS = {
-  general: {name: 'General', slug: 'general', icon: 'pie', c: 'var(--mod-vino)', desc: 'Las cifras del día, los anuncios y la rentabilidad.'},
-  ingresos: {name: 'Ventas', slug: 'ventas', icon: 'coins', c: 'var(--brand)', desc: 'El reporte del mes, el Tablero comercial, las ventas y el catálogo.'},
-  facturacion: {name: 'Facturación', slug: 'facturacion', icon: 'invoice', c: 'var(--mod-oro)', desc: 'Cobros del mes, facturas fiscales y simples, libro de ventas, datos fiscales y tasa BCV.'},
-  clientes: {name: 'Clientes y atención', slug: 'clientes', icon: 'chat', c: 'var(--mod-azul)', desc: 'Conversaciones, contactos, oportunidades y tareas del equipo.'},
-  gestion: {name: 'Gestión y resultados', slug: 'gestion', icon: 'pulse', c: 'var(--mod-oro)', desc: 'Equipo, publicidad, costos, tendencias y calidad de los datos.'},
-  contratos: {name: 'Contratos', slug: 'contratos', icon: 'invoice', c: 'var(--mod-azul)', desc: 'Convenios, alumnos con convenio y su registro.'},
-  administracion: {name: 'Administración', slug: 'administracion', icon: 'gear', c: 'var(--deep, #282E49)', desc: 'Auditoría, configuración, usuarios, ajustes y ayuda.'},
+  general: {name: 'General', slug: 'general', icon: 'pie', c: 'var(--cat-general)', desc: 'Las cifras del día, los anuncios y la rentabilidad.'},
+  ingresos: {name: 'Ventas', slug: 'ventas', icon: 'coins', c: 'var(--cat-ventas)', desc: 'El reporte del mes, el Tablero comercial, las ventas y el catálogo.'},
+  facturacion: {name: 'Facturación', slug: 'facturacion', icon: 'invoice', c: 'var(--cat-facturacion)', desc: 'Cobros del mes, facturas fiscales y simples, libro de ventas, datos fiscales y tasa BCV.'},
+  clientes: {name: 'Clientes y atención', slug: 'clientes', icon: 'chat', c: 'var(--cat-clientes)', desc: 'Conversaciones, contactos, oportunidades y tareas del equipo.'},
+  gestion: {name: 'Gestión y resultados', slug: 'gestion', icon: 'pulse', c: 'var(--cat-gestion)', desc: 'Equipo, publicidad, costos, tendencias y calidad de los datos.'},
+  contratos: {name: 'Contratos', slug: 'contratos', icon: 'invoice', c: 'var(--cat-contratos)', desc: 'Convenios, alumnos con convenio y su registro.'},
+  administracion: {name: 'Administración', slug: 'administracion', icon: 'gear', c: 'var(--cat-admin)', desc: 'Auditoría, configuración, usuarios, ajustes y ayuda.'},
 };
 const MODS = {
   centro: {g: 'general', fijo: true, view: 'centro', name: 'Inicio', icon: 'home', path: '/centro', c: 'var(--brand)', desc: 'Todos los módulos de tu subcuenta, en un solo lugar.', ok: () => !!ME || agoraReady()},
@@ -4086,7 +4086,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.12.6').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.12.7').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -10548,6 +10548,8 @@ if (AG_READY && window.AGORA_MAINTENANCE !== false) { try { AG.installMaintenanc
     const target = esSuperAdmin() ? '/agencia' : (back && back !== '/entrar' && back !== '/' ? back : homePath());
     history.replaceState(null, '', HASH ? location.pathname + '#' + target : target);
   }
+  // 2.12.7 · Cada sección del menú con su color de la marca (vino, vino oscuro, rosa, azul profundo, azul medio, pizarra); sin oro.
+  Object.values(MODS).forEach(m => { if (m && GRUPOS[m.g] && m.g !== 'general') m.c = GRUPOS[m.g].c; });
   render();
 })();
 })();
