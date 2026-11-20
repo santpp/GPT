@@ -46,6 +46,7 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
 
 - Usa lo que ya existe: `head()` para la cabecera, `secH()` para cada sección, tarjetas `.ag-resumen`, tablas dentro de `.tw`, píldoras `.sc sc-ok|sc-warn|sc-bad|sc-gray`, botones `.btn`, `.btn-cta`, `.btn-sm`, ventanas con `openModal(modalHead(...))`, filas editables como `.ag-serv`.
 - Nombres de botones fijos en todo el ERP: **«Descargar»** (ícono de descarga, nunca la palabra «Excel») y **«Editar Dashboard»** (ícono de lápiz), en la misma línea. **Las tarjetas de cifras van sin ícono** (título, cifra y nota, como «Resumen de hoy»), para elegir las tarjetas.
+- **Tipografía:** Author en todo. Escala única (final de `agora-new.css`, sección 2.11.5): título 28 px (24 en el teléfono), sección 20, panel 16,5, tarjeta rótulo 12,5 y cifra 26 (22 en el teléfono), botones de cabecera 13,5. No pongas tamaños propios en una pantalla: usa estas clases. `tests/tipografia.py` lo revisa.
 - Confirmaciones con `toast('…')` cortas («Costos guardados.»). Nada de franjas, insignias o íconos nuevos para confirmar: el usuario lo rechazó por «verse muy IA».
 - Sin textos repetidos (la etiqueta superior no repite el título). **Los gráficos van al final del módulo.**
 - Botones de icono solo cuando su significado es obvio. Si no, icono + texto (por ejemplo, «Ficha» en la Bandeja).
@@ -68,7 +69,7 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
 - Cuentas: dueña `duena@example.test` / `Clave-Local-2026!`; ASOCIM (con reporte) `admin|supervisor|ejecutivo1|ejecutivo2|consulta.asocim@agora.test` / `Agora-Pruebas-2026!`.
 - **Subcuenta sin reporte:** la 1 («Prueba SA»), con la dueña. En Playwright, después de entrar: `fetch('/api/workspace/active', {method:'POST', body:{connectionId:1}})`.
 - Entre una prueba y otra: 11 s de pausa y `delete from agora_rate_limits`.
-- Orden de las pruebas: `motor-puente.py duena@example.test 'Clave-Local-2026!'`, `permisos.py` (mismos argumentos), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `tarjetas.py`, `ventas-importadas.py`, `estudiantes.py`, `venta-cuenta.py` (no se puede repetir), `ui-estados.py`, `menu-principal.py`, `herramientas.py`, `fixes-296.py`, `graficos-gestion.py`, `costos-editar.py`, `facturacion.py`, `facturacion-ui.py` (necesita la anterior), `fixes-2111.py`, `ghl-conexion.php`.
+- Orden de las pruebas: `motor-puente.py duena@example.test 'Clave-Local-2026!'`, `permisos.py` (mismos argumentos), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `tarjetas.py`, `ventas-importadas.py`, `estudiantes.py`, `venta-cuenta.py` (no se puede repetir), `ui-estados.py`, `menu-principal.py`, `herramientas.py`, `fixes-296.py`, `graficos-gestion.py`, `costos-editar.py`, `facturacion.py`, `facturacion-ui.py` (necesita la anterior), `fixes-2111.py`, `tipografia.py`, `ghl-conexion.php`.
 
 ## Facturación (2.11.0)
 

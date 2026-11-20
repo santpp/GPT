@@ -1,5 +1,15 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.11.5 · Una sola fuente y una sola escala (20 nov):**
+- La fuente es **Author** en todo el ERP (como en Mobile); solo los códigos usan letra de ancho fijo.
+- **Mismos tamaños en los 26 módulos:**
+  - Título del módulo: 28 px (24 en el teléfono).
+  - Títulos de sección: 20 px; títulos de panel: 16,5 px.
+  - Tarjetas, como «Resumen de hoy»: rótulo de 12,5 px y cifra de 26 px (22 en el teléfono).
+  - Botones de cabecera: 13,5 px.
+- Antes había títulos de 18, 21,75, 22, 24 y 33 px y cifras de 26, 30 y 30,7 px según el módulo.
+- Prueba nueva: `tests/tipografia.py` (escritorio y teléfono, 26 módulos).
+
 **Novedades 2.11.4 · Gestión Comercial como «Resumen de hoy» en el teléfono (19 nov):**
 - En el teléfono, la caja «Cifras del mes» de Gestión Comercial pone las cifras en **dos columnas con divisores**, igual que «Resumen de hoy» en Inicio (antes las apilaba en una sola). Los montos largos caben sin partirse.
 - `tests/fixes-2111.py` lo comprueba (14).

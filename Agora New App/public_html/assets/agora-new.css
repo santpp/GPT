@@ -601,3 +601,25 @@ a.inicio-resumen-c:hover .inicio-resumen-l .ic{opacity:.9;transform:translateX(2
 #view.ag .micro.arp-mic .arp-mic-ic { display: none !important; }
 :root[data-xp="cuenta"] #app .micro.xp-mic { grid-template-columns: minmax(0, 1fr) !important; }
 #app .micro .arp-mic-ic { display: none !important; }
+
+/* =====================================================================================
+   2.11.5 · Una sola escala tipográfica en todos los módulos (fuente Author en todo el ERP).
+   Referencia: «Resumen de hoy». Va al final y con prioridad para ganarle a los estilos viejos de cada pantalla.
+   ===================================================================================== */
+main#app h1, main#app h1.t-module { font: 700 28px/1.15 var(--font-display) !important; letter-spacing: -0.02em; }
+/* Títulos de sección grandes (encima de varios paneles) */
+main#app h2.t-sec, main#app h2.hx-sec, main#app #manual h2 { font: 700 20px/1.25 var(--font-display) !important; letter-spacing: -0.015em; }
+/* Títulos de panel */
+main#app .panel > h2:not([class]), main#app .pf-sec-h h2, main#app h2.t-panel, main#app #inicio-resumen-t { font: 700 16.5px/1.25 var(--font-display) !important; }
+/* Tarjetas de cifras: rótulo, cifra y nota iguales en todas */
+main#app .ag-resumen-t, main#app .micro > h3, main#app .inicio-resumen-l { font: 600 12.5px/1.3 var(--font-text) !important; color: var(--muted); }
+main#app .ag-resumen-v, main#app .micro .t-metric, main#app .inicio-resumen-v { font: 700 26px/1.1 var(--font-display) !important; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+main#app .ag-resumen-d, main#app .inicio-resumen-d, main#app .micro .f { font-size: 12.5px !important; }
+/* Botones de cabecera (Descargar, Editar Dashboard, Otro periodo…) */
+main#app .mod-h .btn, main#app .inicio-resumen-h .btn, main#app #period-btn { font-size: 13.5px !important; font-weight: 600; }
+@media (max-width: 600px) {
+  main#app h1, main#app h1.t-module { font-size: 24px !important; }
+  main#app h2.t-sec, main#app h2.hx-sec, main#app #manual h2 { font-size: 18px !important; }
+  main#app .ag-resumen-v, main#app .micro .t-metric, main#app .inicio-resumen-v { font-size: 22px !important; }
+  main#app .gc-caja .gc-caja-g .ag-resumen-v { font-size: 20px !important; }
+}
