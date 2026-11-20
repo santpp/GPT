@@ -16,3 +16,4 @@ Agora New App/servidor/config/config.php
 Agora New App/servidor/storage/*
 !Agora New App/servidor/storage/.gitkeep
 !Agora New App/servidor/storage/.gitignore
+Agora New App/tests/fake-ghl.log
