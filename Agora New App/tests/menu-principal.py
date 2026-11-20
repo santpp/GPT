@@ -27,7 +27,8 @@ with sync_playwright() as p:
         ls=[cs.nth(i).locator('.inicio-resumen-l .ic').count() for i in range(cs.count())]
         ok(all(l==1 for l in ls),'todas las cifras llevan el mismo título con flecha')
         vs=[cs.nth(i).locator('.inicio-resumen-v').bounding_box() for i in range(cs.count())]
-        ok(all(v and c and v['x']-c['x']<30 for v,c in zip(vs,xs)),f'el número va debajo del título en todas, también en el teléfono ({W})')
+        lb=[cs.nth(i).locator('.inicio-resumen-l').bounding_box() for i in range(cs.count())]
+        ok(all(v and c and l and v['y']>=l['y']+l['height']-1 and abs((v['x']+v['width']/2)-(c['x']+c['width']/2))<14 for v,c,l in zip(vs,xs,lb)),f'2.12.8 · el número va debajo del título y centrado en todas, también en el teléfono ({W})')
         if W>600:
             ch=pg.locator('.mod-tile-subs a',has_text='Cobros').first;ch.click();pg.wait_for_timeout(1500)
             ok(pg.url.endswith('/cobros'),'2.11.0 · la etiqueta «Cobros» (categoría Facturación) lleva directo a Cobros')
