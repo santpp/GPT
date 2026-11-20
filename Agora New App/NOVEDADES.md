@@ -1,5 +1,14 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.5 · El teléfono cumple las mismas medidas que el ordenador (20 nov):**
+- La 2.12.4 solo se había medido en el ordenador. En el teléfono se escapaban algunas piezas:
+  - las tablas leídas como fichas (radio 14, relleno 12 × 14 y 10 px entre fichas);
+  - los recuadros de módulos (radio 20);
+  - las tarjetas de Oportunidades (14), Contratos (22) y Herramientas de agencia (18);
+  - los íconos de sección, unos de 36 px y otros de 32.
+- Ahora todo tiene radio 16. Fichas y tarjetas llevan relleno de 14 × 16 y 12 px entre una y otra. Los íconos de sección son de 36 px en el ordenador y 32 px en el teléfono, todos iguales.
+- `tests/fixes-2123.py` también mide el teléfono.
+
 **Novedades 2.12.4 · Armonía jerárquica: las mismas medidas en todos los módulos (20 nov):**
 - Se midieron las 27 pantallas (con y sin reporte) y se igualó todo:
   - **Esquinas:** 16 px en todas las cajas. Antes había 22, 20, 16 y 14.

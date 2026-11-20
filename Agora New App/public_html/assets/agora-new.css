@@ -779,3 +779,17 @@ main#app .camp-nota{margin:0 0 12px!important}
 /* Filas de varias columnas: el espacio lo pone la fila (16 px entre filas y columnas); los paneles de dentro no suman margen. */
 main#app :is(.grid,[class*="-cols"]):has(> .panel){row-gap:16px!important;column-gap:16px!important;margin-bottom:16px!important}
 main#app :is(.grid,[class*="-cols"]):has(> .panel) > .panel{margin-bottom:0!important}
+
+/* 2.12.5 · El mismo ritmo en el teléfono y en el ordenador: las piezas que el teléfono pinta distinto también siguen la regla. */
+main#app :is(.mod-tile,.board-card2,.records-list,.records-record,.ag-tool,.kpi-card){border-radius:16px!important}
+main#app :is(.board-card2,.kpi-card){padding:14px 16px!important}
+main#app .ag-tool{padding:16px!important}
+/* Íconos de los encabezados de sección y de panel: 36 px en el ordenador, 32 px en el teléfono, todos iguales. */
+main#app :is(.arp-sec-ic,.arp-ph-ic,.pf-sec-h > span:first-child){width:36px!important;height:36px!important;border-radius:10px!important;flex:none}
+@media(max-width:600px){
+  main#app :is(.arp-sec-ic,.arp-ph-ic,.pf-sec-h > span:first-child){width:32px!important;height:32px!important}
+  /* Tablas leídas como fichas: radio 16, relleno 14 × 16 y 12 px entre fichas. */
+  main#app .tw tbody tr,main#app table tbody tr{border-radius:16px!important}
+  main#app .tw tbody tr{padding:14px 16px!important;margin-bottom:12px!important}
+  main#app .tw tbody{row-gap:12px!important}
+}

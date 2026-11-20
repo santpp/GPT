@@ -39,8 +39,8 @@ with sync_playwright() as p:
         ok(not sueltas,f'{quien}: todas las cifras van en una sola tarjeta con líneas {sueltas[:5]}')
         ritmo=[];RIT="""()=>{const m=document.querySelector('main#app');const W=m.getBoundingClientRect().width;const box=e=>{if(!e.offsetParent)return false;const c=getComputedStyle(e);const r=e.getBoundingClientRect();return parseFloat(c.borderTopLeftRadius)>=8&&(c.borderTopStyle!=='none'&&parseFloat(c.borderTopWidth)>0||c.boxShadow!=='none')&&/255, 255, 255/.test(c.backgroundColor)&&r.width>W*0.42&&r.height>40};
           const top=[...m.querySelectorAll('*')].filter(e=>{if(!box(e))return false;let p=e.parentElement;while(p&&p!==m){if(box(p))return false;p=p.parentElement}return true}).sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top);const out=[];
-          top.forEach((e,i)=>{const c=getComputedStyle(e);if(Math.round(parseFloat(c.borderTopLeftRadius))!==16)out.push('radio '+Math.round(parseFloat(c.borderTopLeftRadius))+' '+e.className);if(e.classList.contains('panel')&&c.paddingLeft!=='24px')out.push('relleno '+c.paddingLeft+' '+e.className);
-            if(i&&e.previousElementSibling===top[i-1]){const a=top[i-1].getBoundingClientRect(),b=e.getBoundingClientRect();const g=Math.round(b.top-a.bottom);if(b.top>a.bottom-2&&Math.abs(a.left-b.left)<4&&g<40&&g!==16)out.push('hueco '+g+' '+e.className)}});return out}"""
+          top.forEach((e,i)=>{const c=getComputedStyle(e);if(Math.round(parseFloat(c.borderTopLeftRadius))!==16)out.push('radio '+Math.round(parseFloat(c.borderTopLeftRadius))+' '+e.className);if(e.classList.contains('panel')&&c.paddingLeft!==(innerWidth>600?'24px':'16px'))out.push('relleno '+c.paddingLeft+' '+e.className);
+            if(i&&e.previousElementSibling===top[i-1]){const a=top[i-1].getBoundingClientRect(),b=e.getBoundingClientRect();const g=Math.round(b.top-a.bottom);if(b.top>a.bottom-2&&Math.abs(a.left-b.left)<4&&g<40&&g!==16&&!(g===12&&e.tagName==='TR'))out.push('hueco '+g+' '+e.className)}});return out}"""
         for r in R:
             pg.goto(B+r);pg.wait_for_timeout(3000);ritmo+=[f'{r}: {x[:60]}' for x in pg.evaluate(RIT)]
         ok(not ritmo,f'{quien}: 2.12.4 · mismo radio, relleno y espacio entre cajas en todos los módulos {ritmo[:6]}')
@@ -74,5 +74,12 @@ with sync_playwright() as p:
         pg.goto(B+r);pg.wait_for_timeout(3500)
         if pg.evaluate('document.documentElement.scrollWidth>innerWidth+2'):malos.append(r)
     ok(not malos,f'teléfono: ningún módulo se desborda {malos}')
+    # 2.12.5 · el teléfono cumple el mismo ritmo: radio 16, paneles con 16 px, 16 entre cajas (12 entre fichas) e íconos de sección iguales
+    ritmo=[];iconos=set()
+    for r in R:
+        pg.goto(B+r);pg.wait_for_timeout(3000);ritmo+=[f'{r}: {x[:60]}' for x in pg.evaluate(RIT)]
+        iconos|=set(pg.evaluate("[...document.querySelectorAll('main .arp-sec-ic, main .arp-ph-ic, main .pf-sec-h > span:first-child')].filter(e=>e.offsetParent).map(e=>Math.round(e.getBoundingClientRect().width))"))
+    ok(not ritmo,f'teléfono: 2.12.5 · mismo radio, relleno y espacios que en el ordenador {ritmo[:6]}')
+    ok(len(iconos)<=1,f'teléfono: todos los íconos de sección del mismo tamaño {iconos}')
     ok(not errs,f'teléfono: sin errores {errs}');br.close()
 print(n,'comprobaciones')
