@@ -5,6 +5,7 @@
 - **Línea roja de Ágora** arriba de cada cifra (antes azul), que **se ilumina** al pasar: vino intenso con un brillo suave.
 - **«Editar»** solo con la palabra, sin lápiz: arriba a la derecha en el ordenador y debajo de la cifra en el teléfono.
 - **«Tablero comercial» ahora se llama «Dashboard»** en el menú, la cabecera, Athena y los textos de ayuda.
+- **Un color por categoría** (menú y tarjetas de módulos del Inicio): Ventas vino, Facturación oro, Clientes y atención azul profundo, Gestión y resultados azul medio, Contratos rosa y Administración vino oscuro.
 
 **Novedades 2.12.7 · Más color en el menú y respuesta de color en «Cancelar» y la X (20 nov):**
 - **Menú con más variedad, dentro del manual y sin oro:** cada sección tiene su color y sus módulos lo heredan. Ventas en vino, Facturación en vino oscuro, Clientes y atención en azul profundo, Gestión y resultados en azul medio, Contratos en rosa vino y Administración en pizarra.

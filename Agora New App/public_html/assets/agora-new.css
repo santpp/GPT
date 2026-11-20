@@ -841,11 +841,11 @@ main#app .tarj-ed .pz-item.pz-foco,.tarj-ed .pz-item.pz-foco{box-shadow:inset 3p
 }
 @media(prefers-reduced-motion:reduce){main#app .cel::before,main#app .cel :is(button,.btn,[role=button]){transition:none}}
 
-/* 2.12.7 · Menú con más variedad, siempre dentro del manual de Ágora (sin oro): cada sección tiene su color
+/* 2.12.7 · Menú con más variedad, siempre dentro del manual de Ágora: cada sección tiene su color (2.12.8: un color distinto por categoría, Facturación en oro)
    y sus módulos lo heredan. Tonos con contraste suficiente para el ícono blanco. */
-:root{--cat-general:#AD103C;--cat-ventas:#AD103C;--cat-facturacion:#7A0B2A;--cat-clientes:#282E49;--cat-gestion:#5B6188;--cat-contratos:#B8476B;--cat-admin:#454A63}
-:root[data-theme="dark"]{--cat-general:#E0517A;--cat-ventas:#E0517A;--cat-facturacion:#B8325A;--cat-clientes:#8C97D6;--cat-gestion:#9AA0C4;--cat-contratos:#F2A3B9;--cat-admin:#B4BAE0}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--cat-general:#E0517A;--cat-ventas:#E0517A;--cat-facturacion:#B8325A;--cat-clientes:#8C97D6;--cat-gestion:#9AA0C4;--cat-contratos:#F2A3B9;--cat-admin:#B4BAE0}}
+:root{--cat-general:#AD103C;--cat-ventas:#AD103C;--cat-facturacion:#B8860F;--cat-clientes:#282E49;--cat-gestion:#5B6188;--cat-contratos:#C25478;--cat-admin:#7A0B2A}
+:root[data-theme="dark"]{--cat-general:#E0517A;--cat-ventas:#E0517A;--cat-facturacion:#D9A21E;--cat-clientes:#8C97D6;--cat-gestion:#9AA0C4;--cat-contratos:#F2A3B9;--cat-admin:#B8325A}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--cat-general:#E0517A;--cat-ventas:#E0517A;--cat-facturacion:#D9A21E;--cat-clientes:#8C97D6;--cat-gestion:#9AA0C4;--cat-contratos:#F2A3B9;--cat-admin:#B8325A}}
 
 /* 2.12.7 · «Cancelar», «Cerrar», «Restaurar» y la X de las ventanas también responden con color: al pasar, enfocar o tocar
    se llenan de vino con letra blanca (mismas animaciones). En el teléfono, el toque da el mismo destello (:active). */

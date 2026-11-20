@@ -52,7 +52,7 @@ with sync_playwright() as p:
         ok(not ritmo,f'{quien}: 2.12.4 · mismo radio, relleno y espacio entre cajas en todos los módulos {ritmo[:6]}')
         ok(not sinBoton,f'{quien}: todo módulo con cifras tiene «Editar Dashboard» {sinBoton}')
         colores=pg.evaluate("[...new Set([...document.querySelectorAll('.side .mdm-ic, .acc-b .mdm-ic')].filter(e=>e.offsetParent).map(e=>getComputedStyle(e).backgroundColor))]")
-        ok(not any(c in colores for c in ['rgb(201, 151, 31)','rgb(52, 199, 89)','rgb(250, 189, 75)']) and 4<=len(colores)<=7,f'{quien}: 2.12.7 · el menú usa los tonos de la marca por sección, sin oro ni verde {colores}')
+        ok(not any(c in colores for c in ['rgb(52, 199, 89)']) and 6<=len(colores)<=7,f'{quien}: 2.12.8 · cada categoría del menú con su color de la marca (oro incluido), sin verde {colores}')
         # 2.12.6 · estilo de las cifras: a la izquierda, ícono de trazado arriba a la derecha y sin huecos en la última fila
         est=[]
         for r in ['/comercial','/ventas','/costos','/centro']:
