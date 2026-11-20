@@ -51,8 +51,8 @@ with sync_playwright() as p:
         ok(not pg.evaluate('document.documentElement.scrollWidth>innerWidth+2'),f'{q}: el Tablero no se desborda')
         if vp['width']>600:
             pg.goto(B+'/centro');pg.wait_for_timeout(4000)
-            g=pg.evaluate("getComputedStyle(document.querySelector('.tb-inicio .inicio-resumen-g')).gridTemplateColumns.split(' ').length")
-            ok(g==4,f'«Resumen de hoy» con 4 columnas ({g})')
+            g,k=pg.evaluate("(()=>{const e=document.querySelector('.tb-inicio .inicio-resumen-g');return [getComputedStyle(e).gridTemplateColumns.split(' ').length,[...e.children].filter(x=>x.offsetParent).length]})()")
+            ok(g==min(4,k),f'«Resumen del día» con 4 columnas (o tantas como cifras, 2.12.6) ({g} para {k})')
         ok(not errs,f'{q}: sin errores {errs}');pg.context.close()
     br.close()
 print(n,'comprobaciones')
