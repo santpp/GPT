@@ -1,5 +1,10 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.2 · Tablero comercial como los demás tableros (20 nov):**
+- Cada bloque de cifras del Tablero (Tu día, Operación del día, Rentabilidad…) es **una sola caja blanca** con las cifras separadas por líneas finas, igual que Gestión Comercial y «Resumen de hoy». Ya no hay tarjetas sueltas con espacio entre ellas.
+- 4 por fila en el ordenador y 2 en el teléfono (la tarjeta grande ocupa la fila entera en el teléfono).
+- `tests/fixes-2121.py` lo comprueba.
+
 **Novedades 2.12.1 · Formulario de factura más claro y 4 cifras por fila en todos los tableros (20 nov):**
 - **Factura:**
   - «Moneda y tasa» va antes de los productos, con una línea clara: «1 US$ = Bs. 245,50 · BCV dólar del 20/11/2026».

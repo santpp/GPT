@@ -46,6 +46,8 @@ with sync_playwright() as p:
         pg.goto(B+'/comercial');pg.wait_for_timeout(6500)
         cols=pg.evaluate("[...new Set([...document.querySelectorAll('#view .g-hero')[0].querySelectorAll('.hero,.micro')].map(e=>Math.round(e.getBoundingClientRect().left)))].length")
         ok(cols==(4 if vp['width']>600 else cols),f'{q}: el Tablero comercial pone 4 por fila ({cols})')
+        caja=pg.evaluate("(()=>{const g=document.querySelector('#view .g-hero');const c=getComputedStyle(g);const t=[...g.querySelectorAll('.hero,.micro')].map(e=>getComputedStyle(e));return {gap:c.rowGap,borde:c.borderTopWidth,fondoCelda:t.every(x=>x.backgroundColor==='rgba(0, 0, 0, 0)'),radioCelda:t.every(x=>x.borderTopLeftRadius==='0px')}})()")
+        ok(caja['gap'] in ('0px','normal') and caja['borde']=='1px' and caja['fondoCelda'] and caja['radioCelda'],f'{q}: 2.12.2 · el Tablero es una sola caja con líneas, como los demás tableros {caja}')
         ok(not pg.evaluate('document.documentElement.scrollWidth>innerWidth+2'),f'{q}: el Tablero no se desborda')
         if vp['width']>600:
             pg.goto(B+'/centro');pg.wait_for_timeout(4000)

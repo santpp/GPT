@@ -285,6 +285,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - El repositorio se divide: `Agora Mobile/` (release 1.10.14 de nueva.agoradigital.app; el código sigue en la raíz) y `Agora New App/` (ERP 2.1.19 recibido: `public_html/`, `servidor/`). Análisis completo: `Agora New App/ANALISIS.md`. Sin Docker; MySQL.
 - Se deja de llamar «armazón». Lo de abajo es el historial de cuando lo era.
 - **2.2.0 (13 de noviembre)**: estable en MySQL; conexión con la cuenta por subcuenta (token cifrado, Location ID, «Probar conexión»); fuente Author; arreglos de Ajustes, Contactos, Gestión Comercial y logos; paquete de producción sin modo pruebas (`agora-new-app-2.2.0.zip`) y paquete de demo aparte. Siguiente: Conversaciones con el motor de Ágora Mobile.
+- **2.12.2 (20 de noviembre)**: Tablero comercial con cajas de cifras separadas por líneas, como los demás tableros.
 - **2.12.1 (20 de noviembre)**: formulario de factura más claro (moneda y tasa arriba, equivalente por línea, total que cuadra); 4 cifras por fila en Tablero comercial y «Resumen de hoy».
 - **2.12.0 (20 de noviembre)**: factura con precios en US$ o € y tasa elegida (BCV dólar, BCV euro, USDT Binance), vencimiento por fecha u horas; solo colores de Ágora; selectores de período como el del Inicio; «Editar costos o números».
 - **2.11.8 (20 de noviembre)**: Consumos reparte el gasto sin subcuenta (búsqueda en todos los datos del cargo, pistas y reglas por subcuenta).

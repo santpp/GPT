@@ -64,6 +64,7 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
   - El Tablero comercial (pantalla de Mobile) usa `TB_ATAJOS`.
   - Todo navega con `tarjIr(r)`. `tests/atajos.py` lo revisa.
 - **Inicio de sesión:** solo marca, Athena con su globo, «Inicia sesión», los campos, «Continuar» y «¿Olvidaste tu clave?». Sin emojis, puntos de estado, píldoras ni frases de relleno (el usuario los quitó en 2.11.7).
+- **Tableros: una caja por bloque** (borde, radio 16 px, fondo blanco) con las cifras separadas por líneas finas; nada de tarjetas sueltas con espacio entre ellas.
 - **Tableros: 4 cifras por fila** en el ordenador (2 en pantallas medianas). Una tarjeta grande ocupa una columna más, no media pantalla.
 - **Colores:** solo la escala de Ágora (vino, azul profundo, oro y tonos: `--ag-1` a `--ag-7`). Nada de selectores de color; las series de los gráficos usan esa escala.
 - **Selectores de período:** la barra `.per` del Inicio (opción en blanco, punto verde `pt-curso`, casita para volver).
