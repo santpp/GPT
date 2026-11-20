@@ -64,9 +64,10 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
   - El Tablero comercial (pantalla de Mobile) usa `TB_ATAJOS`.
   - Todo navega con `tarjIr(r)`. `tests/atajos.py` lo revisa.
 - **Inicio de sesión:** solo marca, Athena con su globo, «Inicia sesión», los campos, «Continuar» y «¿Olvidaste tu clave?». Sin emojis, puntos de estado, píldoras ni frases de relleno (el usuario los quitó en 2.11.7).
-- **Tableros: una caja por bloque** (borde, radio 16 px, fondo blanco) con las cifras separadas por líneas finas; nada de tarjetas sueltas con espacio entre ellas.
+- **Una caja por grupo de cifras en TODOS los módulos** (borde, radio 16 px, fondo blanco) con las cifras separadas por líneas finas; nada de tarjetas sueltas con espacio entre ellas. Lo hace el bloque 2.12.3 de `agora-new.css` para `.ag-resumen-grid`, `.g-hero` y `.grid` con `.micro`.
+- **«Editar Dashboard» en todo módulo con cifras:** con catálogo (`tarjEditar`) donde lo hay; si no (Tablero, vistas del reporte), el genérico `tgAplicar`/`tgEditar` lee las cifras en pantalla y guarda orden y ocultas (vista `g_<módulo>`).
 - **Tableros: 4 cifras por fila** en el ordenador (2 en pantallas medianas). Una tarjeta grande ocupa una columna más, no media pantalla.
-- **Colores:** solo la escala de Ágora (vino, azul profundo, oro y tonos: `--ag-1` a `--ag-7`). Nada de selectores de color; las series de los gráficos usan esa escala.
+- **Colores (2.12.3):** dos familias del manual, vino y azul profundo, con sus tonos (`--ag-1`, `--ag-2`, `--ag-4` a `--ag-8`; módulos `--mod-*`). El oro solo para detalles pequeños; verde y ámbar solo para estados. Nada de selectores de color.
 - **Selectores de período:** la barra `.per` del Inicio (opción en blanco, punto verde `pt-curso`, casita para volver).
 - **Menús:** el de la agencia y el de las subcuentas hablan igual: fondo claro, ícono en recuadro de color (`.mdm-ic`), activo con fondo suave de marca y rótulos en tipo oración. Nada de mayúsculas espaciadas, franjas de color ni avisos «Próximamente» en el menú.
 - **Cifras de la cuenta = cifras de Mobile.** Todo lo que dependa de «hoy» se pide con la zona del dispositivo (`dashZona()`), igual que Mobile.
@@ -92,7 +93,7 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
 - Cuentas: dueña `duena@example.test` / `Clave-Local-2026!`; ASOCIM (con reporte) `admin|supervisor|ejecutivo1|ejecutivo2|consulta.asocim@agora.test` / `Agora-Pruebas-2026!`.
 - **Subcuenta sin reporte:** la 1 («Prueba SA»), con la dueña. En Playwright, después de entrar: `fetch('/api/workspace/active', {method:'POST', body:{connectionId:1}})`.
 - Entre una prueba y otra: 11 s de pausa y `delete from agora_rate_limits`.
-- Orden de las pruebas: `motor-puente.py duena@example.test 'Clave-Local-2026!'`, `permisos.py` (mismos argumentos), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `tarjetas.py`, `ventas-importadas.py`, `estudiantes.py`, `venta-cuenta.py` (no se puede repetir), `ui-estados.py`, `menu-principal.py`, `herramientas.py`, `fixes-296.py`, `graficos-gestion.py`, `costos-editar.py`, `facturacion.py`, `facturacion-ui.py` (necesita la anterior), `fixes-2111.py`, `tipografia.py`, `atajos.py`, `fixes-2117.py`, `consumos-reparto.py`, `fixes-2120.py`, `fixes-2121.py`, `ghl-conexion.php`.
+- Orden de las pruebas: `motor-puente.py duena@example.test 'Clave-Local-2026!'`, `permisos.py` (mismos argumentos), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `tarjetas.py`, `ventas-importadas.py`, `estudiantes.py`, `venta-cuenta.py` (no se puede repetir), `ui-estados.py`, `menu-principal.py`, `herramientas.py`, `fixes-296.py`, `graficos-gestion.py`, `costos-editar.py`, `facturacion.py`, `facturacion-ui.py` (necesita la anterior), `fixes-2111.py`, `tipografia.py`, `atajos.py`, `fixes-2117.py`, `consumos-reparto.py`, `fixes-2120.py`, `fixes-2121.py`, `fixes-2123.py`, `ghl-conexion.php`.
 
 ## Facturación (2.11.0)
 

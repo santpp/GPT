@@ -6,7 +6,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.12.2'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.12.3'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -54,7 +54,7 @@ final class Api {
    if($m==='GET')return ['mia'=>$this->db->setting($t,$kMia,null),'equipo'=>$this->db->setting($t,$kEq,null)];
    if($m!=='PUT')Http::fail('Método no permitido.',405);
    $ids=$b['tarjetas']??null;
-   if($ids!==null&&(!is_array($ids)||count($ids)>20||array_filter($ids,fn($x)=>!is_string($x)||!preg_match('/^[a-zA-Z]{2,30}$/D',$x))))Http::fail('Tarjetas no válidas.');
+   if($ids!==null&&(!is_array($ids)||count($ids)>40||array_filter($ids,fn($x)=>!is_string($x)||!preg_match('/^[a-zA-Z]{2,30}$/D',$x))))Http::fail('Tarjetas no válidas.');
    $ids=$ids===null?null:array_values(array_unique($ids));
    if(!empty($b['equipo'])){$this->a->permit('ajustes.editar');$this->db->saveSetting($t,$kEq,$ids===null?null:['tarjetas'=>$ids]);$this->a->audit('vista.equipo','ajuste',$vista);}
    else $this->db->saveSetting($t,$kMia,$ids===null?null:['tarjetas'=>$ids]);

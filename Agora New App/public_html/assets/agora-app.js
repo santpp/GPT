@@ -174,7 +174,7 @@ const GRUPOS = {
   facturacion: {name: 'Facturación', slug: 'facturacion', icon: 'invoice', c: 'var(--mod-oro)', desc: 'Cobros del mes, facturas fiscales y simples, libro de ventas, datos fiscales y tasa BCV.'},
   clientes: {name: 'Clientes y atención', slug: 'clientes', icon: 'chat', c: 'var(--mod-azul)', desc: 'Conversaciones, contactos, oportunidades y tareas del equipo.'},
   gestion: {name: 'Gestión y resultados', slug: 'gestion', icon: 'pulse', c: 'var(--mod-oro)', desc: 'Equipo, publicidad, costos, tendencias y calidad de los datos.'},
-  contratos: {name: 'Contratos', slug: 'contratos', icon: 'invoice', c: 'var(--ok-solid)', desc: 'Convenios, alumnos con convenio y su registro.'},
+  contratos: {name: 'Contratos', slug: 'contratos', icon: 'invoice', c: 'var(--mod-azul)', desc: 'Convenios, alumnos con convenio y su registro.'},
   administracion: {name: 'Administración', slug: 'administracion', icon: 'gear', c: 'var(--deep, #282E49)', desc: 'Auditoría, configuración, usuarios, ajustes y ayuda.'},
 };
 const MODS = {
@@ -189,7 +189,7 @@ const MODS = {
     desc: 'Las fichas de la subcuenta y su historial.', ok: () => agoraReady() && puede('datos.consultar')},
   oportunidades: {g: 'clientes', view: 'ag_board', ag: 'board', name: 'Oportunidades', icon: 'trend', path: '/oportunidades', c: 'var(--mod-oro)',
     desc: 'Los embudos por etapa y las ventas ganadas.', ok: () => agoraReady() && puede('datos.consultar'), n: () => wonPendientes || null},
-  tareas: {g: 'clientes', view: 'tareas', name: 'Tareas', icon: 'check', path: '/tareas', c: 'var(--ok-solid)',
+  tareas: {g: 'clientes', view: 'tareas', name: 'Tareas', icon: 'check', path: '/tareas', c: 'var(--mod-azul)',
     desc: 'Lo que cada ejecutivo tiene pendiente hoy.', ok: () => (!!ME || agoraReady()) && puede('datos.consultar'), n: () => tareasPendientes()},
   equipo: {g: 'gestion', view: 'tc_equipo', name: 'Equipo', icon: 'team', path: '/equipo', c: 'var(--mod-vino)', periodo: true,
     desc: 'Ventas, cobranza y comisiones de cada asesora.', ok: () => tableroHay('equipo')},
@@ -370,7 +370,7 @@ function paint(html, enter) {
   if (['bandeja', 'contactos', 'oportunidades', 'comercial'].includes(R.mod) && conectada() && ESPACIO?.permisos?.soloAsignado && !ESPACIO?.enlace)
     app.insertAdjacentHTML('afterbegin', `<p class="aviso-enlace" role="status">${icon('info')}<span><b>Tu usuario no está enlazado con la cuenta.</b> Por eso no ves conversaciones, contactos ni oportunidades. Pídele a quien administra tu subcuenta que te enlace en Usuarios y roles.</span></p>`);
   applyUiTexts();
-  aplicarPaleta(); arpVigilar();
+  aplicarPaleta(); arpVigilar(); tgVigilar();
   syncAgencyRail();
 }
 const repaint = () => { if (V[R.view]) { topbar(); paint(V[R.view].render()); } };
@@ -1106,7 +1106,7 @@ function openCmd(initial = '') {
       {g: 'Acciones', i: 'keyboard', t: 'Atajos de teclado', fn: keysModal},
     ];
     const conv = (DATA.contratos || []).map(c => ({g: 'Convenios', i: 'invoice', c: 'var(--mod-oro)', t: c.cliente, d: `${c.correo} · ${(ESTADO[c.estado]?.l || c.estado).toLowerCase()} · v${c.version}`, go: '/contratos/' + c.uid}));
-    const tar = (DATOS.tareas || []).filter(t => t.estado !== 'hecha').map(t => ({g: 'Tareas', i: 'check', c: 'var(--ok-solid)', t: t.titulo, d: `${t.responsable || 'Sin asignar'}${t.vence ? ' · vence ' + fday(t.vence) : ''}`, go: '/tareas'}));
+    const tar = (DATOS.tareas || []).filter(t => t.estado !== 'hecha').map(t => ({g: 'Tareas', i: 'check', c: 'var(--mod-azul)', t: t.titulo, d: `${t.responsable || 'Sin asignar'}${t.vence ? ' · vence ' + fday(t.vence) : ''}`, go: '/tareas'}));
     items = [...mods, ...acc, ...conv, ...tar].filter(x => !q || norm(x.t + ' ' + (x.d || '') + ' ' + x.g).includes(q)).slice(0, 40);
     sel = Math.min(sel, Math.max(0, items.length - 1));
     let g = '';
@@ -1938,7 +1938,7 @@ const firmado = v => (Number(v) > 0 ? '+' : '') + usd(v);
 
 /* ---------- Paleta de los gráficos de reparto ---------- */
 /* 2.12.0 · Escala de Ágora (manual de marca): vino, azul profundo, oro y sus tonos. Distingue asesores y fuentes sin un carnaval de colores. */
-const PAL = ['var(--ag-1)', 'var(--ag-2)', 'var(--ag-3)', 'var(--ag-4)', 'var(--ag-5)', 'var(--ag-6)', 'var(--ag-7)'];
+const PAL = ['var(--ag-1)', 'var(--ag-2)', 'var(--ag-4)', 'var(--ag-5)', 'var(--ag-6)', 'var(--ag-7)', 'var(--ag-8)']; // 2.12.3: dos familias (vino y azul profundo) y sus tonos; sin oro
 
 /**
  * Rueda de reparto con su leyenda al lado. `items`: [{l, n}].
@@ -4086,7 +4086,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.12.2').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.12.3').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -4978,7 +4978,8 @@ const arpTile = (texto, cls) => `<span class="${cls}" aria-hidden="true">${icon(
 /** Pone el esqueleto de la agencia sobre lo que acaba de pintar un módulo ARP. Es idempotente. */
 function arpEsqueleto(root) {
   if (!root || !root.classList?.contains('ag')) return;
-  vtInyectar(root);
+  // 2.12.3 · Pedido del usuario: los gráficos de ventas van solo en Gestión Comercial, no en el Tablero.
+  root.querySelector('#dashboard-body > [data-vt]')?.remove();
   try { opEmbudoInyectar(root); } catch { /* el embudo es un extra: nunca traba la vista */ }
   arpPersonalizar(root);
   tbAtajos(root);
@@ -7029,6 +7030,64 @@ function dashZona(sep) {
   const d = new Date(), hoy = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   return `${sep}from=${hoy}&to=${hoy}${tz ? '&tz=' + encodeURIComponent(tz) : ''}`;
 }
+/* 2.12.3 · «Editar Dashboard» en TODO módulo con cifras que todavía no lo tenía (Tablero comercial y vistas armadas con el reporte
+   mensual). Lee las tarjetas que hay en pantalla; cada persona elige cuáles ver y en qué orden (o la administración, para el equipo).
+   Se guarda el orden completo y lo oculto con «X» delante: una tarjeta que aparezca después (otro período, otro mes) se muestra al final. */
+const TG_SEL = '.g-hero > .hero, .g-hero .micro, .grid:has(> .micro) > .micro, .ag-resumen-grid > .ag-resumen';
+const tgRotulo = t => (t.querySelector(':scope > h3, :scope > div > .t-label, :scope > .t-label, :scope > .ag-resumen-t')?.textContent || '').replace(/\s+/g, ' ').trim();
+const tgId = r => { const w = r.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\b(hoy|del periodo|de hoy)\b/gi, ' ').replace(/[^A-Za-z ]/g, ' ').trim().split(/\s+/).filter(Boolean);
+  return (w.map((x, i) => i ? x[0].toUpperCase() + x.slice(1).toLowerCase() : x.toLowerCase()).join('') || 'tarjeta').slice(0, 29).padEnd(2, 'x'); };
+const tgVista = () => ('g_' + String(R?.mod || R?.view || 'x').toLowerCase().replace(/[^a-z]/g, '_')).slice(0, 30);
+function tgTarjetas(main) {
+  const out = [], vistos = new Set();
+  main.querySelectorAll(TG_SEL).forEach(t => { const r = tgRotulo(t); if (!r) return; let id = tgId(r); while (vistos.has(id)) id = (id + 'b').slice(-29); vistos.add(id); out.push({t, id, r}); });
+  return out;
+}
+let TG_PEND = '';
+function tgAplicar(main = document.querySelector('main#app')) {
+  if (!main || !R || !ME) return;
+  const otro = [...main.querySelectorAll('button')].some(b => !b.hasAttribute('data-tg-editar') && /Editar Dashboard/.test(b.textContent));
+  const tarj = otro ? [] : tgTarjetas(main), boton = main.querySelector('[data-tg-editar]');
+  if (tarj.length < 2) { boton?.remove(); return; }
+  const vista = tgVista();
+  if (!TARJ[vista]?.cargado) { if (TG_PEND !== vista) { TG_PEND = vista; tarjCargar(vista).then(() => { TG_PEND = ''; tgAplicar(); }); } return; }
+  const guard = TARJ[vista].mia?.tarjetas ?? TARJ[vista].equipo?.tarjetas ?? null;
+  const orden = Array.isArray(guard) ? guard.map(x => x.replace(/^X/, '')) : [], ocultas = new Set(Array.isArray(guard) ? guard.filter(x => x.startsWith('X')).map(x => x.slice(1)) : []);
+  tarj.forEach(({t, id}, k) => { const i = orden.indexOf(id); t.style.order = String(i >= 0 ? i : 500 + k); t.style.display = ocultas.has(id) ? 'none' : ''; });
+  if (!boton) {
+    const lugar = main.querySelector('.mod-h .acts') || main.querySelector('.mod-h') || main.querySelector('#period-bar')?.parentElement;
+    if (!lugar) return;
+    lugar.insertAdjacentHTML('beforeend', `<button type="button" class="btn" data-tg-editar>${icon('edit')}Editar Dashboard</button>`);
+    main.querySelector('[data-tg-editar]').onclick = () => tgEditar(main);
+  }
+}
+function tgEditar(main) {
+  const vista = tgVista(), tarj = tgTarjetas(main), admin = puede('ajustes.editar'), guard = TARJ[vista]?.mia?.tarjetas ?? TARJ[vista]?.equipo?.tarjetas ?? [];
+  const orden = guard.map(x => x.replace(/^X/, '')), ocultas = new Set(guard.filter(x => x.startsWith('X')).map(x => x.slice(1)));
+  let lista = tarj.map((x, k) => ({id: x.id, r: x.r, on: !ocultas.has(x.id), o: orden.indexOf(x.id) >= 0 ? orden.indexOf(x.id) : 500 + k})).sort((a, b) => a.o - b.o);
+  const s = openModal(modalHead('Editar Dashboard', `Elige qué cifras ver y en qué orden (cada una se ordena dentro de su grupo). Solo cambia tu vista${admin ? ', salvo que la guardes para el equipo' : ''}.`) + `<div class="tarj-ed"></div>
+    ${admin ? '<label class="bx-check tarj-eq"><input type="checkbox" data-tarj-eq> Guardar también como vista del equipo</label>' : ''}<p class="fld-err" role="alert"></p>
+    <div class="form-ft tarj-ft"><button class="btn" type="button" data-tg-def>${icon('refresh')}Restaurar</button><span class="grow"></span><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="button" data-tg-ok>${icon('check')}Guardar</button></div>`);
+  const caja = s.querySelector('.tarj-ed');
+  const pintar = () => {
+    caja.innerHTML = `<p class="pz-l">${lista.filter(x => x.on).length} de ${lista.length} a la vista · usa las flechas para ordenar</p><ol class="pz-list">${lista.map((x, i) => `<li class="pz-item ${x.on ? 'is-on' : ''}"><label class="pz-check"><input type="checkbox" data-tg-on="${i}" ${x.on ? 'checked' : ''}><span>${esc(x.r)}</span></label><span class="pz-flechas"><button type="button" class="icon-btn" data-tg-mov="${i}|-1" aria-label="Subir ${esc(x.r)}" ${i ? '' : 'disabled'}>${icon('chev')}</button><button type="button" class="icon-btn pz-abajo" data-tg-mov="${i}|1" aria-label="Bajar ${esc(x.r)}" ${i < lista.length - 1 ? '' : 'disabled'}>${icon('chev')}</button></span></li>`).join('')}</ol>`;
+    caja.querySelectorAll('[data-tg-on]').forEach(c => c.onchange = () => { lista[+c.dataset.tgOn].on = c.checked; pintar(); });
+    caja.querySelectorAll('[data-tg-mov]').forEach(b => b.onclick = () => { const [i, d] = b.dataset.tgMov.split('|').map(Number), j = i + d; if (j < 0 || j >= lista.length) return; [lista[i], lista[j]] = [lista[j], lista[i]]; pintar(); caja.querySelector(`[data-tg-mov="${j}|${d}"]`)?.focus(); });
+  };
+  pintar();
+  const guardar = (tarjetas, equipo) => agoraApi('workspace/preferencias', {method: 'PUT', body: {vista, tarjetas, equipo}});
+  const fin = async (msg) => { await tarjCargar(vista, true); closeModal(); tgAplicar(main); toast(msg); };
+  s.querySelector('[data-tg-def]').onclick = async e => { busy(e.currentTarget, true); try { await guardar(null, false); await fin('Vista restaurada.'); } catch (x) { busy(e.currentTarget, false); s.querySelector('.fld-err').textContent = x.message; } };
+  s.querySelector('[data-tg-ok]').onclick = async e => { const b = e.currentTarget; busy(b, true, 'Guardando…');
+    const ids = lista.map(x => (x.on ? '' : 'X') + x.id);
+    try { await guardar(ids, false); if (s.querySelector('[data-tarj-eq]')?.checked) await guardar(ids, true); await fin('Dashboard guardado.'); } catch (x) { busy(b, false); s.querySelector('.fld-err').textContent = x.message; } };
+}
+let TG_OBS = null, TG_RAF = 0;
+function tgVigilar() {
+  const main = document.querySelector('main#app'); if (!main || TG_OBS) return;
+  TG_OBS = new MutationObserver(() => { clearTimeout(TG_RAF); TG_RAF = setTimeout(() => tgAplicar(main), 250); });
+  TG_OBS.observe(main, {childList: true, subtree: true});
+}
 /* 2.11.6 · Criterio único de atajos: toda tarjeta de cifras cuyo dato vive en otro módulo lleva a ese módulo
    (rótulo con chevron, toda la tarjeta es el enlace), con el filtro puesto cuando el módulo lo admite y solo si la persona puede abrirlo. */
 function tarjIr(r) {
@@ -8484,8 +8543,8 @@ window.addEventListener?.('agora:account-changing', () => { EMB = null; EMB_ORIG
    1. Embudos
    ===================================================================================== */
 var EMB = null, EMB_ORIG = null, EMB_BASE = '', EMB_SEL = 0, EMB_P = null, EMB_DRAG = null;
-const EMB_NOMBRES = ['Vino', 'Azul profundo', 'Oro', 'Vino claro', 'Azul medio', 'Vino oscuro', 'Gris', 'Oro oscuro'];
-const EMB_COLORES = ['#AD103C', '#282E49', '#FABD4B', '#D9708C', '#6B7090', '#7A0B2A', '#B9BCC8', '#C9971F']; // 2.12.0: escala de Ágora
+const EMB_NOMBRES = ['Vino', 'Azul profundo', 'Vino claro', 'Azul medio', 'Vino oscuro', 'Gris azulado', 'Rosa pálido', 'Azul claro'];
+const EMB_COLORES = ['#AD103C', '#282E49', '#D9708C', '#6B7090', '#7A0B2A', '#B9BCC8', '#EDBFCB', '#9AA0C4']; // 2.12.0: escala de Ágora
 const EMB_TIPOS = [['abierta', 'Abierta'], ['ganada', 'Ganada'], ['perdida', 'Perdida']];
 const EMB_KPI = [['', 'No cuenta'], ['lead', 'Lead'], ['cita', 'Cita'], ['cierre', 'Cierre']];
 function embCargar(force) {

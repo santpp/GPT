@@ -35,7 +35,7 @@ Resumen de cómo trabajamos. El detalle por módulo y las decisiones de cada ver
 |---|---|---|
 | Qué es | App del vendedor (bandeja, contactos, oportunidades, tablero), PWA y Android | Gestión completa (ventas, facturación, reporte mensual, contratos, agencia) |
 | Dónde | Producción: nueva.agoradigital.app | Pruebas: tests.agoradigital.app (CyberPanel + OpenLiteSpeed) |
-| Versión | **1.10.35** | **2.12.2** |
+| Versión | **1.10.35** | **2.12.3** |
 | Código | 23 módulos ES (`public/assets/*.js`), `src/` PHP 8.3 | `public_html/assets/agora-app.js` (un archivo grande, se va a refactorizar), `agora-modulos.js` (pantallas de Mobile empaquetadas), `servidor/` |
 | Paquete | `python3 deploy/native/package.py "Agora Mobile/agora-update-X.zip" --update` + `deploy/native/UPDATE-X.md`; versión en `src/Installation.php`, pie de `public/index.html` y `tests/integration.php`; `.sha256` con `sha256sum` | `python3 tools/package.py` (revisa secretos, excluye config, storage, pruebas y demos) |
 | Pruebas | `tests/*.php` y `tests/*-ui.py` (servidor :8080) | `Agora New App/tests/*.py` (API :8090) |
@@ -64,7 +64,7 @@ Cuando el usuario pide «prueba todo / no arregles nada»:
 
 - **ERP:** `/tmp/claude-0/-home-user-GPT/47d2de27-7ad9-51d6-885f-20e6833c2033/scratchpad/up-erp.sh` (si no existe, recrearlo) levanta MariaDB (`/tmp/mdb`, socket `/tmp/mdb/run/mysql.sock`, base `agora_erp`), la cuenta simulada `tests/fake-ghl.py 8099` y la API en `:8090` (`APP_ENV=development AGORA_GHL_FAKE=http://127.0.0.1:8099`), copiando un `config.php` local. **Borra `servidor/config/config.php` y `tests/fake-ghl.log` antes de empaquetar y de hacer commit.**
 - Cuentas: dueña `duena@example.test` / `Clave-Local-2026!`; ASOCIM `admin|supervisor|ejecutivo1|ejecutivo2|consulta.asocim@agora.test` / `Agora-Pruebas-2026!`.
-- Orden (11 s de pausa y `delete from agora_rate_limits` entre una y otra): `motor-puente.py duena@example.test 'Clave-Local-2026!'` (deja ASOCIM conectada), `permisos.py` (mismos args), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `tarjetas.py`, `ventas-importadas.py`, `estudiantes.py`, `venta-cuenta.py` (no repetible), `ui-estados.py`, `menu-principal.py`, `herramientas.py`, `fixes-296.py`, `graficos-gestion.py`, `atajos.py`, `fixes-2117.py`, `consumos-reparto.py`, `fixes-2120.py`, `fixes-2121.py`, `ghl-conexion.php`.
+- Orden (11 s de pausa y `delete from agora_rate_limits` entre una y otra): `motor-puente.py duena@example.test 'Clave-Local-2026!'` (deja ASOCIM conectada), `permisos.py` (mismos args), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `tarjetas.py`, `ventas-importadas.py`, `estudiantes.py`, `venta-cuenta.py` (no repetible), `ui-estados.py`, `menu-principal.py`, `herramientas.py`, `fixes-296.py`, `graficos-gestion.py`, `atajos.py`, `fixes-2117.py`, `consumos-reparto.py`, `fixes-2120.py`, `fixes-2121.py`, `fixes-2123.py`, `ghl-conexion.php`.
 - **Mobile:** `source /tmp/mdb/env.sh` (base `workspace`) y `cd public && php -S localhost:8080 router.php`; pruebas UI con `CHROMIUM_PATH=/opt/pw-browsers/chromium`; `php tests/integration.php` necesita ese servidor.
 - Revisa la pantalla con Playwright (Chromium en `/opt/pw-browsers/chromium`, `--no-sandbox`) en teléfono (390×844) y escritorio (1280×800).
 

@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.3 · Todos los módulos con la misma caja de cifras, sin carnaval y con orden editable (20 nov):**
+- **Todos los módulos:** cada grupo de cifras es una sola tarjeta blanca con las cifras separadas por líneas finas (Ventas, Cobros, Facturas, Costos, Equipo, Tendencias, Calidad, Tasas, Embudo y publicidad, Redes, Tablero…), con y sin reporte mensual. Ya no hay cuadrículas de tarjetas sueltas.
+- **Sin carnaval de colores:** los íconos de los módulos usan solo vino, vino oscuro, azul profundo y azul medio (sin oro ni verde). Los gráficos de reparto (asesores, fuentes) y las etapas del embudo, vino, azul profundo y sus tonos. El verde y el ámbar quedan solo para estados.
+- **Los gráficos de ventas** («Ventas del mes» y «Tendencia del año») salen del Tablero comercial: están en Gestión Comercial, con «Editar gráficos».
+- **«Editar Dashboard» en todos los módulos con cifras**, también en el Tablero comercial y en las vistas armadas con el reporte mensual: se elige qué cifras ver y en qué orden (flechas), se guarda por persona o para el equipo y «Restaurar» vuelve a la vista de fábrica. Las cifras que aparezcan después (otro período) se muestran al final.
+- Prueba nueva: `tests/fixes-2123.py`.
+
 **Novedades 2.12.2 · Tablero comercial como los demás tableros (20 nov):**
 - Cada bloque de cifras del Tablero (Tu día, Operación del día, Rentabilidad…) es **una sola caja blanca** con las cifras separadas por líneas finas, igual que Gestión Comercial y «Resumen de hoy». Ya no hay tarjetas sueltas con espacio entre ellas.
 - 4 por fila en el ordenador y 2 en el teléfono (la tarjeta grande ocupa la fila entera en el teléfono).

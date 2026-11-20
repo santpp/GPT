@@ -726,18 +726,27 @@ a.ag-resumen.is-link:hover .ag-resumen-t .ic{opacity:.9;transform:translateX(2px
   .inicio-resumen:not(.gc-caja) .inicio-resumen-c:nth-child(n+3){border-top:1px solid var(--line)}
 }
 
-/* 2.12.2 · Tablero comercial como los demás tableros: cada bloque de cifras es UNA caja, con las cifras separadas por líneas finas
-   (como Gestión Comercial y «Resumen de hoy»), sin tarjetas sueltas ni espacios entre ellas. 4 por fila en el ordenador, 2 en el teléfono. */
-#view.ag .g-hero,#view.ag .grid:has(> .micro){display:grid;gap:0!important;padding:0!important;border:1px solid var(--line);border-radius:16px;background:var(--surface,#fff);overflow:hidden;grid-template-columns:repeat(4,minmax(0,1fr))!important}
-#view.ag .g-hero > .grid{display:contents!important;border:0;background:none}
-#view.ag .g-hero > .hero,#view.ag .g-hero .micro,#view.ag .grid:has(> .micro) > .micro{margin:-1px 0 0 -1px!important;border:0!important;border-left:1px solid var(--line)!important;border-top:1px solid var(--line)!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;padding:16px 20px 14px!important;min-width:0;grid-column:auto!important;animation:none}
-#view.ag .g-hero > .hero .t-hero{font-size:26px!important;line-height:1.1}
-#view.ag .g-hero > .hero .t-label{font-size:12.5px;font-weight:600;color:var(--muted)}
+/* 2.12.3 · Sin carnaval: toda la app usa dos familias del manual de Ágora, vino y azul profundo, con sus tonos.
+   El oro queda para detalles pequeños; el verde y el ámbar solo para estados (en curso, pendiente). */
+:root{--mod-vino:#AD103C;--mod-oro:#7A0B2A;--mod-azul:#282E49;--mod-seguridad:#4B5070;
+  --ag-1:#AD103C;--ag-2:#282E49;--ag-4:#D9708C;--ag-5:#6B7090;--ag-6:#7A0B2A;--ag-7:#B9BCC8;--ag-8:#EDBFCB}
+:root[data-theme="dark"]{--mod-vino:#E0517A;--mod-oro:#B8325A;--mod-azul:#8C97D6;--mod-seguridad:#9AA0C4;
+  --ag-1:#E0517A;--ag-2:#8C97D6;--ag-4:#F2A3B9;--ag-5:#B4BAE0;--ag-6:#B8325A;--ag-7:#6E7387;--ag-8:#5A3442}
+
+/* 2.12.3 · TODOS los módulos: cada grupo de cifras es UNA tarjeta blanca con las cifras separadas por líneas finas
+   (como Gestión Comercial y «Resumen de hoy»). Vale para las tarjetas de «Editar Dashboard» (.ag-resumen-grid),
+   las cuadrículas de cifras (.grid con .micro) y la tarjeta grande con las suyas (.g-hero), con y sin reporte mensual.
+   Técnica: la caja recorta (overflow) y cada cifra dibuja su línea izquierda y superior, corrida 1 px hacia afuera. */
+main#app .ag-resumen-grid,main#app .g-hero,main#app .grid:has(> .micro){display:grid;gap:0!important;padding:0!important;border:1px solid var(--line)!important;border-radius:16px!important;background:var(--surface,#fff)!important;overflow:hidden;box-shadow:none!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}
+main#app .g-hero > .grid{display:contents!important}
+main#app .ag-resumen-grid > .ag-resumen,main#app .g-hero > .hero,main#app .g-hero .micro,main#app .grid:has(> .micro) > .micro{margin:-1px 0 0 -1px!important;border:0!important;border-left:1px solid var(--line)!important;border-top:1px solid var(--line)!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;padding:16px 20px 14px!important;min-width:0;grid-column:auto!important;transform:none!important}
+main#app .g-hero > .hero .t-hero{font-size:26px!important;line-height:1.1}
+main#app .g-hero > .hero .t-label{font-size:12.5px;font-weight:600;color:var(--muted)}
+main#app .ag-resumen-grid > a.ag-resumen.is-link:hover,main#app .grid:has(> .micro) > .micro.is-link:hover{background:var(--hover-tint,rgba(0,0,0,.03))!important}
 @media(max-width:900px){
-  #view.ag .g-hero,#view.ag .grid:has(> .micro){grid-template-columns:repeat(2,minmax(0,1fr))!important}
-  #view.ag .g-hero > .hero{grid-column:1/-1!important}
+  main#app .ag-resumen-grid,main#app .g-hero,main#app .grid:has(> .micro){grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  main#app .g-hero > .hero{grid-column:1/-1!important}
 }
 @media(max-width:600px){
-  #view.ag .g-hero > .hero,#view.ag .g-hero .micro,#view.ag .grid:has(> .micro) > .micro{padding:12px 12px 10px!important}
-  #view.ag .g-hero > .hero .t-hero,#view.ag .g-hero .micro .t-metric,#view.ag .grid:has(> .micro) > .micro .t-metric{font-size:22px!important}
+  main#app .ag-resumen-grid > .ag-resumen,main#app .g-hero > .hero,main#app .g-hero .micro,main#app .grid:has(> .micro) > .micro{padding:12px 12px 10px!important}
 }
