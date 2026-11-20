@@ -42,7 +42,7 @@ with sync_playwright() as p:
                 if 'lastMessageId=m2' in path and fail[0]:
                     fail[0]=False;status=429;data={'error':'Consulta pausada','retryAfter':1}
                 elif 'lastMessageId=m2' in path:
-                    data={'items':[{'id':'m1','body':'Mensaje anterior','dateAdded':'2026-10-27T10:00:00Z','direction':'inbound'},{'id':'m2','body':'Texto reciente','dateAdded':'2026-10-28T10:00:00Z'}],'hasMore':False}
+                    data={'items':[{'id':'m1','body':'Mensaje anterior','dateAdded':'2026-10-27T10:00:00Z','direction':'inbound'},{'id':'m1b','body':'Mensaje anterior','dateAdded':'2026-10-27T10:00:00Z','direction':'inbound'},{'id':'m2','body':'Texto reciente','dateAdded':'2026-10-28T10:00:00Z'}],'hasMore':False}  # 1.10.35: la cuenta repite un mensaje con otro id: se ve una vez
                 else:data={'items':[{'id':'m2','body':'Texto reciente','dateAdded':'2026-10-28T10:00:00Z'},{'id':'m3','body':'<script>window.injected=true</script>','direction':'outbound','dateAdded':'2026-10-28T11:00:00Z','attachments':['https://cdn.example.test/fotos/propuesta.png','javascript:alert(1)','http://inseguro.example.test/x.pdf','https://cdn.example.test/docs/contrato.pdf']}],'hasMore':True,'lastMessageId':'m2'}
             elif path.startswith('workspace/activity/contact'):
                 saved.append(route.request.post_data_json)

@@ -149,7 +149,17 @@ export async function renderLiveInbox(container){
    const log=$('#live-log');
    // El aviso de las 24 horas depende de lo último que escribió el contacto.
    queueMicrotask(()=>{const hint=$('#live-window-hint');if(hint)hint.hidden=!(chatChannel==='WhatsApp'&&windowClosed())});
-   log.innerHTML=[...messages.values()].sort((a,b)=>(Date.parse(a.dateAdded)||0)-(Date.parse(b.dateAdded)||0)).map(m=>{
+   // 1.10.35: la cuenta a veces entrega el mismo mensaje dos veces con distinto identificador (al cargar los anteriores se veía doble).
+   // Se muestra una sola vez: mismo identificador del canal (altId) o mismo envío exacto (dirección, tipo, texto, adjuntos y hora al milisegundo).
+   const seen=new Set();
+   const unique=[...messages.values()].sort((a,b)=>(Date.parse(a.dateAdded)||0)-(Date.parse(b.dateAdded)||0)).filter(m=>{
+    const keys=[];
+    if(typeof m.altId==='string'&&m.altId)keys.push('alt:'+m.altId);
+    keys.push(['m',m.direction||'',m.messageType||'',m.body||'',(attachmentsOf(m)||[]).map(f=>f.url).join(','),m.dateAdded||m.id].join('|'));
+    if(keys.some(k=>seen.has(k)))return false;
+    keys.forEach(k=>seen.add(k));return true;
+   });
+   log.innerHTML=unique.map(m=>{
     const files=attachmentsOf(m);
     const body=m.body?esc(m.body):(files.length?'':'Mensaje sin texto');
     const failed=['failed','undelivered','opt_out'].includes(m.status);
