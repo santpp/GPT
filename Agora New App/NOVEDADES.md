@@ -1,5 +1,14 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.1 · Formulario de factura más claro y 4 cifras por fila en todos los tableros (20 nov):**
+- **Factura:**
+  - «Moneda y tasa» va antes de los productos, con una línea clara: «1 US$ = Bs. 245,50 · BCV dólar del 20/11/2026».
+  - Ya no aparece el campo fijo «Moneda: Bolívares».
+  - Cada línea dice su moneda («Precio (US$)») y su equivalente («1 × US$ 55,00 = Bs. 13.502,50»).
+- **El total ya no parece incongruente.** Antes decía «US$ 63,80 × 918,77», pero la tasa estaba redondeada a dos decimales y el cálculo se hace línea por línea en Bs, así que la cuenta no daba. Ahora dice «Base Bs. … + IVA Bs. …» (que suma exactamente el total) y, aparte, el equivalente en US$. La tasa se muestra con todos sus decimales. El total que se ve es el mismo que guarda el servidor, al céntimo.
+- **4 cifras por fila en el ordenador** en el Tablero comercial (la tarjeta grande pasa a ser una más de la fila) y en el «Resumen de hoy», como en los demás tableros. En pantallas medianas, 2; en el teléfono, como antes.
+- Prueba nueva: `tests/fixes-2121.py`.
+
 **Novedades 2.12.0 · Divisas en la factura, colores de Ágora y selectores como el del Inicio (20 nov):**
 - **Tasas del día: tres tasas.** BCV dólar, BCV euro y USDT de Binance (el punto medio de los anuncios confiables de P2P). Llegan solas cada hora; si alguna no llega, se escribe a mano por subcuenta.
 - **Factura con precios en divisas:**

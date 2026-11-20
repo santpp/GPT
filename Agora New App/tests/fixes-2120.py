@@ -65,7 +65,7 @@ with sync_playwright() as pw:
         pg.select_option('.fc-form [name=refmon]','USD');pg.select_option('.fc-form [name=reffuente]','BCV')
         pg.fill('.fc-linea [data-k=descripcion]','Mensualidad');pg.fill('.fc-linea [data-k=precio]','10');pg.select_option('.fc-linea [data-k=impuesto]','E');pg.wait_for_timeout(300)
         tot=pg.inner_text('[data-total]');des=pg.inner_text('[data-desglose]')
-        ok(tot.startswith('Bs.') and '×' in des and 'BCV dólar' in des,f'{q}: el editor muestra el cálculo a bolívares ({tot} · {des[:60]})')
+        ok(tot.startswith('Bs.') and '= Bs.' in pg.inner_text('[data-fc-eq]') and 'BCV dólar' in pg.inner_text('[data-fc-tasa-txt]'),f'{q}: el editor muestra el cálculo a bolívares ({tot} · {des[:60]})')
         pg.select_option('.fc-form [name=vencemodo]','horas');ok(pg.locator('.fc-form [name=vence_horas]').is_visible(),f'{q}: se puede poner el vencimiento en horas')
         ok(not pg.evaluate('document.documentElement.scrollWidth>innerWidth+2'),f'{q}: el editor no se desborda')
         pg.keyboard.press('Escape');pg.wait_for_timeout(300)

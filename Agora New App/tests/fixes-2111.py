@@ -74,7 +74,7 @@ with sync_playwright() as p:
         btn.click();pg.wait_for_selector('.fc-form')
         d=pg.input_value('.fc-linea [data-k=descripcion]')
         # 2.12.0: abre con «Precios en: US$» y la tasa BCV elegida; el editor muestra el cálculo a Bs y el servidor convierte.
-        ok(pg.input_value('.fc-form [name=refmon]')=='USD' and pg.input_value('.fc-form [name=reffuente]')=='BCV' and pg.input_value('.fc-linea [data-k=precio]')!='' and '×' in pg.inner_text('[data-desglose]'),'«Facturar» un cobro en dólares abre con los precios en US$ y la tasa BCV, y muestra el cálculo a bolívares')
+        ok(pg.input_value('.fc-form [name=refmon]')=='USD' and pg.input_value('.fc-form [name=reffuente]')=='BCV' and pg.input_value('.fc-linea [data-k=precio]')!='' and '= Bs.' in pg.inner_text('[data-fc-eq]'),'«Facturar» un cobro en dólares abre con los precios en US$ y la tasa BCV, y muestra el cálculo a bolívares')
     ok(not errs,f'sin errores en Facturación {errs}')
     br.close()
 print(n,'comprobaciones')

@@ -4086,7 +4086,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.12.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.12.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -7364,6 +7364,7 @@ VG_TARJETAS.meta = {t: 'Meta del mes', ic: 'trend', d: 'Avance de lo vendido fre
 const FC = {res: null, lista: null, t: 0, f: {estado: '', tipo: '', q: ''}, qt: 0, ventas: null};
 const FC_TIPO = {FAC: ['Factura', 'sc-ok'], SIM: ['Factura simple', 'sc-gray'], NC: ['Nota de crédito', 'sc-warn'], ND: ['Nota de débito', 'sc-warn']};
 const FC_IMP = [['G', 'IVA general'], ['R', 'IVA reducido'], ['A', 'IVA general + lujo'], ['E', 'Exento']];
+const NF4 = new Intl.NumberFormat('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 6});
 const fcMon = (v, m) => v == null ? '—' : (m === 'VES' ? 'Bs. ' : m === 'EUR' ? '€ ' : 'US$ ') + NF.format(Number(v) || 0);
 const fcBase = () => FC.res?.monedas?.[0] || 'VES'; // 2.11.1: por ahora, solo bolívares
 const fcFecha = d => d ? String(d).slice(0, 10).split('-').reverse().join('/') : '—';
@@ -7436,7 +7437,7 @@ async function fcEditar(doc = null, preset = {}) {
   const ref0 = doc?.referencia || preset.referencia || null;
   if (doc && ref0 && Array.isArray(ref0.precios) && doc.lineas?.length === ref0.precios.length) base.lineas = doc.lineas.map((l, k) => ({...l, precio: ref0.precios[k]}));
   const refMon0 = ref0?.moneda || 'VES', refFu0 = ref0?.fuente || (refMon0 === 'EUR' ? 'BCV_EUR' : 'BCV');
-  const fOpc = mon => fuentes.filter(f => f.moneda === mon).map(f => `<option value="${f.fuente}" ${f.fuente === refFu0 ? 'selected' : ''} ${f.vigente ? '' : 'disabled'}>${esc(f.nombre)}${f.vigente ? ' · Bs. ' + esc(NF.format(f.vigente.tasa)) : ' · sin tasa'}</option>`).join('');
+  const fOpc = mon => fuentes.filter(f => f.moneda === mon).map(f => `<option value="${f.fuente}" ${f.fuente === refFu0 ? 'selected' : ''} ${f.vigente ? '' : 'disabled'}>${esc(f.nombre)}${f.vigente ? ' · Bs. ' + esc(NF4.format(f.vigente.tasa)) : ' · sin tasa'}</option>`).join('');
   const venceModo0 = base.vence_horas ? 'horas' : (base.vence ? 'fecha' : '');
   let tipo = doc ? doc.tipo : (preset.tipo || (fiscal ? 'FAC' : 'SIM'));
   if (!fiscal) tipo = 'SIM';
@@ -7447,9 +7448,10 @@ async function fcEditar(doc = null, preset = {}) {
   const fila = (l = {}) => `<div class="ag-serv fc-linea">
       <label class="fld ag-serv-n">Descripción<input data-k="descripcion" maxlength="500" value="${esc(l.descripcion || '')}" placeholder="Mensualidad, curso, servicio…"></label>
       <label class="fld fc-cant">Cantidad<input data-k="cantidad" inputmode="decimal" value="${esc(l.cantidad != null ? String(l.cantidad).replace('.', ',') : '1')}"></label>
-      <label class="fld ag-serv-m">Precio<input data-k="precio" inputmode="decimal" value="${esc(l.precio != null ? NF.format(Number(l.precio)) : '')}" placeholder="0,00"></label>
+      <label class="fld ag-serv-m"><span data-fc-plab>Precio</span><input data-k="precio" inputmode="decimal" value="${esc(l.precio != null ? NF.format(Number(l.precio)) : '')}" placeholder="0,00"></label>
       <label class="fld ag-serv-f">Impuesto<select data-k="impuesto">${impOpc(l.impuesto || (tipo === 'SIM' ? 'E' : 'G'))}</select></label>
       <button type="button" class="icon-btn ag-serv-x" data-quitar aria-label="Quitar línea">${icon('x')}</button>
+      <span class="fc-eq" data-fc-eq></span>
     </div>`;
   const s = openModal(modalHead(doc ? 'Editar borrador' : 'Nueva factura', fiscal ? 'Se guarda como borrador: no gasta número hasta emitirla.' : 'Esta subcuenta no tiene datos fiscales: emite una factura simple, sin validez fiscal.') + `
     <form class="form ag-cobros-form fc-form" novalidate>
@@ -7464,14 +7466,19 @@ async function fcEditar(doc = null, preset = {}) {
         </div>
         <p class="fc-ayuda" data-fc-req></p>
       </fieldset>
+      <fieldset class="bx fc-mon"><legend>${icon('rate')}Moneda y tasa</legend>
+        <div class="fc-mon-g">
+          <label class="fld">Precios en<select name="refmon"><option value="VES" ${refMon0 === 'VES' ? 'selected' : ''}>Bolívares (Bs.)</option>${fuentes.some(f => f.moneda === 'USD') ? `<option value="USD" ${refMon0 === 'USD' ? 'selected' : ''}>Dólares (US$)</option>` : ''}${fuentes.some(f => f.moneda === 'EUR') ? `<option value="EUR" ${refMon0 === 'EUR' ? 'selected' : ''}>Euros (€)</option>` : ''}</select></label>
+          <label class="fld" data-fc-tasa ${refMon0 === 'VES' ? 'hidden' : ''}>Tasa<select name="reffuente">${fOpc(refMon0 === 'VES' ? 'USD' : refMon0)}</select></label>
+        </div>
+        <p class="fc-ayuda" data-fc-tasa-txt></p>
+      </fieldset>
       <fieldset class="bx"><legend>${icon('receipt')}Productos o servicios</legend>
         <div data-fc-lineas>${(base.lineas?.length ? base.lineas : [{}]).map(fila).join('')}</div>
         <div class="co-ed-acts"><button type="button" class="btn btn-sm" data-agregar>${icon('plus')}Agregar línea</button>${prods.length ? `<label class="fld fc-prod"><span class="sr-only">Agregar un producto</span><select data-fc-prod><option value="">Agregar un producto…</option>${prods.map(p => `<option value="${esc(p.id)}">${esc(p.nombre)}</option>`).join('')}</select></label>` : ''}</div>
       </fieldset>
       <div class="fc-fila3">
-        ${monedas.length > 1 ? `<label class="fld">Moneda<select name="moneda">${[['VES', 'Bolívares (Bs.)'], ['USD', 'Dólares (US$)'], ['EUR', 'Euros (€)']].filter(([v]) => monedas.includes(v)).map(([v, t]) => `<option value="${v}" ${(monedas.includes(base.moneda) ? base.moneda : monedas[0]) === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>` : `<label class="fld">Moneda<input value="Bolívares (Bs.)" disabled><input type="hidden" name="moneda" value="VES"></label>`}
-        <label class="fld">Precios en<select name="refmon"><option value="VES" ${refMon0 === 'VES' ? 'selected' : ''}>Bolívares (Bs.)</option>${fuentes.some(f => f.moneda === 'USD') ? `<option value="USD" ${refMon0 === 'USD' ? 'selected' : ''}>Dólares (US$)</option>` : ''}${fuentes.some(f => f.moneda === 'EUR') ? `<option value="EUR" ${refMon0 === 'EUR' ? 'selected' : ''}>Euros (€)</option>` : ''}</select></label>
-        <label class="fld" data-fc-tasa ${refMon0 === 'VES' ? 'hidden' : ''}>Tasa<select name="reffuente">${fOpc(refMon0 === 'VES' ? 'USD' : refMon0)}</select></label>
+        ${monedas.length > 1 ? `<label class="fld">Moneda<select name="moneda">${[['VES', 'Bolívares (Bs.)'], ['USD', 'Dólares (US$)'], ['EUR', 'Euros (€)']].filter(([v]) => monedas.includes(v)).map(([v, t]) => `<option value="${v}" ${(monedas.includes(base.moneda) ? base.moneda : monedas[0]) === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>` : `<input type="hidden" name="moneda" value="VES">`}
         <label class="fld">Vence<select name="vencemodo"><option value="" ${!venceModo0 ? 'selected' : ''}>Sin vencimiento</option><option value="fecha" ${venceModo0 === 'fecha' ? 'selected' : ''}>En una fecha</option><option value="horas" ${venceModo0 === 'horas' ? 'selected' : ''}>En unas horas</option></select></label>
         <label class="fld" data-vence="fecha" ${venceModo0 === 'fecha' ? '' : 'hidden'}>Fecha<input name="vence" type="date" value="${esc(base.vence || '')}"></label>
         <label class="fld" data-vence="fecha" ${venceModo0 === 'fecha' ? '' : 'hidden'}>Hora (si quieres)<input name="vence_hora" type="time" value="${esc(base.vence_hora || '')}"></label>
@@ -7495,9 +7502,16 @@ async function fcEditar(doc = null, preset = {}) {
     const enBs = p => refMon !== 'VES' ? Math.round(Number(p) * tasa * 100) / 100 : Number(p);
     const base_ = ls.reduce((t, l) => t + Number(l.cantidad) * Number(l.precio), 0), iva = ls.reduce((t, l) => t + Number(l.cantidad) * Number(l.precio) * alic[l.impuesto], 0);
     const baseBs = ls.reduce((t, l) => t + Number(l.cantidad) * enBs(l.precio), 0), ivaBs = ls.reduce((t, l) => t + Number(l.cantidad) * enBs(l.precio) * alic[l.impuesto], 0);
+    // 2.12.1 · Lo que se ve cuadra con lo que calcula el servidor: tasa completa, cada precio a Bs redondeado a céntimos, y el IVA sobre esos Bs.
+    const sim = refMon === 'EUR' ? '€' : 'US$';
+    s.querySelectorAll('[data-fc-plab]').forEach(x => { x.textContent = refMon !== 'VES' ? `Precio (${sim})` : 'Precio (Bs.)'; });
+    lista.querySelectorAll('.fc-linea').forEach(x => { const eq = x.querySelector('[data-fc-eq]'), pr = agenciaLeerMonto(x.querySelector('[data-k=precio]').value), ca = fcLeerCant(x.querySelector('[data-k=cantidad]').value);
+      if (eq) eq.textContent = refMon !== 'VES' && tasa && pr !== null ? `${NF.format(Number(ca ?? 1)).replace(/,00$/, '')} × ${fcMon(pr, refMon)} = ${fcMon(Number(ca ?? 1) * enBs(pr), 'VES')}` : ''; });
+    const ttxt = s.querySelector('[data-fc-tasa-txt]');
+    if (ttxt) ttxt.textContent = refMon === 'VES' ? 'Los precios se escriben en bolívares. La factura se emite en bolívares.' : (tasa ? `1 ${sim} = Bs. ${NF4.format(tasa)} · ${fu.nombre} del ${fcFecha(fu.vigente.fecha)}. Cada precio se pasa a bolívares con esta tasa; la factura se emite en bolívares.` : 'Esa tasa no está disponible hoy: escríbela en «Tasas del día» o elige otra.');
     if (refMon !== 'VES') {
       s.querySelector('[data-total]').textContent = tasa ? fcMon(baseBs + ivaBs, 'VES') : '—';
-      s.querySelector('[data-desglose]').textContent = tasa ? `${fcMon(base_ + iva, refMon)} × ${NF.format(tasa)} (${fu.nombre} del ${fcFecha(fu.vigente.fecha)}) · Base ${fcMon(baseBs, 'VES')} · IVA ${fcMon(ivaBs, 'VES')}` : 'Esa tasa no está disponible hoy: escríbela en «Tasas del día» o elige otra.';
+      s.querySelector('[data-desglose]').textContent = tasa ? `Base ${fcMon(baseBs, 'VES')} + IVA ${fcMon(ivaBs, 'VES')}. En ${sim}: ${fcMon(base_ + iva, refMon)} (base ${fcMon(base_, refMon)} + IVA ${fcMon(iva, refMon)}).` : 'Esa tasa no está disponible hoy: escríbela en «Tasas del día» o elige otra.';
     } else {
       s.querySelector('[data-total]').textContent = fcMon(base_ + iva, mon);
       s.querySelector('[data-desglose]').textContent = `Base ${fcMon(base_, mon)} · IVA ${fcMon(iva, mon)}${tipoAct() === 'FAC' && mon !== 'VES' ? ' · el equivalente en Bs se calcula al emitir, con la tasa BCV' : ''}`;

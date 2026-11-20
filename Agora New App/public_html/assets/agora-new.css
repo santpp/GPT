@@ -703,3 +703,29 @@ a.ag-resumen.is-link:hover .ag-resumen-t .ic{opacity:.9;transform:translateX(2px
 :root{--ag-1:#AD103C;--ag-2:#282E49;--ag-3:#FABD4B;--ag-4:#D9708C;--ag-5:#6B7090;--ag-6:#7A0B2A;--ag-7:#B9BCC8}
 :root[data-theme="dark"]{--ag-1:#E0517A;--ag-2:#8C97D6;--ag-3:#FABD4B;--ag-4:#F2A3B9;--ag-5:#B4BAE0;--ag-6:#B8325A;--ag-7:#6E7387}
 .emb-color select{appearance:none;-webkit-appearance:none;min-height:34px;padding:0 10px 0 28px;border:1px solid var(--line);border-radius:10px;background:var(--surface) no-repeat 10px 50%/12px 12px linear-gradient(var(--sw),var(--sw));color:var(--ink);font:600 13px/1 var(--font-text);cursor:pointer}
+
+/* 2.12.1 · Factura: «Moneda y tasa» antes de los productos, y el equivalente en Bs de cada línea. */
+.fc-mon-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fc-mon-g [hidden]{display:none!important}
+.fc-linea .fc-eq{grid-column:1/-1;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;min-height:0}
+.fc-linea .fc-eq:empty{display:none}
+@media(max-width:600px){.fc-mon-g{grid-template-columns:minmax(0,1fr)}}
+
+/* 2.12.1 · Todos los tableros con 4 cifras por fila en el ordenador (2 en pantallas medianas), como Gestión Comercial. */
+@media(min-width:901px){
+  .inicio-resumen:not(.gc-caja) .inicio-resumen-g{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .inicio-resumen:not(.gc-caja) .inicio-resumen-c:nth-child(4n+1){padding-left:0;border-left:0}
+  .inicio-resumen:not(.gc-caja) .inicio-resumen-c:nth-child(n+5){border-top:1px solid var(--line);padding-top:14px}
+  /* Tablero comercial y Rentabilidad: la tarjeta grande es una más de la fila y las demás siguen al lado, de 4 en 4. */
+  #view.ag .g-hero{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  #view.ag .g-hero > .grid{display:contents}
+  #view.ag .g-hero .micro.span2{grid-column:auto}
+  #view.ag .g-hero > .hero{grid-column:auto;min-width:0}
+  #view.ag .g-hero > .hero .t-hero{font-size:26px!important;line-height:1.1}
+  #view.ag .g-hero > .hero .t-label{font-size:12.5px;font-weight:600;color:var(--muted)}
+}
+@media(min-width:601px) and (max-width:900px){
+  .inicio-resumen:not(.gc-caja) .inicio-resumen-g{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .inicio-resumen:not(.gc-caja) .inicio-resumen-c:nth-child(2n+1){padding-left:0;border-left:0}
+  .inicio-resumen:not(.gc-caja) .inicio-resumen-c:nth-child(n+3){border-top:1px solid var(--line)}
+}

@@ -61,6 +61,7 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 58 | «Seguridad de la agencia» mostraba «entro». | El código interno de la acción se mostraba tal cual. | Se traduce («Entró», «Salió»…). | Corregido en 2.11.7 |
 | 59 | Consumos: todo el gasto de WhatsApp quedaba en «Agencia · movimientos propios», sin saber de qué subcuenta era. | La cuenta no pone el identificador de la subcuenta en esos cargos, y Ágora solo lo buscaba en cinco campos fijos. | Búsqueda en todos los datos del cargo, pistas y reglas «este dato → esta subcuenta». Hay que confirmar con la cuenta real qué dato trae cada cargo. | Por confirmar (2.11.8) |
 | 60 | Al cambiar el período del Tablero comercial salía un error en la consola. | Un manejador general suponía que todo botón de período estaba dentro de un selector antiguo. | Solo actúa sobre ese selector; el Tablero maneja el suyo. | Corregido en 2.12.0 |
+| 61 | Factura en US$: «el precio y el monto calculado al final no cuadran». | El resumen multiplicaba el total en US$ por la tasa redondeada a 2 decimales, mientras que la factura convierte cada línea con la tasa completa. | El resumen muestra base + IVA en Bs (que suma el total) y la tasa completa; cada línea muestra su equivalente. | Corregido en 2.12.1 |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 
