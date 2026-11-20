@@ -106,10 +106,13 @@ Lo de arriba es de Ágora Mobile. El ERP (`Agora New App/`) **no** pasa por `mak
 |---|---|---|
 | Rejilla | 4 columnas, separación 14 px (en todos los tableros, también el Tablero comercial y «Resumen de hoy»; 2 entre 601 y 900 px) | 2 columnas, separación 10 px |
 | Caja | relleno 18 · 18 · 16 px, radio 20 px | relleno 14 px |
-| Rótulo | 12,5 px, 600 | igual |
+| Rótulo | 14 px, 650, a la izquierda (2.12.6) | 13 px |
+| Descripción bajo el rótulo | 12,5 px, gris | 12 px |
 | Cifra | 26 px, 700 | 22 px (20 px en la caja de Gestión Comercial) |
 | Nota | 12,5 px, 400 | igual |
-| Ícono | ninguno: solo rótulo, cifra y nota | ninguno |
+| Ícono | lineal, vino, 18 px, arriba a la derecha (2.12.6) | se oculta; queda el lápiz |
+| Línea superior de cada cifra | 3 px azul `--ag-2`; al pasar se llena de vino (`--dur-2`, `--ease-out`) | igual |
+| Botón «Editar» en cada cifra | 28 px de alto, contorno vino, radio 8; al pasar fondo vino y letra blanca | solo lápiz, 28 × 28 |
 
 **Paneles (2.12.4):** relleno 20 × 24 px (16 en el teléfono) y radio 16 px, igual que todas las cajas. **Ritmo:** 16 px entre cajas seguidas; encabezado de sección con 32 px arriba y 12 px hasta su caja; 20 px del título del módulo a la primera caja. **Área de trabajo:** relleno 28 px (20 × 16 en el teléfono).
 

@@ -45,14 +45,15 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
 ## Lenguaje visual
 
 - Usa lo que ya existe: `head()` para la cabecera, `secH()` para cada sección, tarjetas `.ag-resumen`, tablas dentro de `.tw`, píldoras `.sc sc-ok|sc-warn|sc-bad|sc-gray`, botones `.btn`, `.btn-cta`, `.btn-sm`, ventanas con `openModal(modalHead(...))`, filas editables como `.ag-serv`.
-- Nombres de botones fijos en todo el ERP: **«Descargar»** (ícono de descarga, nunca la palabra «Excel») y **«Editar Dashboard»** (ícono de lápiz), en la misma línea. **Las tarjetas de cifras van sin ícono** (título, cifra y nota, como «Resumen de hoy»), para elegir las tarjetas.
+- Nombres de botones fijos en todo el ERP: **«Descargar»** (ícono de descarga, nunca la palabra «Excel») y **«Editar Dashboard»** (ícono de lápiz), en la misma línea. Las tarjetas de cifras llevan ícono lineal pequeño arriba a la derecha (2.12.6).
 - **Tipografía y medidas:** Author en todo (la fuente está en `assets/fonts/` y va en el paquete). Escala única al final de `agora-new.css` (bloque 2.11.5). No pongas tamaños propios en una pantalla; `tests/tipografia.py` lo revisa. Tabla completa en `../docs/DESIGN.md` § 4 bis.
   - Título del módulo: 28 px (24 en el teléfono). Bajada: 13 px.
   - Títulos: sección 20 px (18 en el teléfono); panel 16,5 px.
   - Texto: 14,5 px. Tablas: 14 px.
   - Botones de cabecera: 13,5 px; alto 36 px; forma de píldora.
   - Tarjetas de cifras:
-    - Rótulo y nota: 12,5 px. Cifra: 26 px (22 en el teléfono).
+    - Rótulo: 14 px (13 en el teléfono), a la izquierda, con una línea de descripción de 12,5 px. Nota: 12,5 px. Cifra: 26 px (22 en el teléfono).
+    - Estilo (2.12.6): ícono lineal vino de 18 px arriba a la derecha; línea superior azul (`--ag-2`) que se llena de vino al pasar; botón «Editar» por cifra (contorno vino, al pasar fondo vino y letra blanca) que abre «Editar Dashboard» con esa cifra marcada; sin huecos en la última fila (`cajaRellenar`). Lo hace `cajaVivo` en `tgAplicar`; `tests/fixes-2126.py` lo revisa.
     - Caja: radio 16 px; cada cifra con relleno 16 × 20 px (12 en el teléfono).
     - Rejilla: 4 columnas con 14 px de separación (2 columnas con 10 px en el teléfono).
   - **Ritmo único (2.12.4):** toda caja con radio 16 px; paneles con relleno 20 × 24 px (16 en el teléfono); 16 px entre cajas seguidas (en filas de varias columnas, el espacio lo pone la fila); encabezado de sección con 32 px arriba y 12 px hasta su caja; 20 px del título del módulo a la primera caja. **En el teléfono igual (2.12.5):** fichas y tarjetas (`board-card2`, `kpi-card`, filas de tabla) con radio 16, relleno 14 × 16 y 12 px entre una y otra; íconos de sección 36 px (32 en el teléfono). `tests/fixes-2123.py` mide los dos anchos; siempre revisa ordenador **y** teléfono.

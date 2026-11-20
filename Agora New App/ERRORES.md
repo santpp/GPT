@@ -65,6 +65,7 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 62 | «Sigue el carnaval de colores» y cifras en tarjetas sueltas en varios módulos. | Los íconos de módulos usaban oro, verde y azul grisáceo, y los gráficos metían el oro; la caja única solo se había aplicado a Gestión Comercial, Inicio y Tablero. | Dos familias de color (vino y azul profundo) en toda la app y la caja única en todos los grupos de cifras. | Corregido en 2.12.3 |
 | 63 | «No tiene armonía jerárquica»: cajas, letras y espacios variaban entre módulos. | Cada pantalla traía sus radios (14 a 22 px), rellenos y márgenes. | Un solo ritmo (bloque 2.12.4 de `agora-new.css`): radio 16, panel 20 × 24, 16 px entre cajas, 32/12 en los encabezados de sección. | Corregido en 2.12.4 |
 | 64 | En el teléfono no se cumplían las medidas de la 2.12.4. | Solo se había medido en el ordenador; las fichas, los recuadros de módulos, las tarjetas de Oportunidades, Contratos y Herramientas tenían sus propios radios y rellenos. | La misma regla en el teléfono; la prueba mide los dos anchos. | Corregido en 2.12.5 |
+| 65 | Con 3 cifras en una caja de 4 columnas quedaba un hueco o una cifra el doble de ancha; y en celdas angostas del teléfono el rótulo quedaba bajo el botón. | La rejilla era fija y el rótulo largo no podía partirse. | `cajaRellenar` reparte en partes iguales si hay menos cifras que columnas; en el teléfono se deja solo el lápiz. (2.12.6) |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 

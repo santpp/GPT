@@ -1,5 +1,13 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.6 · Nuevo estilo de las cifras, celdas vivas y «Resumen del día» (20 nov):**
+- **Estilo de las cifras (idea del usuario), en todos los módulos:** a la izquierda; rótulo con flecha y debajo una línea breve que explica la cifra («Leads del día», «Conversaciones de la cuenta»); la cifra grande y su nota. Ícono de trazado lineal pequeño en vino arriba a la derecha. La tarjeta grande del Tablero lleva un degradado muy suave y su fecha como etiqueta («Hoy · 20 nov»).
+- **Sin huecos:** la última fila de cada caja se estira hasta llenar el ancho, también al ocultar o reordenar cifras. Si una caja tiene menos cifras que columnas, se reparten en partes iguales.
+- **Celdas vivas:** cada cifra lleva arriba una línea azul de Ágora que, al pasar por esa celda (o enfocarla con el teclado), se llena de vino de izquierda a derecha. Las celdas entran escalonadas con las animaciones del sistema (respeta «reducir movimiento»).
+- **Botón «Editar» en cada cifra:** contorno vino; al pasar se llena de vino con letra blanca. Abre «Editar Dashboard» con esa cifra marcada. En el teléfono queda solo el lápiz para que el rótulo quepa.
+- «Resumen de hoy» del Centro de mando pasa a llamarse **«Resumen del día»**.
+- Rótulos de las cifras a 14 px (13 en el teléfono). Prueba nueva: `tests/fixes-2126.py`; `fixes-2123.py` y `tipografia.py` actualizadas.
+
 **Novedades 2.12.5 · El teléfono cumple las mismas medidas que el ordenador (20 nov):**
 - La 2.12.4 solo se había medido en el ordenador. En el teléfono se escapaban algunas piezas:
   - las tablas leídas como fichas (radio 14, relleno 12 × 14 y 10 px entre fichas);

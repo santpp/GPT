@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Agora New App 2.11.5 · Una sola fuente y una sola escala en todos los módulos.
 Fuente: Author en todo el texto (solo los códigos usan letra de ancho fijo). Escala (escritorio):
-título del módulo 28 px · títulos de sección 20 px · títulos de panel 16,5 px · tarjetas: rótulo 12,5 px y cifra 26 px
+título del módulo 28 px · títulos de sección 20 px · títulos de panel 16,5 px · tarjetas: rótulo 14 px (13 en el teléfono; 2.12.6) y cifra 26 px
 (como «Resumen de hoy») · botones de cabecera 13,5 px. En el teléfono: título 24 px y cifra 22 px.
 Requiere la API local en :8090. Uso: python3 tests/tipografia.py"""
 import sys,subprocess
@@ -27,7 +27,7 @@ def recorrer(pg,ancho):
         d=pg.evaluate(JS)
         otras=[f for f in d['fam'] if f not in ('Author','ui-monospace')]
         if otras:malos.append(f'{r}: fuente {otras}')
-        esp={'h1':28 if ancho>600 else 24,'sec':20 if ancho>600 else 18,'pan':16.5,'t':12.5,'b':13.5}
+        esp={'h1':28 if ancho>600 else 24,'sec':20 if ancho>600 else 18,'pan':16.5,'t':14 if ancho>600 else 13,'b':13.5}
         for k,v in esp.items():
             if any(abs(x-v)>.3 for x in d[k]):malos.append(f'{r}: {k} {sorted(set(d[k]))} (esperado {v})')
         vv=[x for x in d['v'] if not (ancho<=600 and abs(x-20)<.3)]  # la caja de Gestión Comercial usa 20 px en el teléfono

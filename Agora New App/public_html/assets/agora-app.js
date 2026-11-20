@@ -4086,7 +4086,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.12.5').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.12.6').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -5001,6 +5001,8 @@ function arpEsqueleto(root) {
     ph.classList.add('arp-ph'); ph.insertAdjacentHTML('afterbegin', arpTile(h.textContent, 'arp-ph-ic'));
   });
   // Tarjetas de cifras: icono + rótulo arriba, cifra grande y nota (como el resumen de la agencia).
+  // 2.12.6 · La tarjeta grande del Tablero también lleva su ícono de línea, como las demás cifras.
+  root.querySelectorAll('.hero:not([data-arp-ic])').forEach(h => { h.dataset.arpIc = '1'; const l = h.querySelector('.t-label'); if (l && !h.querySelector('.arp-mic-ic')) l.insertAdjacentHTML('beforebegin', arpTile(l.textContent, 'arp-mic-ic')); });
   root.querySelectorAll('.micro:not([data-arp])').forEach(m => {
     m.dataset.arp = '1';
     const h = m.querySelector(':scope > h3'); if (!h || m.querySelector('.sk')) return;
@@ -5514,7 +5516,7 @@ function tableroInicioHtml() {
   /* 2.6.1 · un solo tablero: Inicio muestra el resumen de hoy (tres cifras reales) y lleva a ARP Comercial. */
   if (MODS.comercial && moduleAllowed('comercial') && !moduloOculto('comercial')) {
     const mio = !!ESPACIO?.permisos?.soloAsignado;
-    return `<section class="tb-inicio inicio-resumen" aria-labelledby="inicio-resumen-t"><header class="inicio-resumen-h"><h2 id="inicio-resumen-t">${mio ? 'Lo tuyo hoy' : 'Resumen de hoy'}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-ir-editar>${icon('edit')}Editar Dashboard</button><a class="inicio-resumen-ver" href="${href(MODS.comercial.path)}" aria-label="Ir a Dashboard"><span class="ir-largo">Ir a Dashboard</span><span class="ir-corto">Dashboard</span>${icon('chevR')}</a></span></header>
+    return `<section class="tb-inicio inicio-resumen" aria-labelledby="inicio-resumen-t"><header class="inicio-resumen-h"><h2 id="inicio-resumen-t">${mio ? 'Lo tuyo hoy' : 'Resumen del día'}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-ir-editar>${icon('edit')}Editar Dashboard</button><a class="inicio-resumen-ver" href="${href(MODS.comercial.path)}" aria-label="Ir a Dashboard"><span class="ir-largo">Ir a Dashboard</span><span class="ir-corto">Dashboard</span>${icon('chevR')}</a></span></header>
       <div class="inicio-resumen-g">${iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO))}</div></section>`;
   }
   const c = tbConfig(); if (!c.visible) return '';
@@ -7043,9 +7045,80 @@ function tgTarjetas(main) {
   main.querySelectorAll(TG_SEL).forEach(t => { const r = tgRotulo(t); if (!r) return; let id = tgId(r); while (vistos.has(id)) id = (id + 'b').slice(-29); vistos.add(id); out.push({t, id, r}); });
   return out;
 }
+/* 2.12.6 · Estilo de las cifras (idea del usuario): rótulo, una línea de descripción breve, la cifra y su nota; ícono de línea pequeño arriba a la derecha.
+   Las cifras de las pantallas de Mobile (Tablero) y del reporte no traen descripción: se ponen aquí por su rótulo. */
+const CIFRA_DESC = {'Leads de hoy': 'Leads del día', 'Leads nuevos': 'Leads del período', 'Leads del período': 'Leads del período', 'Conversaciones': 'Conversaciones de la cuenta',
+  'Sin leer': 'Conversaciones pendientes de lectura', 'Sin leer ahora': 'Pendientes de lectura ahora', 'Esperando respuesta': 'Conversaciones pendientes de respuesta',
+  'Contactos': 'Contactos de la cuenta', 'Oportunidades abiertas': 'Oportunidades actualmente abiertas', 'Ganadas en la cuenta este mes': 'Oportunidades ganadas en el mes',
+  'Mis ventas del mes': 'Tus ventas registradas', 'Ganancia real del mes': 'Después de costos fijos', 'Ganancia después de publicidad y comisiones': 'Ventas menos publicidad y comisiones',
+  'Costos de mercadeo y ventas': 'Publicidad y comisiones del mes', 'Ventas por cada 100 invertido': 'Retorno de lo invertido', 'Costo por cierre': 'Inversión por venta cerrada',
+  'Tiempo de respuesta promedio': 'Primera respuesta, en promedio', 'Leads del día': 'Contactos nuevos de hoy', 'Primera respuesta más lenta': 'La que más tardó',
+  'Conversaciones atendidas': 'Con respuesta del equipo', 'Tasa de cierre': 'Ganadas sobre las trabajadas', 'Ticket promedio': 'Por venta cerrada', 'Valor cerrado': 'Suma de lo ganado',
+  'Velocidad de venta': 'Días hasta el cierre', 'Coste por lead': 'Inversión por contacto nuevo', 'Coste por conversión': 'Inversión por conversión', 'Impresiones': 'Veces que se vio el anuncio',
+  'Retorno por cada 100': 'Ventas por cada 100 invertido', 'Tiempo de cierre promedio': 'Días hasta el cierre, en promedio', 'Comisiones del equipo': 'Del mes, según las ventas'};
+function cajaDescripciones(main) {
+  main.querySelectorAll('.micro > h3, .g-hero > .hero .t-label').forEach(h => {
+    const cel = h.closest('.micro, .hero'); if (!cel || cel.querySelector('.ag-resumen-s')) return;
+    const r = (h.textContent || '').replace(/\s*\(.*\)$/, '').trim(), d = CIFRA_DESC[r]; if (!d) return;
+    h.insertAdjacentHTML('afterend', `<span class="ag-resumen-s">${esc(d)}</span>`);
+  });
+}
+/* Sin huecos: las cifras de la última fila de cada caja se estiran hasta llenar el ancho (también al ocultar o reordenar). */
+function cajaRellenar(main) {
+  main.querySelectorAll('.ag-resumen-grid, .g-hero, .grid:has(> .micro), .gc-caja-g, .inicio-resumen-g').forEach(caja => {
+    if (!caja.offsetParent) return;
+    const celdas = [...caja.querySelectorAll(':scope > .ag-resumen, :scope > .hero, :scope > .micro, :scope > .grid > .micro, :scope > .inicio-resumen-c')]
+      .filter(c => c.style.display !== 'none' && c.offsetParent !== null);
+    celdas.forEach(c => c.style.removeProperty('grid-column')); caja.style.removeProperty('grid-template-columns');
+    const cols = getComputedStyle(caja).gridTemplateColumns.split(' ').filter(Boolean).length;
+    if (celdas.length > 1 && celdas.length < cols) { caja.style.setProperty('grid-template-columns', `repeat(${celdas.length},minmax(0,1fr))`, 'important'); return; } // una sola fila: columnas iguales
+    const ord = celdas.map((c, i) => ({c, o: Number(c.style.order || 0), i})).sort((a, b) => a.o - b.o || a.i - b.i).map(x => x.c);
+    const W = caja.getBoundingClientRect().width, sueltas = ord.filter(c => c.getBoundingClientRect().width < W * 0.9); // la que ya ocupa toda la fila no cuenta
+    const resto = cols > 1 ? sueltas.length % cols : 0; if (!resto) return;
+    const ult = sueltas.slice(-resto), base = Math.floor(cols / resto), extra = cols % resto;
+    ult.forEach((c, k) => c.style.setProperty('grid-column', `span ${base + (k < extra ? 1 : 0)}`, 'important'));
+  });
+}
+addEventListener('resize', () => { const m = document.querySelector('main#app'); if (m) cajaRellenar(m); });
+/* 2.12.7 · Celdas vivas (idea del usuario): línea superior azul de Ágora que se vuelve vino al pasar por la celda,
+   botón «Editar» en cada cifra (abre «Editar Dashboard» con esa cifra marcada) y entrada escalonada con las animaciones del sistema. */
+const CEL_SEL = '.ag-resumen-grid > .ag-resumen, .gc-caja-g > .ag-resumen, .g-hero > .hero, .g-hero .micro, .grid:has(> .micro) > .micro, .inicio-resumen-c';
+const celRotulo = c => (c.querySelector('.ag-resumen-t, :scope > h3, .t-label, .inicio-resumen-l')?.textContent || '').replace(/\s*\(.*\)$/, '').trim();
+function celEditar(main, nombre) {
+  const b = main.querySelector('[data-tg-editar]') || [...main.querySelectorAll('button')].find(x => x.offsetParent && /Editar Dashboard/.test(x.textContent));
+  if (!b) return; b.click();
+  let n = 0; const marcar = () => { const it = [...document.querySelectorAll('.tarj-ed .pz-item')].find(li => (li.textContent || '').trim().startsWith(nombre));
+    if (!it) { if (++n < 30) setTimeout(marcar, 100); return; }
+    it.classList.add('pz-foco'); it.scrollIntoView({block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}); };
+  marcar();
+}
+function cajaVivo(main) {
+  const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const puede = !!(main.querySelector('[data-tg-editar]') || [...main.querySelectorAll('button')].some(x => /Editar Dashboard/.test(x.textContent)));
+  main.querySelectorAll(CEL_SEL).forEach((c, i) => {
+    const nuevo = !c.dataset.cel; c.dataset.cel = '1'; c.classList.add('cel');
+    const nombre = celRotulo(c);
+    if (puede && nombre && !c.querySelector('[data-cel-ed]')) {
+      let acc = c.querySelector(':scope > .cel-acc');
+      if (!acc) { acc = document.createElement('span'); acc.className = 'cel-acc'; c.append(acc); }
+      const ic = c.querySelector('.ag-resumen-ic, .arp-mic-ic'); if (ic) acc.append(ic);
+      const tag = c.matches('button, a') ? 'span' : 'button';
+      acc.insertAdjacentHTML('beforeend', `<${tag} class="cel-ed"${tag === 'span' ? ' role="button" tabindex="0"' : ' type="button"'} data-cel-ed title="Editar ${esc(nombre)}" aria-label="Editar ${esc(nombre)}">${icon('edit')}<span>Editar</span></${tag}>`);
+      const ed = acc.querySelector('[data-cel-ed]');
+      const abrir = e => { e.preventDefault(); e.stopPropagation(); celEditar(main, nombre); };
+      ed.addEventListener('click', abrir); ed.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') abrir(e); });
+    }
+    if (!nuevo) return;
+    const on = () => c.classList.add('is-hot'), off = () => c.classList.remove('is-hot');
+    c.addEventListener('pointerenter', on); c.addEventListener('pointerleave', off); c.addEventListener('focusin', on); c.addEventListener('focusout', off);
+    if (!quieto) c.animate([{opacity: 0, transform: 'translateY(6px)'}, {opacity: 1, transform: 'none'}], {duration: 320, delay: Math.min(i, 8) * 40, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards'});
+  });
+}
 let TG_PEND = '';
 function tgAplicar(main = document.querySelector('main#app')) {
   if (!main || !R || !ME) return;
+  try { cajaDescripciones(main); } catch {}
+  queueMicrotask(() => { try { cajaRellenar(main); } catch {} try { cajaVivo(main); } catch {} });
   const otro = [...main.querySelectorAll('button')].some(b => !b.hasAttribute('data-tg-editar') && /Editar Dashboard/.test(b.textContent));
   const tarj = otro ? [] : tgTarjetas(main), boton = main.querySelector('[data-tg-editar]');
   if (tarj.length < 2) { boton?.remove(); return; }
@@ -7132,7 +7205,7 @@ function tbAtajos(root) {
 }
 /* 2.8.16 · cada cifra lleva a su módulo (con el filtro puesto cuando el módulo lo admite), si la persona puede abrirlo. */
 const iniDestino = id => { const r = INI_TARJETAS[id]?.ir; return r && MODS[r.mod] && moduleAllowed(r.mod) ? r : null; };
-const iniCifras = ids => ids.length ? ids.map(id => { const r = iniDestino(id), dentro = `<span class="inicio-resumen-l">${esc(INI_TARJETAS[id].t)}${r ? icon('chevR') : '<span class="ic" aria-hidden="true"></span>'}</span><strong class="inicio-resumen-v"><span class="sk w40"></span></strong><span class="inicio-resumen-d"><span class="sk w60"></span></span>`;
+const iniCifras = ids => ids.length ? ids.map(id => { const r = iniDestino(id), dentro = `<span class="ag-resumen-ic" aria-hidden="true">${icon(INI_TARJETAS[id].ic || 'pie')}</span><span class="inicio-resumen-l">${esc(INI_TARJETAS[id].t)}${r ? icon('chevR') : '<span class="ic" aria-hidden="true"></span>'}</span>${INI_TARJETAS[id].d ? `<span class="ag-resumen-s">${esc(INI_TARJETAS[id].d)}</span>` : ''}<strong class="inicio-resumen-v"><span class="sk w40"></span></strong><span class="inicio-resumen-d"><span class="sk w60"></span></span>`;
   return r ? `<a class="inicio-resumen-c is-link" data-ir="${id}" data-ir-go="${id}" href="${href(MODS[r.mod].path)}" title="${esc(r.ayuda)}" aria-label="${esc(INI_TARJETAS[id].t)}: ${esc(r.ayuda)}">${dentro}</a>` : `<div class="inicio-resumen-c" data-ir="${id}">${dentro}</div>`; }).join('') : '<p class="inicio-resumen-x">No elegiste cifras. Usa «Elegir cifras» para agregar alguna.</p>';
 /* Catálogo de tarjetas de Ventas registradas: cada una se calcula con las ventas del mes que ya están en pantalla. */
 const vgSuma = (items, fn) => items.reduce((o, v) => { const n = Number(fn(v)) || 0; if (n) o[v.moneda || 'USD'] = (o[v.moneda || 'USD'] || 0) + n; return o; }, {});
@@ -7166,11 +7239,11 @@ function gcVivoHtml() {
   const cabeza = head('Gestión comercial', 'Gestión Comercial', `Cómo va ${esc(mes)}: lo vendido, quién lo vendió y qué se vendió.`, acts);
   if (!d) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas del mes</b>Vuelve a intentarlo en un momento.</p></section>';
   const r = d.resumen || {}, items = d.items || [];
-  const tarjeta = (cls, ic, t, val, det) => `<div class="ag-resumen ${cls}"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span><strong class="ag-resumen-v">${val}</strong><span class="ag-resumen-d">${det}</span></div>`;
+  const tarjeta = (cls, ic, t, val, det, sub = '') => `<div class="ag-resumen ${cls}"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span>${sub ? `<span class="ag-resumen-s">${sub}</span>` : ''}<strong class="ag-resumen-v">${val}</strong><span class="ag-resumen-d">${det}</span></div>`;
   const elegidas = tarjElegidas('gestion', VG_TARJETAS, GC_DEFECTO);
   /* 2.10.0 · Pedido del usuario: las cifras en una sola caja, con la estructura del «Resumen de hoy» del Inicio (título y botones arriba, cifras separadas por líneas), conservando el ícono y el color de cada una. */
   const kpis = `<section class="inicio-resumen gc-caja" aria-labelledby="gc-caja-t"><header class="inicio-resumen-h"><h2 id="gc-caja-t">Cifras de ${esc(mes)}</h2></header>`
-    + (elegidas.length ? `<div class="gc-caja-g">${elegidas.map(id => { const x = VG_TARJETAS[id]; let v; try { v = x.f(d, r, mes); } catch { v = ['', '—', '']; } return tarjeta(v[0], x.ic, esc(x.t), v[1], v[2]); }).join('')}</div>` : '<p class="inicio-resumen-x">No elegiste cifras para esta vista. Usa «Elegir cifras».</p>') + '</section>';
+    + (elegidas.length ? `<div class="gc-caja-g">${elegidas.map(id => { const x = VG_TARJETAS[id]; let v; try { v = x.f(d, r, mes); } catch { v = ['', '—', '']; } return tarjeta(v[0], x.ic, esc(x.t), v[1], v[2], esc(x.d || '')); }).join('')}</div>` : '<p class="inicio-resumen-x">No elegiste cifras para esta vista. Usa «Elegir cifras».</p>') + '</section>';
   const graf = vtPuede() ? '<div data-gc-graf-aqui></div>' : '';
   if (!items.length) return cabeza + kpis + `<section class="panel"><p class="empty"><b>Todavía no hay ventas registradas en ${esc(mes)}</b>Cuando se gane una oportunidad y se complete su venta, aparece aquí.</p></section>` + graf;
   const grupo = k => { const m = new Map(); items.forEach(v => { const n = v[k] || (k === 'vendedor' ? 'Sin vendedor' : 'Sin nombre'); if (!m.has(n)) m.set(n, []); m.get(n).push(v); }); return [...m.entries()].map(([n, l]) => ({n, l, total: l.reduce((t, v) => t + (Number(v.monto) || 0), 0)})).sort((a, b) => b.l.length - a.l.length || b.total - a.total); };
@@ -7215,7 +7288,7 @@ const EQ_TARJETAS = {
   leadsHoy: {t: 'Leads de hoy', ic: 'spark', d: 'Contactos nuevos que entraron hoy.', f: () => EQ.dia ? ['', int(EQ.dia.leads || 0), EQ.dia.leadsAyer != null ? `ayer: ${int(EQ.dia.leadsAyer)}` : ''] : ['', '—', 'La cuenta no lo informó']},
 };
 const EQ_DEFECTO = ['personas', 'vendedor', 'ganadasCuenta', 'sinLeer'];
-const vivoTarjetas = (vista, catalogo, defecto, args, mes) => { const ids = tarjElegidas(vista, catalogo, defecto); return ids.length ? `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">${ids.map(id => { const x = catalogo[id]; let v; try { v = x.f(...args); } catch { v = ['', '—', '']; } const r = tarjDestino(x), dentro = `<span class="ag-resumen-ic" aria-hidden="true">${icon(x.ic)}</span><span class="ag-resumen-t">${esc(x.t)}${r ? icon('chevR') : ''}</span><strong class="ag-resumen-v">${v[1]}</strong><span class="ag-resumen-d">${v[2] || ''}</span>`;
+const vivoTarjetas = (vista, catalogo, defecto, args, mes) => { const ids = tarjElegidas(vista, catalogo, defecto); return ids.length ? `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">${ids.map(id => { const x = catalogo[id]; let v; try { v = x.f(...args); } catch { v = ['', '—', '']; } const r = tarjDestino(x), dentro = `<span class="ag-resumen-ic" aria-hidden="true">${icon(x.ic)}</span><span class="ag-resumen-t">${esc(x.t)}${r ? icon('chevR') : ''}</span>${x.d ? `<span class="ag-resumen-s">${esc(x.d)}</span>` : ''}<strong class="ag-resumen-v">${v[1]}</strong><span class="ag-resumen-d">${v[2] || ''}</span>`;
     return r ? `<a class="ag-resumen is-link ${v[0]}" href="${href(MODS[r.mod].path)}" data-tarj-ir="${esc(JSON.stringify(r))}" title="${esc(r.ayuda)}" aria-label="${esc(x.t)}: ${esc(r.ayuda)}">${dentro}</a>` : `<div class="ag-resumen ${v[0]}">${dentro}</div>`; }).join('')}</section>` : ''; };
 function eqVivoHtml() {
   const mes = mesNombre(VG.mes || PERIODO);
@@ -8348,10 +8421,10 @@ function vgRegistradasHtml() {
   const r = d.resumen || {}, mes = typeof mesNombre === 'function' ? mesNombre(VG.mes) : VG.mes;
   const f = VG.filtro, q = norm(f.q || '');
   const items = vgFiltradas();
-  const tarjeta = (cls, ic, t, val, det) => `<div class="ag-resumen ${cls}"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span><strong class="ag-resumen-v">${val}</strong><span class="ag-resumen-d">${det}</span></div>`;
+  const tarjeta = (cls, ic, t, val, det, sub = '') => `<div class="ag-resumen ${cls}"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span>${sub ? `<span class="ag-resumen-s">${sub}</span>` : ''}<strong class="ag-resumen-v">${val}</strong><span class="ag-resumen-d">${det}</span></div>`;
   const elegidas = tarjElegidas('ventas', VG_TARJETAS, VG_TARJ_DEFECTO);
   const kpis = elegidas.length ? `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">
-    ${elegidas.map(id => { const x = VG_TARJETAS[id]; let v; try { v = x.f(d, r, mes); } catch { v = ['', '—', '']; } return tarjeta(v[0], x.ic, esc(x.t), v[1], v[2]); }).join('')}
+    ${elegidas.map(id => { const x = VG_TARJETAS[id]; let v; try { v = x.f(d, r, mes); } catch { v = ['', '—', '']; } return tarjeta(v[0], x.ic, esc(x.t), v[1], v[2], esc(x.d || '')); }).join('')}
   </section>` : '';
   const pend = (d.pendientes || []).length ? `<section class="panel vg-pend">${secH('warn', `${d.pendientes.length === 1 ? 'Una venta ganada' : d.pendientes.length + ' ventas ganadas'} por completar`, 'Se ganaron pero falta el formulario de venta. Complétalas para que lleguen al contacto, Tareas y Cobros.')}
     <ul class="vg-pend-l">${d.pendientes.slice(0, 8).map(p => `<li><span><b>${esc(p.name)}</b><small>Ganada el ${esc(vgFecha(p.wonAt))}${p.monetaryValue ? ' · ' + esc(vgMonto(p.monetaryValue, ESPACIO?.moneda || 'USD')) : ''}</small></span>${d.canEdit ? `<button class="btn btn-sm btn-tint" type="button" data-vg-completar="${esc(p.id)}">Completar venta</button>` : ''}</li>`).join('')}</ul></section>` : '';
@@ -8963,7 +9036,7 @@ async function inicioResumen(root) {
     const r = iniDestino(a.dataset.irGo); if (!r) return; e.preventDefault();
     tarjIr(r);
   });
-  box.querySelector('[data-ir-editar]')?.addEventListener('click', () => tarjEditar('inicio', INI_TARJETAS, INI_DEFECTO, 'Resumen de hoy', () => { if (root.isConnected) { box.querySelector('.inicio-resumen-g').innerHTML = iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO)); inicioResumenLlenar(box, epoch); } }));
+  box.querySelector('[data-ir-editar]')?.addEventListener('click', () => tarjEditar('inicio', INI_TARJETAS, INI_DEFECTO, 'Resumen del día', () => { if (root.isConnected) { box.querySelector('.inicio-resumen-g').innerHTML = iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO)); inicioResumenLlenar(box, epoch); } }));
   if (!TARJ.inicio?.cargado) { await tarjCargar('inicio'); if (epoch !== NAV_EPOCH || !box.isConnected) return; box.querySelector('.inicio-resumen-g').innerHTML = iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO)); }
   inicioResumenLlenar(box, epoch);
 }
