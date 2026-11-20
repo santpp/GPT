@@ -113,6 +113,10 @@ Lo de arriba es de Ágora Mobile. El ERP (`Agora New App/`) **no** pasa por `mak
 
 **Paneles:** relleno 22 × 24 px (18 × 16 en el teléfono) y radio 22 px. **Área de trabajo:** relleno 28 px (20 × 16 en el teléfono).
 
+**Colores (2.12.0):** solo la escala de Ágora del manual. Sin selectores de color en Apariencia ni por subcuenta. Las series de gráficos (asesores, fuentes, etapas) usan `--ag-1` a `--ag-7`: vino `#AD103C`, azul profundo `#282E49`, oro `#FABD4B`, vino claro `#D9708C`, azul medio `#6B7090`, vino oscuro `#7A0B2A` y gris `#B9BCC8` (en oscuro se aclaran).
+
+**Selectores de período (2.12.0):** todos con la barra del Inicio (`.per`): fondo gris, opción elegida en blanco con sombra, punto verde (`pt-curso`) si incluye hoy, flecha y casita para volver. El Tablero comercial (Hoy, Ayer, 7 días…) y el mes de Rentabilidad ya la usan.
+
 **Atajos en las tarjetas (criterio único, 2.11.6):**
 - Si el dato de una tarjeta vive en otro módulo, la tarjeta lleva a ese módulo. El rótulo termina en un chevron («›», 14 px, que se mueve 2 px al pasar el cursor) y se toca la tarjeta entera.
 - Si el módulo admite filtro, se abre con el filtro puesto. Por ejemplo, «Sin leer» abre la bandeja en «Sin leer» y «Ganadas» abre la pestaña de ganadas.

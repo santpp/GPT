@@ -104,4 +104,13 @@ BEGIN
 END
 SQL,
     ];
+
+    /** 2.12.0 · Columnas nuevas de los documentos, solo si faltan (MySQL 8 no admite «ADD COLUMN IF NOT EXISTS»). */
+    public static function columnas(\PDO $pdo): void
+    {
+        $tiene = $pdo->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'agora_fiscal_documents'")->fetchAll(\PDO::FETCH_COLUMN);
+        if (!$tiene) return;
+        if (!in_array('ref_json', $tiene, true)) $pdo->exec('ALTER TABLE agora_fiscal_documents ADD COLUMN ref_json TEXT NULL');
+        if (!in_array('due_time', $tiene, true)) $pdo->exec('ALTER TABLE agora_fiscal_documents ADD COLUMN due_time TIME NULL');
+    }
 }

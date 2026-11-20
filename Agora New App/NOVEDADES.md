@@ -1,5 +1,22 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.0 · Divisas en la factura, colores de Ágora y selectores como el del Inicio (20 nov):**
+- **Tasas del día: tres tasas.** BCV dólar, BCV euro y USDT de Binance (el punto medio de los anuncios confiables de P2P). Llegan solas cada hora; si alguna no llega, se escribe a mano por subcuenta.
+- **Factura con precios en divisas:**
+  - La factura se emite siempre en bolívares.
+  - Al hacerla se elige «Precios en» (Bs., US$ o €) y con qué tasa se pasan a Bs.
+  - El editor muestra el cálculo («US$ 10,00 × 245,50 (BCV dólar del 20/11/2026)»).
+  - **El servidor hace la conversión** con la tasa vigente; no se fía del navegador.
+  - La factura impresa dice de qué moneda y tasa salieron los precios.
+  - Un precio en euros solo se convierte con BCV euro.
+  - «Facturar» un cobro en dólares abre la factura con los precios en US$ y la tasa BCV elegida.
+- **Vencimiento opcional:** una fecha (con hora, si se quiere) o «en N horas» (de 1 a 720).
+- **«Editar Dashboard» en la línea de la cabecera** también en Gestión Comercial (con «Ver las ventas»), junto a «Descargar», como en todos los módulos.
+- **Solo los colores de Ágora.** Apariencia ya no ofrece «Color de acento», y la ficha de la subcuenta ya no tiene «Colores de la cuenta». Los gráficos de reparto (asesores, fuentes) y las etapas del embudo usan la escala del manual: vino, azul profundo, oro y sus tonos.
+- **Selectores de período como el del Inicio:** el Tablero comercial (Hoy, Ayer, 7 días…) y el mes de Rentabilidad usan la misma barra: opción en blanco, punto verde y casita para volver.
+- «Cifras del mes» pasa a llamarse **«Editar costos o números»** (con lápiz).
+- Prueba nueva: `tests/fixes-2120.py`.
+
 **Novedades 2.11.8 · Consumos: de qué subcuenta es cada gasto (20 nov):**
 - Antes, un cargo solo se asignaba a una subcuenta si la cuenta ponía su identificador en el campo de siempre. Si no, iba a «Agencia · movimientos propios»: así cayeron los 6.465 cargos de WhatsApp.
 - **Búsqueda completa:** Ágora busca el identificador de cualquier subcuenta conectada en *todos* los datos del cargo. Si aparece en otro lugar, el cargo se suma a esa subcuenta sin hacer nada más.

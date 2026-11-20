@@ -20,6 +20,8 @@ final class Installer {
    }
    // 2.11.0 · Facturación: los disparadores que protegen lo emitido (no caben en el DDL simple de las migraciones).
    if($done&&in_array('007_facturacion.sql',array_map('basename',glob(dirname(__DIR__,2).'/database/migrations/*.sql')),true))\Agora\Fiscal\Esquema::instalar($db->pdo);
+   // 2.12.0 · Columnas nuevas de facturación (comprobadas una a una; no rompen si ya están).
+   if($done&&in_array('008_divisas.sql',$done,true))\Agora\Fiscal\Esquema::columnas($db->pdo);
    return $done;
   }finally{$db->run("SELECT RELEASE_LOCK('agora_migration')");}
  }

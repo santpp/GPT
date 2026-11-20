@@ -43,6 +43,42 @@ final class Facturacion {
   if(!in_array($m,$ok,true))Http::fail(count($ok)===1?'Esta subcuenta factura solo en bolívares.':'Esta subcuenta no factura en esa moneda.');
   return ['moneda'=>$m]+$b;
  }
+ /**
+  * 2.12.0 · Precios escritos en dólares o euros. La factura se emite en bolívares: el servidor convierte cada precio con la tasa
+  * vigente de la fuente elegida (BCV dólar, BCV euro o USDT Binance) y guarda de dónde salió (ref_json), que se imprime en la factura.
+  * Vencimiento opcional: una fecha (con hora, si se quiere) o «en N horas».
+  */
+ private function preparar(array $b):array{
+  unset($b['_ref'],$b['_vence_hora']);
+  $r=$b['referencia']??null;
+  if(is_array($r)&&in_array(strtoupper((string)($r['moneda']??'VES')),['USD','EUR'],true)){
+   if(strtoupper((string)($b['moneda']??'VES'))!=='VES')Http::fail('Los precios en divisas se convierten a una factura en bolívares.');
+   $mon=strtoupper((string)$r['moneda']);$fuente=strtoupper((string)($r['fuente']??''));
+   if(!isset(Tasas::FUENTES[$fuente]))Http::fail('Elige con qué tasa se convierten los precios.');
+   if(Tasas::FUENTES[$fuente][0]!==$mon)Http::fail($mon==='EUR'?'Los precios en euros se convierten con la tasa BCV euro.':'Los precios en dólares se convierten con la tasa BCV dólar o USDT Binance.');
+   $v=(new Tasas($this->f))->vigente($this->t(),$fuente);
+   if(!$v)Http::fail('No hay tasa '.Tasas::FUENTES[$fuente][1].' de los últimos 5 días. Escríbela en «Tasas del día» o elige otra.',409);
+   $lineas=is_array($b['lineas']??null)?array_values($b['lineas']):[];$orig=[];
+   foreach($lineas as $i=>$l){
+    $pr=is_array($l)?($l['precio']??null):null;$n=is_numeric($pr)?(float)$pr:null;
+    if($n===null||!($n>0)||$n>1e9)Http::fail('Revisa los precios: deben ser montos mayores que cero.');
+    $orig[]=round($n,2);$lineas[$i]['precio']=round($n*$v['tasa']+1e-9,2);
+   }
+   $b['lineas']=$lineas;
+   $b['_ref']=json_encode(['moneda'=>$mon,'fuente'=>$fuente,'nombre'=>Tasas::FUENTES[$fuente][1],'tasa'=>$v['tasa'],'fecha'=>$v['fecha'],'precios'=>$orig],JSON_THROW_ON_ERROR);
+  }
+  $tz=new \DateTimeZone('America/Caracas');
+  if(isset($b['vence_horas'])&&$b['vence_horas']!==''&&$b['vence_horas']!==null){
+   $h=filter_var($b['vence_horas'],FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>720]]);
+   if($h===false)Http::fail('El vencimiento en horas va de 1 a 720 (30 días).');
+   $d=(new \DateTimeImmutable('now',$tz))->modify('+'.$h.' hours');$b['vence']=$d->format('Y-m-d');$b['_vence_hora']=$d->format('H:i:00');
+  }elseif(isset($b['vence_hora'])&&$b['vence_hora']!==''&&$b['vence_hora']!==null){
+   if(!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/D',(string)$b['vence_hora']))Http::fail('La hora de vencimiento no es válida (por ejemplo 18:30).');
+   if(empty($b['vence']))Http::fail('Para poner una hora de vencimiento, elige también la fecha.');
+   $b['_vence_hora']=$b['vence_hora'].':00';
+  }
+  return $b;
+ }
  private function puede(string $k):bool{try{$this->auth->permit($k);return true;}catch(HttpError){return false;}}
  private function actor():array{$u=$this->auth->requireUser();return ['user_id'=>(int)$u['id'],'email'=>(string)($u['email']??'')];}
  /** Quien solo ve lo suyo (ejecutivos, usuarios) ve y toca solo los documentos que preparó. */
@@ -99,9 +135,9 @@ final class Facturacion {
   if($p==='workspace/fiscal/tasas'){
    $tasas=new Tasas($this->f);
    if($m==='GET')return $tasas->estado($t);
-   if($m==='POST'){$this->auth->permit('facturas.emitir');$tasas->guardarManual($t,$b['fecha']??null,$b['tasa']??null,$this->actor()['user_id']);$this->auth->audit('facturacion','facturacion','tasa',['detalle'=>'escribió la tasa BCV del '.(string)($b['fecha']??'')]);return $tasas->estado($t);}
+   if($m==='POST'){$this->auth->permit('facturas.emitir');$fuente=strtoupper((string)($b['fuente']??'BCV'));$tasas->guardarManual($t,$b['fecha']??null,$b['tasa']??null,$this->actor()['user_id'],$fuente);$this->auth->audit('facturacion','facturacion','tasa',['detalle'=>'escribió la tasa '.(Tasas::FUENTES[$fuente][1]??'BCV').' del '.(string)($b['fecha']??'')]);return $tasas->estado($t);}
   }
-  if($p==='workspace/fiscal/tasas/actualizar'&&$m==='POST'){$this->auth->permit('fiscal.configurar');$r=(new Tasas($this->f))->actualizar();return $r+(new Tasas($this->f))->estado($t);}
+  if($p==='workspace/fiscal/tasas/actualizar'&&$m==='POST'){$this->auth->permit('fiscal.configurar');$r=(new Tasas($this->f))->actualizarTodas();return ['resultado'=>$r,'ok'=>$r['BCV']['ok'],'error'=>$r['BCV']['error']]+(new Tasas($this->f))->estado($t);}
   // ---------- Clientes con datos fiscales guardados (para no escribirlos cada vez)
   if($p==='workspace/fiscal/clientes'&&$m==='GET'){
    $q=mb_substr(trim((string)($_GET['q']??'')),0,60);$s='%'.str_replace(['%','_'],['\\%','\\_'],$q).'%';
@@ -110,13 +146,13 @@ final class Facturacion {
   // ---------- Documentos
   if($p==='workspace/facturas'){
    if($m==='GET'){$q=$_GET;if($this->auth->assignedOnly())$q['creador']=(string)$this->actor()['user_id'];return $this->docs->list($t,$q);}
-   if($m==='POST'){$this->auth->permit('facturas.emitir');return $this->docs->createDraft($t,$this->conMoneda($b),$this->actor()['user_id']);}
+   if($m==='POST'){$this->auth->permit('facturas.emitir');return $this->docs->createDraft($t,$this->preparar($this->conMoneda($b)),$this->actor()['user_id']);}
   }
   if($p==='workspace/facturas/doc'){
    $uid=$this->uid($b);$this->propio($uid);
    if($m==='GET')return $this->docs->get($t,$uid);
    $this->auth->permit('facturas.emitir');
-   if($m==='PUT')return $this->docs->updateDraft($t,$uid,$this->conMoneda($b));
+   if($m==='PUT')return $this->docs->updateDraft($t,$uid,$this->preparar($this->conMoneda($b)));
    if($m==='DELETE'){$this->docs->deleteDraft($t,$uid);return ['ok'=>true];}
   }
   if($p==='workspace/facturas/emitir'&&$m==='POST'){$this->auth->permit('facturas.emitir');$uid=$this->uid($b);$this->propio($uid);$d=$this->docs->emit($t,$uid,$this->actor());$this->recordarCliente($d);return $d;}

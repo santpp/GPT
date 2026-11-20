@@ -145,7 +145,7 @@ final class Representation
             . ($simple ? '' : '<tr><td>N.° de control</td><td><b>' . ($control ? $e($control) : ($st === 'BORRADOR' ? '—' : 'Pendiente')) . '</b></td></tr>')
             . '<tr><td>Fecha de emisión</td><td><b>' . $e($dmy($snap['fecha'] ?? '')) . '</b></td></tr>'
             . (!empty($snap['hora']) ? '<tr><td>Hora</td><td>' . $e($snap['hora']) . '</td></tr>' : '')
-            . (!empty($snap['vence']) && in_array($tipo, ['FAC', 'SIM'], true) ? '<tr><td>Vence</td><td>' . $e($dmy($snap['vence'])) . '</td></tr>' : '')
+            . (!empty($snap['vence']) && in_array($tipo, ['FAC', 'SIM'], true) ? '<tr><td>Vence</td><td>' . $e($dmy($snap['vence'])) . (!empty($snap['vence_hora']) ? ' · ' . $e((string) $snap['vence_hora']) : '') . '</td></tr>' : '')
             . (!empty($snap['condiciones']) ? '<tr><td>Condiciones</td><td>' . $e($snap['condiciones']) . '</td></tr>' : '')
             . '</table><span class="orig">' . $e($copy) . '</span></div></div>'
             . '<div class="box cli"><p><span>Nombre o razón social:</span> <b>' . $e($cl['nombre'] ?? '') . '</b></p>' . (!$simple || !empty($cl['rif']) ? '<p><span>RIF / C.I.:</span> <b>' . $e($cl['rif'] ?? '') . '</b></p>' : '')
@@ -155,6 +155,7 @@ final class Representation
             . '<table class="items"><thead><tr><th class="c" style="width:70px">Código</th><th>Descripción</th><th class="n" style="width:60px">Cant.</th><th class="n" style="width:92px">Precio (' . $e($sym) . ')</th><th class="n" style="width:78px">Descuento</th><th class="c" style="width:34px">Imp.</th><th class="n" style="width:100px">Monto (' . $e($sym) . ')</th></tr></thead><tbody>' . $rows . '</tbody></table>'
             . '<div class="sum"><table><tr><th></th><th>' . $e($sym) . '</th>' . $bsHead . '</tr>' . $totRows . '</table></div>'
             . $rateLine
+            . (is_array($snap['referencia'] ?? null) ? '<div class="box"><b>Precios calculados en ' . ($snap['referencia']['moneda'] === 'EUR' ? 'euros' : 'dólares') . ':</b> tasa ' . $e((string) ($snap['referencia']['nombre'] ?? '')) . ' del ' . $e($dmy((string) ($snap['referencia']['fecha'] ?? ''))) . ', ' . $e(number_format((float) ($snap['referencia']['tasa'] ?? 0), 4, ',', '.')) . ' Bs. por ' . ($snap['referencia']['moneda'] === 'EUR' ? '€' : 'US$') . '.</div>' : '')
             . ((string) ($snap['notas'] ?? '') !== '' ? '<div class="box"><b>Observaciones:</b> ' . nl2br($e($snap['notas'])) . '</div>' : '')
             . $annul
             . '<div class="foot"><p>Imp.: G = alícuota general · R = reducida · A = general + adicional (bienes de lujo) · E = exento.</p>' . $legends . ($printer ? '<p>' . $printer . '</p>' : '') . '</div>'

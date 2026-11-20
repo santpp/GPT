@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Agora New App 2.11.1 · Correcciones del usuario (19 nov):
-1 Facturación solo en bolívares (dólares y euros preparados, desactivados): el editor no ofrece otra moneda y «Facturar» un cobro en dólares
-  lo pasa a Bs con la tasa BCV.
+1 Facturación solo en bolívares: el editor no ofrece otra moneda de factura; «Facturar» un cobro en dólares abre con precios en US$ y tasa BCV (2.12.0).
 2 «Por forma de cobro» muestra siempre Recurrente, Venta no recurrente y Venta única.
 3 En todos los módulos: el botón de descarga dice «Descargar» (no «Excel») y «Editar Dashboard» lleva el ícono de lápiz (no «Editar tarjetas»).
 4 2.11.3 · Las tarjetas de cifras van sin ícono (título, cifra y nota), con y sin reporte.
@@ -74,7 +73,8 @@ with sync_playwright() as p:
     if btn.count():
         btn.click();pg.wait_for_selector('.fc-form')
         d=pg.input_value('.fc-linea [data-k=descripcion]')
-        ok('tasa BCV' in d and pg.input_value('.fc-linea [data-k=precio]')!='','«Facturar» un cobro en dólares lo pasa a bolívares con la tasa BCV (y lo dice en la línea)')
+        # 2.12.0: abre con «Precios en: US$» y la tasa BCV elegida; el editor muestra el cálculo a Bs y el servidor convierte.
+        ok(pg.input_value('.fc-form [name=refmon]')=='USD' and pg.input_value('.fc-form [name=reffuente]')=='BCV' and pg.input_value('.fc-linea [data-k=precio]')!='' and '×' in pg.inner_text('[data-desglose]'),'«Facturar» un cobro en dólares abre con los precios en US$ y la tasa BCV, y muestra el cálculo a bolívares')
     ok(not errs,f'sin errores en Facturación {errs}')
     br.close()
 print(n,'comprobaciones')

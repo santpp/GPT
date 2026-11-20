@@ -420,7 +420,7 @@
         <div class="goal">
           ${a.presupuestoMes ? `<div class="pair"><span>Presupuesto del mes</span><b>${esc2(dinero(a.presupuestoMes))}</b></div>
           <div class="track" role="img" aria-label="Presupuesto consumido: ${consumido} %"><span class="fill ${consumido > 95 ? "bad" : consumido > 80 ? "warn" : ""}" style="width:${consumido}%"></span></div>
-          <p class="f">Llevas ${consumido} % del presupuesto. Quedan ${esc2(dinero(Number(a.presupuestoMes) - Number(a.mes)))}.</p>` : '<p class="f">No hay presupuesto fijado para el mes. Se puede indicar en «Cifras del mes».</p>'}
+          <p class="f">Llevas ${consumido} % del presupuesto. Quedan ${esc2(dinero(Number(a.presupuestoMes) - Number(a.mes)))}.</p>` : '<p class="f">No hay presupuesto fijado para el mes. Se puede indicar en «Editar costos o números».</p>'}
         </div>
       </section>
       <div class="grid g2">
@@ -688,14 +688,14 @@
     ${row("Ventas y " + word + ": ", "lo ganado en el mes en tu cuenta, más lo que se marca como «¿Venta ganada?» desde Ágora. Cada venta cuenta en el mes en que se cierra.")}
     ${row("Leads: ", "los que la cuenta le asignó a cada quien dentro del mes. Un lead cuenta en el mes en que se asignó, no en el que entró.")}
     ${row("Conversión: ", "los " + word + " de cada quien entre sus leads asignados del mes, por cien. El total del equipo usa la suma de los dos, no el promedio de los porcentajes.")}
-    ${row("Publicidad: ", "lo gastado en la cuenta publicitaria de Meta conectada durante el mes, más lo que escribas en «Cifras del mes» como otros gastos.")}
+    ${row("Publicidad: ", "lo gastado en la cuenta publicitaria de Meta conectada durante el mes, más lo que escribas en «Editar costos o números» como otros gastos.")}
     ${row("Comisiones: ", "calculadas con " + commission + ". La regla la fija el administrador en Conexiones y vale desde el mes en que se cambia.")}
     ${row("Ganancia: ", "ventas menos publicidad y comisiones.")}
-    ${row("Ganancia real del mes: ", "la ganancia menos los costos fijos que escribes en «Cifras del mes».")}
+    ${row("Ganancia real del mes: ", "la ganancia menos los costos fijos que escribes en «Editar costos o números».")}
     ${row("Costo por " + one + ": ", "publicidad entre el número de " + word + ".")}
     ${row("Ventas por cada 100 invertido: ", "ventas entre publicidad, por cien.")}
     ${row("Vendedores: ", "el equipo de tu cuenta. Quienes administran no aparecen aquí, pero lo que cierran sí cuenta en el total.")}
-    ${row("Metas y costos fijos: ", "los escribes tú en «Cifras del mes»; se guardan por subcuenta y por mes.")}
+    ${row("Metas y costos fijos: ", "los escribes tú en «Editar costos o números»; se guardan por subcuenta y por mes.")}
   </ul></details>`;
   }
   var STATES = { lograda: ["Meta lograda", "ok"], cerca: ["Cerca de la meta", "warn"], apoyo: ["Necesita apoyo", "bad"], "sin-meta": ["Sin meta fijada", "none"] };
@@ -840,8 +840,8 @@
       const from = before && before.style.opacity === "1" ? { width: before.style.width, transform: before.style.transform } : null;
       const other = ["monthpick", "custom"].includes(sel.kind);
       bar.innerHTML = `<div class="period">
-      <div class="seg" role="radiogroup" aria-label="Periodo"><span class="seg-thumb"></span>${QUICK.map(([k, l]) => `<button type="button" role="radio" aria-checked="${sel.kind === k}" class="seg-b${sel.kind === k ? " is-on" : ""}" data-period="${k}">${l}</button>`).join("")}</div>
-      <button type="button" id="period-btn" class="btn${other ? " btn-tint" : ""}" aria-haspopup="true" aria-expanded="${menuOpen}">${other ? esc3(sel.kind === "monthpick" ? cap(monthNameShort(periodOf(sel).month)) : periodOf(sel).label) : "Otro periodo"}${CHEVRON}</button>
+      <!-- Agora New App 2.12.0: el mismo selector del Inicio (barra, punto verde, flecha y casita) -->
+      <nav class="per per-tb" role="radiogroup" aria-label="Periodo">${QUICK.map(([k, l]) => `<button type="button" role="radio" aria-checked="${sel.kind === k}" class="seg-b per-b${sel.kind === k ? " is-on" : ""}" data-period="${k}">${l}${sel.kind === k && ["today", "week", "d30", "month"].includes(k) ? '<i class="pt pt-curso" aria-hidden="true"></i>' : ""}</button>`).join("")}<button type="button" id="period-btn" class="per-b${other ? " is-on" : ""}" aria-haspopup="true" aria-expanded="${menuOpen}">${other ? esc3(sel.kind === "monthpick" ? cap(monthNameShort(periodOf(sel).month)) : periodOf(sel).label) : "Otro periodo"}${CHEVRON}</button><button type="button" class="per-b per-ic" data-period="today" title="Volver a hoy" aria-label="Volver a hoy"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg></button></nav>
       <div id="period-menu" class="pop" role="dialog" aria-label="Otro periodo"${menuOpen ? "" : " hidden"}>
         <label class="fld">Otro mes<select id="period-month"><option value="">Elegir mes…</option>${monthOptions(sel.kind === "monthpick" ? sel.month : "")}</select></label>
         <div class="rng"><label class="fld">Desde<input type="date" id="period-from" value="${esc3(sel.kind === "custom" ? sel.from : "")}" max="${today}"></label><label class="fld">Hasta<input type="date" id="period-to" value="${esc3(sel.kind === "custom" ? sel.to : "")}" max="${today}"></label></div>
@@ -1048,8 +1048,14 @@
         unreadable: "La cuenta publicitaria respondió con un formato que no se pudo leer."
       };
       const adsLine = p.adsFromAccount !== null && p.adsFromAccount !== void 0 ? `<p class="src">Publicidad: ${esc3(money2(p.adsFromAccount))} según la cuenta publicitaria de Meta conectada${p.adsOther ? ` + ${esc3(money2(p.adsOther))} de otros gastos indicados aparte` : ""}.</p>` : p.adsReason && p.adsReason !== "restricted" ? `<div class="note-gold warn">${esc3(WHY[p.adsReason] || "La cuenta no ha informado lo invertido en publicidad.")}${p.adsOther ? ` Se usan ${esc3(money2(p.adsOther))} indicados aparte.` : ""}</div>` : "";
-      const warn = missing.length ? `<div class="note-gold">Faltan por indicar ${esc3(missing.map((k) => NAMES[k] || k).join(", "))}. ${month2.canEdit ? "Pulsa «Cifras del mes» para completarlos." : "Pídeselo a quien administra Ágora."}</div>` : "";
-      const actions = `<div class="acts"><label class="fld">Mes<select id="board-period">${monthOptions(month2.period)}</select></label>${month2.canEdit ? '<button type="button" data-board-settings class="btn btn-cta">Cifras del mes</button>' : ""}</div>`;
+      const warn = missing.length ? `<div class="note-gold">Faltan por indicar ${esc3(missing.map((k) => NAMES[k] || k).join(", "))}. ${month2.canEdit ? "Pulsa «Editar costos o números» para completarlos." : "Pídeselo a quien administra Ágora."}</div>` : "";
+      // Agora New App 2.12.0: el mes de Rentabilidad con la misma barra del Inicio (flecha, meses, punto verde y casita).
+      const perMes = (() => { const now = new Date(), cur = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`, sel = month2.period || cur;
+        const mv = (ym, k) => { const [y, m] = ym.split("-").map(Number), d = new Date(y, m - 1 + k, 1); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`; };
+        const meses = [mv(sel, -1), sel, mv(sel, 1)].filter((ym) => ym <= cur);
+        const b = (ym) => `<button type="button" class="per-b${ym === sel ? " is-on" : ""}" data-board-mes="${ym}" aria-current="${ym === sel}">${esc3(cap(monthNameShort(ym)).slice(0, 3))}${ym === cur ? '<i class="pt pt-curso" aria-hidden="true"></i>' : ""}</button>`;
+        return `<nav class="per per-mes" aria-label="Mes"><button type="button" class="per-b per-ic" data-board-mes="${mv(sel, -1)}" title="Mes anterior" aria-label="Mes anterior"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>${meses.map(b).join("")}<button type="button" class="per-b per-ic" data-board-mes="${cur}" title="Volver al mes en curso" aria-label="Mes en curso"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg></button></nav>`; })();
+      const actions = `<div class="acts">${perMes}<select id="board-period" hidden aria-hidden="true" tabindex="-1">${monthOptions(month2.period)}</select>${month2.canEdit ? '<button type="button" data-board-settings class="btn btn-cta"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>Editar costos o números</button>' : ""}</div>`;
       const sales = month2.sales || {};
       const tiles2 = [
         ...!restricted ? [metric("Ganadas en la cuenta este mes", number(sales.closings ?? 0), `${money2(sales.total ?? 0)} en total, según la cuenta`)] : [],
@@ -1154,6 +1160,7 @@
       if (pick) pick.onchange = () => {
         if (/^\d{4}-\d{2}$/.test(pick.value)) choose({ kind: "monthpick", month: pick.value });
       };
+      document.querySelectorAll("[data-board-mes]").forEach((b) => b.onclick = () => { if (/^\d{4}-\d{2}$/.test(b.dataset.boardMes)) choose({ kind: "monthpick", month: b.dataset.boardMes }); });
       const settings = $("[data-board-settings]");
       if (settings) settings.onclick = () => openSettings();
     }
@@ -1162,7 +1169,7 @@
       const s = month.settings || {};
       const rows2 = asList(month.team).filter((row) => row.id).map((row) => `<label class="fld">${esc3(row.name)}<input type="number" min="0" step="0.01" data-goal="${esc3(row.id)}" value="${row.goal ?? ""}" placeholder="Meta del mes"></label>`).join("");
       document.querySelector("#dialog-content").innerHTML = `<div class="tv3 tv3-dialog"><p class="t-label">${esc3(monthName(month.period))}</p>
-      <h2>Cifras del mes</h2>
+      <h2>Costos y números del mes</h2>
       <p class="lede">Lo que la cuenta no sabe: lo que invertiste, lo que cuesta mantener la operación y las metas. Se guarda sólo para este mes y esta subcuenta.</p>
       <form id="board-form" class="form">
         <p class="form-msg">Lo invertido en Meta lo informa la cuenta publicitaria conectada. Aquí sólo lo que no pasa por ella.</p>

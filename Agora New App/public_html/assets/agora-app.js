@@ -1001,7 +1001,7 @@ function applyTheme() {
   const root = document.documentElement;
   root.dataset.theme = dark ? 'dark' : 'light';
   const acento = store.get('acento', 'vino');
-  root.dataset.accent = ACENTOS.some(a => a[0] === acento) ? acento : 'vino';
+  root.dataset.accent = 'vino'; // 2.12.0: solo los colores de Ágora (el usuario quitó los colores a elegir)
   root.classList.toggle('nav-side', store.get('menu', 'side') === 'side' && !!ME);
   const b = $('#b-theme'); if (b) b.innerHTML = icon(dark ? 'sun' : 'moon');
   document.querySelector('meta[name=theme-color]')?.setAttribute('content', dark ? '#000000' : '#F5F5F7');
@@ -1057,7 +1057,7 @@ function aparienciaHtml() {
   return `<section class="ap" aria-label="Apariencia"><h4>Apariencia</h4>
     <div class="ap-themes" role="radiogroup" aria-label="Tema">${vista('auto', 'Automático', 'auto')}${vista('light', 'Claro', 'sun')}${vista('dark', 'Oscuro', 'moon')}</div>
     <h4>Menú de módulos</h4>${seg('menu', [['side', 'Barra lateral'], ['top', 'Arriba']], menu, 'Menú de módulos', 'ap-seg')}
-    <h4>Color de acento</h4><div class="ap-accents" role="radiogroup" aria-label="Color de acento">${ACENTOS.map(([v, l, c]) => `<button type="button" class="ap-dot ${acento === v ? 'is-on' : ''}" data-acento="${v}" style="--dot:${c}" role="radio" aria-checked="${acento === v}" aria-label="${l}" title="${l}"></button>`).join('')}</div></section>`;
+</section>`;
 }
 function aparienciaMounted(el) {
   el.querySelectorAll('[data-tema]').forEach(b => b.onclick = () => {
@@ -1157,7 +1157,7 @@ document.addEventListener('click', e => {
   if (t.classList?.contains('scrim')) { closeModal(); return; }
   let el;
   if ((el = c('[data-copy]'))) { copy(el.dataset.copy, 'Enlace copiado'); return; }
-  if ((el = c('.seg-b'))) {
+  if ((el = c('.seg-b')) && el.closest('.seg')) { // 2.12.0: el Tablero usa .seg-b dentro de la barra .per (sin .seg): ese clic lo maneja el Tablero
     const sg = el.closest('.seg'), key = sg.dataset.seg, v = el.dataset.v;
     sg.querySelectorAll('.seg-b').forEach(b => { const on = b === el; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', String(on)); });
     placeThumbs(sg.parentElement, true);
@@ -1937,7 +1937,8 @@ const usd = v => {
 const firmado = v => (Number(v) > 0 ? '+' : '') + usd(v);
 
 /* ---------- Paleta de los gráficos de reparto ---------- */
-const PAL = ['var(--brand)', 'var(--gold)', 'var(--teal)', 'var(--violet)', 'var(--info)', 'var(--deep)', 'var(--muted-2)'];
+/* 2.12.0 · Escala de Ágora (manual de marca): vino, azul profundo, oro y sus tonos. Distingue asesores y fuentes sin un carnaval de colores. */
+const PAL = ['var(--ag-1)', 'var(--ag-2)', 'var(--ag-3)', 'var(--ag-4)', 'var(--ag-5)', 'var(--ag-6)', 'var(--ag-7)'];
 
 /**
  * Rueda de reparto con su leyenda al lado. `items`: [{l, n}].
@@ -4085,7 +4086,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.11.8').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.12.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -5066,7 +5067,8 @@ const PALETA_VARS = ['--brand', '--brand-ink', '--brand-soft', '--gold', '--mod-
 function aplicarPaleta(forzada) {
   const root = document.documentElement;
   const enCuenta = !!ME && !(esSuperAdmin() && AGENCY_CONTEXT);
-  const p = paletaLimpia(forzada !== undefined ? forzada : (enCuenta ? ESPACIO?.paleta : null));
+  // 2.12.0: solo los colores de Ágora. Las paletas guardadas se conservan en la base, pero ya no se aplican ni se eligen.
+  const p = null; void forzada; void enCuenta;
   if (!p) { PALETA_VARS.forEach(v => root.style.removeProperty(v)); delete root.dataset.paleta; return; }
   const t = paletaTonos(p), oscuro = root.dataset.theme === 'dark';
   const brand = oscuro ? t.oscuro : t.claro;
@@ -5082,6 +5084,7 @@ function aplicarPaleta(forzada) {
 }
 /** Recuadro del formulario de identidad para elegir la paleta, con vista previa en vivo. */
 function paletaBx(actual) {
+  return ''; // 2.12.0: sin «Colores de la cuenta»: toda subcuenta usa la escala de Ágora.
   const p = paletaLimpia(actual) || {principal: PALETAS[0][2], acento: PALETAS[0][3]};
   const elegida = PALETAS.find(x => x[2] === p.principal && x[3] === p.acento)?.[0] || 'propia';
   return `<fieldset class="bx bx-wide pal-bx">
@@ -7099,14 +7102,15 @@ const VG_TARJ_DEFECTO = ['cantidad', 'vendido', 'cobrado', 'porCobrar'];
 const GC_DEFECTO = ['cantidad', 'vendido', 'meta', 'mensual', 'ticket', 'cobrado', 'porCobrar'];
 function gcVivoHtml() {
   const d = VG.datos, mes = mesNombre(VG.mes || PERIODO);
-  const acts = ''; // 2.10.0: «Elegir cifras» y «Ver las ventas» van en la caja de las cifras, como en el Inicio
+  // 2.12.0 · Pedido del usuario: «Editar Dashboard» y «Ver las ventas» en la línea de la cabecera, junto a «Descargar», como en todos los módulos.
+  const acts = `<button type="button" class="btn" data-gc-tarjetas>${icon('edit')}Editar Dashboard</button><a class="btn" href="${href(MODS.ventas?.path || '/ventas')}">Ver las ventas${icon('chevR')}</a>`;
   const cabeza = head('Gestión comercial', 'Gestión Comercial', `Cómo va ${esc(mes)}: lo vendido, quién lo vendió y qué se vendió.`, acts);
   if (!d) return cabeza + '<section class="panel"><p class="empty"><b>No se pudieron leer las ventas del mes</b>Vuelve a intentarlo en un momento.</p></section>';
   const r = d.resumen || {}, items = d.items || [];
   const tarjeta = (cls, ic, t, val, det) => `<div class="ag-resumen ${cls}"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span><strong class="ag-resumen-v">${val}</strong><span class="ag-resumen-d">${det}</span></div>`;
   const elegidas = tarjElegidas('gestion', VG_TARJETAS, GC_DEFECTO);
   /* 2.10.0 · Pedido del usuario: las cifras en una sola caja, con la estructura del «Resumen de hoy» del Inicio (título y botones arriba, cifras separadas por líneas), conservando el ícono y el color de cada una. */
-  const kpis = `<section class="inicio-resumen gc-caja" aria-labelledby="gc-caja-t"><header class="inicio-resumen-h"><h2 id="gc-caja-t">Cifras de ${esc(mes)}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-gc-tarjetas>${icon('edit')}Editar Dashboard</button><a class="inicio-resumen-ver" href="${href(MODS.ventas?.path || '/ventas')}">Ver las ventas${icon('chevR')}</a></span></header>`
+  const kpis = `<section class="inicio-resumen gc-caja" aria-labelledby="gc-caja-t"><header class="inicio-resumen-h"><h2 id="gc-caja-t">Cifras de ${esc(mes)}</h2></header>`
     + (elegidas.length ? `<div class="gc-caja-g">${elegidas.map(id => { const x = VG_TARJETAS[id]; let v; try { v = x.f(d, r, mes); } catch { v = ['', '—', '']; } return tarjeta(v[0], x.ic, esc(x.t), v[1], v[2]); }).join('')}</div>` : '<p class="inicio-resumen-x">No elegiste cifras para esta vista. Usa «Elegir cifras».</p>') + '</section>';
   const graf = vtPuede() ? '<div data-gc-graf-aqui></div>' : '';
   if (!items.length) return cabeza + kpis + `<section class="panel"><p class="empty"><b>Todavía no hay ventas registradas en ${esc(mes)}</b>Cuando se gane una oportunidad y se complete su venta, aparece aquí.</p></section>` + graf;
@@ -7289,13 +7293,14 @@ async function fcDesdeCobro(ventaId, n) {
   if (!FC.res) { try { await fcCargar(true); } catch {} }
   const ok = FC.res?.monedas || ['VES'], mv = ['USD', 'VES', 'EUR'].includes(v.moneda) ? v.moneda : 'USD';
   // 2.11.1 · Si la subcuenta no factura en la moneda de la venta (por ahora solo Bs), el monto se pasa a Bs con la tasa BCV vigente.
-  let moneda = mv, precio = Number(c.monto) || 0, nota = '';
+  // 2.12.0 · Un cobro en dólares o euros abre la factura con los precios en esa moneda y la tasa BCV elegida: el cálculo a Bs se ve en el editor y lo hace el servidor.
+  let moneda = mv, precio = Number(c.monto) || 0, nota = '', referencia = null;
   if (!ok.includes(mv)) {
-    moneda = ok[0]; const t = FC.res?.tasa?.tasa;
-    if (mv !== 'VES' && moneda === 'VES' && t) { nota = ` (${vgMonto(precio, mv)} a tasa BCV ${NF.format(t)})`; precio = Math.round(precio * t * 100) / 100; }
-    else { precio = null; toast('No hay tasa BCV para pasar el monto a bolívares: escríbelo en la factura.'); }
+    moneda = ok[0];
+    if (mv !== 'VES' && moneda === 'VES') referencia = {moneda: mv, fuente: mv === 'EUR' ? 'BCV_EUR' : 'BCV'};
+    else { precio = null; toast('Escribe el monto de la factura.'); }
   }
-  fcEditar(null, {moneda, venta: `${v.id}:${c.n}`, cliente: {nombre: v.cliente?.nombre || '', rif: v.cliente?.documento || '', correo: v.cliente?.correo || '', telefono: v.cliente?.telefono || ''},
+  fcEditar(null, {moneda, referencia, venta: `${v.id}:${c.n}`, cliente: {nombre: v.cliente?.nombre || '', rif: v.cliente?.documento || '', correo: v.cliente?.correo || '', telefono: v.cliente?.telefono || ''},
     lineas: [{descripcion: `${v.producto || 'Servicio'}${(v.plan || []).length > 1 || v.sinFin ? ` · cobro ${c.n}` : ''}${nota}`, cantidad: 1, precio, impuesto: (CATALOGO?.productos || []).find(p => p.id === v.productoId)?.iva}]});
 }
 function faFacturarMontar(root) {
@@ -7425,7 +7430,14 @@ function fcLeerCant(t) { const s = String(t ?? '').trim().replace(/\s/g, '').rep
 async function fcEditar(doc = null, preset = {}) {
   if (!FC.res) { try { await fcCargar(true); } catch (x) { toast(x.message || 'No se pudo abrir la facturación.'); return; } }
   if (typeof cargarCatalogo === 'function' && !CATALOGO) { try { await cargarCatalogo(); } catch {} }
+  // 2.12.0 · Tasas del día para escribir los precios en dólares o euros (la factura sale en bolívares).
+  let fuentes = []; try { fuentes = (await agoraApi('workspace/fiscal/tasas')).fuentes || []; } catch { fuentes = []; }
   const r = FC.res, fiscal = !!r.fiscal, base = doc || preset, monedas = r.monedas?.length ? r.monedas : ['VES'];
+  const ref0 = doc?.referencia || preset.referencia || null;
+  if (doc && ref0 && Array.isArray(ref0.precios) && doc.lineas?.length === ref0.precios.length) base.lineas = doc.lineas.map((l, k) => ({...l, precio: ref0.precios[k]}));
+  const refMon0 = ref0?.moneda || 'VES', refFu0 = ref0?.fuente || (refMon0 === 'EUR' ? 'BCV_EUR' : 'BCV');
+  const fOpc = mon => fuentes.filter(f => f.moneda === mon).map(f => `<option value="${f.fuente}" ${f.fuente === refFu0 ? 'selected' : ''} ${f.vigente ? '' : 'disabled'}>${esc(f.nombre)}${f.vigente ? ' · Bs. ' + esc(NF.format(f.vigente.tasa)) : ' · sin tasa'}</option>`).join('');
+  const venceModo0 = base.vence_horas ? 'horas' : (base.vence ? 'fecha' : '');
   let tipo = doc ? doc.tipo : (preset.tipo || (fiscal ? 'FAC' : 'SIM'));
   if (!fiscal) tipo = 'SIM';
   if (!doc && tipo === 'SIM' && base.lineas) base.lineas = base.lineas.map(l => ({...l, impuesto: 'E'})); // la factura simple no lleva IVA por defecto
@@ -7458,7 +7470,12 @@ async function fcEditar(doc = null, preset = {}) {
       </fieldset>
       <div class="fc-fila3">
         ${monedas.length > 1 ? `<label class="fld">Moneda<select name="moneda">${[['VES', 'Bolívares (Bs.)'], ['USD', 'Dólares (US$)'], ['EUR', 'Euros (€)']].filter(([v]) => monedas.includes(v)).map(([v, t]) => `<option value="${v}" ${(monedas.includes(base.moneda) ? base.moneda : monedas[0]) === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>` : `<label class="fld">Moneda<input value="Bolívares (Bs.)" disabled><input type="hidden" name="moneda" value="VES"></label>`}
-        <label class="fld">Vence<input name="vence" type="date" value="${esc(base.vence || '')}"></label>
+        <label class="fld">Precios en<select name="refmon"><option value="VES" ${refMon0 === 'VES' ? 'selected' : ''}>Bolívares (Bs.)</option>${fuentes.some(f => f.moneda === 'USD') ? `<option value="USD" ${refMon0 === 'USD' ? 'selected' : ''}>Dólares (US$)</option>` : ''}${fuentes.some(f => f.moneda === 'EUR') ? `<option value="EUR" ${refMon0 === 'EUR' ? 'selected' : ''}>Euros (€)</option>` : ''}</select></label>
+        <label class="fld" data-fc-tasa ${refMon0 === 'VES' ? 'hidden' : ''}>Tasa<select name="reffuente">${fOpc(refMon0 === 'VES' ? 'USD' : refMon0)}</select></label>
+        <label class="fld">Vence<select name="vencemodo"><option value="" ${!venceModo0 ? 'selected' : ''}>Sin vencimiento</option><option value="fecha" ${venceModo0 === 'fecha' ? 'selected' : ''}>En una fecha</option><option value="horas" ${venceModo0 === 'horas' ? 'selected' : ''}>En unas horas</option></select></label>
+        <label class="fld" data-vence="fecha" ${venceModo0 === 'fecha' ? '' : 'hidden'}>Fecha<input name="vence" type="date" value="${esc(base.vence || '')}"></label>
+        <label class="fld" data-vence="fecha" ${venceModo0 === 'fecha' ? '' : 'hidden'}>Hora (si quieres)<input name="vence_hora" type="time" value="${esc(base.vence_hora || '')}"></label>
+        <label class="fld" data-vence="horas" ${venceModo0 === 'horas' ? '' : 'hidden'}>Horas<input name="vence_horas" inputmode="numeric" maxlength="3" placeholder="48" value="${esc(base.vence_horas || '')}"></label>
         <label class="fld">Condiciones<input name="condiciones" maxlength="120" value="${esc(base.condiciones || '')}" placeholder="Contado, 15 días…"></label>
       </div>
       ${r.perfil?.igtf?.activo ? `<label class="fc-check"><input type="checkbox" name="pago_divisas" ${base.pago_divisas ? 'checked' : ''}> El cliente paga en divisas (se suma el IGTF de ${NF.format(r.perfil.igtf.alicuota)} %)</label>` : ''}
@@ -7472,10 +7489,19 @@ async function fcEditar(doc = null, preset = {}) {
   const alic = {G: (r.perfil?.iva?.general ?? 16) / 100, R: (r.perfil?.iva?.reducida ?? 8) / 100, A: ((r.perfil?.iva?.general ?? 16) + (r.perfil?.iva?.adicional_lujo ?? 15)) / 100, E: 0};
   const leer = () => [...lista.querySelectorAll('.fc-linea')].map(x => ({descripcion: x.querySelector('[data-k=descripcion]').value.trim(), cantidad: fcLeerCant(x.querySelector('[data-k=cantidad]').value), precio: agenciaLeerMonto(x.querySelector('[data-k=precio]').value), impuesto: x.querySelector('[data-k=impuesto]').value, fila: x}));
   const total = () => {
-    const ls = leer().filter(l => l.precio !== null && l.cantidad !== null), mon = form.moneda.value;
+    const ls = leer().filter(l => l.precio !== null && l.cantidad !== null), refMon = form.refmon?.value || 'VES', mon = refMon !== 'VES' ? refMon : form.moneda.value;
+    const fu = fuentes.find(f => f.fuente === form.reffuente?.value), tasa = refMon !== 'VES' ? Number(fu?.vigente?.tasa || 0) : 0;
+    // Cada precio pasa a Bs con la tasa y se redondea a céntimos, igual que en el servidor.
+    const enBs = p => refMon !== 'VES' ? Math.round(Number(p) * tasa * 100) / 100 : Number(p);
     const base_ = ls.reduce((t, l) => t + Number(l.cantidad) * Number(l.precio), 0), iva = ls.reduce((t, l) => t + Number(l.cantidad) * Number(l.precio) * alic[l.impuesto], 0);
-    s.querySelector('[data-total]').textContent = fcMon(base_ + iva, mon);
-    s.querySelector('[data-desglose]').textContent = `Base ${fcMon(base_, mon)} · IVA ${fcMon(iva, mon)}${tipoAct() === 'FAC' && mon !== 'VES' ? ' · el equivalente en Bs se calcula al emitir, con la tasa BCV' : ''}`;
+    const baseBs = ls.reduce((t, l) => t + Number(l.cantidad) * enBs(l.precio), 0), ivaBs = ls.reduce((t, l) => t + Number(l.cantidad) * enBs(l.precio) * alic[l.impuesto], 0);
+    if (refMon !== 'VES') {
+      s.querySelector('[data-total]').textContent = tasa ? fcMon(baseBs + ivaBs, 'VES') : '—';
+      s.querySelector('[data-desglose]').textContent = tasa ? `${fcMon(base_ + iva, refMon)} × ${NF.format(tasa)} (${fu.nombre} del ${fcFecha(fu.vigente.fecha)}) · Base ${fcMon(baseBs, 'VES')} · IVA ${fcMon(ivaBs, 'VES')}` : 'Esa tasa no está disponible hoy: escríbela en «Tasas del día» o elige otra.';
+    } else {
+      s.querySelector('[data-total]').textContent = fcMon(base_ + iva, mon);
+      s.querySelector('[data-desglose]').textContent = `Base ${fcMon(base_, mon)} · IVA ${fcMon(iva, mon)}${tipoAct() === 'FAC' && mon !== 'VES' ? ' · el equivalente en Bs se calcula al emitir, con la tasa BCV' : ''}`;
+    }
     s.querySelector('[data-fc-req]').textContent = tipoAct() === 'FAC' ? 'Para la factura fiscal hacen falta el RIF o la cédula y el domicilio fiscal del cliente.' : 'En la factura simple basta el nombre del cliente.';
   };
   s.querySelector('[data-agregar]').onclick = () => { lista.insertAdjacentHTML('beforeend', fila()); lista.lastElementChild.querySelector('input').focus(); total(); };
@@ -7486,6 +7512,8 @@ async function fcEditar(doc = null, preset = {}) {
     if (vacia) vacia.outerHTML = html; else lista.insertAdjacentHTML('beforeend', html); total();
   });
   lista.addEventListener('click', e => { const b = e.target.closest('[data-quitar]'); if (b && lista.children.length > 1) { b.closest('.fc-linea').remove(); total(); } });
+  form.refmon?.addEventListener('change', () => { const m = form.refmon.value, box = s.querySelector('[data-fc-tasa]'); box.hidden = m === 'VES'; if (m !== 'VES') { form.reffuente.innerHTML = fOpc(m); const ok = [...form.reffuente.options].find(o => !o.disabled); if (ok) form.reffuente.value = ok.value; } });
+  form.vencemodo.addEventListener('change', () => s.querySelectorAll('[data-vence]').forEach(x => { x.hidden = x.dataset.vence !== form.vencemodo.value; }));
   form.addEventListener('input', total); form.addEventListener('change', total); total();
   // Clientes con datos fiscales guardados: al elegir uno, se completan RIF y domicilio.
   let clientes = [], ct = 0;
@@ -7511,7 +7539,13 @@ async function fcEditar(doc = null, preset = {}) {
       if (l.cantidad === null) return marcar(l.fila.querySelector('[data-k=cantidad]'), `La cantidad de «${l.descripcion}» no es válida.`);
       if (l.precio === null || !(Number(l.precio) > 0)) return marcar(l.fila.querySelector('[data-k=precio]'), `El precio de «${l.descripcion}» no es válido. Usa números con hasta dos decimales, por ejemplo 120,50.`);
     }
-    const body = {tipo: t, moneda: form.moneda.value, vence: form.vence.value || null, condiciones: form.condiciones.value.trim(), notas: form.notas.value.trim(), pago_divisas: !!form.pago_divisas?.checked,
+    const vm = form.vencemodo.value, refMon = form.refmon?.value || 'VES';
+    if (vm === 'fecha' && !form.vence.value) return marcar(form.vence, 'Elige la fecha de vencimiento o quita el vencimiento.');
+    if (vm === 'horas' && !/^\d{1,3}$/.test(form.vence_horas.value.trim())) return marcar(form.vence_horas, 'Escribe en cuántas horas vence (de 1 a 720).');
+    if (refMon !== 'VES' && !fuentes.find(f => f.fuente === form.reffuente.value)?.vigente) return marcar(form.reffuente, 'Esa tasa no está disponible hoy: escríbela en «Tasas del día» o elige otra.');
+    const body = {tipo: t, moneda: form.moneda.value, vence: vm === 'fecha' ? form.vence.value : null, vence_hora: vm === 'fecha' && form.vence_hora.value ? form.vence_hora.value : null, vence_horas: vm === 'horas' ? Number(form.vence_horas.value.trim()) : null,
+      referencia: refMon !== 'VES' ? {moneda: refMon, fuente: form.reffuente.value} : null,
+      condiciones: form.condiciones.value.trim(), notas: form.notas.value.trim(), pago_divisas: !!form.pago_divisas?.checked,
       venta: base.venta || null, cliente: {nombre: form.nombre.value.trim(), rif: form.rif.value.trim(), direccion: form.direccion.value.trim(), correo: form.correo.value.trim(), telefono: form.telefono.value.trim()},
       lineas: ls.map(l => ({descripcion: l.descripcion, cantidad: l.cantidad, precio: l.precio, impuesto: l.impuesto}))};
     const btn = form.querySelector(`[data-modo="${modo}"]`); busy(btn, true, modo === 'emitir' ? 'Emitiendo…' : 'Guardando…');
@@ -7546,7 +7580,7 @@ async function fcVer(uid) {
     if (d.estado === 'EMITIDA' && pu.anular) acts.push(`<button class="btn fc-peligro" type="button" data-a="anular">Anular</button>`);
   }
   const s = openModal(modalHead(`${esc(FC_TIPO[d.tipo]?.[0] || 'Documento')} ${d.numero_texto ? 'N.° ' + esc(d.numero_texto) : '(borrador)'}`, `${esc(d.cliente?.nombre || '')}${d.cliente?.rif ? ' · ' + esc(d.cliente.rif) : ''}`) + `<div class="fc-ver">
-    <div class="fc-ver-est">${fcEstado(d)}${d.control ? `<span>Control <b>${esc(d.control)}</b></span>` : ''}${d.fecha ? `<span>Emitida el <b>${esc(fcFecha(d.fecha))}</b></span>` : ''}${d.tasa_bcv ? `<span>Tasa BCV <b>${esc(NF.format(d.tasa_bcv))}</b></span>` : ''}${d.afecta ? `<span>Afecta la factura <b>${esc(d.afecta.numero)}</b></span>` : ''}</div>
+    <div class="fc-ver-est">${fcEstado(d)}${d.control ? `<span>Control <b>${esc(d.control)}</b></span>` : ''}${d.fecha ? `<span>Emitida el <b>${esc(fcFecha(d.fecha))}</b></span>` : ''}${d.tasa_bcv ? `<span>Tasa BCV <b>${esc(NF.format(d.tasa_bcv))}</b></span>` : ''}${d.vence ? `<span>Vence <b>${esc(fcFecha(d.vence))}${d.vence_hora ? ' · ' + esc(d.vence_hora) : ''}</b></span>` : ''}${d.referencia ? `<span>Precios en ${d.referencia.moneda === 'EUR' ? '€' : 'US$'} · ${esc(d.referencia.nombre || '')} <b>${esc(NF.format(d.referencia.tasa))}</b></span>` : ''}${d.afecta ? `<span>Afecta la factura <b>${esc(d.afecta.numero)}</b></span>` : ''}</div>
     ${d.estado === 'ANULADA' ? `<p class="fc-aviso is-warn">${icon('warn')}<span>Anulada${d.motivo_anulacion ? ': ' + esc(d.motivo_anulacion) : ''}.</span></p>` : ''}
     <div class="tw"><table data-xt-vivo><thead><tr><th>Descripción</th><th class="n">Cant.</th><th class="n">Precio</th><th>Impuesto</th><th class="n">Total</th></tr></thead><tbody>${lineas}</tbody></table></div>
     <div class="fc-tot">${totRow('Subtotal', t.subtotal)}${totRow('IVA general', t.iva_general)}${totRow('IVA reducido', t.iva_reducido)}${totRow('IVA lujo', t.iva_lujo)}${totRow('IGTF', t.igtf)}<div class="is-total"><span>Total</span><b>${esc(fcMon(t.total_con_igtf ?? t.total, m))}</b></div>${t.total_bs != null && m !== 'VES' ? `<div><span>Equivalente en Bs</span><b>${esc(fcMon(t.total_bs, 'VES'))}</b></div>` : ''}</div>
@@ -7705,21 +7739,21 @@ V.tasasBcv = {
   need: async () => { await fcCargar().catch(() => null); TB_TASA.datos = await agoraApi('workspace/fiscal/tasas').catch(x => ({error: x.message})); },
   render() {
     const d = TB_TASA.datos, pu = FC.res?.puede || {};
-    const soloBs = !(FC.res?.monedas || []).some(m => m !== 'VES');
-    const cabeza = head('Facturación', 'Tasas del día', soloBs ? 'La tasa oficial del BCV del día. Las facturas se emiten en bolívares: la tasa sirve para pasar a Bs los cobros en divisas al facturarlos.' : 'La tasa oficial del BCV con la que se calcula el equivalente en bolívares de cada factura. Llega sola cada día; si no llega, escríbela aquí.', pu.configurar ? `<button class="btn" type="button" data-tb-act>${icon('refresh')}Traer ahora</button>` : '');
+    const cabeza = head('Facturación', 'Tasas del día', 'BCV dólar, BCV euro y USDT de Binance. Las facturas se emiten en bolívares: al facturar puedes escribir los precios en dólares o euros y elegir con qué tasa se pasan a Bs. Llegan solas cada hora; si alguna no llega, escríbela aquí.', pu.configurar ? `<button class="btn" type="button" data-tb-act>${icon('refresh')}Traer tasas</button>` : '');
     if (!d || d.error) return cabeza + `<section class="panel"><p class="empty"><b>No se pudieron leer las tasas</b>${esc(d?.error || '')}</p></section>`;
-    const v = d.vigente;
-    const tarj = `<section class="ag-resumen-grid vg-kpis"><div class="ag-resumen ${v ? 'is-ok' : 'is-warn'}"><span class="ag-resumen-ic" aria-hidden="true">${icon('rate')}</span><span class="ag-resumen-t">Tasa BCV vigente</span><strong class="ag-resumen-v">${v ? 'Bs. ' + esc(NF.format(v.tasa)) : '—'}</strong><span class="ag-resumen-d">${v ? 'del ' + esc(fcFecha(v.fecha)) : (soloBs ? 'Sin tasa de los últimos 5 días' : 'Sin tasa de los últimos 5 días: las facturas en divisas no se emiten')}</span></div></section>`;
-    const form = pu.emitir ? `<form class="panel pf-sec form" data-tb-form novalidate>${secH('edit', 'Escribir la tasa', 'Solo si la automática no llegó. Usa la publicada por el BCV.')}<div class="fc-fila3"><label class="fld">Fecha<input name="fecha" type="date" value="${esc(d.hoy)}" max="${esc(d.hoy)}"></label><label class="fld">Bs. por US$ 1<input name="tasa" inputmode="decimal" placeholder="245,6789"></label><div class="form-ft"><button class="btn btn-cta" type="submit">Guardar tasa</button></div></div><p class="fld-err" role="alert"></p></form>` : '';
-    const hist = (d.historial || []).length ? `<div class="tw"><table data-xt-vivo><thead><tr><th>Fecha</th><th class="n">Bs. por US$ 1</th><th>Origen</th></tr></thead><tbody>${d.historial.map(x => `<tr><td>${esc(fcFecha(x.fecha))}</td><td class="n">${esc(NF.format(x.tasa))}</td><td>${esc(x.origen)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty"><b>Sin tasas en los últimos 30 días</b></p>';
+    // 2.12.0 · Tres tasas: BCV dólar (la de la factura fiscal), BCV euro y USDT de Binance. Cada una llega sola o se escribe a mano.
+    const fuentes = d.fuentes || [{fuente: 'BCV', moneda: 'USD', nombre: 'BCV dólar', vigente: d.vigente}];
+    const tarj = `<section class="ag-resumen-grid vg-kpis">${fuentes.map(f => { const v = f.vigente; return `<div class="ag-resumen ${v ? 'is-ok' : 'is-warn'}"><span class="ag-resumen-ic" aria-hidden="true">${icon('rate')}</span><span class="ag-resumen-t">${esc(f.nombre)}</span><strong class="ag-resumen-v">${v ? 'Bs. ' + esc(NF.format(v.tasa)) : '—'}</strong><span class="ag-resumen-d">${v ? `por ${f.moneda === 'EUR' ? '€' : 'US$'} 1 · del ${esc(fcFecha(v.fecha))}${v.origen === 'a mano' ? ' · a mano' : ''}` : 'Sin tasa de los últimos 5 días'}</span></div>`; }).join('')}</section>`;
+    const form = pu.emitir ? `<form class="panel pf-sec form" data-tb-form novalidate>${secH('edit', 'Escribir una tasa', 'Solo si la automática no llegó. Usa la publicada por el BCV, o el precio de USDT que toma tu empresa.')}<div class="fc-fila3"><label class="fld">Tasa<select name="fuente">${fuentes.map(f => `<option value="${f.fuente}">${esc(f.nombre)}</option>`).join('')}</select></label><label class="fld">Fecha<input name="fecha" type="date" value="${esc(d.hoy)}" max="${esc(d.hoy)}"></label><label class="fld">Bs. por unidad<input name="tasa" inputmode="decimal" placeholder="245,6789"></label></div><p class="fld-err" role="alert"></p><div class="form-ft"><button type="submit" class="btn btn-cta">${icon('check')}Guardar tasa</button></div></form>` : '';
+    const hist = (d.historial || []).length ? `<div class="tw"><table data-xt-vivo><thead><tr><th>Fecha</th><th class="n">BCV · Bs. por US$ 1</th><th>Origen</th></tr></thead><tbody>${d.historial.map(x => `<tr><td>${esc(fcFecha(x.fecha))}</td><td class="n">${esc(NF.format(x.tasa))}</td><td>${esc(x.origen)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty"><b>Sin tasas en los últimos 30 días</b>Escríbela arriba o pulsa «Traer tasas».</p>';
     return cabeza + tarj + form + `<section class="panel pf-sec">${secH('history', 'Últimos 30 días')}${hist}</section>`;
   },
   mounted(root) {
     const f = root.querySelector('[data-tb-form]');
     if (f) f.onsubmit = async e => { e.preventDefault(); const b = f.querySelector('[type=submit]'); busy(b, true, 'Guardando…');
-      try { TB_TASA.datos = await agoraApi('workspace/fiscal/tasas', {method: 'POST', body: {fecha: f.fecha.value, tasa: f.tasa.value.trim()}}); FC.t = 0; repaint(); toast('Tasa guardada.'); }
+      try { TB_TASA.datos = await agoraApi('workspace/fiscal/tasas', {method: 'POST', body: {fuente: f.fuente?.value || 'BCV', fecha: f.fecha.value, tasa: f.tasa.value.trim()}}); FC.t = 0; repaint(); toast('Tasa guardada.'); }
       catch (x) { busy(b, false); f.querySelector('.fld-err').textContent = x.message; } };
-    root.querySelector('[data-tb-act]')?.addEventListener('click', async e => { busy(e.currentTarget, true, 'Consultando…'); try { const r = await agoraApi('workspace/fiscal/tasas/actualizar', {method: 'POST', body: {}}); TB_TASA.datos = r; FC.t = 0; toast(r.ok ? 'Tasa BCV actualizada.' : (r.error || 'No se pudo traer la tasa.')); } catch (x) { toast(x.message); } repaint(); });
+    root.querySelector('[data-tb-act]')?.addEventListener('click', async e => { busy(e.currentTarget, true, 'Consultando…'); try { const r = await agoraApi('workspace/fiscal/tasas/actualizar', {method: 'POST', body: {}}); TB_TASA.datos = r; FC.t = 0; { const fall = Object.entries(r.resultado || {}).filter(([, x]) => !x.ok).map(([k]) => ({BCV: 'BCV dólar', BCV_EUR: 'BCV euro', USDT: 'USDT Binance'})[k] || k); toast(!fall.length ? 'Tasas actualizadas.' : `No llegó: ${fall.join(', ')}. Puedes escribirla a mano.`); } } catch (x) { toast(x.message); } repaint(); });
   },
 };
 
@@ -8436,7 +8470,8 @@ window.addEventListener?.('agora:account-changing', () => { EMB = null; EMB_ORIG
    1. Embudos
    ===================================================================================== */
 var EMB = null, EMB_ORIG = null, EMB_BASE = '', EMB_SEL = 0, EMB_P = null, EMB_DRAG = null;
-const EMB_COLORES = ['#6B7A99', '#2F6FDE', '#0E9F8F', '#D98E04', '#7C4DDB', '#D2337A', '#1F9D55', '#C2410C'];
+const EMB_NOMBRES = ['Vino', 'Azul profundo', 'Oro', 'Vino claro', 'Azul medio', 'Vino oscuro', 'Gris', 'Oro oscuro'];
+const EMB_COLORES = ['#AD103C', '#282E49', '#FABD4B', '#D9708C', '#6B7090', '#7A0B2A', '#B9BCC8', '#C9971F']; // 2.12.0: escala de Ágora
 const EMB_TIPOS = [['abierta', 'Abierta'], ['ganada', 'Ganada'], ['perdida', 'Perdida']];
 const EMB_KPI = [['', 'No cuenta'], ['lead', 'Lead'], ['cita', 'Cita'], ['cierre', 'Cierre']];
 function embCargar(force) {
@@ -8492,7 +8527,7 @@ function embTab() {
   if (!p) return `<div class="emb">${lista}<section class="panel"><p class="empty"><b>Sin embudos</b>Crea tu primer embudo para ordenar tus oportunidades.</p></section></div>`;
   const fila = (s, i) => { const c = embConteo(p.id, s.id); return `<li class="emb-et" data-et="${i}">
       <span class="emb-asa" draggable="true" data-emb-asa="${i}" title="Arrastra para ordenar" aria-hidden="true">${icon('more')}</span>
-      <label class="emb-color" title="Color de la etapa"><span class="sr-only">Color de ${esc(s.name || 'la etapa')}</span><input type="color" data-f="color" value="${esc(s.color || '#6B7A99')}"></label>
+      <label class="emb-color" title="Color de la etapa"><span class="sr-only">Color de ${esc(s.name || 'la etapa')}</span><select data-f="color" style="--sw:${esc(EMB_COLORES.includes(s.color) ? s.color : EMB_COLORES[0])}">${EMB_COLORES.map((c, k) => `<option value="${c}"${(EMB_COLORES.includes(s.color) ? s.color : EMB_COLORES[0]) === c ? ' selected' : ''}>${EMB_NOMBRES[k]}</option>`).join('')}</select></label>
       <label class="fld emb-nom"><span>Etapa ${i + 1}</span><input data-f="name" maxlength="120" value="${esc(s.name)}" placeholder="Nombre de la etapa" required></label>
       <label class="fld emb-tipo"><span>Tipo</span><select data-f="tipo">${EMB_TIPOS.map(([v, l]) => `<option value="${v}" ${s.tipo === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="fld emb-prob"><span>Probabilidad</span><span class="emb-suf"><input data-f="probabilidad" type="number" inputmode="numeric" min="0" max="100" value="${esc(s.probabilidad ?? '')}"><i>%</i></span></label>

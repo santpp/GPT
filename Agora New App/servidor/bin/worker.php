@@ -55,11 +55,11 @@ try{
   // 2.11.0 · Tasa BCV del día para la facturación: se intenta cada hora hasta tenerla (la página del BCV a veces falla).
   try{
    $hoyCcs=(new DateTimeImmutable('now',new DateTimeZone('America/Caracas')))->format('Y-m-d');$ult=$db->setting(0,'fiscal.tasa.intento',[]);
-   $ya=$db->one("SELECT 1 ok FROM agora_fiscal_fx WHERE source='BCV' AND day=?",[$hoyCcs]);
+   // 2.12.0: también BCV euro y USDT de Binance; se reintenta mientras falte alguna de las tres.
+   $ya=(int)($db->one("SELECT COUNT(DISTINCT source) n FROM agora_fiscal_fx WHERE source IN ('BCV','BCV_EUR','USDT') AND day=?",[$hoyCcs])['n']??0)>=3;
    if(!$ya&&(($ult['dia']??'')!==$hoyCcs||time()-(int)($ult['t']??0)>3600)){
     $db->saveSetting(0,'fiscal.tasa.intento',['dia'=>$hoyCcs,'t'=>time()]);
-    $r=(new Agora\Fiscal\Tasas(new Agora\Fiscal\Base\Db($db->pdo)))->actualizar();
-    if(!$r['ok'])error_log('Agora: no se pudo traer la tasa BCV ('.$r['origen'].')');
+    foreach((new Agora\Fiscal\Tasas(new Agora\Fiscal\Base\Db($db->pdo)))->actualizarTodas() as $k=>$r)if(!$r['ok'])error_log('Agora: no se pudo traer la tasa '.$k.' ('.$r['origen'].')');
    }
   }catch(Throwable $e){error_log('Agora: tasa BCV ('.get_class($e).')');}
 }finally{$db->run('SELECT RELEASE_LOCK(?)',[$lock]);}

@@ -19,6 +19,7 @@ final class FxSources
     public const BINANCE_LEGACY = 'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search';
     public const DOLARAPI = 'https://ve.dolarapi.com/v1/dolares/oficial';
     public const BCV = 'https://www.bcv.org.ve/';
+    public const DOLARAPI_EUR = 'https://ve.dolarapi.com/v1/euros/oficial';
 
     /**
      * @param 'BUY'|'SELL' $side
@@ -135,9 +136,9 @@ final class FxSources
     }
 
     /** @return array{rate:float,date:?string}|null */
-    public static function bcvHtmlRate(string $html): ?array
+    public static function bcvHtmlRate(string $html, string $id = 'dolar'): ?array
     {
-        if (!preg_match('#id="dolar".{0,600}?<strong>\s*([\d.,]+)\s*</strong>#s', $html, $m)) {
+        if (!preg_match('#id="' . preg_quote($id, '#') . '".{0,600}?<strong>\s*([\d.,]+)\s*</strong>#s', $html, $m)) {
             return null;
         }
         $n = $m[1];
@@ -150,5 +151,35 @@ final class FxSources
             $date = $d[1];
         }
         return ['rate' => round((float) $n, 6), 'date' => $date];
+    }
+
+    /**
+     * Agora New App 2.12.0 · Tasa oficial del euro (BCV). Misma fuente pública que el dólar, con la página del BCV de respaldo.
+     * @return array{ok:bool,rate:?float,date:?string,source:string,error:?string}
+     */
+    public static function bcvEur(): array
+    {
+        $errors = [];
+        $r = HttpClient::json('GET', self::DOLARAPI_EUR, null, [], 10);
+        if ($r['status'] === 200 && is_array($r['json']) && ($p = self::dolarApiRate($r['json']))) return ['ok' => true] + $p + ['source' => 'dolarapi', 'error' => null];
+        $errors[] = 'dolarapi: ' . ($r['error'] ?? ('HTTP ' . $r['status']));
+        $r = HttpClient::request('GET', self::BCV, ['Accept' => 'text/html'], null, 12);
+        if ($r['status'] === 200 && ($p = self::bcvHtmlRate($r['body'], 'euro'))) return ['ok' => true] + $p + ['source' => 'bcv.org.ve', 'error' => null];
+        $errors[] = 'bcv: ' . ($r['error'] ?? ('HTTP ' . $r['status']));
+        return ['ok' => false, 'rate' => null, 'date' => null, 'source' => 'bcv', 'error' => implode(' · ', $errors)];
+    }
+
+    /**
+     * Agora New App 2.12.0 · USDT en Binance P2P: el punto medio entre la mediana de quienes venden y la de quienes compran
+     * (los 10 primeros anuncios confiables de cada lado). Si solo responde un lado, se usa ese.
+     * @return array{ok:bool,rate:?float,date:?string,source:string,error:?string}
+     */
+    public static function usdt(): array
+    {
+        $med = static function (array $p): ?float { $p = array_slice($p, 0, 10); if (!$p) return null; sort($p); $n = count($p); return $n % 2 ? $p[intdiv($n, 2)] : ($p[$n / 2 - 1] + $p[$n / 2]) / 2; };
+        $buy = self::binance('BUY'); $sell = self::binance('SELL');
+        $vals = array_values(array_filter([$buy['ok'] ? $med($buy['prices']) : null, $sell['ok'] ? $med($sell['prices']) : null]));
+        if (!$vals) return ['ok' => false, 'rate' => null, 'date' => null, 'source' => 'binance', 'error' => trim(($buy['error'] ?? '') . ' · ' . ($sell['error'] ?? ''), ' ·')];
+        return ['ok' => true, 'rate' => round(array_sum($vals) / count($vals), 6), 'date' => null, 'source' => 'binance_p2p', 'error' => null];
     }
 }

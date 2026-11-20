@@ -203,6 +203,8 @@ final class Documents
             'client_phone' => Validator::clean($cl['telefono'] ?? '', 40) ?: null, 'payment_terms' => Validator::clean($d['condiciones'] ?? '', 120) ?: null,
             'sale_ref' => isset($d['venta']) && preg_match('/^[A-Za-z0-9_.:-]{1,80}$/', (string) $d['venta']) ? (string) $d['venta'] : null,
             'due_date' => $due, 'notes' => Validator::clean($d['notas'] ?? '', 600, true) ?: null, 'foreign_payment' => !empty($d['pago_divisas']) ? 1 : 0,
+            // Agora New App 2.12.0: de qué moneda y con qué tasa salieron los precios, y la hora de vencimiento (las pone el controlador, nunca la app).
+            'ref_json' => isset($d['_ref']) && is_string($d['_ref']) ? $d['_ref'] : null, 'due_time' => isset($d['_vence_hora']) && $due !== null ? (string) $d['_vence_hora'] : null,
         ];
     }
 
@@ -363,6 +365,9 @@ final class Documents
             'v' => 1, 'tipo' => $doc['doc_type'], 'titulo' => self::TITLES[$doc['doc_type']], 'serie' => $series, 'numero' => $number, 'numero_texto' => $numberText,
             'fecha' => $today, 'hora' => $time, 'vence' => in_array($doc['doc_type'], ['FAC', 'SIM'], true) ? $due : null, 'condiciones' => $doc['payment_terms'],
             'moneda' => $doc['currency'], 'tasa_bcv' => $rateMicro !== null ? self::rateText($rateMicro) : null, 'fecha_tasa' => $rateDay, 'fiscal' => !$simple,
+            // Agora New App 2.12.0: hora de vencimiento y de qué moneda/tasa salieron los precios (quedan sellados en la huella).
+            'vence_hora' => !empty($doc['due_time']) && $due === (string) $doc['due_date'] ? substr((string) $doc['due_time'], 0, 5) : null,
+            'referencia' => !empty($doc['ref_json']) ? json_decode((string) $doc['ref_json'], true) : null,
             'emisor' => ['razon_social' => $prof['legal_name'], 'rif' => $prof['rif'], 'domicilio' => $prof['fiscal_address'], 'telefono' => $prof['phone'], 'correo' => $prof['email'], 'contribuyente_especial' => (bool) $prof['special_taxpayer']],
             'imprenta' => $simple ? null : $range ?? ['modo' => $prof['issuance_mode'], 'nombre' => $prof['printer_name'], 'rif' => $prof['printer_rif'], 'providencia' => $prof['printer_authorization'], 'fecha' => $prof['printer_authorization_date']],
             'cliente' => ['nombre' => $doc['client_name'], 'rif' => Validator::rif($doc['client_rif']), 'domicilio' => $doc['client_address'], 'correo' => $doc['client_email'], 'telefono' => $doc['client_phone'], 'app_id' => $doc['client_app_id']],
@@ -590,6 +595,7 @@ final class Documents
             'control_pendiente' => $r['status'] === 'EMITIDA' && $r['control_number'] === null && (int) $r['legacy'] === 0 && $r['doc_type'] !== 'SIM', 'estado' => $r['status'], 'legado' => (bool) $r['legacy'],
             'fecha' => $r['issue_date'], 'hora' => $r['issue_time'], 'vence' => $r['due_date'], 'moneda' => $r['currency'], 'tasa_bcv' => $r['rate_bcv'] !== null ? (float) $r['rate_bcv'] : null, 'fecha_tasa' => $r['rate_bcv_date'],
             'cliente' => ['app_id' => $r['client_app_id'], 'nombre' => $r['client_name'], 'rif' => $r['client_rif'], 'direccion' => $r['client_address'], 'correo' => $r['client_email'], 'telefono' => $r['client_phone']],
+            'vence_hora' => !empty($r['due_time']) ? substr((string) $r['due_time'], 0, 5) : null, 'referencia' => !empty($r['ref_json']) ? json_decode((string) $r['ref_json'], true) : null,
             'condiciones' => $r['payment_terms'], 'notas' => $r['notes'], 'pago_divisas' => (bool) $r['foreign_payment'], 'venta' => $r['sale_ref'] ?? null, 'creado_por' => $r['created_by'] !== null ? (int) $r['created_by'] : null,
             'totales' => [
                 'subtotal' => $f('subtotal_cents'), 'exento' => $f('exempt_cents'), 'base_general' => $f('base_general_cents'), 'iva_general' => $f('iva_general_cents'), 'base_reducida' => $f('base_reduced_cents'),
