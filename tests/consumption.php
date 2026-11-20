@@ -58,7 +58,7 @@ try{
  $status=201;$log=[];$created=$w->monthRows('2026-11',null);ck($created['error']===null&&count($created['rows'])===1006,'a 201 answer counts as success (the account answers 200 or 201 depending on the endpoint)');$status=200;
  $sum=array_column(AgencyWallet::summarize($all['rows']),null,'locationId');
  ck(abs($sum['locA-'.$suffix]['gasto']-12.5)<1e-9&&$sum['locA-'.$suffix]['recargas']===50.0&&$sum['locA-'.$suffix]['movimientos']===1002,'spending and recharges are told apart and summed per sub-account');
- $cats=array_column($sum['locA-'.$suffix]['categorias'],'monto','tipo');ck($cats['sms']===10.0&&$cats['whatsapp conversation']===2.5,'with a breakdown by type, largest first');
+ $cats=array_column($sum['locA-'.$suffix]['categorias'],'monto','tipo');ck($cats['SMS']===10.0&&$cats['WhatsApp · conversation']===2.5,'with a breakdown by type, largest first (1.10.33: in words)');
  ck(count($sum['locA-'.$suffix]['ultimos'])===50&&count(AgencyWallet::summarize($all['rows'],1000)[0]['ultimos'])===1000,'the movement list is the latest 50, or up to 1000 for one sub-account');
  ck($sum['locB-'.$suffix]['gasto']===4.0&&$sum['locB-'.$suffix]['sinClasificar']===1,'a movement it cannot read is counted apart instead of guessed');
  ck(isset($sum['agencia'])&&$sum['agencia']['gasto']===1.0,'and one with no sub-account goes to the agency itself');
@@ -86,10 +86,10 @@ try{
  $run=fn(string $loc)=>json_decode((string)shell_exec('php '.escapeshellarg($script).' '.escapeshellarg($loc).' 2>&1'),true);
  $w->save('COMP123456',$SECRET);
  $rep=$run('');$byName=array_column($rep['locations']??[],null,'locationName');
- ck(isset($byName['Clínica Sol'],$byName['Academia Luna'],$byName['Agencia · movimientos propios'])&&count($rep['locations'])===4&&$rep['subcuentas']===2,'the full report lists the connected sub-accounts, the agency itself and the sub-accounts not connected to Ágora');
- ck($byName['Agencia · movimientos propios']['gasto']==1.5&&$byName['Agencia · movimientos propios']['recargas']==30&&$byName['Agencia · movimientos propios']['tipo']==='agencia','the agency block holds its own spending and recharges');
+ ck(isset($byName['Clínica Sol'],$byName['Academia Luna'],$byName['Agencia · sin subcuenta identificada'])&&count($rep['locations'])===4&&$rep['subcuentas']===2,'the full report lists the connected sub-accounts, the agency itself and the sub-accounts not connected to Ágora');
+ ck($byName['Agencia · sin subcuenta identificada']['gasto']==1.5&&$byName['Agencia · sin subcuenta identificada']['recargas']==30&&$byName['Agencia · sin subcuenta identificada']['tipo']==='agencia','the agency block holds its own spending and recharges');
  $other=array_values(array_filter($rep['locations'],fn($l)=>($l['tipo']??'')==='otra'))[0]??null;ck($other&&$other['gasto']==7&&str_contains($other['locationName'],'loc-ajena'),'and an unconnected sub-account is named by its id');
- ck(abs($rep['totales']['gasto']-10.5)<1e-9&&$rep['totales']['recargas']==30&&$byName['Clínica Sol']['plan']['plan']==='Plan Pro'&&!isset($byName['Agencia · movimientos propios']['plan']['plan']),'totals include everything; plans are looked up only for connected sub-accounts');
+ ck(abs($rep['totales']['gasto']-10.5)<1e-9&&$rep['totales']['recargas']==30&&$byName['Clínica Sol']['plan']['plan']==='Plan Pro'&&!isset($byName['Agencia · sin subcuenta identificada']['plan']['plan']),'totals include everything; plans are looked up only for connected sub-accounts');
  $only=$run('__agency');ck(count($only['locations'])===1&&$only['locations'][0]['tipo']==='agencia'&&$only['totales']['gasto']==1.5,'«only the agency» shows just its own movements');
  $one=$run('locA-'.$suffix);ck(count($one['locations'])===1&&$one['locations'][0]['locationName']==='Clínica Sol','one sub-account shows only itself');
  unlink($script);

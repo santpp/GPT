@@ -178,7 +178,7 @@ final class AgencyWallet
             'whatsapp_authentication_message' => 'WhatsApp · códigos de acceso', 'whatsapp_authentication_international_message' => 'WhatsApp · códigos de acceso',
             'sms' => 'SMS', 'mms' => 'MMS', 'email' => 'Correos', 'call' => 'Llamadas', 'calls' => 'Llamadas', 'phone' => 'Teléfono', 'recharge' => 'Recarga'];
         if (isset($map[$k])) return $map[$k];
-        if (str_starts_with($k, 'whatsapp')) return 'WhatsApp · '.str_replace('_', ' ', preg_replace('/^whatsapp_?|_?message$/', '', $k));
+        if (str_starts_with($k, 'whatsapp')) { $r = trim(str_replace('_', ' ', preg_replace('/^whatsapp[_ ]?|[_ ]?message$/', '', $k))); return $r === '' ? 'WhatsApp' : 'WhatsApp · '.$r; }
         if ($k === '' || !preg_match('/^[a-z0-9_ .-]+$/', $k)) return $kind;
         return ucfirst(str_replace(['_', '-'], ' ', $k));
     }

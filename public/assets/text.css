@@ -344,6 +344,11 @@ details.contact-group>summary small{font-size:14.4px!important}
 .cons-sheet table{font-size:16.8px!important}
 .cons-moves em{font-size:14.4px!important}
 .cons-sheet-f{font-size:14.4px!important}
+.cons-atrib h4{font-size:19.2px!important}
+.cons-dato h5{font-size:16.8px!important}
+.cons-dato h5 small{font-size:14.4px!important}
+.cons-atrib .cons-split{font-size:16.8px!important}
+.cons-asig select{font-size:16.8px!important}
 @media(max-width:600px){.board-total{font-size:16.8px!important}}
 .board-card2-top h3{font-size:16.8px!important}
 .board-card2-top strong{font-size:15.6px!important}
@@ -354,6 +359,27 @@ details.contact-group>summary small{font-size:14.4px!important}
 #more-sheet h2{font-size:19.2px!important}
 #more-sheet .more-grid button{font-size:15.6px!important}
 .live-assignee{font-size:13.2px!important}
+.board-goal-kind legend{font-size:15.6px!important}
+.live-file{font-size:14.4px!important}
+.live-file small{font-size:13.2px!important}
+.live-file-x{font-size:19.2px!important}
+.snip-head input{font-size:16.8px!important}
+.snip-list b{font-size:15.6px!important}
+.snip-list span{font-size:14.4px!important}
+.snip-list small{font-size:13.2px!important}
+.snip-head .snip-new{font-size:15.6px!important}
+.snip-group{font-size:13.2px!important}
+.snip-edit{font-size:19.2px!important}
+.snip-note{font-size:14.4px!important}
+.snip-editor h3{font-size:16.8px!important}
+.snip-editor label{font-size:14.4px!important}
+.snip-editor input:not([type=checkbox]),.snip-editor textarea{font-size:16.8px!important}
+.snip-field{font-size:14.4px!important}
+.snip-editor .snip-check{font-size:15.6px!important}
+.snip-status{font-size:14.4px!important}
+.contact-new-form small{font-size:14.4px!important}
+.contact-new-hint{font-size:15.6px!important}
+.contact-new-form .check{font-size:15.6px!important}
 html[data-text="large"] body{font-size:18.2px!important}
 html[data-text="large"] h2{font-size:19.6px!important}
 html[data-text="large"] .brand{font-size:44.8px!important}
@@ -698,6 +724,11 @@ html[data-text="large"] .cons-sheet h4{font-size:22.4px!important}
 html[data-text="large"] .cons-sheet table{font-size:19.6px!important}
 html[data-text="large"] .cons-moves em{font-size:16.8px!important}
 html[data-text="large"] .cons-sheet-f{font-size:16.8px!important}
+html[data-text="large"] .cons-atrib h4{font-size:22.4px!important}
+html[data-text="large"] .cons-dato h5{font-size:19.6px!important}
+html[data-text="large"] .cons-dato h5 small{font-size:16.8px!important}
+html[data-text="large"] .cons-atrib .cons-split{font-size:19.6px!important}
+html[data-text="large"] .cons-asig select{font-size:19.6px!important}
 @media(max-width:600px){html[data-text="large"] .board-total{font-size:19.6px!important}}
 html[data-text="large"] .board-card2-top h3{font-size:19.6px!important}
 html[data-text="large"] .board-card2-top strong{font-size:18.2px!important}
@@ -708,6 +739,27 @@ html[data-text="large"] #view-as-bar{font-size:19.6px!important}
 html[data-text="large"] #more-sheet h2{font-size:22.4px!important}
 html[data-text="large"] #more-sheet .more-grid button{font-size:18.2px!important}
 html[data-text="large"] .live-assignee{font-size:15.4px!important}
+html[data-text="large"] .board-goal-kind legend{font-size:18.2px!important}
+html[data-text="large"] .live-file{font-size:16.8px!important}
+html[data-text="large"] .live-file small{font-size:15.4px!important}
+html[data-text="large"] .live-file-x{font-size:22.4px!important}
+html[data-text="large"] .snip-head input{font-size:19.6px!important}
+html[data-text="large"] .snip-list b{font-size:18.2px!important}
+html[data-text="large"] .snip-list span{font-size:16.8px!important}
+html[data-text="large"] .snip-list small{font-size:15.4px!important}
+html[data-text="large"] .snip-head .snip-new{font-size:18.2px!important}
+html[data-text="large"] .snip-group{font-size:15.4px!important}
+html[data-text="large"] .snip-edit{font-size:22.4px!important}
+html[data-text="large"] .snip-note{font-size:16.8px!important}
+html[data-text="large"] .snip-editor h3{font-size:19.6px!important}
+html[data-text="large"] .snip-editor label{font-size:16.8px!important}
+html[data-text="large"] .snip-editor input:not([type=checkbox]),html[data-text="large"] .snip-editor textarea{font-size:19.6px!important}
+html[data-text="large"] .snip-field{font-size:16.8px!important}
+html[data-text="large"] .snip-editor .snip-check{font-size:18.2px!important}
+html[data-text="large"] .snip-status{font-size:16.8px!important}
+html[data-text="large"] .contact-new-form small{font-size:16.8px!important}
+html[data-text="large"] .contact-new-hint{font-size:18.2px!important}
+html[data-text="large"] .contact-new-form .check{font-size:18.2px!important}
 .workspace-label{color:var(--muted)!important}
 .nav{color:var(--muted)!important}
 .connection{color:var(--muted)!important}

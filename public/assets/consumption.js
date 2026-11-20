@@ -107,6 +107,33 @@ export async function renderConsumption(container){
     v.querySelector('[data-back]').onclick=()=>{v.hidden=true;v.innerHTML='';$('#cons-main').hidden=false;$('#cons-conn').hidden=false;window.scrollTo(0,0)};
     bindExport(v,[l]);window.scrollTo(0,0);
   }
+  /* Ágora Mobile 1.10.33 · Repartir lo que la cuenta cobra a la agencia sin decir de qué subcuenta es.
+     Se muestran los datos que traen esos cargos y cuánto suma cada valor; al asignar un valor a una subcuenta queda una regla. */
+  const subs=()=>(settings?.connections||[]).filter(c=>c.location_id);
+  const subNombre=id=>subs().find(c=>c.location_id===id)?.name||'una subcuenta que ya no está conectada';
+  const DATO={phonenumber:'Número',phone:'Número',from:'Número de origen',to:'Número de destino',number:'Número',wabaid:'Cuenta de WhatsApp',wabaaccountid:'Cuenta de WhatsApp',businessaccountid:'Cuenta de WhatsApp',
+    userid:'Usuario',contactid:'Contacto',channel:'Canal',type:'Tipo de cargo',chargetype:'Tipo de cargo',transactiontype:'Tipo de cargo',category:'Categoría',product:'Producto',producttype:'Producto',usagetype:'Uso',
+    ref:'Referencia',entityid:'Registro',entitytype:'Tipo de registro',source:'Origen',sourceid:'Origen'};
+  const datoNombre=k=>{const last=String(k).split('.').pop().toLowerCase().replace(/[_-]/g,'');return DATO[last]||`Dato «${k}»`};
+  function atribuir(r){
+    const p=r.pistas,reglas=r.reglas||[];if(!p||(!p.movimientos&&!reglas.length))return '';
+    const opts=`<option value="">Elegir subcuenta…</option>${subs().map(c=>`<option value="${esc(c.location_id)}">${esc(c.name)}</option>`).join('')}`;
+    const campos=(p.campos||[]).map(c=>`<div class="cons-dato"><h5>${esc(datoNombre(c.campo))} <small>${c.distintos===1?'el mismo en todos':c.distintos+' valores distintos'} · ${c.movimientos} cargos</small></h5>
+      <table class="cons-split"><tbody>${c.valores.map(v=>`<tr><td class="cons-val">${esc(v.texto||v.valor)}</td><td class="num">${v.movimientos}</td><td class="num">${usd(v.monto,2)}</td>
+      <td class="cons-asig"><select data-reg-sub aria-label="Subcuenta para ${esc(v.texto||v.valor)}">${opts}</select><button type="button" data-reg-add data-campo="${esc(c.campo)}" data-valor="${esc(v.valor)}">Asignar</button></td></tr>`).join('')}</tbody></table></div>`).join('');
+    return `<section class="cons-block cons-atrib"><h3>¿De qué subcuenta es el gasto sin identificar?</h3>
+      ${p.movimientos?`<p class="cons-note"><b>${usd(p.monto)}</b> en ${p.movimientos} cargos llegaron sin subcuenta: la cuenta los cobró a la agencia sin decir de cuál son. Si un dato de abajo cambia según la subcuenta (por ejemplo, el número de WhatsApp), asigna cada valor a su subcuenta: Ágora lo suma a esa subcuenta en este mes y en los demás.</p>
+      ${campos||`<p class="cons-note">Estos cargos no traen ningún dato que se repita por subcuenta${p.unicos?.length?' (solo una referencia distinta en cada uno)':''}. Así no se pueden repartir con seguridad.</p>`}`:'<p class="cons-note">Todo el gasto de este mes ya tiene subcuenta.</p>'}
+      ${r.porRegla?`<p class="cons-note">${r.porRegla} cargos se sumaron a su subcuenta por las reglas de abajo.</p>`:''}
+      ${reglas.length?`<h4>Reglas guardadas</h4><ul class="cons-reglas">${reglas.map(x=>`<li><span>${esc(datoNombre(x.campo))} <b>${esc(x.valor)}</b> → ${esc(subNombre(x.locationId))}</span><button type="button" data-reg-del data-campo="${esc(x.campo)}" data-valor="${esc(x.valor)}">Quitar</button></li>`).join('')}</ul>`:''}
+      <p class="cons-note" data-reg-msg role="status"></p></section>`;
+  }
+  function bindAtribuir(root){
+    const msg=t=>{const m=root.querySelector('[data-reg-msg]');if(m)m.textContent=t};
+    root.querySelectorAll('[data-reg-add]').forEach(b=>b.onclick=async()=>{const sel=b.parentElement.querySelector('[data-reg-sub]');if(!sel.value){msg('Elige la subcuenta.');sel.focus();return}
+      b.disabled=true;try{await api('admin/consumption/reglas','POST',{campo:b.dataset.campo,valor:b.dataset.valor,locationId:sel.value});await run()}catch(x){msg(x.message);b.disabled=false}});
+    root.querySelectorAll('[data-reg-del]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await api('admin/consumption/reglas','DELETE',{campo:b.dataset.campo,valor:b.dataset.valor});await run()}catch(x){msg(x.message);b.disabled=false}});
+  }
   function paintReport(r){
     last=r;const list=r.locations;
     $('#cons-out').innerHTML=`<div class="cons-totals"><div><small>Gasto del mes</small><strong>${usd(r.totales.gasto)}</strong></div><div><small>Recargas del mes</small><strong>${usd(r.totales.recargas)}</strong></div><div><small>Subcuentas</small><strong>${r.subcuentas??list.length}</strong></div></div>
@@ -117,8 +144,10 @@ export async function renderConsumption(container){
        <dl><div><dt>Recargas</dt><dd>${usd(l.recargas)}</dd></div><div><dt>Movimientos</dt><dd>${l.movimientos}</dd></div>${l.sinClasificar?`<div><dt>Sin clasificar</dt><dd>${l.sinClasificar}</dd></div>`:''}</dl>
        ${l.categorias.length?`<div class="cons-mini">${l.categorias.slice(0,4).map(c=>`<span>${esc(c.tipo)} <b>${usd(c.monto,2)}</b></span>`).join('')}</div>`:''}
        <button type="button" class="cons-open" data-i="${i}">Ver el reporte</button></article>`).join('')}</div>
+          ${atribuir(r)}
           <p class="cons-note">Actualizado ${esc(new Date(r.readAt).toLocaleString('es-ES'))}</p>`;
     $('#cons-out').querySelectorAll('.cons-open').forEach(b=>b.onclick=()=>openSheet(list[Number(b.dataset.i)]));
+    bindAtribuir($('#cons-out'));
     bindExport($('#cons-out'),list);
   }
   async function run(){
