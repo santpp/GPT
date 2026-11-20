@@ -46,7 +46,26 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
 
 - Usa lo que ya existe: `head()` para la cabecera, `secH()` para cada sección, tarjetas `.ag-resumen`, tablas dentro de `.tw`, píldoras `.sc sc-ok|sc-warn|sc-bad|sc-gray`, botones `.btn`, `.btn-cta`, `.btn-sm`, ventanas con `openModal(modalHead(...))`, filas editables como `.ag-serv`.
 - Nombres de botones fijos en todo el ERP: **«Descargar»** (ícono de descarga, nunca la palabra «Excel») y **«Editar Dashboard»** (ícono de lápiz), en la misma línea. **Las tarjetas de cifras van sin ícono** (título, cifra y nota, como «Resumen de hoy»), para elegir las tarjetas.
-- **Tipografía:** Author en todo. Escala única (final de `agora-new.css`, sección 2.11.5): título 28 px (24 en el teléfono), sección 20, panel 16,5, tarjeta rótulo 12,5 y cifra 26 (22 en el teléfono), botones de cabecera 13,5. No pongas tamaños propios en una pantalla: usa estas clases. `tests/tipografia.py` lo revisa.
+- **Tipografía y medidas:** Author en todo (la fuente está en `assets/fonts/` y va en el paquete). Escala única al final de `agora-new.css` (bloque 2.11.5). No pongas tamaños propios en una pantalla; `tests/tipografia.py` lo revisa. Tabla completa en `../docs/DESIGN.md` § 4 bis.
+  - Título del módulo: 28 px (24 en el teléfono). Bajada: 13 px.
+  - Títulos: sección 20 px (18 en el teléfono); panel 16,5 px.
+  - Texto: 14,5 px. Tablas: 14 px.
+  - Botones de cabecera: 13,5 px; alto 36 px; forma de píldora.
+  - Tarjetas de cifras:
+    - Rótulo y nota: 12,5 px. Cifra: 26 px (22 en el teléfono).
+    - Caja: relleno 18 px (14 en el teléfono), radio 20 px.
+    - Rejilla: 4 columnas con 14 px de separación (2 columnas con 10 px en el teléfono).
+  - Paneles: relleno 22 × 24 px, radio 22 px.
+- **Atajos en las tarjetas (criterio único):**
+  - Si el dato de una tarjeta vive en otro módulo, la tarjeta lleva a ese módulo, con chevron en el rótulo y el filtro puesto.
+  - Las tarjetas del propio módulo no llevan a ningún lado.
+  - Solo hay atajo si la persona puede abrir el destino.
+  - Una tarjeta nueva en un catálogo de «Editar Dashboard» lleva `ir: {mod, filtro?, pestana?, since?, ayuda}` cuando su dato es de otro módulo.
+  - El Tablero comercial (pantalla de Mobile) usa `TB_ATAJOS`.
+  - Todo navega con `tarjIr(r)`. `tests/atajos.py` lo revisa.
+- **Inicio de sesión:** solo marca, Athena con su globo, «Inicia sesión», los campos, «Continuar» y «¿Olvidaste tu clave?». Sin emojis, puntos de estado, píldoras ni frases de relleno (el usuario los quitó en 2.11.7).
+- **Menús:** el de la agencia y el de las subcuentas hablan igual: fondo claro, ícono en recuadro de color (`.mdm-ic`), activo con fondo suave de marca y rótulos en tipo oración. Nada de mayúsculas espaciadas, franjas de color ni avisos «Próximamente» en el menú.
+- **Cifras de la cuenta = cifras de Mobile.** Todo lo que dependa de «hoy» se pide con la zona del dispositivo (`dashZona()`), igual que Mobile.
 - Confirmaciones con `toast('…')` cortas («Costos guardados.»). Nada de franjas, insignias o íconos nuevos para confirmar: el usuario lo rechazó por «verse muy IA».
 - Sin textos repetidos (la etiqueta superior no repite el título). **Los gráficos van al final del módulo.**
 - Botones de icono solo cuando su significado es obvio. Si no, icono + texto (por ejemplo, «Ficha» en la Bandeja).
@@ -69,7 +88,7 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
 - Cuentas: dueña `duena@example.test` / `Clave-Local-2026!`; ASOCIM (con reporte) `admin|supervisor|ejecutivo1|ejecutivo2|consulta.asocim@agora.test` / `Agora-Pruebas-2026!`.
 - **Subcuenta sin reporte:** la 1 («Prueba SA»), con la dueña. En Playwright, después de entrar: `fetch('/api/workspace/active', {method:'POST', body:{connectionId:1}})`.
 - Entre una prueba y otra: 11 s de pausa y `delete from agora_rate_limits`.
-- Orden de las pruebas: `motor-puente.py duena@example.test 'Clave-Local-2026!'`, `permisos.py` (mismos argumentos), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `tarjetas.py`, `ventas-importadas.py`, `estudiantes.py`, `venta-cuenta.py` (no se puede repetir), `ui-estados.py`, `menu-principal.py`, `herramientas.py`, `fixes-296.py`, `graficos-gestion.py`, `costos-editar.py`, `facturacion.py`, `facturacion-ui.py` (necesita la anterior), `fixes-2111.py`, `tipografia.py`, `ghl-conexion.php`.
+- Orden de las pruebas: `motor-puente.py duena@example.test 'Clave-Local-2026!'`, `permisos.py` (mismos argumentos), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `tarjetas.py`, `ventas-importadas.py`, `estudiantes.py`, `venta-cuenta.py` (no se puede repetir), `ui-estados.py`, `menu-principal.py`, `herramientas.py`, `fixes-296.py`, `graficos-gestion.py`, `costos-editar.py`, `facturacion.py`, `facturacion-ui.py` (necesita la anterior), `fixes-2111.py`, `tipografia.py`, `atajos.py`, `fixes-2117.py`, `ghl-conexion.php`.
 
 ## Facturación (2.11.0)
 

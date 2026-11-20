@@ -84,6 +84,45 @@ Reglas:
 - Mensajes del chat y cuadro de respuesta: 17 px fijos (bloque `FINAL` de `make-large.py`).
 - En el teléfono, los `input` y `textarea` deben medir ≥16 px reales para que iOS no haga zoom.
 
+## 4 bis. Agora New App (ERP): medidas y atajos
+
+Lo de arriba es de Ágora Mobile. El ERP (`Agora New App/`) **no** pasa por `make-large.py`: los tamaños escritos en CSS son los que se ven. Las medidas salen de la pantalla (2.11.6) y las vigilan `tests/tipografia.py` y `tests/atajos.py`. La escala está al final de `Agora New App/public_html/assets/agora-new.css` (bloque 2.11.5); no pongas tamaños propios en una pantalla.
+
+**Letra:** Author (`Author-Variable.woff2`, en el repositorio y en el paquete del ERP). Solo los códigos usan letra de ancho fijo.
+
+| Elemento | Escritorio (1280 px) | Teléfono (390 px) |
+|---|---|---|
+| Título del módulo (`h1`) | 28 px, 700, interlínea 1,15 | 24 px |
+| Bajada del título | 13 px, 600 | igual |
+| Título de sección (`secH`, `.t-sec`) | 20 px, 700 | 18 px |
+| Título de panel | 16,5 px, 700 | igual |
+| Texto normal | 14,5 px, interlínea 1,45 | igual |
+| Celdas de tabla | 14 px | se leen como fichas |
+| Botones de cabecera (`.btn`, «Descargar», «Editar Dashboard») | 13,5 px, 600; alto 36 px; relleno 7 × 16 px; píldora (radio 99 px); ícono y texto separados 7 px | igual |
+
+**Tarjetas de cifras** (`.ag-resumen`, como «Resumen de hoy»):
+
+| | Escritorio | Teléfono |
+|---|---|---|
+| Rejilla | 4 columnas, separación 14 px | 2 columnas, separación 10 px |
+| Caja | relleno 18 · 18 · 16 px, radio 20 px | relleno 14 px |
+| Rótulo | 12,5 px, 600 | igual |
+| Cifra | 26 px, 700 | 22 px (20 px en la caja de Gestión Comercial) |
+| Nota | 12,5 px, 400 | igual |
+| Ícono | ninguno: solo rótulo, cifra y nota | ninguno |
+
+**Paneles:** relleno 22 × 24 px (18 × 16 en el teléfono) y radio 22 px. **Área de trabajo:** relleno 28 px (20 × 16 en el teléfono).
+
+**Atajos en las tarjetas (criterio único, 2.11.6):**
+- Si el dato de una tarjeta vive en otro módulo, la tarjeta lleva a ese módulo. El rótulo termina en un chevron («›», 14 px, que se mueve 2 px al pasar el cursor) y se toca la tarjeta entera.
+- Si el módulo admite filtro, se abre con el filtro puesto. Por ejemplo, «Sin leer» abre la bandeja en «Sin leer» y «Ganadas» abre la pestaña de ganadas.
+- Las tarjetas del propio módulo no llevan a ningún lado: no hay un chevron que no lleve a nada.
+- Solo hay atajo si la persona puede abrir el módulo (`moduleAllowed`).
+- Dónde se definen los destinos:
+  - En los catálogos de «Editar Dashboard», con `ir: {mod, filtro, pestana, since, ayuda}`.
+  - En el Tablero comercial, que viene de Mobile, con `TB_ATAJOS` (por rótulo).
+  - La navegación es una sola función: `tarjIr`.
+
 ## 5. Forma, espacio y toque
 
 Valores con nombre (bloque «1.10.11 · Sistema de diseño» en `layout.css`):

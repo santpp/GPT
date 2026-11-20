@@ -42,11 +42,6 @@ PRIORIDAD MEDIA
     Idea: subir el aviso por encima de la barra (bottom = alto de la barra + zona segura) y dejar un
     espacio abajo en las pantallas con botón fijo.
 
-[14] Teléfono: el menú oscuro de Agencia ocupa media pantalla en cada página de Agencia
-    Qué pasa: en las páginas de Agencia (Centro de mando, Registro, Consumos, Gestión de usuarios, Perfil)
-    el menú lateral se pinta arriba, abierto, antes del contenido.
-    Idea: en el teléfono, convertirlo en un menú plegable (o en pestañas) como el resto de la app.
-
 
 MENORES
 -------

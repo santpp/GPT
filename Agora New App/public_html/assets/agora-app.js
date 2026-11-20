@@ -927,16 +927,13 @@ V.entrar = {
           <div class="lg-glow"></div>
           <svg class="lg-orbits" viewBox="0 0 600 600"><circle cx="300" cy="300" r="210"/><circle cx="300" cy="300" r="280"/><circle class="lg-orb-dot" cx="300" cy="20" r="7"/><circle class="lg-orb-dot is-gold" cx="300" cy="510" r="5"/></svg>
           <span class="lg-spark" style="--x:8%;--y:62%;--d:0s"></span><span class="lg-spark is-gold" style="--x:90%;--y:40%;--d:1.2s"></span><span class="lg-spark" style="--x:84%;--y:78%;--d:2.1s"></span><span class="lg-spark is-gold" style="--x:14%;--y:86%;--d:.6s"></span><span class="lg-spark" style="--x:94%;--y:14%;--d:1.7s"></span>
-          <div class="lg-bubble"><p class="lg-bubble-h"><span class="lg-hi" aria-hidden="true">👋</span>Athena<i></i></p><p data-athena-msg><b>¡Hola! Soy Athena.</b> Tus datos están protegidos en el servidor: clave cifrada, sesión segura y registro de auditoría.</p><small class="lg-bubble-tip">Tócame para otro consejo</small></div>
+          <div class="lg-bubble"><p class="lg-bubble-h">Athena</p><p data-athena-msg><b>¡Hola! Soy Athena.</b> Tus datos están protegidos en el servidor: clave cifrada, sesión segura y registro de auditoría.</p><small class="lg-bubble-tip">Tócame para otro consejo</small></div>
           <div class="lg-athena-wrap"><div class="lg-athena-fig"><img class="lg-athena" src="/assets/athena/athena-saludo.webp" alt="" width="1100" height="1160" decoding="async" onerror="this.closest('.lg-stage').classList.add('no-img')"><img class="lg-athena-arm" alt="" width="1100" height="1160" decoding="async"></div><span class="lg-floor"></span></div>
         </div>
-        <div class="lg-chips"><span class="lg-chip" style="--d:.2s">${icon('invoice')}Convenios</span><span class="lg-chip" style="--d:.5s">${icon('trend')}Ventas</span><span class="lg-chip" style="--d:.8s">${icon('shield')}Auditoría</span></div>
       </div>
       <section class="lg-card lg-panel" aria-labelledby="lg-title">
         <div class="lg-logo">${LOGO}<small>Digital App</small></div>
-        <p class="lg-eyebrow">Operación comercial y convenios</p>
         <h1 id="lg-title">Inicia sesión</h1>
-        <p class="lg-sub">Entra a la operación comercial y los convenios de tu empresa.</p>
         <form novalidate>
           <div class="lg-fields">
             <label class="lg-f"><span class="sr-only">Usuario o correo</span><input id="lg-mail" type="text" placeholder="Usuario o correo" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus></label>
@@ -949,7 +946,6 @@ V.entrar = {
         <button class="lg-link lg-forgot" type="button">¿Olvidaste tu clave?</button>
         <p class="lg-help" id="lg-forgot-help" hidden>Pide a quien administra tu empresa que restablezca tu clave desde Usuarios y roles. Por seguridad no se envían claves por correo.</p>
         ${window.__DEMO__ ? '<p class="lg-help lg-demo"><b>Cuenta de prueba:</b> usuario <b>admin</b> · clave <b>123456789</b><br><small>Solo funciona en prueba.html; no es una cuenta real.</small></p>' : ''}
-        <p class="lg-foot">Tu acceso lo crea el administrador de tu empresa con una invitación.</p>
       </section>
     </div>`;
     const entrado = async () => { await Promise.all([bootContratos(), bootAgora()]); if (!esSuperAdmin()) await bootEspacio(); await loadUiTexts(); const back = store.get('volver', ''); store.set('volver', ''); go(esSuperAdmin() ? '/agencia' : (back && back !== '/entrar' ? back : homePath()), {replace: true}); };
@@ -970,7 +966,7 @@ V.entrar = {
     s.querySelector(document.activeElement?.id === 'lg-pw' ? '#lg-pw' : '#lg-mail')?.focus();
     modoPruebas().then(m => {
       if (!m || window.__DEMO__ || card.querySelector('.lg-pruebas')) return;
-      card.querySelector('.lg-foot')?.insertAdjacentHTML('beforebegin', `<p class="lg-help lg-demo lg-pruebas"><b>Ambiente de pruebas:</b> usuario <b>${esc(m.usuario || 'admin')}</b> · clave <b>${esc(m.clave || '')}</b><br><small>Datos sintéticos. Los demás usuarios (por ejemplo admin.asocim) usan la misma clave.</small></p>`);
+      card.insertAdjacentHTML('beforeend', `<p class="lg-help lg-demo lg-pruebas"><b>Ambiente de pruebas:</b> usuario <b>${esc(m.usuario || 'admin')}</b> · clave <b>${esc(m.clave || '')}</b><br><small>Datos sintéticos. Los demás usuarios (por ejemplo admin.asocim) usan la misma clave.</small></p>`);
     });
     return '';
   },
@@ -1519,7 +1515,7 @@ function launcherFrame(mode, content) {
   if (!agency) return `<div class="launch-layout launch-no-rail"><div class="launch-content">${content}</div></div>`;
   const name = ME?.nombre || AGORA_ME?.user?.name || 'Mi cuenta';
   const groupIcons = {general:'home',ingresos:'invoice',clientes:'users',gestion:'pie',contratos:'receipt',administracion:'gear'};
-  return `<div class="launch-layout"><aside class="launch-rail" aria-label="Navegación de ${agency ? 'Agencia' : 'subcuenta'}"><div class="launch-brand launch-brand-logo" aria-label="Ágora Digital App">${LOGO}</div><p class="launch-rail-label">${agency ? 'Agencia' : esc(ws?.name() || 'Mi subcuenta')}</p><nav class="launch-primary"><a class="${R.view==='agencia'?'is-current':''}" href="${href(agency ? '/agencia' : '/centro')}" ${R.view==='agencia'?'aria-current="page"':''}>${icon(agency ? 'users' : 'home')}${agency ? 'Subcuentas' : 'Inicio de subcuenta'}</a>${!agency && esSuperAdmin() ? `<button type="button" data-agency-return>${icon('users')}Ir a subcuentas</button>` : ''}${agency ? '' : Object.entries(GRUPOS).map(([id,g]) => `<button type="button" data-launch-group="group-${id}">${icon(groupIcons[id])}${esc(g.name)}</button>`).join('')}</nav><div class="launch-system"><p class="launch-rail-label">${AG_GOB_NOMBRE}</p><a href="${href('/agencia/control')}" ${R.view==='agencyControl'?'aria-current="page"':''}>${icon('pie')}Resumen</a><a href="${href('/agencia/usuarios')}" ${R.view==='agencyTeam'?'aria-current="page"':''}>${icon('team')}Gestión de usuarios</a><a href="${href('/agencia/actividad')}" ${R.view==='agencyActivity'?'aria-current="page"':''}>${icon('shield')}Registro de actividad</a><a href="${href('/agencia/consumos')}" ${R.view==='agencyConsumos'?'aria-current="page"':''}>${icon('wallet')}Consumos</a><span class="launch-soon" aria-disabled="true" title="Próximamente">${icon('spark')}Estudio<em>Próximamente</em></span>${!agency ? `<p class="launch-rail-label">Mi espacio</p><a href="${href('/ajustes')}">${icon('gear')}Ajustes</a><a href="${href('/ayuda')}">${icon('info')}Ayuda</a>` : ''}</div><a class="launch-person" href="${href('/perfil')}" ${R.view==='perfil'?'aria-current="page"':''}><span class="launch-avatar">${personalAvatar()}</span><span><b>${esc(name)}</b><small>${esSuperAdmin() ? (esMaster() ? 'Master · Dueño' : 'Superadmin de Agencia') : 'Mi perfil y cuenta'}</small></span>${icon('chevR')}</a></aside><div class="launch-content">${content}</div></div>`;
+  return `<div class="launch-layout"><aside class="launch-rail" aria-label="Navegación de ${agency ? 'Agencia' : 'subcuenta'}"><div class="launch-brand launch-brand-logo" aria-label="Ágora Digital App">${LOGO}</div><p class="launch-rail-label">${agency ? 'Agencia' : esc(ws?.name() || 'Mi subcuenta')}</p><nav class="launch-primary"><a class="${R.view==='agencia'?'is-current':''}" href="${href(agency ? '/agencia' : '/centro')}" ${R.view==='agencia'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--brand)">${icon(agency ? 'users' : 'home')}</span>${agency ? 'Subcuentas' : 'Inicio de subcuenta'}</a>${!agency && esSuperAdmin() ? `<button type="button" data-agency-return>${icon('users')}Ir a subcuentas</button>` : ''}${agency ? '' : Object.entries(GRUPOS).map(([id,g]) => `<button type="button" data-launch-group="group-${id}">${icon(groupIcons[id])}${esc(g.name)}</button>`).join('')}</nav><div class="launch-system"><p class="launch-rail-label">${AG_GOB_NOMBRE}</p><a href="${href('/agencia/control')}" ${R.view==='agencyControl'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-vino)">${icon('pie')}</span>Resumen</a><a href="${href('/agencia/usuarios')}" ${R.view==='agencyTeam'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-azul)">${icon('team')}</span>Gestión de usuarios</a><a href="${href('/agencia/actividad')}" ${R.view==='agencyActivity'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-seguridad)">${icon('shield')}</span>Registro de actividad</a><a href="${href('/agencia/consumos')}" ${R.view==='agencyConsumos'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-oro)">${icon('wallet')}</span>Consumos</a>${!agency ? `<p class="launch-rail-label">Mi espacio</p><a href="${href('/ajustes')}">${icon('gear')}Ajustes</a><a href="${href('/ayuda')}">${icon('info')}Ayuda</a>` : ''}</div><a class="launch-person" href="${href('/perfil')}" ${R.view==='perfil'?'aria-current="page"':''}><span class="launch-avatar">${personalAvatar()}</span><span><b>${esc(name)}</b><small>${esSuperAdmin() ? (esMaster() ? 'Master · Dueño' : 'Superadmin de Agencia') : 'Mi perfil y cuenta'}</small></span>${icon('chevR')}</a></aside><div class="launch-content">${content}</div></div>`;
 }
 document.addEventListener('click', e => {
   const button = e.target.closest('[data-launch-group]');
@@ -4089,7 +4085,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.11.5').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.11.7').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -4438,6 +4434,7 @@ const ACCION_LEGIBLE = {
   'usuario.editado': 'Editó a una persona', 'usuario.actualizado': 'Editó a una persona', 'usuario.revocado': 'Quitó el acceso a una persona',
   'clave.cambiada': 'Cambió una clave', 'permisos.actualizados': 'Cambió permisos', 'estado.actualizado': 'Cambió un estado',
   'texto.editado': 'Editó un texto del panel', 'textos.actualizados': 'Editó textos del panel', 'perfil.actualizado': 'Actualizó su perfil',
+  entro: 'Entró', salio: 'Salió', creo: 'Creó un registro', edito: 'Editó un registro', elimino: 'Eliminó un registro', envio: 'Envió un mensaje', firmo: 'Firmó', asigno: 'Asignó', exporto: 'Descargó datos', bloqueo: 'Bloqueó un acceso',
   'identidad.actualizada': 'Cambió la imagen de la empresa', 'configuracion.actualizada': 'Cambió la configuración', 'ia.borrador': 'Pidió un borrador con IA',
 };
 const accionLegible = a => ACCION_LEGIBLE[a] || (String(a || 'Movimiento').replace(/[._]+/g, ' ').replace(/^./, c => c.toUpperCase()));
@@ -4672,7 +4669,7 @@ function agenciaSeguridadHtml() {
   const items = (criticos.length ? criticos : logs).slice(0, 5);
   return `<section class="panel pf-sec security-snapshot">
     ${secH('shield', 'Seguridad de la agencia', logs.length ? (criticos.length ? `${criticos.length} de los últimos ${logs.length} movimientos merecen tu atención: cambios de rol, de clave, de estado o de permisos.` : `Todo en orden: ninguno de los últimos ${logs.length} movimientos es delicado.`) : 'Todavía no hay movimientos anotados en la agencia.', `<a class="btn btn-sm" href="${href('/agencia/actividad')}">Ver todo</a><button type="button" class="btn btn-sm" data-sec-toggle aria-expanded="${!plegado}">${plegado ? 'Mostrar' : 'Ocultar'}</button>`)}
-    <ol class="security-list" ${plegado ? 'hidden' : ''}>${items.map(l => `<li><button type="button" class="security-item" data-log="${esc(l.id)}"><span class="security-dot ${ACCIONES_CRITICAS.test(String(l.accion)) ? 'is-crit' : ''}" aria-hidden="true"></span><span class="security-tx"><b>${esc(l.accionTexto && !/^[a-z_]+\.[a-z_]+$/.test(l.accionTexto) ? l.accionTexto : accionLegible(l.accion || l.accionTexto))}</b><small>${esc(l.admin || l.actor || 'Sistema')} · ${esc(l.entidad || l.objeto || '')}</small></span><time>${haceCuanto(l.at || l.fecha)}</time></button></li>`).join('') || '<li class="src">Sin actividad reciente.</li>'}</ol>
+    <ol class="security-list" ${plegado ? 'hidden' : ''}>${items.map(l => `<li><button type="button" class="security-item" data-log="${esc(l.id)}"><span class="security-dot ${ACCIONES_CRITICAS.test(String(l.accion)) ? 'is-crit' : ''}" aria-hidden="true"></span><span class="security-tx"><b>${esc(l.accionTexto && !/^[a-z_.]+$/.test(l.accionTexto) ? l.accionTexto : accionLegible(l.accion || l.accionTexto))}</b><small>${esc(l.admin || l.actor || 'Sistema')} · ${esc(l.entidad || l.objeto || '')}</small></span><time>${haceCuanto(l.at || l.fecha)}</time></button></li>`).join('') || '<li class="src">Sin actividad reciente.</li>'}</ol>
   </section>`;
 }
 function agenciaSeguridadMounted(root) {
@@ -4982,6 +4979,7 @@ function arpEsqueleto(root) {
   vtInyectar(root);
   try { opEmbudoInyectar(root); } catch { /* el embudo es un extra: nunca traba la vista */ }
   arpPersonalizar(root);
+  tbAtajos(root);
   // Cabeceras de sección: icono + título + ayuda (igual que secH en la agencia).
   root.querySelectorAll('.t-sec-row:not([data-arp])').forEach(row => {
     row.dataset.arp = '1'; row.classList.add('arp-sec');
@@ -5526,7 +5524,7 @@ async function tbDatos() {
   const ids = tbConfig().tarjetas.filter(tbVisible);
   const quiere = (...k) => k.some(x => ids.includes(x));
   const [dash, won, mes, tareas, catalogo, contratos] = await Promise.all([
-    quiere('conversaciones', 'sinLeer', 'contactos', 'oportunidades') ? intento(agoraApi('workspace/dashboard')) : null,
+    quiere('conversaciones', 'sinLeer', 'contactos', 'oportunidades') ? intento(agoraApi('workspace/dashboard' + dashZona('?'))) : null,
     quiere('ganadas') ? intento(agoraApi('workspace/won')) : null,
     quiere('ventasMes') ? intento(agoraApi('workspace/board-month?period=' + mesActualYM())) : null,
     quiere('tareas') ? intento(agoraApi('workspace/tareas')) : null,
@@ -7020,6 +7018,55 @@ const INI_TARJETAS = {
   ganadas: {ir: {mod: 'oportunidades', pestana: 'won', ayuda: 'Abrir las ventas ganadas'}, t: 'Ventas ganadas del mes', ic: 'coins', fuente: 'won', d: 'Oportunidades ganadas este mes y su valor.', f: d => [iniN(d.totals?.count), `${usd(d.totals?.sum || 0)} en total`]},
 };
 const INI_DEFECTO = ['sinleer', 'espera', 'opp'];
+/* 2.11.6 · «Hoy» es el día de quien mira, igual que en Mobile: el tablero de la cuenta recibe la zona horaria del dispositivo.
+   Sin ella, el servidor contaba «Leads de hoy» con el día en hora universal (de 8 de la noche a 8 de la noche en Venezuela). */
+function dashZona(sep) {
+  let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch { /* sin zona: el servidor usa la universal */ }
+  const d = new Date(), hoy = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${sep}from=${hoy}&to=${hoy}${tz ? '&tz=' + encodeURIComponent(tz) : ''}`;
+}
+/* 2.11.6 · Criterio único de atajos: toda tarjeta de cifras cuyo dato vive en otro módulo lleva a ese módulo
+   (rótulo con chevron, toda la tarjeta es el enlace), con el filtro puesto cuando el módulo lo admite y solo si la persona puede abrirlo. */
+function tarjIr(r) {
+  if (ws) { if (r.filtro) ws.pendingFilter = r.filtro; if (r.pestana) ws.pendingOppTab = r.pestana; if (r.since) ws.contactSince = r.since; }
+  go(MODS[r.mod].path);
+  // La bandeja se dibuja dos veces al entrar (cargando y con datos): el filtro se vuelve a poner cuando ya está lista.
+  if (r.filtro) { const fin = Date.now() + 6000; const poner = () => {
+    if (R?.mod !== r.mod || Date.now() > fin) return;
+    const btn = document.querySelector(`#view [data-live-filter="${r.filtro}"]`), act = document.querySelector('#view [data-live-filter][aria-pressed="true"]');
+    if (btn && act?.dataset.liveFilter === 'all') btn.click();
+    setTimeout(poner, 300);
+  }; setTimeout(poner, 300); }
+}
+/* Atajos de las tarjetas del Tablero comercial (vienen de las pantallas de Mobile: se reconocen por su rótulo). */
+const TB_ATAJOS = (() => {
+  const b = {mod: 'bandeja', ayuda: 'Abrir la bandeja'}, sl = {mod: 'bandeja', filtro: 'unread', ayuda: 'Ver las conversaciones sin leer'},
+    es = {mod: 'bandeja', filtro: 'waiting', ayuda: 'Ver las conversaciones que esperan respuesta'}, ct = {mod: 'contactos', ayuda: 'Abrir los contactos'},
+    op = {mod: 'oportunidades', ayuda: 'Abrir las oportunidades'}, gn = {mod: 'oportunidades', pestana: 'won', ayuda: 'Abrir las ventas ganadas'},
+    vt = {mod: 'ventas', ayuda: 'Abrir las ventas del mes'}, co = {mod: 'costos', ayuda: 'Abrir los costos del mes'};
+  return {'Conversaciones': b, 'Conversaciones atendidas': b, 'Primera respuesta más lenta': b, 'Sin leer': sl, 'Sin leer ahora': sl, 'Esperando respuesta': es,
+    'Contactos': ct, 'Leads del día': {...ct, since: 'hoy', ayuda: 'Ver los contactos de hoy'}, 'Oportunidades abiertas': op,
+    'Ganadas en la cuenta este mes': gn, 'Valor cerrado': gn, 'Ticket promedio': gn, 'Tasa de cierre': gn, 'Velocidad de venta': gn,
+    'Mis ventas del mes': vt, 'Ganancia real del mes': co, 'Costos de mercadeo y ventas': co, 'Ventas por cada 100 invertido': co,
+    'Retorno por cada 100': co, 'Coste por lead': co, 'Coste por conversión': co, 'Costo por cierre': co,
+    'Tiempo de respuesta promedio': b, 'Ganancia después de publicidad y comisiones': co, 'Tiempo de cierre promedio': gn,
+    'Comisiones del equipo': {mod: 'equipo', ayuda: 'Abrir las comisiones del equipo'}};
+})();
+function tbAtajos(root) {
+  if (R?.view !== 'ag_dashboard') return;
+  root.querySelectorAll('.micro:not([data-tb-ir]), .hero:not([data-tb-ir])').forEach(m => {
+    const h = m.querySelector(':scope > h3, :scope > div > .t-label'); if (!h || m.querySelector('.sk')) return;
+    m.dataset.tbIr = '0';
+    const txt = h.textContent.trim().replace(/\s*\(.*\)$/, '');
+    // La tarjeta grande dice «Leads de hoy» o «Leads del período»: lleva a Contactos (los de hoy, si es hoy).
+    const r = /^Leads/.test(txt) ? (/hoy/i.test(txt) ? TB_ATAJOS['Leads del día'] : TB_ATAJOS['Contactos']) : TB_ATAJOS[txt];
+    if (!r || !MODS[r.mod] || !moduleAllowed(r.mod)) return;
+    m.dataset.tbIr = '1'; m.classList.add('is-link'); m.setAttribute('role', 'link'); m.tabIndex = 0; m.title = r.ayuda;
+    m.setAttribute('aria-label', `${h.textContent.trim()}: ${r.ayuda}`); h.insertAdjacentHTML('beforeend', icon('chevR'));
+    const ir = e => { if (e.target.closest('button, a, input, select, .goal')) return; e.preventDefault(); tarjIr(r); };
+    m.addEventListener('click', ir); m.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') ir(e); });
+  });
+}
 /* 2.8.16 · cada cifra lleva a su módulo (con el filtro puesto cuando el módulo lo admite), si la persona puede abrirlo. */
 const iniDestino = id => { const r = INI_TARJETAS[id]?.ir; return r && MODS[r.mod] && moduleAllowed(r.mod) ? r : null; };
 const iniCifras = ids => ids.length ? ids.map(id => { const r = iniDestino(id), dentro = `<span class="inicio-resumen-l">${esc(INI_TARJETAS[id].t)}${r ? icon('chevR') : '<span class="ic" aria-hidden="true"></span>'}</span><strong class="inicio-resumen-v"><span class="sk w40"></span></strong><span class="inicio-resumen-d"><span class="sk w60"></span></span>`;
@@ -7104,7 +7151,8 @@ const EQ_TARJETAS = {
   leadsHoy: {t: 'Leads de hoy', ic: 'spark', d: 'Contactos nuevos que entraron hoy.', f: () => EQ.dia ? ['', int(EQ.dia.leads || 0), EQ.dia.leadsAyer != null ? `ayer: ${int(EQ.dia.leadsAyer)}` : ''] : ['', '—', 'La cuenta no lo informó']},
 };
 const EQ_DEFECTO = ['personas', 'vendedor', 'ganadasCuenta', 'sinLeer'];
-const vivoTarjetas = (vista, catalogo, defecto, args, mes) => { const ids = tarjElegidas(vista, catalogo, defecto); return ids.length ? `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">${ids.map(id => { const x = catalogo[id]; let v; try { v = x.f(...args); } catch { v = ['', '—', '']; } return `<div class="ag-resumen ${v[0]}"><span class="ag-resumen-ic" aria-hidden="true">${icon(x.ic)}</span><span class="ag-resumen-t">${esc(x.t)}</span><strong class="ag-resumen-v">${v[1]}</strong><span class="ag-resumen-d">${v[2] || ''}</span></div>`; }).join('')}</section>` : ''; };
+const vivoTarjetas = (vista, catalogo, defecto, args, mes) => { const ids = tarjElegidas(vista, catalogo, defecto); return ids.length ? `<section class="ag-resumen-grid vg-kpis" aria-label="Resumen de ${esc(mes)}">${ids.map(id => { const x = catalogo[id]; let v; try { v = x.f(...args); } catch { v = ['', '—', '']; } const r = tarjDestino(x), dentro = `<span class="ag-resumen-ic" aria-hidden="true">${icon(x.ic)}</span><span class="ag-resumen-t">${esc(x.t)}${r ? icon('chevR') : ''}</span><strong class="ag-resumen-v">${v[1]}</strong><span class="ag-resumen-d">${v[2] || ''}</span>`;
+    return r ? `<a class="ag-resumen is-link ${v[0]}" href="${href(MODS[r.mod].path)}" data-tarj-ir="${esc(JSON.stringify(r))}" title="${esc(r.ayuda)}" aria-label="${esc(x.t)}: ${esc(r.ayuda)}">${dentro}</a>` : `<div class="ag-resumen ${v[0]}">${dentro}</div>`; }).join('')}</section>` : ''; };
 function eqVivoHtml() {
   const mes = mesNombre(VG.mes || PERIODO);
   const acts = `<button class="btn" type="button" data-eq-tarjetas>${icon('edit')}Editar Dashboard</button>`;
@@ -7837,6 +7885,28 @@ const CA_TARJETAS = {
   total: {t: 'Casos en total', ic: 'shield', d: 'Todo lo que las revisiones encontraron.', f: r => { const n = caCasos(r, () => true); return [n ? '' : 'is-ok', int(n), n ? 'por revisar' : 'todo en orden']; }},
   revisadas: {t: 'Ventas revisadas', ic: 'receipt', d: 'Las ventas registradas que se revisaron.', f: (r, total) => ['', int(total), 'ventas registradas']},
 };
+/* 2.11.6 · Criterio único de atajos en las tarjetas de «Editar Dashboard»: la tarjeta cuyo dato vive en otro módulo lleva a él
+   (la de su propio módulo no lleva a ningún lado). Mismos destinos que el Tablero comercial y «Resumen de hoy». */
+(() => {
+  const vt = {mod: 'ventas', ayuda: 'Abrir las ventas del mes'}, cb = {mod: 'facturacion', ayuda: 'Abrir los cobros del mes'},
+    co = {mod: 'costos', ayuda: 'Abrir los costos del mes'};
+  const poner = (cat, ids, ir) => ids.forEach(id => { if (cat[id]) cat[id].ir = ir; });
+  poner(VG_TARJETAS, ['cantidad', 'vendido', 'ticket', 'mensual', 'recurrentes', 'unicas', 'noRecurrentes', 'ventaUnica', 'pagadas', 'clientes', 'vendedor', 'producto', 'porCompletar'], vt);
+  poner(VG_TARJETAS, ['cobrado', 'porCobrar', 'vencido'], cb);
+  poner(EQ_TARJETAS, ['vendedor', 'ventas', 'porCompletar'], vt);
+  poner(EQ_TARJETAS, ['ganadasCuenta'], {mod: 'oportunidades', pestana: 'won', ayuda: 'Abrir las ventas ganadas'});
+  poner(EQ_TARJETAS, ['sinLeer'], {mod: 'bandeja', filtro: 'unread', ayuda: 'Ver las conversaciones sin leer'});
+  poner(EQ_TARJETAS, ['respuesta'], {mod: 'bandeja', ayuda: 'Abrir la bandeja'});
+  poner(EQ_TARJETAS, ['leadsHoy'], {mod: 'contactos', since: 'hoy', ayuda: 'Ver los contactos de hoy'});
+  poner(CO_TARJETAS, ['vendido'], vt);
+  poner(TD_TARJETAS, ['vendido', 'ventas'], vt); poner(TD_TARJETAS, ['cobro'], cb);
+})();
+const tarjDestino = x => { const r = x?.ir; return r && MODS[r.mod] && r.mod !== R?.mod && moduleAllowed(r.mod) ? r : null; };
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[data-tarj-ir]'); if (!a || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  let r; try { r = JSON.parse(a.dataset.tarjIr); } catch { return; }
+  if (!MODS[r?.mod]) return; e.preventDefault(); tarjIr(r);
+});
 const CA_DEFECTO = ['enOrden', 'importantes', 'otros'];
 function caVivoHtml() {
   const cabeza = head('Gestión comercial', 'Calidad de datos', 'Lo que conviene corregir en las ventas registradas y el catálogo antes de cerrar números.', `<button class="btn" type="button" data-ca-tarjetas>${icon('edit')}Editar Dashboard</button>`);
@@ -8123,7 +8193,7 @@ function opEmbudoInyectar(root) {
     p.outerHTML = panel('Oportunidades abiertas', 'Ordenadas por monto, de la etapa con más dinero a la que menos.', filas.length ? barras(filas) + (o.sampled ? '<p class="src">Se resumen las oportunidades abiertas más recientes.</p>' : '') : '<p class="empty"><b>Sin oportunidades abiertas</b>Todavía no hay oportunidades abiertas en esta cuenta.</p>');
   };
   if (OPE.d && Date.now() - OPE.t < 60000) { pintar(OPE.d); return; }
-  OPE.p ??= agoraApi('workspace/dashboard').then(d => { OPE.d = d; OPE.t = Date.now(); return d; }).catch(() => null).finally(() => { OPE.p = null; });
+  OPE.p ??= agoraApi('workspace/dashboard' + dashZona('?')).then(d => { OPE.d = d; OPE.t = Date.now(); return d; }).catch(() => null).finally(() => { OPE.p = null; });
   OPE.p.then(d => { if (sec.isConnected) pintar(d); });
 }
 var TB_VIVO = {
@@ -8567,7 +8637,7 @@ async function kpiValores(kpis, force) {
   const tr = p => p.then(v => v, () => null);
   KPI_VAL_P = (async () => {
     const [dash, mes, won, dia, ads, efic, tareas, contratos, emb, ventas] = await Promise.all([
-      pide.has('dash') ? tr(agoraApi('workspace/dashboard')) : null,
+      pide.has('dash') ? tr(agoraApi('workspace/dashboard' + dashZona('?'))) : null,
       pide.has('mes') ? tr(agoraApi('workspace/board-month?period=' + mesActualYM())) : null,
       pide.has('won') ? tr(agoraApi('workspace/won')) : null,
       pide.has('dia') ? tr(agoraApi('workspace/dia')) : null,
@@ -8782,15 +8852,7 @@ async function inicioResumen(root) {
   box.addEventListener('click', e => {
     const a = e.target.closest('[data-ir-go]'); if (!a || e.ctrlKey || e.metaKey || e.shiftKey) return;
     const r = iniDestino(a.dataset.irGo); if (!r) return; e.preventDefault();
-    if (ws) { if (r.filtro) ws.pendingFilter = r.filtro; if (r.pestana) ws.pendingOppTab = r.pestana; if (r.since) ws.contactSince = r.since; }
-    go(MODS[r.mod].path);
-    // La bandeja se dibuja dos veces al entrar (cargando y con datos): el filtro se vuelve a poner cuando ya está lista.
-    if (r.filtro) { const fin = Date.now() + 6000; const poner = () => {
-      if (R?.mod !== r.mod || Date.now() > fin) return;
-      const btn = document.querySelector(`#view [data-live-filter="${r.filtro}"]`), act = document.querySelector('#view [data-live-filter][aria-pressed="true"]');
-      if (btn && act?.dataset.liveFilter === 'all') btn.click();
-      setTimeout(poner, 300);
-    }; setTimeout(poner, 300); }
+    tarjIr(r);
   });
   box.querySelector('[data-ir-editar]')?.addEventListener('click', () => tarjEditar('inicio', INI_TARJETAS, INI_DEFECTO, 'Resumen de hoy', () => { if (root.isConnected) { box.querySelector('.inicio-resumen-g').innerHTML = iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO)); inicioResumenLlenar(box, epoch); } }));
   if (!TARJ.inicio?.cargado) { await tarjCargar('inicio'); if (epoch !== NAV_EPOCH || !box.isConnected) return; box.querySelector('.inicio-resumen-g').innerHTML = iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO)); }
@@ -8800,7 +8862,7 @@ async function inicioResumenLlenar(box, epoch) {
   const ids = tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO); if (!ids.length) return;
   const cid = encodeURIComponent(ws.current()), fuentes = new Set(ids.map(id => INI_TARJETAS[id].fuente)), intento = p => p.then(v => v, () => null);
   const [dash, dia, tareas, won] = await Promise.all([
-    fuentes.has('dash') ? intento(agoraApi(`workspace/dashboard?connectionId=${cid}`)) : null,
+    fuentes.has('dash') ? intento(agoraApi(`workspace/dashboard?connectionId=${cid}${dashZona('&')}`)) : null,
     fuentes.has('dia') ? intento(agoraApi(`workspace/dia?connectionId=${cid}`)) : null,
     fuentes.has('tareas') ? intento(agoraApi('workspace/tareas')) : null,
     fuentes.has('won') ? intento(agoraApi(`workspace/won?connectionId=${cid}`)) : null,
@@ -10224,7 +10286,7 @@ V.agencyAccount = {
     const logs = (AGENCY_AUDIT_LOGS || []).filter(l => [String(a.id), a.nombre, a.subcuenta, a.codigo].includes(String(l.objeto ?? l.entidad ?? ''))).slice(0, 4);
     const usuarios = Number(a.usuarios || 0), activos = Number(a.usuariosActivos ?? a.usuarios ?? 0);
     const seccion = (ic, t, desc, cuerpo, acts = '') => `<section class="panel pf-sec">${secH(ic, t, desc, acts)}${cuerpo}</section>`;
-    const accion = l => l.accionTexto && !/^[a-z_]+\.[a-z_]+$/.test(l.accionTexto) ? l.accionTexto : accionLegible(l.accion || l.accionTexto);
+    const accion = l => l.accionTexto && !/^[a-z_.]+$/.test(l.accionTexto) ? l.accionTexto : accionLegible(l.accion || l.accionTexto);
     const contenido = `<div class="pf">${head('Subcuentas', 'Administrar ' + esc(a.nombre || a.name), esc(a.subcuenta || ''), `<a class="btn" href="${href('/agencia')}">${icon('chevL')}Volver a subcuentas</a>`)}
       <div class="pf-grid">
         <aside class="panel pf-card" aria-label="Identidad de la subcuenta">

@@ -1,5 +1,28 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.11.7 · Mismas cifras que Mobile y menú de la agencia unificado (20 nov):**
+- **«Leads de hoy» igual que en Mobile.** El ERP contaba «hoy» en hora universal: en Venezuela, de 8 de la noche a 8 de la noche. Mobile lo cuenta con el día del teléfono. Ahora el ERP manda la zona horaria y el día de quien mira, igual que Mobile. Las demás cifras (sin leer, conversaciones, ganadas) ya eran las mismas: salen de la misma cuenta con el mismo código.
+- **Menú de la agencia** (Subcuentas y Centro de mando) con el mismo lenguaje que el menú de las subcuentas:
+  - Fondo claro e ícono en recuadro de color.
+  - El activo, con fondo suave de marca.
+  - Rótulos en tipo oración.
+  - Sin el logo repetido (ya está arriba), sin la franja dorada, sin mayúsculas espaciadas y sin el aviso «Estudio · Próximamente» (Estudio sigue en Herramientas de Agencia).
+- En el teléfono, ese menú ya no ocupa media pantalla: es una fila de pestañas deslizable (pendiente [14]).
+- «Seguridad de la agencia» decía «entro» (el código interno); ahora dice «Entró».
+- **Inicio de sesión más limpio:** sin el 👋 ni el punto verde junto a Athena, sin las píldoras de abajo (Convenios, Ventas, Auditoría), sin «Operación comercial y convenios», sin «Entra a la operación comercial…» y sin «Tu acceso lo crea el administrador…».
+- Prueba nueva: `tests/fixes-2117.py`.
+
+**Novedades 2.11.6 · Atajos en las tarjetas, con un solo criterio (20 nov):**
+- **Tablero comercial:** cada tarjeta lleva a su módulo, como «Resumen de hoy». El rótulo termina en «›» y se toca la tarjeta entera.
+  - «Sin leer» abre la bandeja filtrada en «Sin leer»; «Esperando respuesta», en «Esperando».
+  - «Leads de hoy» abre los contactos de hoy.
+  - Ganadas, valor cerrado, ticket y tasa de cierre abren las ventas ganadas en Oportunidades.
+  - «Mis ventas del mes» abre Ventas; ganancia, costos y retorno abren Costos.
+- **«Editar Dashboard» en todos los módulos:** la tarjeta cuyo dato vive en otro módulo lleva a él. Ejemplos: «Quien más vendió» en Equipo lleva a Ventas; «Cobrado» en Gestión Comercial lleva a Cobros. Las tarjetas del propio módulo no llevan a ningún lado.
+- Solo hay atajo si la persona puede abrir ese módulo.
+- Las medidas de la letra y de las tarjetas quedan anotadas en la guía de diseño (`docs/DESIGN.md`) y en el contexto del ERP.
+- Prueba nueva: `tests/atajos.py`.
+
 **Novedades 2.11.5 · Una sola fuente y una sola escala (20 nov):**
 - La fuente es **Author** en todo el ERP (como en Mobile); solo los códigos usan letra de ancho fijo.
 - **Mismos tamaños en los 26 módulos:**
