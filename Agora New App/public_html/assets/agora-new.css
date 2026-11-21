@@ -885,3 +885,10 @@ main#app#app .cel:is(.is-hot,:hover)::before{opacity:1}
 .inicio-resumen-acc > :is(.btn,.inicio-resumen-ver){display:inline-flex!important;align-items:center!important;gap:6px;height:34px!important;min-height:34px!important;padding:0 14px!important;line-height:1!important;font:600 13.5px/1 var(--font-text)!important;border:0!important;border-radius:999px!important;vertical-align:middle;box-sizing:border-box}
 .inicio-resumen-acc > :is(.btn,.inicio-resumen-ver) > span{line-height:1}
 .inicio-resumen-acc > :is(.btn,.inicio-resumen-ver) svg{width:15px;height:15px;flex:none}
+/* 2.12.11 · «Resumen del día» como los demás módulos: título y botones («Editar Dashboard», «Dashboard») fuera de la tarjeta;
+   la tarjeta blanca es solo la caja de cifras. */
+main#app .tb-inicio.inicio-resumen{padding:0!important;border:0!important;background:transparent!important;border-radius:0!important;box-shadow:none!important}
+main#app .tb-inicio .inicio-resumen-h{align-items:center;margin:0 0 12px}
+main#app#app .tb-inicio .inicio-resumen-h h2{font:700 20px/1.25 var(--font-display)!important}
+main#app .tb-inicio .inicio-resumen-g{border:1px solid var(--line)!important;border-radius:16px!important;background:var(--surface,#fff)!important;overflow:hidden}
+@media(max-width:600px){main#app#app .tb-inicio .inicio-resumen-h h2{font-size:18px!important}}

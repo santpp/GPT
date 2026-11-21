@@ -50,6 +50,11 @@ with sync_playwright() as p:
         ed.click();pg.wait_for_timeout(1500)
         foco=pg.evaluate("document.querySelector('.tarj-ed .pz-foco')?.textContent?.trim()||''")
         ok(foco.startswith(nombre[:10]),f'{quien}: «Editar» abre «Editar Dashboard» con «{nombre}» marcada ({foco[:30]})')
+        dentro=[]
+        for r in ['/centro','/inicio','/comercial','/ventas','/cobros','/facturas','/costos','/equipo','/publicidad','/tendencias','/calidad','/redes']:
+            pg.goto(B+r);pg.wait_for_timeout(3500)
+            dentro+=[f'{r}: {x}' for x in pg.evaluate("""()=>[...document.querySelectorAll('main button, main a.btn')].filter(b=>b.offsetParent&&/Editar Dashboard|^Dashboard|Ir a Dashboard/.test(b.textContent.trim())).map(b=>{let p=b.parentElement;while(p&&p.id!=='app'){const c=getComputedStyle(p);if(/255, 255, 255/.test(c.backgroundColor)&&parseFloat(c.borderTopWidth)>0)return b.textContent.trim();p=p.parentElement}return null}).filter(Boolean)""")]
+        ok(not dentro,f'{quien}: 2.12.11 · «Editar Dashboard» y «Dashboard» van fuera de las tarjetas en todos los módulos {dentro}')
         pg.goto(B+'/centro');pg.wait_for_timeout(4000);pg.keyboard.press('m');pg.wait_for_timeout(1000)
         col=pg.evaluate("[...new Set([...document.querySelectorAll('.mdm-i .mdm-ic')].filter(e=>e.offsetParent).map(e=>getComputedStyle(e).backgroundColor))]")
         ok(len(col)>=6,f'{quien}: 2.12.10 · el menú de módulos usa un color por categoría (también el dueño con subcuenta abierta) {col}')
