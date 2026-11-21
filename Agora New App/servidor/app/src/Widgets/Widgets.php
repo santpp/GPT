@@ -268,7 +268,7 @@ final class Widgets {
 
  /* ---------- tableros (2.15.0 · fase 2): un tablero de widgets por módulo, el del equipo ---------- */
  private const TAM=['chico','ancho'];private const PER=['modulo','actual','anterior'];private const COMP=['','mes_anterior','ano_pasado'];private const FMT=['auto','dinero','numero','porcentaje'];private const TIPOS=['cifra','linea','barras','area','dona','tabla'];
- private static function modulo(string $m):string{if(!preg_match('/^[a-z][a-z_]{1,39}$/D',$m))Http::fail('Módulo no válido.');return $m;}
+ private static function modulo(string $m):string{if(!preg_match('/^[a-zA-Z][a-zA-Z_]{1,39}$/D',$m))Http::fail('Módulo no válido.');return $m;}
  private function tablero(string $modulo):array{
   $modulo=self::modulo($modulo);$r=$this->db()->one("SELECT config,version,updated_at FROM agora_dashboards WHERE tenant_id=? AND modulo=? AND alcance='equipo' AND user_id=0",[$this->t(),$modulo]);
   $cfg=$r?json_decode((string)$r['config'],true):null;$edita=$this->api->a->can('widgets.editar');$visible=($cfg['visible']??'todos')==='administracion'?'administracion':'todos';

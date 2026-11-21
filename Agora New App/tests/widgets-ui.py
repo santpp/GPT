@@ -79,12 +79,25 @@ with sync_playwright() as p:
         pg.click('.wg-item[data-i="1"] [data-mv="-1"]');pg.wait_for_timeout(200)
         ok(pg.evaluate("[...document.querySelectorAll('.wg-item b')].map(x=>x.textContent)")[0]=='Prueba UI margen','se puede reordenar')
         pg.click('[data-wg-guardar]');pg.wait_for_timeout(5000)
-        cel=pg.evaluate("[...document.querySelectorAll('section.wg .wg-cel')].map(c=>[c.querySelector('.ag-resumen-t').textContent,c.querySelector('.ag-resumen-v').textContent,c.innerText])")
+        cel=pg.evaluate("[...document.querySelectorAll('.wg-cel[data-wgc]')].map(c=>[c.querySelector('.ag-resumen-t, h3').textContent,c.querySelector('.ag-resumen-v, .t-metric').textContent,c.innerText])")
         ok(len(cel)==2 and cel[0][0]=='Prueba UI margen' and '709,50' in cel[0][1],f'el tablero muestra la fórmula con su valor ({cel[:1]})')
         ok(re.sub(r'[^\d,]','',cel[1][1]).replace(',','.')==f'{vendido:.2f}','el widget de la cifra da lo mismo que el sistema')
+        r=pg.evaluate("(()=>{const w=document.querySelector('.wg-cel[data-wgc]'),g=w.parentElement;return [g.querySelectorAll(':scope > .cel:not([data-wgc])').length, w.className.split(' ')[0], g.firstElementChild.className.split(' ')[0]]})()")
+        ok(r[0]>=2 and r[1]==r[2],f'los widgets van dentro de la cuadrícula del tablero, con la misma forma que sus tarjetas {r}')
+        # ordenar todo junto desde «Editar Dashboard»
+        pg.get_by_role('button',name='Editar Dashboard').first.click();pg.wait_for_selector('.wg-dash')
+        li=lambda:pg.locator('.modal li.pz-item',has_text='Prueba UI margen').first
+        ok(li().count()==1,'«Editar Dashboard» lista los widgets junto con las tarjetas del módulo')
+        for _ in range(30):
+            b=li().locator('[data-tarj-mover$="|-1"], [data-tg-mov$="|-1"]')
+            if not b.count() or b.first.is_disabled():break
+            b.first.click();pg.wait_for_timeout(120)
+        pg.locator('.modal [data-tarj-ok], .modal [data-tg-ok]').first.click();pg.wait_for_timeout(5000)
+        r=pg.evaluate("(()=>{const w=[...document.querySelectorAll('.wg-cel[data-wgc]')].find(c=>c.innerText.includes('Prueba UI margen'));const g=w.parentElement;const ords=[...g.children].filter(c=>getComputedStyle(c).display!=='none').map(c=>+getComputedStyle(c).order);return [+getComputedStyle(w).order, Math.min(...ords)]})()")
+        ok(r[0]==r[1],f'un widget se puede subir al primer lugar del tablero, entre las tarjetas {r}')
         ok(('frente a el mes anterior' in cel[1][2] or 'Sin dato para comparar' in cel[1][2]) and 'En meta' in cel[1][2],'comparación con el mes anterior y semáforo')
-        ok(pg.locator('section.wg [data-wg-ed]').count()==2,'cada widget lleva su «Editar»')
-        pg.click('section.wg [data-wg-ed] >> nth=1');pg.wait_for_selector('.wg-item.is-open')
+        ok(pg.locator('[data-wgc] [data-wg-ed]').count()==2,'cada widget lleva su «Editar»')
+        pg.click('[data-wgc] [data-wg-ed] >> nth=1');pg.wait_for_selector('.wg-item.is-open')
         ok(pg.locator('.wg-item.is-open b').inner_text()=='Prueba vendido','«Editar» de un widget abre el editor en ese widget')
         pg.click('.modal [data-close] >> nth=-1');pg.wait_for_timeout(400)
         # fórmula en uso no se borra
@@ -101,10 +114,10 @@ with sync_playwright() as p:
         limpiar();C('admin.asocim@agora.test').call('workspace/tableros','PUT',{'modulo':'comercial','version':0,'widgets':[{'id':'c1','fuente':'metrica','ref':'mes.vendido','titulo':'','tamano':'ancho','periodo':'modulo','comparar':'','formato':'auto','decimales':2,'semaforo':{'activo':False}},{'id':'c2','fuente':'metrica','ref':'mes.cierres','titulo':'','tamano':'chico','periodo':'actual','comparar':'','formato':'auto','decimales':0,'semaforo':{'activo':False}}]})
         for u,q,m in [('ejecutivo1.asocim@agora.test','ejecutivo','ventas'),('consulta.asocim@agora.test','consulta','comercial')]:
             pg=entrar(br,u);pg.goto(B+'/'+m);pg.wait_for_timeout(5500)
-            ok(pg.locator('section.wg .wg-cel').count()==2 and pg.locator('section.wg [data-wg-abrir], section.wg [data-wg-ed]').count()==0,f'{q} ve los widgets del equipo ({m}) sin botones para editar')
+            ok(pg.locator('.wg-cel[data-wgc]').count()==2 and pg.locator('section.wg [data-wg-abrir], [data-wgc] [data-wg-ed]').count()==0,f'{q} ve los widgets del equipo ({m}) sin botones para editar')
             pg.close()
         pg=entrar(br,'admin.asocim@agora.test',390,844);pg.goto(B+'/ventas');pg.wait_for_timeout(5000)
-        r=pg.evaluate("(()=>{const s=document.querySelector('section.wg');const b=s.getBoundingClientRect();return [Math.round(b.right),document.documentElement.scrollWidth,s.querySelectorAll('.wg-cel').length]})()")
+        r=pg.evaluate("(()=>{const c=[...document.querySelectorAll('.wg-cel[data-wgc]')];return [Math.max(...c.map(x=>Math.round(x.getBoundingClientRect().right))),document.documentElement.scrollWidth,c.length]})()")
         ok(r[2]==2 and r[0]<=390 and r[1]<=390,f'teléfono 390: los widgets caben sin desborde {r}')
         abrir_ed(pg);pg.wait_for_selector('.wg-item');pg.click('.wg-item [data-cfg] >> nth=0');pg.wait_for_timeout(300)
         ok(pg.evaluate("document.documentElement.scrollWidth<=390 && document.querySelector('.modal').getBoundingClientRect().right<=391"),'teléfono 390: el editor cabe sin desborde')

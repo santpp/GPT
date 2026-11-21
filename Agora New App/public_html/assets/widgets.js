@@ -5,7 +5,7 @@
 (() => {
   'use strict';
   const H = () => window.AgoraHost;
-  const MODULOS = ['inicio', 'comercial', 'oportunidades', 'tareas', 'equipo', 'publicidad', 'ventas', 'facturacion', 'costos', 'catalogo', 'tendencias', 'calidad', 'facturas', 'redes', 'productos'];
+  const MODULOS = ['bandeja', 'contactos', 'convenios', 'conConvenio', 'registro', 'libroVentas', 'datosFiscales', 'tasasBcv', 'inicio', 'comercial', 'oportunidades', 'tareas', 'equipo', 'publicidad', 'ventas', 'facturacion', 'costos', 'catalogo', 'tendencias', 'calidad', 'facturas', 'redes', 'productos'];
   const GRAF = ['linea', 'barras', 'area', 'dona', 'tabla'], SERIE = ['linea', 'barras', 'area'];
   const TIPOS = [['cifra', 'Cifra'], ['linea', 'Gráfico de línea'], ['barras', 'Gráfico de barras'], ['area', 'Gráfico de área'], ['dona', 'Dona (partes de un total)'], ['tabla', 'Tabla de los primeros']];
   /* Paleta categórica en orden fijo (validada para daltonismo, claro y oscuro). Más de 5 partes se juntan en «Otros». */
@@ -63,7 +63,7 @@
     const bien = s.mejor === 'menos' ? v <= s.verde : v >= s.verde, cerca = s.mejor === 'menos' ? v <= s.ambar : v >= s.ambar;
     return bien ? '<span class="sc sc-ok wg-sem">En meta</span>' : cerca ? '<span class="sc sc-warn wg-sem">Cerca</span>' : '<span class="sc sc-bad wg-sem">Bajo</span>';
   }
-  function celda(w, vals, cat, edita) {
+  function celda(w, vals, cat, edita, forma = '') {
     const p = periodoDe(w), r = vals[p + '|' + clave(w)] || {valor: null, motivo: 'Cargando…'};
     const u = w.formato && w.formato !== 'auto' ? w.formato : r.unidad;
     let comp = '';
@@ -76,7 +76,10 @@
     const motivo = r.valor === null && r.motivo ? `<span class="ag-resumen-d wg-motivo">${esc(r.motivo)}</span>` : '';
     const per = w.periodo !== 'modulo' ? `<span class="ag-resumen-d">${esc(nombreMes(p))}</span>` : '';
     const ed = edita ? `<span class="cel-acc"><button class="cel-ed" type="button" data-wg-ed="${esc(w.id)}" title="Editar ${esc(w.titulo || nombreRef(w, cat))}">Editar</button></span>` : '';
-    return `<div class="ag-resumen cel wg-cel ${w.tamano === 'ancho' ? 'wg-ancho' : ''}" data-wg-id="${esc(w.id)}"><span class="ag-resumen-t">${esc(w.titulo || nombreRef(w, cat))}</span>${w.nota ? `<span class="ag-resumen-s">${esc(w.nota)}</span>` : ''}<b class="ag-resumen-v">${esc(fmt(r.valor, u, w.decimales ?? 2))}</b>${semaforo(w, r.valor)}${comp}${per}${motivo}${ed}</div>`;
+    const tit = esc(w.titulo || nombreRef(w, cat)), val = esc(fmt(r.valor, u, w.decimales ?? 2)), nota = w.nota ? `<span class="ag-resumen-s">${esc(w.nota)}</span>` : '';
+    // 2.18.1 · el widget toma la forma de las tarjetas que tiene al lado (mismo título, enunciado y cifra) para ser una más del tablero
+    if (forma === 'micro') return `<div class="micro cel wg-cel" data-wgc data-wg-id="${esc(w.id)}"><h3>${tit}</h3>${nota}<p class="t-metric" style="margin:0">${val}</p>${semaforo(w, r.valor)}${comp ? comp.replace('ag-resumen-d', 'f ag-resumen-d') : ''}${per}${motivo}${ed}</div>`;
+    return `<div class="ag-resumen cel wg-cel ${w.tamano === 'ancho' ? 'wg-ancho' : ''}" data-wgc data-wg-id="${esc(w.id)}"><span class="ag-resumen-t">${tit}</span>${nota}<b class="ag-resumen-v">${val}</b>${semaforo(w, r.valor)}${comp}${per}${motivo}${ed}</div>`;
   }
   function rellenar(grid) {
     const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length || 1;
@@ -97,27 +100,65 @@
     const cab = soloAdm ? `<div class="wg-h wg-h-min">${soloAdm}</div>` : '';
     const cat = t.widgets.length ? await catalogo().catch(() => null) : null;
     if (gen !== st.gen || !sec.isConnected) return;
-    if (!t.widgets.length) sec.innerHTML = '';
-    else if (cifras.length) sec.innerHTML = cab + `<div class="ag-resumen-grid wg-grid" data-wg>${cifras.map(w => celda(w, {}, cat, edita)).join('')}</div>`;
-    else sec.innerHTML = '';
+    st.cat = cat || st.cat;
+    colocar(sec, mod, cifras, {}, cat, edita, cab);
     if (gsec) {
       gsec.hidden = !grafs.length;
       gsec.innerHTML = grafs.length ? `<div class="wg-h"><h2 class="t-sec">Gráficos del equipo${soloAdm}</h2></div><div class="wg-ggrid" data-wg>${grafs.map(w => tarjetaGraf(w, cat, edita)).join('')}</div>` : '';
       enlazar(gsec, mod, t, cat); grafs.forEach(w => cargarGraf(gsec.querySelector(`[data-wg-id="${w.id}"]`), w, cat));
     }
-    enlazar(sec, mod, t, cat); const g0 = sec.querySelector('[data-wg]'); if (g0) rellenar(g0);
     if (!cifras.length) return;
     const vals = await valores(cifras);
     if (gen !== st.gen || !sec.isConnected) return;
     st.vals[mod] = vals;
-    const grid = sec.querySelector('[data-wg]');
-    grid.innerHTML = cifras.map(w => celda(w, vals, cat, edita)).join('');
-    enlazar(sec, mod, t, cat); rellenar(grid);
+    colocar(sec, mod, cifras, vals, cat, edita, cab);
+  }
+  /** Clave del widget en la lista de «Editar Dashboard» (el servidor guarda solo letras). */
+  const wkey = id => 'Wq' + String(id).replace(/[0-9]/g, d => 'ABCDEFGHIJ'[d]);
+  /** 2.18.1 · Las cifras propias van DENTRO de la cuadrícula de tarjetas del módulo (una más del tablero) y se ordenan con ellas.
+      Si el módulo no tiene cuadrícula, se arma una debajo de la cabecera. Los gráficos siguen al final del módulo. */
+  function colocar(sec, mod, cifras, vals, cat, edita, cab = '') {
+    const app = sec.closest('main#app') || document;
+    app.querySelectorAll('[data-wgc]').forEach(x => x.remove());
+    const nat = sec.previousElementSibling, usar = nat && nat.querySelector(':scope > .cel') ? nat : null;
+    if (!cifras.length) { sec.hidden = true; sec.innerHTML = ''; return; }
+    if (usar) {
+      const forma = usar.querySelector(':scope > .micro, :scope > .hero') ? 'micro' : '';
+      usar.insertAdjacentHTML('beforeend', cifras.map(w => celda(w, vals, cat, edita, forma)).join(''));
+      sec.innerHTML = cab; sec.hidden = !cab;
+      ordenar(usar, mod);
+    } else {
+      sec.hidden = false; sec.innerHTML = cab + `<div class="ag-resumen-grid wg-grid">${cifras.map(w => celda(w, vals, cat, edita)).join('')}</div>`;
+    }
+    enlazar(app, mod, st.tab[mod], cat);
+    H().aplicarTarjetas?.();
+  }
+  /** Orden y visibilidad guardados en «Editar Dashboard» (lista con tarjetas y widgets; «Z» delante = oculto). */
+  function ordenar(grid, mod) {
+    const vista = H().vistaTarjetas?.(); if (!vista) return;
+    const guard = H().tarjGuardadas?.(vista); if (!Array.isArray(guard)) return;
+    const nativas = [...grid.children].filter(c => !c.matches('[data-wgc]')), wid = new Map([...grid.querySelectorAll(':scope > [data-wgc]')].map(c => [wkey(c.dataset.wgId), c]));
+    let n = 0, pos = 0;
+    guard.forEach(id => {
+      if (id.startsWith('Z')) { const c = wid.get(id.slice(1)); if (c) { c.style.display = 'none'; wid.delete(id.slice(1)); } return; }
+      if (id.startsWith('Wq')) { const c = wid.get(id); if (c) { c.style.order = String(pos++); wid.delete(id); } return; }
+      const c = nativas[n++]; if (c) c.style.order = String(pos++);
+    });
+    nativas.slice(n).forEach(c => { c.style.order = String(pos++); });
+    wid.forEach(c => { c.style.order = String(pos++); }); // widgets nuevos: al final, a la vista
+  }
+  /** Lo que «Editar Dashboard» (por catálogo) muestra de los widgets de este módulo. */
+  function entradas(vista) {
+    const mod = H().modulo(); if (!MODULOS.includes(mod) || H().vistaTarjetas?.() !== vista) return {};
+    const t = st.tab[mod]; if (!t) return {};
+    const out = {};
+    t.widgets.filter(w => !esGraf(w)).forEach(w => { out[wkey(w.id)] = {t: w.titulo || nombreRef(w, st.cat), d: `Widget del equipo${w.nota ? ' · ' + w.nota : ''}`, ic: 'spark'}; });
+    return out;
   }
   function enlazar(sec, mod, t, cat) {
     sec.querySelectorAll('[data-wg-abrir]').forEach(b => b.onclick = () => editorTablero(mod));
     sec.querySelectorAll('[data-wg-ed]').forEach(b => b.onclick = e => { e.stopPropagation(); editorTablero(mod, b.dataset.wgEd); });
-    sec.querySelectorAll('.wg-cel[data-wg-id]').forEach(c => { const w = t?.widgets.find(x => x.id === c.dataset.wgId); if (!w) return;
+    sec.querySelectorAll('.wg-cel[data-wg-id]').forEach(c => { const w = t?.widgets.find(x => x.id === c.dataset.wgId); if (!w || c.dataset.wgOn) return; c.dataset.wgOn = '1';
       c.setAttribute('role', 'button'); c.tabIndex = 0; c.title = 'Ver el detalle';
       const abrir = e => { if (e.target.closest('.cel-acc')) return; detalle(w, cat); };
       c.onclick = abrir; c.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir(e); } }; });
@@ -132,14 +173,19 @@
       ponerAv(); let t0 = 0; vigia = new MutationObserver(() => { clearTimeout(t0); t0 = setTimeout(() => { if (H().modulo() === 'centro') ponerAv(); }, 250); }); vigia.observe(app, {childList: true, subtree: true}); return;
     }
     if (!MODULOS.includes(mod)) return;
-    const ancla = () => { const c = [...app.querySelectorAll('.cel')].find(x => !x.closest('section.wg, .modal, .scrim')); return c?.parentElement || app.querySelector('.kpi-inicio, .mod-h'); };
+    const ancla = () => { const c = [...app.querySelectorAll('.cel')].find(x => !x.closest('section.wg, section.wg-g, .modal, .scrim') && !x.matches('[data-wgc]')); return c?.parentElement || app.querySelector('.kpi-inicio, .mod-h'); };
     const fondo = () => app.querySelector('.view-enter') || app;
     const poner = () => {
       const a = ancla(); let sec = app.querySelector('section.wg'), gsec = app.querySelector('section.wg-g');
       // los gráficos van al final del módulo (decisión del usuario)
       if (!gsec && a) { gsec = document.createElement('section'); gsec.className = 'wg-g'; gsec.hidden = true; gsec.dataset.wgMod = mod; fondo().append(gsec); }
       else if (gsec && gsec !== fondo().lastElementChild) fondo().append(gsec);
-      if (sec) { if (a && a.nextElementSibling !== sec) a.after(sec); return true; }
+      if (sec) {
+        if (a && a.nextElementSibling !== sec) a.after(sec);
+        const t = st.tab[mod], cif = t ? t.widgets.filter(w => !esGraf(w)) : [];
+        if (cif.length && !app.querySelector('[data-wgc]') && st.vals[mod]) colocar(sec, mod, cif, st.vals[mod], st.cat, H().puedeEditar(), sec.innerHTML.includes('wg-priv') ? sec.innerHTML : '');
+        return true;
+      }
       if (!a) return false;
       sec = document.createElement('section'); sec.className = 'wg'; sec.hidden = true; sec.dataset.wgMod = mod;
       a.after(sec); pintar(sec, mod); return true;
@@ -673,5 +719,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', enganchar); else enganchar();
   setTimeout(enganchar, 1500);
 
-  window.AgoraWidgets = {montar, editorTablero, editorFormula, gestor, objetivo, plantillas, consolidado, _fmt: fmt};
+  window.AgoraWidgets = {entradas, montar, editorTablero, editorFormula, gestor, objetivo, plantillas, consolidado, _fmt: fmt};
 })();

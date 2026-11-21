@@ -4200,7 +4200,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.18.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.18.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */
@@ -7166,12 +7166,18 @@ async function tarjCargar(vista, force) {
   try { const r = await agoraApi(`workspace/preferencias?vista=${encodeURIComponent(vista)}`); TARJ[vista] = {mia: r.mia, equipo: r.equipo, cargado: true}; }
   catch { TARJ[vista] = {mia: null, equipo: null, cargado: true}; }
 }
+const TARJ_VISTA_MOD = {}; // 2.18.1: qué vista de tarjetas arma la cuadrícula de cada módulo (para ordenar los widgets con ellas)
 function tarjElegidas(vista, catalogo, defecto) {
+  if (R?.mod && !/graf/.test(vista) && !TARJ_VISTA_MOD[R.mod]) TARJ_VISTA_MOD[R.mod] = vista;
   const p = TARJ[vista], val = l => Array.isArray(l) ? l.filter(id => catalogo[id]) : null;
   return val(p?.mia?.tarjetas) ?? val(p?.equipo?.tarjetas) ?? defecto.filter(id => catalogo[id]);
 }
 function tarjEditar(vista, catalogo, defecto, titulo, alGuardar) {
+  // 2.18.1 · los widgets del módulo entran en la misma lista: se ordenan, se muestran o se ocultan junto con las tarjetas
+  const wgx = (() => { try { return window.AgoraWidgets?.entradas?.(vista) || {}; } catch { return {}; } })();
+  catalogo = {...catalogo, ...wgx};
   let sel = [...tarjElegidas(vista, catalogo, defecto)];
+  { const guard = TARJ[vista]?.mia?.tarjetas ?? TARJ[vista]?.equipo?.tarjetas ?? []; Object.keys(wgx).forEach(k => { if (!sel.includes(k) && !guard.includes('Z' + k)) sel.push(k); }); }
   const admin = puede('ajustes.editar'), propia = !!TARJ[vista]?.mia;
   const s = openModal(modalHead('Editar Dashboard', `Elige qué datos ver arriba de ${esc(titulo)} y en qué orden. Solo cambia tu vista${admin ? ', salvo que la guardes para el equipo' : ''}.`) + `<div class="tarj-ed"></div>
     ${admin ? `<label class="bx-check tarj-eq"><input type="checkbox" data-tarj-eq> Guardar también como vista del equipo (la ven quienes no hayan elegido la suya)</label>` : ''}
@@ -7193,7 +7199,7 @@ function tarjEditar(vista, catalogo, defecto, titulo, alGuardar) {
     caja.querySelectorAll('[data-tarj-mover]').forEach(b => b.onclick = () => { const [id, d] = b.dataset.tarjMover.split('|'), i = sel.indexOf(id), j = i + +d; if (j < 0 || j >= sel.length) return; [sel[i], sel[j]] = [sel[j], sel[i]]; pintar(); caja.querySelector(`[data-tarj-mover="${id}|${d}"]`)?.focus(); });
   };
   pintar();
-  const guardar = async (tarjetas, equipo) => agoraApi('workspace/preferencias', {method: 'PUT', body: {vista, tarjetas, equipo}});
+  const guardar = async (tarjetas, equipo) => agoraApi('workspace/preferencias', {method: 'PUT', body: {vista, tarjetas: tarjetas === null ? null : [...tarjetas, ...Object.keys(wgx).filter(k => !tarjetas.includes(k)).map(k => 'Z' + k)], equipo}});
   s.querySelector('[data-tarj-def]').onclick = async e => {
     const b = e.currentTarget; busy(b, true);
     try { await guardar(null, false); await tarjCargar(vista, true); closeModal(); alGuardar(); toast(propia ? 'Volviste a la vista del equipo.' : 'Tarjetas restauradas.'); }
@@ -7294,7 +7300,7 @@ function cajaVivo(main) {
   main.querySelectorAll(CEL_SEL).forEach((c, i) => {
     const nuevo = !c.dataset.cel; c.dataset.cel = '1'; c.classList.add('cel');
     const nombre = celRotulo(c);
-    if (puede && nombre && !c.querySelector('[data-cel-ed]') && !c.closest('[data-wg]')) {
+    if (puede && nombre && !c.querySelector('[data-cel-ed]') && !c.closest('[data-wg]') && !c.matches('[data-wgc]')) {
       let acc = c.querySelector(':scope > .cel-acc');
       if (!acc) { acc = document.createElement('span'); acc.className = 'cel-acc'; c.append(acc); }
       const tag = c.matches('button, a') ? 'span' : 'button';
@@ -10735,7 +10741,7 @@ applyTheme();
 if (AG_READY && window.AGORA_MAINTENANCE !== false) { try { AG.installMaintenance(); } catch { /* sin vigilancia */ } }
 /* 2.15.0 · Widgets: lo que widgets.js usa de la app (vive aparte para no agrandar este archivo). */
 window.AgoraHost = {
-  confirmar: (t, x, l, fn, d) => confirmModal(t, x, l, fn, d), rutaDe: id => (MODS[id] && moduleAllowed(id) ? href(MODS[id].path) : ''), nombreDe: id => (MODS[id] && moduleAllowed?.(id) !== false ? MODS[id].name : ''),
+  confirmar: (t, x, l, fn, d) => confirmModal(t, x, l, fn, d), vistaTarjetas: () => TARJ_VISTA_MOD[R?.mod] || '', tarjGuardadas: v => TARJ[v]?.mia?.tarjetas ?? TARJ[v]?.equipo?.tarjetas ?? null, aplicarTarjetas: () => { try { tgAplicar(); } catch {} }, rutaDe: id => (MODS[id] && moduleAllowed(id) ? href(MODS[id].path) : ''), nombreDe: id => (MODS[id] && moduleAllowed?.(id) !== false ? MODS[id].name : ''),
   api: (p, o) => agoraApi(p, o), openModal: (h, o) => openModal(h, o), closeModal: () => closeModal(), modalHead: (t, s) => modalHead(t, s), esc, icon, toast: m => toast(m), busy: (b, on, l) => busy(b, on, l),
   modulo: () => R?.mod || '', nombreModulo: () => MODS[R?.mod]?.name || '', conPeriodo: () => !!MODS[R?.mod]?.periodo,
   periodo: () => (MODS[R?.mod]?.periodo && /^\d{4}-\d{2}$/.test(PERIODO || '')) ? PERIODO : mesActualYM(), mesActual: () => mesActualYM(),

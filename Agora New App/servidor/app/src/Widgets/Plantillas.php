@@ -99,7 +99,7 @@ final class Plantillas {
     $this->db()->run('INSERT INTO agora_widget_formulas(tenant_id,nombre,nombre_clave,expresion,formato,decimales,descripcion,creado_por) VALUES(?,?,?,?,?,?,?,?)',[$this->t(),$f['nombre'],$c,$f['expresion'],$f['formato'],(int)$f['decimales'],$f['descripcion'],$u]);$mapa[$c]=(int)$this->db()->pdo->lastInsertId();$creadas++;}
    $mods=[];
    foreach($x['tableros'] as $modulo=>$t){
-    if(!preg_match('/^[a-z][a-z_]{1,39}$/D',$modulo))continue;
+    if(!preg_match('/^[a-zA-Z][a-zA-Z_]{1,39}$/D',$modulo))continue;
     $r=$this->db()->one("SELECT id,config,version FROM agora_dashboards WHERE tenant_id=? AND modulo=? AND alcance='equipo' AND user_id=0 FOR UPDATE",[$this->t(),$modulo]);
     $antes=$r?(json_decode((string)$r['config'],true)['widgets']??[]):[];$nuevos=[];
     foreach($t['widgets'] as $i=>$w){$ok=true;$fix=function(array $q)use($mapa,&$ok){if(($q['fuente']??'')==='formula'){$c=Metricas::clave((string)$q['ref']);if(!isset($mapa[$c])){$ok=false;return $q;}$q['ref']=$mapa[$c];}return $q;};

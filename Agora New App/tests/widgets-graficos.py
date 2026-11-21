@@ -19,7 +19,7 @@ with sync_playwright() as p:
     br=p.chromium.launch(executable_path='/opt/pw-browsers/chromium',args=['--no-sandbox'])
     try:
         pg=entrar(br,'admin.asocim@agora.test');pg.goto(B+'/ventas');pg.wait_for_timeout(6500)
-        r=pg.evaluate("""(()=>{const g=document.querySelector('section.wg-g');return [g&&g.parentElement.lastElementChild===g, document.querySelectorAll('section.wg .wg-cel').length, g?g.querySelectorAll('.wg-graf').length:0, document.querySelectorAll('.wg-graf .wg-svg').length, !!g.querySelector('.wg-tabla')]})()""")
+        r=pg.evaluate("""(()=>{const g=document.querySelector('section.wg-g');return [g&&g.parentElement.lastElementChild===g, document.querySelectorAll('.wg-cel[data-wgc]').length, g?g.querySelectorAll('.wg-graf').length:0, document.querySelectorAll('.wg-graf .wg-svg').length, !!g.querySelector('.wg-tabla')]})()""")
         ok(r[0],'los gráficos van al final del módulo (decisión del usuario)')
         ok(r[1]==1 and r[2]==4 and r[3]==3 and r[4],f'la cifra queda arriba y los 4 gráficos abajo: línea, barras y dona dibujados y la tabla {r}')
         ok(pg.locator('.wg-graf .xt-bar, .wg-graf .xt-q').count()==0,'la tabla del widget no recibe el buscador ni las columnas de las tablas del módulo')
@@ -30,7 +30,7 @@ with sync_playwright() as p:
         tip=pg.evaluate("document.querySelector('.wg-graf[data-wg-id=linea01] .wg-tip').innerText")
         esp=f"{serie['series']['rep.vendido'][5]['valor']:,.2f}".replace(',','X').replace('.',',').replace('X','.')
         ok('noviembre de 2026' in tip and esp in tip,f'el tooltip del gráfico da la misma cifra que el widget ({esp} en «{tip[:60]}…»)')
-        cel=pg.locator('section.wg .wg-cel').first.locator('.ag-resumen-v').inner_text()
+        cel=pg.locator('.wg-cel[data-wgc]').first.locator('.ag-resumen-v').inner_text()
         ok(esp in cel,'y la misma que la cifra de arriba')
         d=pg.locator('.wg-graf[data-wg-id=dona001]')
         ok(d.locator('.wg-arco').count()==3 and '%' in d.locator('.wg-ley-v').inner_text(),'la dona reparte en partes con su porcentaje')
@@ -38,7 +38,7 @@ with sync_playwright() as p:
         vals=[float(re.sub(r'[^\d,]','',x).replace(',','.')) for x in t.locator('td:last-child').all_inner_texts()]
         ok(len(vals)==4 and vals==sorted(vals,reverse=True),f'la tabla ordena de mayor a menor {vals}')
         # detalle y descarga
-        pg.locator('section.wg .wg-cel').first.click();pg.wait_for_selector('[data-wg-csv]')
+        pg.locator('.wg-cel[data-wgc]').first.click();pg.wait_for_selector('[data-wg-csv]')
         ok(pg.locator('.wg-detalle .wg-tabla tbody tr').count()==6 and 'Reporte mensual' in pg.inner_text('.wg-detalle'),'el detalle trae qué mide, de dónde sale y los últimos 6 meses')
         with pg.expect_download() as dl:pg.click('[data-wg-csv]')
         ruta=dl.value.path();txt=open(ruta,encoding='utf-8-sig').read()
@@ -60,7 +60,7 @@ with sync_playwright() as p:
         ok(pg.locator('section.wg-g .wg-graf').count()==5 and pg.locator('.wg-priv').count()>=1,'se guarda: el gráfico de área queda al final y se ve la marca «Solo la administración»')
         pg.close()
         pg=entrar(br,'ejecutivo1.asocim@agora.test');pg.goto(B+'/ventas');pg.wait_for_timeout(5500)
-        ok(pg.locator('section.wg .wg-cel, section.wg-g .wg-graf').count()==0,'el ejecutivo no ve un tablero que es solo de la administración')
+        ok(pg.locator('.wg-cel[data-wgc], section.wg-g .wg-graf').count()==0,'el ejecutivo no ve un tablero que es solo de la administración')
         pg.close()
         pg=entrar(br,'admin.asocim@agora.test');pg.goto(B+'/costos');pg.wait_for_timeout(5000)
         abrir_ed(pg);pg.wait_for_selector('[data-wg-copiar]')

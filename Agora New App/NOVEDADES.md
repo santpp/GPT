@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.1 · Los widgets son parte del tablero, como en la cuenta (21 nov):**
+- Pedido del usuario: las cifras propias ya no van en un bloque aparte: **entran en la misma cuadrícula de tarjetas del módulo**, con la misma forma que sus vecinas (título, enunciado y cifra). Las tarjetas que ya había conservan sus títulos, enunciados y separaciones.
+- **Se ordenan como un todo desde «Editar Dashboard»**: la lista de ese editor trae las tarjetas del módulo y los widgets juntos; se suben, bajan, muestran u ocultan igual (cada persona su vista, o la del equipo).
+- **Todos los módulos y submódulos** (23): también Bandeja, Contactos, Convenios, Con convenio, Registro, Libro de ventas, Datos fiscales y Tasas. Cada uno tiene un solo «Editar Dashboard» y desde ahí se agregan los widgets. Los gráficos siguen al final del módulo.
+- Prueba nueva: `tests/fixes-2181.py`; `widgets-ui.py` comprueba que un widget sube al primer lugar entre las tarjetas.
+
 **Novedades 2.18.0 · Punto 7 de los widgets, plantillas por rubro y lo que reportó el usuario (21 nov):**
 - **Los widgets se crean y editan dentro de cada tablero** (pedido del usuario): «Editar Dashboard» del módulo trae arriba «Widgets del equipo · Agregar/Editar widgets». Se quitó el botón suelto y **Inicio ya no tiene widgets** (solo sus avisos). Los módulos que no tenían «Editar Dashboard» (Gestión Comercial con reporte, Equipo, Tendencias, Catálogo, Oportunidades, Redes) ahora lo tienen y abre los widgets.
 - **Correo de Ágora:** el selector solo mostraba subcuentas con la conexión ya probada. Ahora muestra también las guardadas sin probar («se prueba al guardar») y al guardar Ágora prueba la conexión; si no responde, lo explica. Si ninguna tiene conexión, la ventana dice dónde ponerla.
