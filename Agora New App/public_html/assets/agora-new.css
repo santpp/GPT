@@ -1030,3 +1030,9 @@ main#app .wg-graf .wg-tabla{max-width:none}
 main#app .wg-graf .wg-lienzo{align-self:stretch;width:100%}
 main#app .wg-graf .wg-tabla td,main#app .wg-graf .wg-tabla th{text-align:left}
 main#app .wg-graf .wg-tabla td:last-child,main#app .wg-graf .wg-tabla th:last-child{text-align:right}
+
+/* 2.16.1 · Pedido del usuario: en las tarjetas de cifras el título y el enunciado van a la izquierda; el resultado sigue centrado. */
+main#app#app .cel :is(.ag-resumen-t,h3,.inicio-resumen-l,.t-label){align-self:stretch!important;justify-content:flex-start!important;text-align:left!important;padding:0 76px 0 0!important}
+main#app#app .cel .ag-resumen-s{align-self:stretch!important;text-align:left!important}
+main#app#app .cel:not(:has(> .cel-acc)) :is(.ag-resumen-t,h3,.inicio-resumen-l,.t-label){padding-right:0!important}
+@media (max-width:640px){main#app#app .cel :is(.ag-resumen-t,h3,.inicio-resumen-l,.t-label){padding-right:0!important}}

@@ -1,5 +1,8 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.16.1 · Tarjetas de cifras: título y enunciado a la izquierda (21 nov):**
+- Pedido del usuario: en todas las tarjetas de cifras (Inicio, módulos y widgets) el **título y el enunciado van alineados a la izquierda**; el **resultado** (la cifra y su línea de abajo) sigue **centrado**. Igual en el teléfono. Las ideas del punto 7 del plan de widgets quedan para luego.
+
 **Novedades 2.16.0 · Widgets fases 4, 5 y 6: gráficos, detalle con descarga, «quién ve» y cifras del reporte (21 nov):**
 - **Gráficos (fase 4):** en el mismo editor, cada widget puede ser cifra, **línea, barras, área** (hasta 4 series, últimos 3 a 12 meses), **dona** (partes de un total, con su %; más de 5 partes se juntan en «Otros») o **tabla de los primeros** (3 a 10, de mayor a menor). Van **al final del módulo**, en «Gráficos del equipo». Al pasar el ratón (o tocar) muestran el mes y el valor de cada serie. Los puntos son **las mismas cifras** que el widget de ese mes (probado). Colores de la identidad en orden fijo, revisados para daltonismo en modo claro y oscuro; leyenda con dos series o más; un solo eje (si las series miden cosas distintas se avisa). Una cifra «de hoy» no puede ir en un gráfico por mes (se explica).
 - **Detalle y descarga (fase 5):** tocar una cifra (o «Ver detalle y descargar» en un gráfico) abre qué mide, de dónde sale, los últimos 6 meses y, si es fórmula, **cuánto vale cada parte**. «Descargar» baja un archivo para Excel y queda en Auditoría.

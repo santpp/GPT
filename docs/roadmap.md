@@ -298,6 +298,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - **2.12.15 (21 de noviembre)**: pendientes medios [9], [10], [11] y [13] resueltos; backend revisado para el despliegue.
 - **2.13.0 (21 de noviembre)**: Correo de Ágora por la subcuenta de la agencia (sin SMTP), código al entrar, equipos de confianza de 14 días (cookie, no IP) y «¿Olvidaste tu clave?» en pasos.
 - **2.13.1 (21 de noviembre)**: líneas de las cifras azules (rojas al pasar), «Editar» gris sobre blanco, y la clave de los dueños solo por terminal.
+- **2.16.1 (21 de noviembre)**: tarjetas de cifras con título y enunciado a la izquierda y el resultado centrado.
 - **2.16.0 (21 de noviembre)**: widgets fases 4, 5 y 6: gráficos (línea, barras, área, dona, tabla) al final del módulo, detalle de cada cifra con descarga, tableros solo para la administración, copiar de otro módulo y 14 cifras del reporte mensual.
 - **2.15.0 (21 de noviembre)**: widgets del equipo en pantalla: editor de tableros por módulo (cifras y fórmulas, período, comparación, semáforo) y editor de fórmulas con autocompletar, colores, error señalado, vista previa y variables (solo administración edita).
 - **2.14.0 (21 de noviembre)**: widgets, primera entrega: diccionario de 37 métricas (misma cifra que las tarjetas) y motor de fórmulas del servidor (financieras y de fechas), sin cambios visibles.

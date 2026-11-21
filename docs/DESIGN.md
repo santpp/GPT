@@ -106,7 +106,7 @@ Lo de arriba es de Ágora Mobile. El ERP (`Agora New App/`) **no** pasa por `mak
 |---|---|---|
 | Rejilla | 4 columnas, separación 14 px (en todos los tableros, también el Tablero comercial y «Resumen de hoy»; 2 entre 601 y 900 px) | 2 columnas, separación 10 px |
 | Caja | relleno 18 · 18 · 16 px, radio 20 px | relleno 14 px |
-| Rótulo | 14 px, 650, centrado (2.12.8) | 13 px |
+| Rótulo y enunciado | 14 px, 650, a la izquierda (2.16.1; el resultado va centrado) | 13 px, a la izquierda |
 | Descripción bajo el rótulo | 12,5 px, gris | 12 px |
 | Cifra | 26 px, 700 | 22 px (20 px en la caja de Gestión Comercial) |
 | Nota | 12,5 px, 400 | igual |
