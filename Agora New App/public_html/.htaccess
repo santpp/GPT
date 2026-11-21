@@ -7,6 +7,9 @@ RewriteCond %{HTTPS} !=on
 RewriteCond %{HTTP:X-Forwarded-Proto} !=https
 RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:[0-9]+)?$
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+# 2.12.14 · Seguridad: nunca servir archivos ocultos ni de trabajo (.git, .env, notas, respaldos, registros, guiones).
+RewriteRule (^|/)\.(?!well-known/) - [F,L]
+RewriteRule \.(md|sql|log|bak|old|orig|swp|sh|py|ini|env|lock|zip|tar|gz|sha256)$ - [F,L]
 # API: se enruta desde la raíz (OpenLiteSpeed de CyberPanel no siempre aplica el .htaccess de subcarpetas).
 RewriteRule ^api/index\.php$ - [L]
 RewriteRule ^api(/.*)?$ /api/index.php [L,QSA]
@@ -18,10 +21,18 @@ RewriteRule ^(centro|modulos|inicio|comercial|bandeja|contactos|oportunidades|ta
 RewriteRule ^(migracion|productos|personalizar|redes)(/.*)?$ index.html [L]
 </IfModule>
 <IfModule mod_headers.c>
-Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'"
+# 2.12.14 · Cabeceras de seguridad para el despliegue (la API repite las suyas en api/index.php).
+Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'; upgrade-insecure-requests"
+Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 Header always set X-Content-Type-Options "nosniff"
 Header always set Referrer-Policy "strict-origin-when-cross-origin"
 Header always set X-Frame-Options "SAMEORIGIN"
+Header always set Permissions-Policy "camera=(), microphone=(self), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
+Header always set Cross-Origin-Opener-Policy "same-origin"
+Header always set Cross-Origin-Resource-Policy "same-origin"
+Header always set X-Permitted-Cross-Domain-Policies "none"
+Header always unset X-Powered-By
+Header unset X-Powered-By
 <FilesMatch "^(index\.html|sw\.js|version\.json)$">
 Header set Cache-Control "no-cache"
 </FilesMatch>

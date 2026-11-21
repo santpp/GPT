@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 ini_set('display_errors','0');header('Cache-Control: no-store');header('X-Content-Type-Options: nosniff');header('Referrer-Policy: no-referrer');
+// 2.12.14 · Cabeceras de seguridad propias de la API (por si el servidor no aplica las del .htaccess).
+header_remove('X-Powered-By');header('X-Frame-Options: DENY');header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'");header('Cross-Origin-Resource-Policy: same-origin');header('Cross-Origin-Opener-Policy: same-origin');header('X-Permitted-Cross-Domain-Policies: none');header('Permissions-Policy: camera=(), geolocation=(), payment=()');
+if((!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off')||($_SERVER['HTTP_X_FORWARDED_PROTO']??'')==='https')header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 $requestId=bin2hex(random_bytes(8));header('X-Request-ID: '.$requestId);
 try{
  /* 2.1.12 · Diagnóstico de arranque. Si algo del servidor falla, /api/status y /api/health dicen QUÉ falla

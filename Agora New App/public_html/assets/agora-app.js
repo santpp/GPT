@@ -270,7 +270,7 @@ function route() {
   m = p.match(/^\/conversations\/([A-Za-z0-9_-]{1,80})$/);
   if (m) return {view: 'ag_inbox', mod: 'bandeja', conversation: m[1]};
   m = p.match(/^\/modulos\/([a-z-]{2,30})$/);
-  if (m) { const g = Object.keys(GRUPOS).find(k => GRUPOS[k].slug === m[1]); if (g) return {view: 'grupo', mod: 'centro', grupo: g}; }
+  if (m) { const g = Object.keys(GRUPOS).find(k => GRUPOS[k].slug === m[1]); if (g === 'general') return homeRoute(); /* 2.12.14 · M2: General no tiene submódulos propios: va al Inicio */ if (g) return {view: 'grupo', mod: 'centro', grupo: g}; }
   if (p === '/') return homeRoute();
   return {...homeRoute(), unknown: true};
 }
@@ -367,12 +367,18 @@ function paint(html, enter) {
   // Agora New App: sobre «cargando», «error» o «sin acceso» no se ejecuta el código del módulo (antes, Ajustes se quedaba cargando).
   if (!app.querySelector('[data-placeholder]')) V[R.view]?.mounted?.(app);
   // 2.4.0 · quien solo ve «lo asignado» y no está enlazado con la cuenta no verá nada: se le dice por qué.
-  if (['bandeja', 'contactos', 'oportunidades', 'comercial'].includes(R.mod) && conectada() && ESPACIO?.permisos?.soloAsignado && !ESPACIO?.enlace)
+  if (['bandeja', 'contactos', 'oportunidades', 'comercial'].includes(R.mod) && sinEnlace()) {
+    // 2.12.14 · M3: el aviso de enlace basta; se esconde el «No tienes permiso…» que la pantalla repetía debajo.
+    const tapar = () => app.querySelectorAll('p, div, span, li').forEach(e => { if (!e.children.length && /^No tienes permiso para consultar esta cuenta\.?$/.test(e.textContent.trim())) e.hidden = true; });
+    tapar(); new MutationObserver(tapar).observe(app, {childList: true, subtree: true});
+  }
+  if (['bandeja', 'contactos', 'oportunidades', 'comercial'].includes(R.mod) && sinEnlace())
     app.insertAdjacentHTML('afterbegin', `<p class="aviso-enlace" role="status">${icon('info')}<span><b>Tu usuario no está enlazado con la cuenta.</b> Por eso no ves conversaciones, contactos ni oportunidades. Pídele a quien administra tu subcuenta que te enlace en Usuarios y roles.</span></p>`);
   applyUiTexts();
   aplicarPaleta(); arpVigilar(); tgVigilar();
   syncAgencyRail();
 }
+const sinEnlace = () => !!(conectada() && ESPACIO?.permisos?.soloAsignado && !ESPACIO?.enlace);
 const repaint = () => { if (V[R.view]) { topbar(); paint(V[R.view].render()); } };
 window.addEventListener('resize', () => placeThumbs(document));
 
@@ -2935,7 +2941,7 @@ function exportarAuditoria() {
   if (!items.length) { toast('No hay movimientos que exportar.'); return; }
   bajarCsv(`auditoria-${PERIODO}.csv`, [
     ['Fecha', 'Persona', 'Rol', 'Acción', 'Módulo', 'Sobre qué', 'Contacto', 'Desde dónde'],
-    ...items.map(e => [fstamp(e.at), e.actor, e.rol || '', e.accionTexto || e.accion, MODULOS_AUD[e.modulo] || e.modulo, e.objeto || '', e.contacto || '', `${e.dispositivo || ''} ${e.ip || ''}`.trim()]),
+    ...items.map(e => [fstamp(e.at), e.actor, ROLES_SISTEMA[e.rol]?.l || e.rol || '', /* 2.12.14 · M5 */ e.accionTexto || e.accion, MODULOS_AUD[e.modulo] || e.modulo, e.objeto || '', e.contacto || '', `${e.dispositivo || ''} ${e.ip || ''}`.trim()]),
   ]);
 }
 function bajarCsv(nombre, filas) {
@@ -4086,7 +4092,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.12.13').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.12.14').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -9093,7 +9099,9 @@ async function inicioResumenLlenar(box, epoch) {
   ]);
   if (epoch !== NAV_EPOCH || !box.isConnected) return;
   const datos = {dash, dia, tareas, won};
-  if (!Object.values(datos).some(Boolean)) { box.querySelector('.inicio-resumen-g').innerHTML = '<p class="inicio-resumen-x">No se pudieron leer las cifras de hoy. Ábrelas en el Dashboard.</p>'; return; }
+  if (!Object.values(datos).some(Boolean)) { box.querySelector('.inicio-resumen-g').innerHTML = sinEnlace() // 2.12.14 · M3
+    ? '<p class="inicio-resumen-x"><b>Tu usuario no está enlazado con la cuenta.</b> Por eso no ves las cifras de hoy. Pídele a quien administra tu subcuenta que te enlace en Usuarios y roles.</p>'
+    : '<p class="inicio-resumen-x">No se pudieron leer las cifras de hoy. Ábrelas en el Dashboard.</p>'; return; }
   ids.forEach(id => {
     const c = box.querySelector(`[data-ir="${id}"]`); if (!c) return;
     const x = INI_TARJETAS[id], d = datos[x.fuente]; let v = ['—', 'Sin dato por ahora'];

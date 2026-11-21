@@ -1,5 +1,16 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.14 · Fixes menores y cabeceras de seguridad para el despliegue (21 nov):**
+- **Cabeceras de seguridad** en el `.htaccess`: política de contenido (CSP) más completa, HSTS (un año), permisos del navegador (sin cámara ni ubicación), aislamiento de ventana y de recursos (COOP/CORP), sin «X-Powered-By». Se bloquean los archivos ocultos y de trabajo (`.git`, `.env`, notas, respaldos, registros, guiones). La API manda las suyas aunque el servidor no aplique el `.htaccess` (sin marco, CSP cerrada, HSTS por HTTPS). Se revisaron 29 pantallas con dos cuentas: ninguna rompe la política.
+- **M2:** /modulos/general lleva al Inicio (antes, un módulo vacío).
+- **M3:** rol sin enlace con la cuenta: solo el aviso de enlace (en el Inicio y sin el «No tienes permiso…» repetido).
+- **M4:** «1 cierre en el mes» (antes «1 cierres»).
+- **M5:** los Excel de Usuarios y de Auditoría traen el nombre del rol («Administración»), no el código.
+- **M7:** al editar una venta importada sin vendedor queda vacía de verdad (null), no con un texto vacío.
+- **M8:** «Buscar en la cartera» ahora usa el texto buscado (la ruta sigue en uso; se corrigió en vez de borrarla).
+- M1 y M6 ya estaban resueltos en el código (lo de M1 en ASOCIM es su logo de prueba, que es la imagen de Ágora).
+- Prueba nueva: `tests/fixes-21214.py`.
+
 **Novedades 2.12.13 · «¿Venta ganada?» igual que en Ventas, también desde la ficha del contacto (21 nov):**
 - **Un solo flujo:** desde la conversación y desde la ficha del contacto (Contactos) se elige la oportunidad (o «+ Nueva venta») y enseguida se abre el **formulario de venta de Ventas** (Cliente · Producto y cobro · Detalles · Resumen), que guarda el monto en la oportunidad, la venta, las tareas y los cobros. Ya no se escribe el valor dos veces.
 - **Arreglo:** con «+ Nueva venta» el formulario de venta no se abría (la cuenta devuelve el código de la oportunidad nueva en otro campo y se perdía).

@@ -407,7 +407,7 @@ final class Ventas {
   if($vid!==$ownerActual&&$vid!==0&&!$this->administra())Http::fail('Solo supervisión o administración puede cambiar el vendedor.',403);
   // 2.8.14: venta importada sin usuario vendedor: se conserva el nombre tal como vino.
   $vendedorTexto=null;
-  if($vid===0&&$antes){$vendedorTexto=mb_substr(trim((string)($b['vendedor']??$antes['vendedor']??'')),0,120);}
+  if($vid===0&&$antes){$vendedorTexto=mb_substr(trim((string)($b['vendedor']??$antes['vendedor']??'')),0,120);if($vendedorTexto==='')$vendedorTexto=null;/* 2.12.14 · M7: sin vendedor queda null, no '' */}
   elseif(!$this->db->one('SELECT id FROM agora_users WHERE id=? AND local_tenant_id=?',[$vid,$this->auth->tenant]))Http::fail('El vendedor no pertenece a esta subcuenta.');
   // Campos personalizados (los define Ajustes → Campos para 'ventas').
   $cf=$b['customFields']??[];if(!is_array($cf)||!array_is_list($cf)||count($cf)>40)Http::fail('Hasta 40 campos personalizados.');
@@ -419,7 +419,7 @@ final class Ventas {
    'datos'=>['cliente'=>$cliente,'documento'=>$cliente['documento'],'correo'=>$cliente['correo'],'telefono'=>$cliente['telefono'],
     'productoId'=>$pid,'producto'=>(string)$prod['nombre'],'codigo'=>(string)($prod['codigo']??''),'rubro'=>$rubro,'cantidad'=>$cantidad,
     'monto'=>$monto,'moneda'=>$moneda,'cobro'=>$cobro,'frecuencia'=>$frecuencia,'cuotas'=>$cuotas,'fechaInicio'=>$inicio,'diaCobro'=>$diaCobro,
-    'vendedorId'=>$vid?:null,'vendedor'=>$vendedorTexto??$this->nombreDe($vid),'notas'=>Http::text($b,'notas',2000,false),'customFields'=>$custom]];
+    'vendedorId'=>$vid?:null,'vendedor'=>($vid===0&&$antes)?$vendedorTexto:$this->nombreDe($vid),'notas'=>Http::text($b,'notas',2000,false),'customFields'=>$custom]];
  }
 
  /**

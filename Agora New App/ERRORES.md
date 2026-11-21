@@ -69,6 +69,7 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 66 | El dueño con una subcuenta abierta veía el menú de módulos con los colores viejos. | El color por categoría se aplicaba al final del arranque, y ese camino del dueño sale antes. | Se aplica antes del arranque, para todos. (2.12.10) |
 | 67 | «Editar Dashboard» y «Dashboard» desalineados en el teléfono. | Distinto alto de línea y relleno inferior heredado del enlace subrayado. | Mismo alto, relleno y línea en los dos. (2.12.10) |
 | 68 | «¿Venta ganada?» con «+ Nueva venta» no abría el formulario de venta. | Al crear la oportunidad la cuenta responde `{state, id}` y la capa que abre el formulario solo buscaba `opportunity.id`. | `vgGanada` también lee `id`. (2.12.13) |
+| 69 | «Buscar en la cartera» devolvía siempre los mismos contactos. | La ruta leía `q/query/busqueda` y la pantalla manda `consulta`. | La ruta también lee `consulta`. (2.12.14) |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 

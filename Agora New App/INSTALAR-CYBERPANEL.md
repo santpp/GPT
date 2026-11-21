@@ -333,3 +333,16 @@ Los errores internos quedan en el log de PHP del sitio (`/home/TU-DOMINIO/logs/`
 | Una ventana se ve sin estilos (botones grises, letra distinta) | El navegador guardó archivos de una versión anterior. Desde la 2.3.1 la app pide siempre los nuevos: recarga una vez. Si sigue, Chrome → candado de la barra → Configuración del sitio → **Borrar datos**. |
 | La bandeja dice «en espera para respetar la cuota» | Es normal un momento: Ágora no pasa de 20 consultas cada 10 segundos por subcuenta. Se recupera sola. |
 | Una persona no ve sus conversaciones | Su correo en Ágora debe ser el mismo que en la cuenta, y la conversación debe estar asignada a ella. |
+
+
+## Cabeceras de seguridad (2.12.14)
+
+El `.htaccess` de `public_html` ya trae las cabeceras (CSP, HSTS, Permissions-Policy, COOP/CORP, nosniff, Referrer-Policy, X-Frame-Options) y bloquea archivos ocultos y de trabajo. Para comprobar en el servidor:
+
+```
+curl -sI https://tests.agoradigital.app/ | grep -iE "strict-transport|content-security|permissions-policy|cross-origin"
+curl -sI https://tests.agoradigital.app/api/health | grep -iE "x-frame|content-security"
+curl -s -o /dev/null -w "%{http_code}\n" https://tests.agoradigital.app/NOVEDADES.md   # debe dar 403 o 404
+```
+
+Si la primera no muestra las cabeceras, en CyberPanel: el sitio → «vHost Conf» → confirmar que `allowOverride` permite `Headers` (o «Rewrite» y «Headers»), y reiniciar OpenLiteSpeed. La API manda sus propias cabeceras aunque eso falle.

@@ -46,28 +46,7 @@ PRIORIDAD MEDIA
 MENORES
 -------
 
-[M1] Inicio: el logo de Ágora sale dos veces (en la franja «Ágora Digital App / Hola» y otra vez a la
-     derecha o debajo). Cuando la subcuenta no tiene logo propio, no repetir el de Ágora.
-
-[M2] /modulos/general abre un módulo vacío («0 submódulos») si se entra por la dirección.
-     Llevar a /centro o esconder el grupo General cuando no tiene submódulos.
-
-[M3] Rol Consulta sin enlace con la cuenta: el Inicio dice «No se pudieron leer las cifras de hoy» en vez del
-     aviso de enlace, y en Bandeja, Contactos y Tablero se repite «No tienes permiso para consultar esta
-     cuenta» debajo del aviso amarillo. Dejar solo el aviso de enlace.
-
-[M4] Textos: «1 cierres en el mes» (plural con 1) en Desempeño del equipo.
-
-[M5] El Excel de Usuarios trae el rol como código («ADMIN»). Usar el nombre del rol («Administración»).
-
-[M6] Aviso de PHP «Undefined array key "kpi"» en Controllers/Embudos.php línea 56 (no se ve en pantalla).
-     Cambiar `?$s['kpi']` por `?($s['kpi']??'')`.
-
-[M7] Editar una venta importada sin vendedor guarda vendedor '' donde antes era null (no se ve en pantalla).
-
-[M8] La ruta ghl/contactos/buscar (Api.php) ya no la usa ninguna pantalla desde 2.9.6 (Nuevo convenio lleva
-     a contratos.agoradigital.app). Además ignoraba el texto buscado (leía q/query/busqueda y la pantalla
-     mandaba «consulta»). Borrarla en la limpieza de la refactorización.
+(Ninguno: M1 a M8 se resolvieron en 2.12.14.)
 
 
 SIN PROBAR (no se puede desde el entorno de desarrollo)

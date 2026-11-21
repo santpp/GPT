@@ -192,7 +192,7 @@ final class Migracion {
    $total=count($filas);
   }elseif($modulo==='usuarios'){
    $rows=$this->db->all('SELECT name,email,role,active,last_login_at FROM agora_users WHERE local_tenant_id=? ORDER BY id LIMIT 5000',[$t]);
-   foreach($rows as $u)$filas[]=$this->aFila($modulo,$campos,['nombre'=>$u['name'],'correo'=>$u['email'],'rol'=>$u['role'],'estado'=>(int)$u['active']?'Activo':'Inactivo','ultimoAcceso'=>(string)($u['last_login_at']??'')],[]);
+   foreach($rows as $u)$filas[]=$this->aFila($modulo,$campos,['nombre'=>$u['name'],'correo'=>$u['email'],'rol'=>['MASTER'=>'Dueño','SUPERADMIN'=>'SuperAdmin','ADMIN'=>'Administración','SUPERVISOR'=>'Supervisión','EJECUTIVO'=>'Ejecutivo','CONSULTA'=>'Consulta'][$u['role']]??$u['role'],/* 2.12.14 · M5 */'estado'=>(int)$u['active']?'Activo':'Inactivo','ultimoAcceso'=>(string)($u['last_login_at']??'')],[]);
    $total=count($filas);
   }else{
    $kind=$d['kind'];$cursor=max(0,(int)($_GET['cursor']??0));$limit=min(1000,max(1,(int)($_GET['limit']??1000)));

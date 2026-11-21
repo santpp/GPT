@@ -1093,7 +1093,7 @@
           <p class="f">${esc3(goalText)}</p>
           <div class="lts"><span class="lt lt-ok"><i aria-hidden="true"></i>${number(counts.lograda || 0)} con la meta lograda</span><span class="lt lt-warn"><i aria-hidden="true"></i>${number(counts.cerca || 0)} cerca de la meta</span><span class="lt lt-bad"><i aria-hidden="true"></i>${number(counts.apoyo || 0)} necesitan apoyo</span></div></div>
          ${teamTable(month2)}
-         <p class="src">${month2.sales.partial ? "Se resumen los primeros cierres del mes. " : ""}${month2.sales.counted !== null && month2.sales.counted !== void 0 ? `${number(month2.sales.counted)} ${esc3(word)} en el mes.` : ""}</p>`
+         <p class="src">${month2.sales.partial ? "Se resumen los primeros cierres del mes. " : ""}${month2.sales.counted !== null && month2.sales.counted !== void 0 ? `${number(month2.sales.counted)} ${esc3(Number(month2.sales.counted) === 1 ? String(word).replace(/ones$/i, "ón").replace(/ces$/i, "z").replace(/s$/i, "") : word)} en el mes.`/* Agora New App 2.12.14 · M4: singular con 1 */ : ""}</p>`
       )}`;
     }
     function paintWonTeam() {
