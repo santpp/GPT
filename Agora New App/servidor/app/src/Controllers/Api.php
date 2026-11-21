@@ -6,7 +6,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.16.1'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.17.0'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -28,6 +28,15 @@ final class Api {
   // 2.14.0 · Correo de Ágora: por qué subcuenta salen los correos del ERP. Solo el dueño (Master).
   if($p==='agency/correo'&&in_array($m,['GET','PUT'],true))return $this->ag->correo($m,$b);
   if($p==='agency/correo/probar'&&$m==='POST')return $this->ag->correoProbar();
+  // 2.17.0 · Borrar una subcuenta (solo el dueño Master): primero se pide una operación aritmética firmada y luego se borra todo lo suyo.
+  if($p==='agency/accounts/borrar/desafio'&&$m==='POST'){$this->a->master();$id=Http::integer($b['id']??0,1,PHP_INT_MAX);$t=$this->a->authorizeTenant($id,true);return \Agora\Security\Desafio::crear((string)$this->a->config['app_key'],'borrar-subcuenta',(string)$id,(int)$this->a->user['id'])+['nombre'=>$t['name']??''];}
+  if($p==='agency/accounts'&&$m==='DELETE'){
+   $this->a->master();$id=Http::integer($b['id']??0,1,PHP_INT_MAX);$this->a->authorizeTenant($id,true);
+   \Agora\Security\Desafio::comprobar((string)$this->a->config['app_key'],'borrar-subcuenta',(string)$id,(int)$this->a->user['id'],$b['token']??null,$b['respuesta']??null);
+   $r=(new \Agora\Services\Borrado($this->db))->subcuenta($id);$this->a->tenant=null;
+   $this->a->audit('subcuenta.borrada','agencia',(string)$id,['detalle'=>'Se borró la subcuenta «'.$r['nombre'].'» y todos sus datos','filas'=>array_sum($r['filas'])]);
+   return ['ok'=>true,'id'=>$id,'nombre'=>$r['nombre']];
+  }
   if($p==='agency/accounts'&&in_array($m,['GET','POST','PUT']))return $this->ag->accounts($m,$b);
   if($p==='agency/billing'&&$m==='PUT')return $this->ag->billing($b);
   if($p==='agency/accounts/conexion/probar'&&$m==='POST')return $this->ag->ghlTest($b);
@@ -35,6 +44,13 @@ final class Api {
   if($p==='agency/activity'&&$m==='GET')return $this->ag->audit(true);
   // 2.1.17 · gestión unificada de usuarios (Master y Superadmin editan a cualquiera a su alcance)
   if(str_starts_with($p,'agency/usuarios'))return (new UsuariosAgencia($this->db,$this->a))->route($p,$m,$b);
+  // 2.17.0 · Desde Agencia: borrar un usuario de una subcuenta (con la operación aritmética firmada).
+  if(in_array($p,['agency/users/borrar/desafio','agency/users/borrar'],true)&&$m==='POST'){
+   $this->a->agency();$id=Http::integer($b['accountId']??0,1,PHP_INT_MAX);$this->a->authorizeTenant($id,true);$this->a->tenant=$id;$u=$this->usuarioBorrable(Http::integer($b['userId']??0,1,PHP_INT_MAX));$key=(string)$this->a->config['app_key'];
+   if(str_ends_with($p,'desafio'))return \Agora\Security\Desafio::crear($key,'borrar-usuario',(string)$u['id'],(int)$this->a->user['id'])+['nombre'=>$u['name']];
+   \Agora\Security\Desafio::comprobar($key,'borrar-usuario',(string)$u['id'],(int)$this->a->user['id'],$b['token']??null,$b['respuesta']??null);
+   (new \Agora\Services\Borrado($this->db))->usuario($id,(int)$u['id']);$this->a->audit('usuario.borrado','usuario',(string)$u['id'],['detalle'=>'Se borró a '.$u['name'].' ('.$u['email'].')']);return ['ok'=>true,'id'=>(int)$u['id']];
+  }
   if($p==='agency/users'){$this->a->agency();$id=Http::integer($b['accountId']??$_GET['accountId']??0,1,PHP_INT_MAX);$this->a->authorizeTenant($id,true);$this->a->tenant=$id;if($m==='GET')return $this->u->listing(false);if($m==='POST')return $this->u->save($b,false);if($m==='DELETE')return $this->u->revoke(Http::integer($b['userId']??$_GET['userId']??0,1,PHP_INT_MAX));}
   if($p==='agency/studio'){$this->a->agency();$id=Http::integer($b['tenantId']??$_GET['tenantId']??$_SERVER['HTTP_X_WORKSPACE_ID']??0,1,PHP_INT_MAX);$this->a->authorizeTenant($id);$this->a->tenant=$id;if($m==='GET')return ['configured'=>false,'items'=>$this->r->page('draft')['items'],'audit'=>[]];if($m==='POST'){$prompt=Http::text($b,'prompt',8000);$uid=bin2hex(random_bytes(12));$d=['id'=>$uid,'prompt'=>$prompt,'state'=>'draft','created_at'=>gmdate('c')];$this->r->save('draft',$uid,$d,'Solicitud IA','draft');return ['ok'=>true,'item'=>$d,'executed'=>false];}}
   // Every tenant endpoint must carry a per-tab workspace identifier, including reads.
@@ -96,6 +112,14 @@ final class Api {
    $this->a->manage();$id=Http::integer($b['id']??0,1,PHP_INT_MAX);$ext=trim((string)($b['enlace']??''));
    $e=(new \Agora\Services\UserLinks($this->db))->set((int)$this->a->tenant,$id,$ext);
    $this->a->audit('usuario.enlace','usuario',(string)$id,['conUsuarioDeLaCuenta'=>$ext!=='']);return ['ok'=>true,'enlace'=>$e];
+  }
+  // 2.17.0 · Borrar un usuario de la subcuenta: con la operación aritmética firmada. Suspender es «estado: inactivo».
+  if($p==='workspace/usuarios/borrar/desafio'&&$m==='POST'){$this->a->manage();$u=$this->usuarioBorrable(Http::integer($b['id']??0,1,PHP_INT_MAX));return \Agora\Security\Desafio::crear((string)$this->a->config['app_key'],'borrar-usuario',(string)$u['id'],(int)$this->a->user['id'])+['nombre'=>$u['name']];}
+  if($p==='workspace/usuarios'&&$m==='DELETE'){
+   $this->a->manage();$u=$this->usuarioBorrable(Http::integer($b['id']??0,1,PHP_INT_MAX));
+   \Agora\Security\Desafio::comprobar((string)$this->a->config['app_key'],'borrar-usuario',(string)$u['id'],(int)$this->a->user['id'],$b['token']??null,$b['respuesta']??null);
+   (new \Agora\Services\Borrado($this->db))->usuario((int)$this->a->tenant,(int)$u['id']);
+   $this->a->audit('usuario.borrado','usuario',(string)$u['id'],['detalle'=>'Se borró a '.$u['name'].' ('.$u['email'].')']);return ['ok'=>true,'id'=>(int)$u['id']];
   }
   if(in_array($p,['workspace/usuarios','usuarios'])&&in_array($m,['GET','POST']))return $m==='GET'?$this->u->listing(false):$this->u->save($b,false);
   if(preg_match('~^(workspace/usuarios/(rol|estado|nombre|clave)|usuarios/(rol|clave|activar|desactivar))$~D',$p)&&$m==='POST'){if(str_ends_with($p,'activar'))$b['activo']=!str_ends_with($p,'desactivar');return $this->u->save($b,false,true);}
@@ -187,5 +211,13 @@ final class Api {
   }
   $b['costItems']=$l;$b['fixedCosts']=$hayOp?round($fijo,2):null;$b['otherAds']=$hayPub?round($pub,2):null;
   return $b;
+ }
+ /** 2.17.0 · Quién se puede borrar: alguien de esta subcuenta, que no sea uno mismo; la Administración no borra a otra Administración. */
+ private function usuarioBorrable(int $id):array{
+  $u=$this->db->one('SELECT id,name,email,role FROM agora_users WHERE id=? AND local_tenant_id=?',[$id,(int)$this->a->tenant]);
+  if(!$u)Http::fail('Usuario no encontrado en esta subcuenta.',404);
+  if((int)$u['id']===(int)$this->a->user['id'])Http::fail('No puedes borrar tu propio usuario.',403);
+  if($this->a->user['role']==='ADMIN'&&$u['role']==='ADMIN')Http::fail('Solo los dueños pueden borrar a alguien de Administración.',403);
+  return $u;
  }
 }

@@ -409,6 +409,27 @@ const modalHead = (t, sub = '') => `<div class="modal-h"><div><h2>${t}</h2>${sub
 function closeAll() { closePop(); closeModal(); }
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2800); }
 const busy = (btn, on, label) => { if (!btn) return; if (on) { btn.dataset.l = btn.innerHTML; btn.disabled = true; btn.innerHTML = `<span class="spin" aria-hidden="true"></span>${esc(label || 'Un momento…')}`; } else { btn.disabled = false; if (btn.dataset.l) btn.innerHTML = btn.dataset.l; } };
+/* 2.17.0 · Confirmación para lo que no tiene vuelta atrás: hay que resolver una operación aritmética.
+   La pregunta la hace el servidor (firmada) y el servidor vuelve a comprobar la respuesta. */
+async function confirmarOperacion({titulo, aviso, consecuencias = [], pedir, hacer, boton = 'Eliminar'}) {
+  let d; try { d = await pedir(); } catch (x) { toast(x.message); return; }
+  const s = openModal(modalHead(esc(titulo)) + `<div class="op-conf"><p class="op-aviso">${aviso}</p>${consecuencias.length ? `<ul class="op-lista">${consecuencias.map(c => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}
+    <label class="fld">Para confirmar, resuelve: <b class="op-preg">${esc(d.pregunta)}</b><input name="respuesta" inputmode="numeric" autocomplete="off" pattern="-?[0-9]*" maxlength="5" placeholder="Resultado"></label>
+    <p class="fld-err" role="alert"></p><div class="form-ft"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-danger" type="button" data-ok disabled>${esc(boton)}</button></div></div>`);
+  const inp = s.querySelector('input'), ok = s.querySelector('[data-ok]'), err = s.querySelector('.fld-err');
+  inp.focus();
+  inp.addEventListener('input', () => { ok.disabled = !/^-?\d+$/.test(inp.value.trim()); err.textContent = ''; });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !ok.disabled) ok.click(); });
+  ok.onclick = async () => {
+    busy(ok, true, 'Eliminando…');
+    try { await hacer(d.token, inp.value.trim()); closeModal(); }
+    catch (x) {
+      busy(ok, false); err.textContent = x.message;
+      // una respuesta mala o vencida pide una operación nueva
+      try { const n = await pedir(); d.token = n.token; d.pregunta = n.pregunta; s.querySelector('.op-preg').textContent = n.pregunta; inp.value = ''; ok.disabled = true; inp.focus(); } catch {}
+    }
+  };
+}
 function confirmModal(title, text, label, fn, danger) {
   const s = openModal(modalHead(esc(title)) + `<p style="margin:0">${text}</p><p class="fld-err" role="alert"></p><div class="form-ft"><button class="btn" type="button" data-close>Cancelar</button><button class="btn ${danger ? 'btn-danger' : 'btn-cta'}" type="button" data-ok>${esc(label)}</button></div>`);
   s.querySelector('[data-ok]').onclick = async e => {
@@ -2362,7 +2383,7 @@ V.usuarios = {
       {k: 'rol', l: 'Rol', f: v => `<span class="rol-chip" style="--c:${ROLES_SISTEMA[v]?.c || 'var(--muted)'}">${esc(ROLES_SISTEMA[v]?.l || v)}</span>`},
       ...(conectada() ? [{k: 'enlace', l: 'Usuario en la cuenta', f: v => v ? `<span class="who-cell"><span class="lt lt-ok"><i aria-hidden="true"></i>Enlazado con ${esc(v.nombre)}</span>${v.auto ? '<small>Por tener el mismo correo</small>' : ''}</span>` : '<span class="lt lt-warn"><i aria-hidden="true"></i>Sin enlazar</span>'}] : []),
       {k: 'ultimoAcceso', l: 'Último acceso', f: v => v ? `<span title="${esc(fstamp(v))}">${esc(when(v))}</span>` : '<span class="muted">Nunca</span>'},
-      {k: 'estado', l: 'Estado', f: v => v === 'inactivo' ? '<span class="lt lt-bad"><i aria-hidden="true"></i>Desactivada</span>' : '<span class="lt lt-ok"><i aria-hidden="true"></i>Activa</span>'},
+      {k: 'estado', l: 'Estado', f: v => v === 'inactivo' ? '<span class="lt lt-bad"><i aria-hidden="true"></i>Suspendida</span>' : '<span class="lt lt-ok"><i aria-hidden="true"></i>Activa</span>'},
       {k: 'id', l: '', cls: 'act', f: (v, r) => esAdmin() ? `<button class="btn btn-sm" type="button" data-usuario="${esc(v)}" aria-haspopup="true">${icon('more')}<span>Opciones</span></button>` : ''},
     ];
 
@@ -2810,11 +2831,15 @@ async function agenciaUsuarios(id, accounts) {
     const r = await agoraApi('agency/users?accountId=' + encodeURIComponent(id));
     const items = (r.items || []).map(u => ({...u, activo: u.activo ?? u.estado !== 'inactivo'}));
     const cuenta = accounts.find(a => String(a.id) === String(id));
-    const s = openModal(modalHead('Usuarios de ' + esc(cuenta?.subcuenta || cuenta?.name || 'la subcuenta'), 'Miembros vinculados a esta cuenta') + `<div class="form"><div class="tw full"><table class="matriz"><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th><span class="sr-only">Acción</span></th></tr></thead><tbody>${items.map(u => `<tr><td><b>${esc(u.nombre)}</b></td><td>${esc(u.correo)}</td><td><span class="sc sc-info">${esc(u.rol)}</span></td><td><span class="sc ${u.activo ? 'sc-success' : 'sc-danger'}">${u.activo ? 'Activo' : 'Sin acceso'}</span></td><td>${u.activo ? `<button type="button" class="btn btn-sm btn-danger" data-revoke-user="${esc(u.id)}">${icon('lock')}Revocar</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="5">Sin usuarios asignados</td></tr>'}</tbody></table></div><div class="form-ft"><button type="button" class="btn" data-close>Cerrar</button><button type="button" class="btn btn-cta" id="agency-add-member">Agregar usuario</button></div></div>`, {wide: true});
+    const s = openModal(modalHead('Usuarios de ' + esc(cuenta?.subcuenta || cuenta?.name || 'la subcuenta'), 'Miembros vinculados a esta cuenta') + `<div class="form"><div class="tw full"><table class="matriz"><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th><span class="sr-only">Acción</span></th></tr></thead><tbody>${items.map(u => `<tr><td><b>${esc(u.nombre)}</b></td><td>${esc(u.correo)}</td><td><span class="sc sc-info">${esc(u.rol)}</span></td><td><span class="sc ${u.activo ? 'sc-success' : 'sc-danger'}">${u.activo ? 'Activo' : 'Suspendido'}</span></td><td class="acc-usr-acc">${u.activo ? `<button type="button" class="btn btn-sm" data-revoke-user="${esc(u.id)}">${icon('pause')}Suspender</button>` : ''}<button type="button" class="btn btn-sm btn-danger" data-borrar-user="${esc(u.id)}">Eliminar</button></td></tr>`).join('') || '<tr><td colspan="5">Sin usuarios asignados</td></tr>'}</tbody></table></div><div class="form-ft"><button type="button" class="btn" data-close>Cerrar</button><button type="button" class="btn btn-cta" id="agency-add-member">Agregar usuario</button></div></div>`, {wide: true});
     s.querySelector('#agency-add-member').onclick = () => agenciaUsuarioNuevo(accounts, id);
     s.querySelectorAll('[data-revoke-user]').forEach(b => b.onclick = () => {
       const u = items.find(x => String(x.id) === b.dataset.revokeUser);
       if (u) agenciaRevocarUsuario(cuenta || {id}, u, async () => { await cargarAgencia(); repaint(); await agenciaUsuarios(id, AGENCY_ACCOUNTS || accounts); });
+    });
+    s.querySelectorAll('[data-borrar-user]').forEach(b => b.onclick = () => {
+      const u = items.find(x => String(x.id) === b.dataset.borrarUser);
+      if (u) usuarioBorrar(u, {cuentaId: id, alTerminar: async () => { await cargarAgencia(); repaint(); await agenciaUsuarios(id, AGENCY_ACCOUNTS || accounts); }});
     });
   } catch (x) { toast(x.message); }
 }
@@ -2896,7 +2921,7 @@ function usuarioModal(previo) {
 function usuarioMenu(id, ancla) {
   const u = (DATOS.usuarios || []).find(x => String(x.id) === String(id));
   if (!u) return;
-  const el = openPop(ancla, `<button type="button" data-u="nombre">${icon('edit')}Cambiar nombre</button><button type="button" data-u="rol">${icon('shield')}Cambiar rol</button><button type="button" data-u="permisos">${icon('check')}Permisos individuales</button>${conectada() ? `<button type="button" data-u="enlace">${icon('sync')}Enlazar con la cuenta</button>` : ''}${u.estado === 'inactivo' ? `<button type="button" data-u="on">${icon('check')}Reactivar</button>` : `<button type="button" data-u="off">${icon('pause')}Desactivar</button>`}`, 'ctx', {align: 'right'});
+  const el = openPop(ancla, `<button type="button" data-u="nombre">${icon('edit')}Cambiar nombre</button><button type="button" data-u="rol">${icon('shield')}Cambiar rol</button><button type="button" data-u="permisos">${icon('check')}Permisos individuales</button>${conectada() ? `<button type="button" data-u="enlace">${icon('sync')}Enlazar con la cuenta</button>` : ''}${u.estado === 'inactivo' ? `<button type="button" data-u="on">${icon('check')}Reactivar</button>` : `<button type="button" data-u="off">${icon('pause')}Suspender</button>`}${String(u.id) !== String(ME?.id ?? AGORA_ME?.id) ? `<button type="button" class="is-danger" data-u="borrar">${icon('warn')}Eliminar</button>` : ''}`, 'ctx', {align: 'right'});
   if (!el) return;
   el.setAttribute('role', 'menu');
   el.onclick = async e => {
@@ -2905,11 +2930,12 @@ function usuarioMenu(id, ancla) {
     if (a === 'rol') return usuarioModal(u);
     if (a === 'permisos') return permisosUsuarioModal(u);
     if (a === 'enlace') return usuarioEnlaceModal(u);
+    if (a === 'borrar') return usuarioBorrar(u, {alTerminar: async () => { await cargarUsuarios(true); repaint(); }});
     const estado = a === 'off' ? 'inactivo' : 'activo';
-    confirmModal(a === 'off' ? 'Desactivar persona' : 'Reactivar persona',
-      a === 'off' ? `${esc(u.nombre)} dejará de entrar al sistema. Puedes reactivarla cuando quieras.` : `${esc(u.nombre)} podrá entrar otra vez.`,
-      a === 'off' ? 'Desactivar' : 'Reactivar',
-      async () => { await agoraApi('workspace/usuarios/estado', {method: 'POST', body: {id: u.id, estado}}); await cargarUsuarios(true); repaint(); toast(a === 'off' ? 'Persona desactivada.' : 'Persona reactivada.'); },
+    confirmModal(a === 'off' ? 'Suspender persona' : 'Reactivar persona',
+      a === 'off' ? `${esc(u.nombre)} dejará de entrar al sistema y se cierran sus sesiones. Sus datos se conservan y puedes reactivarla cuando quieras.` : `${esc(u.nombre)} podrá entrar otra vez.`,
+      a === 'off' ? 'Suspender' : 'Reactivar',
+      async () => { await agoraApi('workspace/usuarios/estado', {method: 'POST', body: {id: u.id, estado}}); await cargarUsuarios(true); repaint(); toast(a === 'off' ? 'Persona suspendida.' : 'Persona reactivada.'); },
       a === 'off');
   };
 }
@@ -4173,7 +4199,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.16.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.17.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -4829,16 +4855,47 @@ function agenciaCambiarEstado(a, estado) {
   });
 }
 
+/* 2.17.0 · Eliminar una subcuenta (solo el dueño Master), con operación aritmética. */
+function agenciaBorrarSubcuenta(a) {
+  if (!esMaster()) return;
+  const nombre = a.nombre || a.name || 'la subcuenta';
+  confirmarOperacion({
+    titulo: 'Eliminar subcuenta', boton: 'Eliminar para siempre',
+    aviso: `Vas a borrar <b>${esc(nombre)}</b>${a.codigo ? ` (${esc(a.codigo)})` : ''} y todo lo que tiene. <b>No se puede deshacer.</b>`,
+    consecuencias: ['Se borran sus usuarios y se cierran sus sesiones.', 'Se borran ventas, cobros, facturas, contratos, reportes, tableros y widgets.', 'Se quita la conexión con la cuenta (lo que vive en la cuenta no se toca).', 'Queda anotado en el registro de actividad de la agencia.'],
+    pedir: () => agoraApi('agency/accounts/borrar/desafio', {method: 'POST', body: {id: a.id}}),
+    hacer: async (token, respuesta) => {
+      await agoraApi('agency/accounts', {method: 'DELETE', body: {id: a.id, token, respuesta}});
+      await Promise.all([cargarAgencia(), cargarActividadAgencia()]);
+      toast(`Se eliminó la subcuenta «${nombre}».`); go('/agencia');
+    },
+  });
+}
+/* 2.17.0 · Eliminar un usuario de subcuenta (desde Agencia o desde Usuarios y roles), con operación aritmética. */
+function usuarioBorrar(u, {cuentaId, alTerminar} = {}) {
+  const desdeAgencia = !!cuentaId;
+  confirmarOperacion({
+    titulo: 'Eliminar usuario', boton: 'Eliminar usuario',
+    aviso: `Vas a borrar a <b>${esc(u.nombre)}</b> (${esc(u.correo || '')}). <b>No se puede deshacer.</b> Si solo quieres que deje de entrar, usa «Suspender».`,
+    consecuencias: ['Se cierran sus sesiones y pierde el acceso.', 'Sus ventas, contratos y registros se conservan, sin responsable.', 'Queda anotado en la auditoría de la subcuenta.'],
+    pedir: () => desdeAgencia ? agoraApi('agency/users/borrar/desafio', {method: 'POST', body: {accountId: cuentaId, userId: u.id}}) : agoraApi('workspace/usuarios/borrar/desafio', {method: 'POST', body: {id: u.id}}),
+    hacer: async (token, respuesta) => {
+      if (desdeAgencia) await agoraApi('agency/users/borrar', {method: 'POST', body: {accountId: cuentaId, userId: u.id, token, respuesta}});
+      else await agoraApi('workspace/usuarios', {method: 'DELETE', body: {id: u.id, token, respuesta}});
+      toast(`Se eliminó a ${u.nombre}.`); await alTerminar?.();
+    },
+  });
+}
 /* ---------- Revocar acceso de un usuario de subcuenta ---------- */
 function agenciaRevocarUsuario(cuenta, u, alTerminar) {
   dialogoConfirmarAccionCritica({
-    titulo: '¿Revocar el acceso?', subtitulo: 'Usuarios de ' + (cuenta?.subcuenta || cuenta?.nombre || 'la subcuenta'),
+    titulo: '¿Suspender a este usuario?', subtitulo: 'Usuarios de ' + (cuenta?.subcuenta || cuenta?.nombre || 'la subcuenta'),
     itemTipo: 'Usuario de subcuenta', itemNombre: `${u.nombre} (${u.correo})`,
-    consecuencias: ['Su sesión se cierra de inmediato en todos los equipos.', 'No podrá entrar a esta subcuenta hasta que lo reactives.', 'La revocación queda en la auditoría de la subcuenta.'],
-    textoConfirmar: 'Revocar acceso',
+    consecuencias: ['Su sesión se cierra de inmediato en todos los equipos.', 'No podrá entrar a esta subcuenta hasta que lo reactives (en Usuarios y roles de la subcuenta).', 'Sus datos se conservan. La suspensión queda en la auditoría de la subcuenta.'],
+    textoConfirmar: 'Suspender',
     onConfirm: async () => {
       await agoraApi(`agency/users?accountId=${encodeURIComponent(cuenta.id)}&userId=${encodeURIComponent(u.id)}`, {method: 'DELETE'});
-      toast(`Acceso revocado para ${u.nombre}.`);
+      toast(`${u.nombre} quedó suspendido.`);
       await alTerminar?.();
     },
   });
@@ -10629,6 +10686,8 @@ V.agencyAccount = {
             `<a class="btn btn-sm" href="${href('/agencia/actividad')}">Ver registro completo</a>`)}
           ${seccion('pause', 'Estado de la subcuenta', activa ? 'Activa: su equipo puede entrar y operar.' : st === 'pendiente' ? 'Pendiente: espera tu aprobación para empezar a operar.' : 'Inactiva: nadie puede entrar ni operar en ella.',
             `<div class="pf-row"><div class="pf-row-tx"><b>${activa ? 'Desactivar subcuenta' : 'Activar subcuenta'}</b><small>${activa ? 'Cierra el acceso de su equipo. Sus datos se conservan.' : 'Abre el acceso a su equipo con los datos que ya tiene.'}</small></div><button type="button" class="btn btn-sm ${activa ? 'btn-danger' : 'btn-cta'}" data-acc-estado>${activa ? 'Desactivar' : 'Activar'}</button></div>`)}
+          ${esMaster() ? seccion('warn', 'Eliminar subcuenta', 'Borra la subcuenta y todos sus datos. No se puede deshacer.',
+            `<div class="pf-row"><div class="pf-row-tx"><b>Eliminar subcuenta</b><small>Se borran sus usuarios, ventas, cobros, facturas, contratos, reportes, widgets y la conexión con la cuenta. Si solo quieres cerrar el acceso, usa «Desactivar».</small></div><button type="button" class="btn btn-sm btn-danger" data-acc-borrar>Eliminar subcuenta</button></div>`) : ''}
         </div>
       </div></div>`;
     return launcherFrame('agencia', contenido);
@@ -10641,6 +10700,7 @@ V.agencyAccount = {
     root.querySelector('[data-acc-tipo]')?.addEventListener('click', () => perfilEditar(a));
     root.querySelector('[data-acc-personas]')?.addEventListener('click', () => agenciaUsuarios(a.id, AGENCY_ACCOUNTS || []));
     root.querySelector('[data-acc-estado]')?.addEventListener('click', () => agenciaCambiarEstado(a, agenciaEstado(a) === 'activa' ? 'inactiva' : 'activa'));
+    root.querySelector('[data-acc-borrar]')?.addEventListener('click', () => agenciaBorrarSubcuenta(a));
     root.querySelectorAll('[data-log]').forEach(b => b.onclick = () => fichaForenseAuditoria(b.dataset.log));
   },
 };

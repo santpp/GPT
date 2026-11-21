@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.17.0 · Eliminar subcuenta, eliminar y suspender usuarios (21 nov):**
+- **Eliminar subcuenta** (solo el dueño Master), en la ficha de la subcuenta en Agencia: borra la subcuenta y **todo lo suyo** (usuarios y sus sesiones, ventas, cobros, facturas, contratos, reportes, tableros, widgets, la conexión con la cuenta y lo que el motor guardaba de ella). Lo que vive en la cuenta no se toca. Queda en el registro de la agencia. «Desactivar» sigue existiendo para solo cerrar el acceso.
+- **Eliminar usuario** de una subcuenta, desde «Usuarios y roles» (Administración y dueños) y desde la lista de usuarios de la subcuenta en Agencia. Sus ventas y contratos se conservan, sin responsable. Nadie se elimina a sí mismo y la Administración no elimina a otra Administración.
+- **Confirmación con una operación aritmética** («¿Cuánto es 4 × 9?»): el botón queda bloqueado hasta escribir el resultado. La operación la hace el servidor, va firmada, ligada a lo que se borra y a quien lo pide, vence en 5 minutos y el servidor vuelve a comprobarla. Un resultado malo no borra, lo dice y trae otra operación.
+- **Suspender:** «Desactivar» y «Revocar» pasan a llamarse **Suspender** (cierra sus sesiones, conserva sus datos, se puede reactivar). El estado se ve como «Suspendida».
+- Prueba nueva: `tests/borrado.py` (36).
+
 **Novedades 2.16.1 · Tarjetas de cifras: título y enunciado a la izquierda (21 nov):**
 - Pedido del usuario: en todas las tarjetas de cifras (Inicio, módulos y widgets) el **título y el enunciado van alineados a la izquierda**; el **resultado** (la cifra y su línea de abajo) sigue **centrado**. Igual en el teléfono. Las ideas del punto 7 del plan de widgets quedan para luego.
 

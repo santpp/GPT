@@ -1036,3 +1036,12 @@ main#app#app .cel :is(.ag-resumen-t,h3,.inicio-resumen-l,.t-label){align-self:st
 main#app#app .cel .ag-resumen-s{align-self:stretch!important;text-align:left!important}
 main#app#app .cel:not(:has(> .cel-acc)) :is(.ag-resumen-t,h3,.inicio-resumen-l,.t-label){padding-right:0!important}
 @media (max-width:640px){main#app#app .cel :is(.ag-resumen-t,h3,.inicio-resumen-l,.t-label){padding-right:0!important}}
+
+/* 2.17.0 · Confirmación con operación aritmética (eliminar subcuenta o usuario) */
+.op-conf .op-aviso{margin:0 0 10px;line-height:1.5}
+.op-conf .op-lista{margin:0 0 14px;padding-left:18px;color:var(--ink-2,#5b5b66);font-size:.9rem;line-height:1.55}
+.op-conf .op-preg{display:inline-block;margin-left:4px;font-size:1.05rem;color:var(--ink,#1b1b1f)}
+.op-conf input[name=respuesta]{max-width:160px;font-size:1.1rem;font-variant-numeric:tabular-nums}
+.op-conf [data-ok]:disabled{opacity:.45;cursor:not-allowed}
+.ctx button.is-danger,.pop button.is-danger{color:var(--ag-1,#AD103C)}
+.acc-usr-acc{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
