@@ -4,7 +4,7 @@ Pedido del usuario (19 nov 2026):
 - Widgets editables a conveniencia y personalizables, «tan personalizables o más que la cuenta».
 - Crear widgets propios con operaciones aritméticas y algebraicas, las que sean.
 
-Estado: **en construcción.** Decisiones del usuario tomadas el 21 nov (punto 8). Entregado en 2.14.0: fase 1 (diccionario de métricas y `workspace/metricas`) y el motor de fórmulas del servidor. Entregado en 2.15.0: fase 2 (editor de tableros, `workspace/tableros`) y fase 3 (editor de fórmulas con autocompletar, colores, error señalado, vista previa y variables), en `assets/widgets.js`. Siguiente: fase 4 (gráficos).
+Estado: **fases 1 a 6 entregadas** (plantillas por rubro y lo del punto 7, más adelante). Decisiones del usuario tomadas el 21 nov (punto 8). Entregado en 2.14.0: fase 1 (diccionario de métricas y `workspace/metricas`) y el motor de fórmulas del servidor. Entregado en 2.15.0: fase 2 (editor de tableros, `workspace/tableros`) y fase 3 (editor de fórmulas con autocompletar, colores, error señalado, vista previa y variables), en `assets/widgets.js`. Entregado en 2.16.0: fase 4 (gráficos de línea, barras, área, dona y tabla, al final del módulo), fase 5 (detalle con descarga, tablero «solo la administración», copiar de otro módulo) y fase 6 (14 cifras del reporte mensual; widgets en todos los módulos del reporte). Plantillas por rubro: más adelante. Quedan para después las del punto 7.
 
 ---
 
@@ -147,7 +147,7 @@ Cada fase se entrega como una versión con sus pruebas y no rompe lo anterior.
 - `Widgets/Widgets.php`: `workspace/metricas`, `workspace/metricas/catalogo`, `workspace/formulas` (+ `/probar`), `workspace/variables`. Migración `010_widgets.sql`.
 - Pruebas: `tests/formulas.php` (433, 300 al azar), `tests/widgets-api.py` (36).
 
-### Siguiente
+### Hecho en 2.15.0 y 2.16.0
 - **Fase 2 · editor de tableros** (pantalla): agregar, quitar, ordenar, tamaño, período, comparación, formato y semáforo, con las métricas y fórmulas del catálogo. Guardado en `agora_dashboards` (alcance «equipo»).
 - **Fase 3 · editor de fórmulas** (pantalla): autocompletar de métricas y variables, colores, error señalado y vista previa con el valor real.
 

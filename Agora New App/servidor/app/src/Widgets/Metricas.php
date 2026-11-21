@@ -17,6 +17,7 @@ final class Metricas {
   'dia'=>['workspace/dia',['connectionId'=>'{conexion}'],false,'La cuenta (hoy)'],
   'ganadas'=>['workspace/won',['connectionId'=>'{conexion}'],false,'Oportunidades ganadas'],
   'tareas'=>['workspace/tareas',[],false,'Tareas'],
+  'reporte'=>['workspace/reporte',[],true,'Reporte mensual'], // 2.16.0 · fase 6: cifras del reporte importado (en centavos)
  ];
  /** id => [nombre, unidad, fuente, campo, descripción] */
  public const LISTA=[
@@ -57,10 +58,25 @@ final class Metricas {
   'ganadas.sin_monto'=>['Ganadas sin monto','numero','ganadas','totals.missing','Ganadas a las que les falta el monto.'],
   'tareas.pendientes'=>['Tareas pendientes','numero','tareas','resumen.pendientes','Seguimientos por hacer.'],
   'tareas.hechas'=>['Tareas hechas','numero','tareas','resumen.hechas','Seguimientos cerrados.'],
+  // 2.16.0 · fase 6: del reporte mensual importado. El sexto dato divide (el reporte guarda centavos).
+  'rep.vendido'=>['Vendido según el reporte','dinero','reporte','reports.{periodo}.gc.total.vendido','Monto total vendido en las hojas de las asesoras.',100],
+  'rep.inscritos'=>['Inscritos del reporte','numero','reporte','reports.{periodo}.gc.total.inscritos','Inscritos del mes según el reporte.'],
+  'rep.recurrencia'=>['Recurrencia del reporte','dinero','reporte','reports.{periodo}.gc.total.recurrencia','Recurrencia del mes según el reporte.',100],
+  'rep.cuota1'=>['Primera cuota del reporte','dinero','reporte','reports.{periodo}.gc.total.cuota1','Suma de las primeras cuotas.',100],
+  'rep.entradas'=>['Entradas del reporte','dinero','reporte','reports.{periodo}.gc.total.entradas','Entradas cobradas según el reporte.',100],
+  'rep.pendiente'=>['Pendiente por cobrar del reporte','dinero','reporte','reports.{periodo}.gc.total.pendiente','Lo que falta por cobrar según el reporte.',100],
+  'rep.comisiones'=>['Comisiones (10 %) del reporte','dinero','reporte','reports.{periodo}.gc.total.com10','Comisiones del departamento sobre la primera cuota.',100],
+  'rep.anuncios'=>['Inversión en campañas del reporte','dinero','reporte','reports.{periodo}.ads.total.inversion','Inversión de las campañas cargadas en el reporte.',100],
+  'rep.resultados'=>['Resultados de campañas','numero','reporte','reports.{periodo}.ads.total.resultados','Resultados (mensajes, contactos) de las campañas.'],
+  'rep.ventas_campanas'=>['Ventas por campañas','numero','reporte','reports.{periodo}.ads.total.ventas','Ventas atribuidas a las campañas.'],
+  'rep.cpl'=>['Costo por resultado del reporte','dinero','reporte','reports.{periodo}.ads.total.cpl','Inversión dividida entre resultados.',100],
+  'rep.costos_fijos'=>['Gastos fijos del reporte','dinero','reporte','reports.{periodo}.costs.fijos.total','Nómina más herramientas y servicios.',100],
+  'rep.costos_variables'=>['Gastos variables del reporte','dinero','reporte','reports.{periodo}.costs.variables.total','Inversión y comisiones del mes.',100],
+  'rep.nomina'=>['Nómina del reporte','dinero','reporte','reports.{periodo}.costs.nomina.total','Total de la nómina del departamento.',100],
  ];
  public static function clave(string $nombre):string{return mb_substr(preg_replace('/\s+/u',' ',trim(Formula::norm($nombre))),0,60);}
  /** id de la métrica por su nombre (sin importar mayúsculas ni acentos), o null. */
  public static function porNombre(string $nombre):?string{static $idx=null;if($idx===null){$idx=[];foreach(self::LISTA as $id=>$m)$idx[self::clave($m[0])]=$id;}return $idx[self::clave($nombre)]??null;}
  /** Lee un campo con puntos («goal.progress») de una respuesta. */
- public static function campo(mixed $d,string $ruta):mixed{foreach(explode('.',$ruta) as $k){if(!is_array($d)||!array_key_exists($k,$d))return null;$d=$d[$k];}return $d;}
+ public static function campo(mixed $d,string $ruta):mixed{foreach(explode('.',$ruta) as $k){if(is_object($d))$d=(array)$d;if(!is_array($d)||!array_key_exists($k,$d))return null;$d=$d[$k];}return $d;}
 }

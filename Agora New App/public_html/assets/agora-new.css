@@ -977,3 +977,56 @@ main#app .wg-motivo{color:var(--ink-3,#7a7a85);font-size:.8rem}
 .wg-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink-3,#7a7a85);overflow-wrap:anywhere}
 .wg-var{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;align-items:end;margin-top:10px}
 @media (max-width:640px){.wg-fx-fila{grid-template-columns:1fr 1fr}.wg-fx-fila .fld:first-child{grid-column:1/-1}.wg-cfg{grid-template-columns:1fr 1fr}}
+
+/* 2.16.0 · Widgets: gráficos al final del módulo, detalle y «solo la administración» */
+main#app section.wg-g{margin:26px 0 8px}
+main#app .wg-priv{margin-left:10px;font-size:.72rem;vertical-align:middle}
+main#app .wg-cel[role=button]{cursor:pointer}
+main#app .wg-ggrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+main#app .wg-graf{position:relative;margin:0;padding:16px 18px 12px;background:var(--surface,#fff);border:1px solid var(--line-2,#d4d4da);border-radius:16px;min-width:0;display:flex;flex-direction:column;gap:8px}
+main#app .wg-graf.wg-ancho{grid-column:1/-1}
+main#app .wg-graf figcaption{display:flex;flex-direction:column;gap:2px;padding-right:90px}
+main#app .wg-graf .ag-resumen-t{text-align:left}
+main#app .wg-lienzo{min-height:120px;min-width:0}
+main#app .wg-svgw{position:relative;width:100%}
+main#app .wg-svg{display:block;max-width:100%;height:auto;overflow:visible}
+main#app .wg-grid-l{stroke:var(--line,#e6e6ea);stroke-width:1}
+main#app .wg-eje{font-size:11px;fill:var(--ink-3,#7a7a85);font-variant-numeric:tabular-nums}
+main#app .wg-cruz{stroke:var(--ink-3,#7a7a85);stroke-width:1;stroke-dasharray:3 3}
+main#app .wg-hov{fill:transparent;cursor:crosshair}
+main#app .wg-punto{stroke:var(--surface,#fff);stroke-width:2}
+main#app .wg-arco{stroke:var(--surface,#fff);stroke-width:2;cursor:pointer}
+main#app .wg-dona-t{font-size:15px;font-weight:700;fill:var(--ink,#1b1b1f)}
+main#app .wg-tip{position:absolute;z-index:5;pointer-events:none;min-width:140px;max-width:240px;padding:8px 10px;border-radius:10px;background:var(--surface,#fff);border:1px solid var(--line-2,#d4d4da);box-shadow:0 8px 24px rgba(0,0,0,.14);font-size:.8rem;display:flex;flex-direction:column;gap:3px;color:var(--ink,#1b1b1f)}
+main#app .wg-tip i,main#app .wg-ley i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+main#app .wg-ley{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.82rem;color:var(--ink-2,#5b5b66);margin:0;padding:0;list-style:none}
+main#app .wg-dona{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+main#app .wg-dona .wg-svgw{width:160px;flex:0 0 160px}
+main#app .wg-ley-v{flex-direction:column;flex:1 1 180px;gap:6px}
+main#app .wg-ley-v li{display:grid;grid-template-columns:16px 1fr auto auto;gap:8px;align-items:center}
+main#app .wg-ley-v small{color:var(--ink-3,#7a7a85);min-width:48px;text-align:right}
+main#app .wg-det-btn{align-self:flex-start;background:none;border:0;padding:4px 0;color:var(--ink-2,#5b5b66);font:inherit;font-size:.82rem;text-decoration:underline;cursor:pointer}
+main#app .wg-det-btn:is(:hover,:focus-visible){color:var(--ag-1,#AD103C)}
+.wg-tabla{width:100%;border-collapse:collapse;font-size:.88rem}
+.wg-tabla th{text-align:left;font-weight:600;color:var(--ink-3,#7a7a85);font-size:.75rem;padding:6px 8px;border-bottom:1px solid var(--line-2,#d4d4da)}
+.wg-tabla td{padding:7px 8px;border-bottom:1px solid var(--line,#e6e6ea);vertical-align:top}
+.wg-tabla td:last-child,.wg-tabla th:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.wg-tabla td small{display:block;color:var(--ink-3,#7a7a85);white-space:normal}
+.wg-barra{display:block;height:6px;border-radius:3px;background:var(--line,#e6e6ea);margin-top:5px}
+.wg-barra i{display:block;height:100%;border-radius:3px;background:#3D5AA8}
+.wg-motivo{color:var(--ink-3,#7a7a85);font-size:.8rem;margin:4px 0 0}
+.wg-top{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 12px}
+.wg-mas-f{display:flex;gap:6px;align-items:center}.wg-mas-f select{flex:1;min-width:0}
+.wg-detalle h3{margin:16px 0 6px;font-size:1rem}
+.wg-det-v{display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin:0 0 12px}
+.wg-det-v span{color:var(--ink-3,#7a7a85);font-size:.85rem}.wg-det-v b{font-size:1.8rem}.wg-det-v small{color:var(--ink-3,#7a7a85)}
+.wg-det-dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:0}
+.wg-det-dl dt{color:var(--ink-3,#7a7a85);font-size:.85rem}.wg-det-dl dd{margin:0}
+@media (max-width:760px){main#app .wg-ggrid{grid-template-columns:1fr}main#app .wg-graf.wg-ancho{grid-column:auto}.wg-top{grid-template-columns:1fr}.wg-det-dl{grid-template-columns:1fr}}
+main#app .wg-graf,main#app .wg-graf figcaption,main#app .wg-graf .ag-resumen-t,main#app .wg-graf .ag-resumen-s{text-align:left;align-items:flex-start}
+main#app .wg-graf .wg-ley-v li span{text-align:left}
+main#app .wg-graf .wg-lienzo .wg-svgw .wg-svg:not([viewBox^="0 0 160"]){width:100%}
+main#app .wg-graf .wg-tabla{max-width:none}
+main#app .wg-graf .wg-lienzo{align-self:stretch;width:100%}
+main#app .wg-graf .wg-tabla td,main#app .wg-graf .wg-tabla th{text-align:left}
+main#app .wg-graf .wg-tabla td:last-child,main#app .wg-graf .wg-tabla th:last-child{text-align:right}

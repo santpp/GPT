@@ -4173,7 +4173,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.15.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.16.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -6234,7 +6234,7 @@ const AgoraTabla = {
   revisar(root) {
     if (!root?.querySelectorAll || typeof R === 'undefined' || !TABLA_MODS.includes(R.mod)) return;
     root.querySelectorAll('table:not([data-xt])').forEach(t => {
-      if (!AgoraTabla.candidata(t)) return;
+      if (!AgoraTabla.candidata(t) || t.closest('[data-wg]')) return; // 2.16.0: las tablas de los widgets son propias
       const sec = t.closest('.panel, section, .pf-sec');
       const nombre = t.dataset.nombre || tablaTexto(sec?.querySelector('h2, h3, .t-panel, .panel-h')) || MODS[R.mod]?.name || '';
       try { AgoraTabla.mejorar(t, {nombre: nombre.slice(0, 60), modulo: R.mod}); } catch (e) { console.warn('[tabla]', e); }
@@ -9414,7 +9414,7 @@ const XP_NUM = /^[-+−]?\s*(US\$|USD|Bs\.?S?|\$|€)?\s*[-+−]?\d[\d.]*(,\d+)?
 
 /** Da formato a una tabla: columnas numéricas, píldoras de estado y etiquetas por celda. */
 function xpTabla(tb) {
-  if (tb.closest('.scrim, .modal') || tb.classList.contains('perm')) return;
+  if (tb.closest('.scrim, .modal, [data-wg]') || tb.classList.contains('perm')) return;
   const filas = [...tb.tBodies].flatMap(b => [...b.rows]).filter(r => !r.querySelector('td[colspan]'));
   const ths = tb.tHead ? [...(tb.tHead.rows[tb.tHead.rows.length - 1]?.cells || [])] : [];
   const primera = !tb.dataset.xp;
@@ -10665,7 +10665,7 @@ applyTheme();
 if (AG_READY && window.AGORA_MAINTENANCE !== false) { try { AG.installMaintenance(); } catch { /* sin vigilancia */ } }
 /* 2.15.0 · Widgets: lo que widgets.js usa de la app (vive aparte para no agrandar este archivo). */
 window.AgoraHost = {
-  confirmar: (t, x, l, fn, d) => confirmModal(t, x, l, fn, d),
+  confirmar: (t, x, l, fn, d) => confirmModal(t, x, l, fn, d), nombreDe: id => (MODS[id] && moduleAllowed?.(id) !== false ? MODS[id].name : ''),
   api: (p, o) => agoraApi(p, o), openModal: (h, o) => openModal(h, o), closeModal: () => closeModal(), modalHead: (t, s) => modalHead(t, s), esc, icon, toast: m => toast(m), busy: (b, on, l) => busy(b, on, l),
   modulo: () => R?.mod || '', nombreModulo: () => MODS[R?.mod]?.name || '', conPeriodo: () => !!MODS[R?.mod]?.periodo,
   periodo: () => (MODS[R?.mod]?.periodo && /^\d{4}-\d{2}$/.test(PERIODO || '')) ? PERIODO : mesActualYM(), mesActual: () => mesActualYM(),

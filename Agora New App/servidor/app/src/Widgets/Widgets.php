@@ -5,12 +5,15 @@ use Agora\Core\{Http,HttpError};
 use Agora\Controllers\Api;
 
 /**
- * Agora New App 2.14.0 · Rutas de los widgets (fase 1 y motor de fórmulas):
+ * Agora New App 2.14.0–2.16.0 · Rutas de los widgets (métricas, fórmulas, tableros, gráficos y detalle):
  *   GET    workspace/metricas/catalogo            métricas, fórmulas, variables y funciones disponibles
  *   GET    workspace/metricas?ids=a,b&periodo=…   valores (métricas «mes.vendido» y fórmulas «f:12»), con unidad y motivo
  *   POST   workspace/formulas/probar              vista previa de una fórmula (sin guardar) con el error y su posición
  *   POST/PUT/DELETE workspace/formulas           crear, cambiar y borrar fórmulas (solo administración)
  *   GET/PUT/DELETE  workspace/variables          variables propias (valor general o por mes; escribir: solo administración)
+ *   GET/PUT/DELETE  workspace/tableros           el tablero del equipo de un módulo (2.15.0), con gráficos y «quién lo ve» (2.16.0)
+ *   GET    workspace/metricas/serie?ids=&hasta=&meses=   valores mes a mes para los gráficos (2.16.0 · fase 4)
+ *   GET    workspace/metricas/detalle?id=&periodo=       qué mide una cifra y, si es fórmula, el valor de cada parte (2.16.0 · fase 5)
  * Quién crea: Administración, Supervisión y dueños (permiso widgets.editar). El resto ve los valores.
  */
 final class Widgets {
@@ -23,6 +26,8 @@ final class Widgets {
  public function route(string $p,string $m,array $b):array{
   if($p==='workspace/metricas/catalogo'&&$m==='GET')return $this->catalogo();
   if($p==='workspace/metricas'&&$m==='GET')return $this->valores();
+  if($p==='workspace/metricas/serie'&&$m==='GET')return $this->serie();
+  if($p==='workspace/metricas/detalle'&&$m==='GET')return $this->detalle();
   if($p==='workspace/formulas/probar'&&$m==='POST')return $this->probar($b);
   if($p==='workspace/formulas'){if($m==='GET')return ['formulas'=>$this->formulas()];if($m==='POST')return $this->guardarFormula($b,null);if($m==='PUT')return $this->guardarFormula($b,Http::integer($b['id']??0,1,PHP_INT_MAX));if($m==='DELETE')return $this->borrarFormula(Http::integer($b['id']??$_GET['id']??0,1,PHP_INT_MAX));}
   if($p==='workspace/tableros'){if($m==='GET')return $this->tablero((string)($_GET['modulo']??''));if($m==='PUT')return $this->guardarTablero($b);if($m==='DELETE')return $this->borrarTablero((string)($b['modulo']??$_GET['modulo']??''));}
@@ -45,7 +50,10 @@ final class Widgets {
 
  /** Llama por dentro la ruta de la fuente (mismo usuario, mismos permisos) y guarda la respuesta para esta petición. */
  private function fuente(string $f,string $periodo):array{
-  [$ruta,$params,$porPeriodo]=Metricas::FUENTES[$f];$k=$f.'|'.($porPeriodo?$periodo:'');if(isset($this->cache[$k]))return $this->cache[$k];
+  [$ruta,$params,$porPeriodo]=Metricas::FUENTES[$f];$k=$f.'|'.($porPeriodo&&$params?$periodo:''); // el reporte trae todos los meses: se pide una vezif(isset($this->cache[$k]))return $this->cache[$k];
+  // 2.16.0: lo que consulta la cuenta (cifras del mes) se guarda unos minutos por usuario, para no gastar la cuota con los gráficos.
+  $uid=(int)($this->api->a->user['id']??0);$ck=$f.'|'.$periodo;$guarda=$f==='mes'&&$uid>0;
+  if($guarda){try{$c=$this->db()->one('SELECT datos FROM agora_widget_cache WHERE tenant_id=? AND user_id=? AND clave=? AND expira>UTC_TIMESTAMP()',[$this->t(),$uid,$ck]);if($c&&is_array($d=json_decode((string)$c['datos'],true)))return $this->cache[$k]=['ok'=>true,'d'=>$d];}catch(\Throwable){}}
   $get=$_GET;$q=[];foreach($params as $a=>$v)$q[$a]=strtr($v,['{periodo}'=>$periodo,'{conexion}'=>(string)$this->t()]);
   $_GET=$q+(isset($get['tz'])?['tz'=>$get['tz']]:[]);
   try{
@@ -56,13 +64,18 @@ final class Widgets {
   catch(HttpError $e){$r=['ok'=>false,'m'=>$e->getMessage()];}
   catch(\Throwable $e){$r=['ok'=>false,'m'=>'No se pudo leer «'.Metricas::FUENTES[$f][3].'».'];}
   finally{$_GET=$get;}
+  if($guarda&&$r['ok']&&is_array($r['d'])){try{$ttl=$periodo<gmdate('Y-m')?600:60;
+   $this->db()->run('INSERT INTO agora_widget_cache(tenant_id,user_id,clave,datos,expira) VALUES(?,?,?,?,DATE_ADD(UTC_TIMESTAMP(),INTERVAL ? SECOND)) ON DUPLICATE KEY UPDATE datos=VALUES(datos),expira=VALUES(expira)',[$this->t(),$uid,$ck,\Agora\Core\DB::json($r['d']),$ttl]);
+   if(random_int(1,50)===1)$this->db()->run('DELETE FROM agora_widget_cache WHERE expira<UTC_TIMESTAMP()');}catch(\Throwable){}}
   return $this->cache[$k]=$r;
  }
  /** Valor de una métrica del diccionario. */
  public function metrica(string $id,string $periodo):array{
-  [$nombre,$u,$f,$campo]=Metricas::LISTA[$id];$s=$this->fuente($f,$periodo);
+  [$nombre,$u,$f,$campo]=Metricas::LISTA[$id];$esc=(float)(Metricas::LISTA[$id][5]??1);$s=$this->fuente($f,$periodo);
   if(!$s['ok'])return ['v'=>null,'u'=>$u,'m'=>$s['m']];
-  $v=Metricas::campo($s['d'],strtr($campo,['{moneda}'=>$this->moneda()]));
+  $v=Metricas::campo($s['d'],strtr($campo,['{moneda}'=>$this->moneda(),'{periodo}'=>$periodo]));
+  if($f==='reporte'&&is_numeric($v))return ['v'=>round((float)$v/$esc,2),'u'=>$u,'m'=>''];
+  if($f==='reporte')return ['v'=>null,'u'=>$u,'m'=>'El reporte de este mes no trae «'.$nombre.'».'];
   if($v===null||!is_numeric($v))return ['v'=>$u==='dinero'&&$f==='ventas'?0.0:null,'u'=>$u,'m'=>$u==='dinero'&&$f==='ventas'?'':'Sin dato de «'.$nombre.'» en este período.'];
   return ['v'=>(float)$v,'u'=>$u,'m'=>''];
  }
@@ -95,15 +108,39 @@ final class Widgets {
    if($r['v']!==null)$r['v']=round($r['v'],$r['u']==='dinero'?2:(int)$f['decimales']+2);return ['valor'=>$r['v'],'unidad'=>$r['u'],'motivo'=>$r['m']];}
   catch(FormulaError $e){return ['valor'=>null,'unidad'=>'numero','motivo'=>'La fórmula tiene un error: '.$e->getMessage()];}
  }
+ /** Valor de «mes.vendido» o «f:12» en un mes. */
+ private function valorDe(string $id,string $periodo):array{
+  if(isset(Metricas::LISTA[$id])){$r=$this->metrica($id,$periodo);return ['valor'=>$r['v'],'unidad'=>$r['u'],'motivo'=>$r['m']];}
+  if(preg_match('/^f:(\d{1,12})$/D',$id,$mm)&&($f=$this->db()->one('SELECT * FROM agora_widget_formulas WHERE id=? AND tenant_id=?',[(int)$mm[1],$this->t()]))){$this->vueltas=0;return $this->calcularFormula($f,$periodo);}
+  return ['valor'=>null,'unidad'=>'numero','motivo'=>'Esa cifra ya no existe.'];
+ }
+ private static function deHoy(string $id):bool{return isset(Metricas::LISTA[$id])&&!Metricas::FUENTES[Metricas::LISTA[$id][2]][2];}
+ /** 2.16.0 · fase 4: los valores mes a mes de hasta 4 cifras (gráficos de línea, barras y área). */
+ private function serie():array{
+  $hasta=$this->periodo((string)($_GET['hasta']??''));$n=Http::integer($_GET['meses']??6,2,12);
+  $ids=array_values(array_unique(array_filter(array_map('trim',explode(',',(string)($_GET['ids']??''))))));
+  if(!$ids)Http::fail('Indica qué cifras quieres.');if(count($ids)>4)Http::fail('Un gráfico lleva hasta 4 series.');
+  $meses=[];for($i=$n-1;$i>=0;$i--)$meses[]=self::mover($hasta,-$i);
+  $out=[];foreach($ids as $id){$out[$id]=[];foreach($meses as $p)$out[$id][]=self::deHoy($id)?['valor'=>null,'unidad'=>'numero','motivo'=>'Es una cifra de hoy: no tiene historia por mes.']:$this->valorDe($id,$p);}
+  return ['meses'=>$meses,'series'=>$out];
+ }
+ /** 2.16.0 · fase 5: qué mide una cifra y, si es una fórmula, cuánto vale cada parte en ese mes. */
+ private function detalle():array{
+  $id=trim((string)($_GET['id']??''));$periodo=$this->periodo();
+  if(isset(Metricas::LISTA[$id])){[$n,$u,$f,,$d]=Metricas::LISTA[$id];return ['id'=>$id,'tipo'=>'metrica','nombre'=>$n,'descripcion'=>$d,'grupo'=>Metricas::FUENTES[$f][3],'deHoy'=>self::deHoy($id),'periodo'=>$periodo,'valor'=>$this->valorDe($id,$periodo),'partes'=>[]];}
+  if(!preg_match('/^f:(\d{1,12})$/D',$id,$mm)||!($f=$this->db()->one('SELECT * FROM agora_widget_formulas WHERE id=? AND tenant_id=?',[(int)$mm[1],$this->t()])))Http::fail('Esa cifra ya no existe.',404);
+  $partes=[];
+  try{$res=$this->resolver($periodo,[Metricas::clave($f['nombre'])]);
+   foreach(Formula::refs(Formula::parse($f['expresion'])) as [$nom,$mod]){$k=$nom.($mod!==''?' · '.$mod:'');if(isset($partes[$k]))continue;$this->vueltas=0;
+    try{$r=$res($nom,$mod,0);$partes[$k]=['nombre'=>$k,'valor'=>$r['v'],'unidad'=>$r['u'],'motivo'=>$r['m']];}catch(FormulaError $e){$partes[$k]=['nombre'=>$k,'valor'=>null,'unidad'=>'numero','motivo'=>$e->getMessage()];}}
+  }catch(FormulaError){}
+  return ['id'=>$id,'tipo'=>'formula','nombre'=>$f['nombre'],'descripcion'=>$f['descripcion'],'expresion'=>$f['expresion'],'grupo'=>'Fórmulas del equipo','deHoy'=>false,'periodo'=>$periodo,'valor'=>$this->valorDe($id,$periodo),'partes'=>array_values($partes)];
+ }
  private function valores():array{
   $periodo=$this->periodo();$ids=array_values(array_unique(array_filter(array_map('trim',explode(',',(string)($_GET['ids']??''))))));
   if(!$ids)Http::fail('Indica qué cifras quieres.');if(count($ids)>40)Http::fail('Se piden hasta 40 cifras a la vez.');
   $out=[];
-  foreach($ids as $id){
-   if(isset(Metricas::LISTA[$id])){$r=$this->metrica($id,$periodo);$out[$id]=['valor'=>$r['v'],'unidad'=>$r['u'],'motivo'=>$r['m']];continue;}
-   if(preg_match('/^f:(\d{1,12})$/D',$id,$mm)&&($f=$this->db()->one('SELECT * FROM agora_widget_formulas WHERE id=? AND tenant_id=?',[(int)$mm[1],$this->t()]))){$this->vueltas=0;$out[$id]=$this->calcularFormula($f,$periodo);continue;}
-   $out[$id]=['valor'=>null,'unidad'=>'numero','motivo'=>'Esa cifra ya no existe.'];
-  }
+  foreach($ids as $id)$out[$id]=$this->valorDe($id,$periodo);
   return ['periodo'=>$periodo,'valores'=>$out];
  }
 
@@ -149,27 +186,29 @@ final class Widgets {
   foreach($this->db()->all('SELECT nombre,expresion FROM agora_widget_formulas WHERE tenant_id=? AND id<>?',[$this->t(),$id]) as $o){
    try{foreach(Formula::refs(Formula::parse($o['expresion'])) as [$r])if(Metricas::clave($r)===$f['nombre_clave'])Http::fail('«'.$o['nombre'].'» usa esta fórmula. Cámbiala primero.',409);}catch(FormulaError){}
   }
-  foreach($this->db()->all('SELECT modulo,config FROM agora_dashboards WHERE tenant_id=?',[$this->t()]) as $d){foreach((json_decode((string)$d['config'],true)['widgets']??[]) as $w)if(($w['fuente']??'')==='formula'&&(int)($w['ref']??0)===$id)Http::fail('El tablero de «'.$d['modulo'].'» usa esta fórmula. Quita ese widget primero.',409);}
+  foreach($this->db()->all('SELECT modulo,config FROM agora_dashboards WHERE tenant_id=?',[$this->t()]) as $d){foreach((json_decode((string)$d['config'],true)['widgets']??[]) as $w)foreach([$w,...(is_array($w['mas']??null)?$w['mas']:[])] as $x)if(($x['fuente']??'')==='formula'&&(int)($x['ref']??0)===$id)Http::fail('El tablero de «'.$d['modulo'].'» usa esta fórmula. Quita ese widget primero.',409);}
   $this->db()->run('DELETE FROM agora_widget_formulas WHERE id=? AND tenant_id=?',[$id,$this->t()]);$this->api->a->audit('formula.borrada','widgets',(string)$id,['detalle'=>$f['nombre']]);
   return ['ok'=>true];
  }
 
  /* ---------- tableros (2.15.0 · fase 2): un tablero de widgets por módulo, el del equipo ---------- */
- private const TAM=['chico','ancho'];private const PER=['modulo','actual','anterior'];private const COMP=['','mes_anterior','ano_pasado'];private const FMT=['auto','dinero','numero','porcentaje'];
+ private const TAM=['chico','ancho'];private const PER=['modulo','actual','anterior'];private const COMP=['','mes_anterior','ano_pasado'];private const FMT=['auto','dinero','numero','porcentaje'];private const TIPOS=['cifra','linea','barras','area','dona','tabla'];
  private static function modulo(string $m):string{if(!preg_match('/^[a-z][a-z_]{1,39}$/D',$m))Http::fail('Módulo no válido.');return $m;}
  private function tablero(string $modulo):array{
   $modulo=self::modulo($modulo);$r=$this->db()->one("SELECT config,version,updated_at FROM agora_dashboards WHERE tenant_id=? AND modulo=? AND alcance='equipo' AND user_id=0",[$this->t(),$modulo]);
-  $cfg=$r?json_decode((string)$r['config'],true):null;
-  return ['modulo'=>$modulo,'widgets'=>is_array($cfg['widgets']??null)?$cfg['widgets']:[],'version'=>$r?(int)$r['version']:0,'puedeEditar'=>$this->api->a->can('widgets.editar')];
+  $cfg=$r?json_decode((string)$r['config'],true):null;$edita=$this->api->a->can('widgets.editar');$visible=($cfg['visible']??'todos')==='administracion'?'administracion':'todos';
+  $ws=is_array($cfg['widgets']??null)?$cfg['widgets']:[];if($visible==='administracion'&&!$edita)$ws=[]; // 2.16.0 · fase 5: un tablero puede ser solo de la administración
+  return ['modulo'=>$modulo,'widgets'=>$ws,'visible'=>$visible,'version'=>$r?(int)$r['version']:0,'puedeEditar'=>$edita];
  }
  /** Valida cada widget: solo campos conocidos, textos cortos, referencias que existen. */
  private function widget(mixed $w,int $i):array{
   if(!is_array($w))Http::fail('Widget '.($i+1).' no válido.');
   $id=(string)($w['id']??'');if(!preg_match('/^[a-z0-9]{6,16}$/D',$id))$id=bin2hex(random_bytes(5));
-  $fuente=(string)($w['fuente']??'');$ref=$w['ref']??null;
-  if($fuente==='metrica'){if(!is_string($ref)||!isset(Metricas::LISTA[$ref]))Http::fail('El widget '.($i+1).' usa una cifra que no existe.');}
-  elseif($fuente==='formula'){$ref=is_numeric($ref)?(int)$ref:0;if(!$this->db()->one('SELECT id FROM agora_widget_formulas WHERE id=? AND tenant_id=?',[$ref,$this->t()]))Http::fail('El widget '.($i+1).' usa una fórmula que ya no existe.');}
-  else Http::fail('El widget '.($i+1).' no dice qué mide.');
+  $tipo=in_array($w['tipo']??'cifra',self::TIPOS,true)?($w['tipo']??'cifra'):'cifra';
+  [$fuente,$ref]=$this->referencia($w,$i);
+  $mas=[];foreach(array_slice(is_array($w['mas']??null)?$w['mas']:[],0,in_array($tipo,['dona','tabla'],true)?9:3) as $x){if(is_array($x)){$mas[]=array_combine(['fuente','ref'],$this->referencia($x,$i));}}
+  if($tipo==='cifra')$mas=[];
+  if(in_array($tipo,['linea','barras','area'],true))foreach([['fuente'=>$fuente,'ref'=>$ref],...$mas] as $x)if($x['fuente']==='metrica'&&self::deHoy($x['ref']))Http::fail('El widget '.($i+1).': «'.Metricas::LISTA[$x['ref']][0].'» es una cifra de hoy y no tiene historia por mes para un gráfico.');
   $txt=fn($k,$max)=>mb_substr(trim(strip_tags((string)($w[$k]??''))),0,$max);
   $per=(string)($w['periodo']??'modulo');if(!in_array($per,self::PER,true)&&!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/D',$per))$per='modulo';
   $sem=is_array($w['semaforo']??null)?$w['semaforo']:[];$num=fn($v)=>is_numeric($v)&&abs((float)$v)<1e14?(float)$v:null;
@@ -177,21 +216,30 @@ final class Widgets {
   return ['id'=>$id,'fuente'=>$fuente,'ref'=>$ref,'titulo'=>$txt('titulo',60),'nota'=>$txt('nota',120),
    'tamano'=>in_array($w['tamano']??'',self::TAM,true)?$w['tamano']:'chico','periodo'=>$per,
    'comparar'=>in_array($w['comparar']??'',self::COMP,true)?$w['comparar']:'','formato'=>in_array($w['formato']??'',self::FMT,true)?$w['formato']:'auto',
-   'decimales'=>isset($w['decimales'])&&is_numeric($w['decimales'])?max(0,min(4,(int)$w['decimales'])):2,'semaforo'=>$semaforo];
+   'decimales'=>isset($w['decimales'])&&is_numeric($w['decimales'])?max(0,min(4,(int)$w['decimales'])):2,'semaforo'=>$tipo==='cifra'?$semaforo:['activo'=>false],
+   'tipo'=>$tipo,'mas'=>$mas,'meses'=>isset($w['meses'])&&is_numeric($w['meses'])?max(3,min(12,(int)$w['meses'])):6,'top'=>isset($w['top'])&&is_numeric($w['top'])?max(3,min(10,(int)$w['top'])):5];
+ }
+ /** [fuente, ref] de un widget o de una serie extra, comprobando que exista. */
+ private function referencia(array $w,int $i):array{
+  $fuente=(string)($w['fuente']??'');$ref=$w['ref']??null;
+  if($fuente==='metrica'){if(!is_string($ref)||!isset(Metricas::LISTA[$ref]))Http::fail('El widget '.($i+1).' usa una cifra que no existe.');}
+  elseif($fuente==='formula'){$ref=is_numeric($ref)?(int)$ref:0;if(!$this->db()->one('SELECT id FROM agora_widget_formulas WHERE id=? AND tenant_id=?',[$ref,$this->t()]))Http::fail('El widget '.($i+1).' usa una fórmula que ya no existe.');}
+  else Http::fail('El widget '.($i+1).' no dice qué mide.');
+  return [$fuente,$ref];
  }
  private function guardarTablero(array $b):array{
   $modulo=self::modulo((string)($b['modulo']??''));$ws=$b['widgets']??null;if(!is_array($ws)||!array_is_list($ws))Http::fail('Lista de widgets no válida.');
   if(count($ws)>24)Http::fail('Un tablero lleva hasta 24 widgets.');
   $lista=[];$ids=[];foreach($ws as $i=>$w){$x=$this->widget($w,$i);while(isset($ids[$x['id']]))$x['id']=bin2hex(random_bytes(5));$ids[$x['id']]=1;$lista[]=$x;}
-  $ver=isset($b['version'])?(int)$b['version']:-1;
-  return $this->db()->transaction(function()use($modulo,$lista,$ver){
+  $ver=isset($b['version'])?(int)$b['version']:-1;$visible=($b['visible']??'todos')==='administracion'?'administracion':'todos';
+  return $this->db()->transaction(function()use($modulo,$lista,$ver,$visible){
    $r=$this->db()->one("SELECT id,version FROM agora_dashboards WHERE tenant_id=? AND modulo=? AND alcance='equipo' AND user_id=0 FOR UPDATE",[$this->t(),$modulo]);
    $actual=$r?(int)$r['version']:0;if($ver>=0&&$ver!==$actual)Http::fail('Otra persona cambió este tablero mientras lo editabas. Vuelve a abrirlo para ver lo último.',409);
-   $cfg=\Agora\Core\DB::json(['widgets'=>$lista]);$u=$this->api->a->user['id']??null;
+   $cfg=\Agora\Core\DB::json(['widgets'=>$lista,'visible'=>$visible]);$u=$this->api->a->user['id']??null;
    if($r)$this->db()->run('UPDATE agora_dashboards SET config=?,version=version+1,updated_by=? WHERE id=?',[$cfg,$u,$r['id']]);
    else $this->db()->run("INSERT INTO agora_dashboards(tenant_id,modulo,alcance,user_id,config,version,updated_by) VALUES(?,?,'equipo',0,?,1,?)",[$this->t(),$modulo,$cfg,$u]);
    $this->api->a->audit('tablero.guardado','widgets',$modulo,['detalle'=>count($lista).' widgets']);
-   return ['modulo'=>$modulo,'widgets'=>$lista,'version'=>$actual+1];
+   return ['modulo'=>$modulo,'widgets'=>$lista,'visible'=>$visible,'version'=>$actual+1];
   });
  }
  private function borrarTablero(string $modulo):array{$modulo=self::modulo($modulo);$this->db()->run("DELETE FROM agora_dashboards WHERE tenant_id=? AND modulo=? AND alcance='equipo' AND user_id=0",[$this->t(),$modulo]);$this->api->a->audit('tablero.restablecido','widgets',$modulo);return ['ok'=>true];}

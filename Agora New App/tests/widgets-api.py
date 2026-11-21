@@ -5,7 +5,7 @@
 - Permisos: solo administración (Administración, Supervisión, dueños) crea fórmulas y variables; el resto solo ve valores.
 - Fórmulas guardadas: usan métricas, otras fórmulas y variables por mes; «mes anterior»; vueltas, nombres repetidos y errores rechazados.
 Requiere la API local en :8090 y la cuenta simulada (ASOCIM conectada). Uso: python3 tests/widgets-api.py"""
-import sys,subprocess,json,urllib.request,http.cookiejar,urllib.parse,re,os
+import sys,subprocess,json,urllib.request,http.cookiejar,urllib.parse,re,os,time
 B='http://127.0.0.1:8090/api/';n=0;P='Agora-Pruebas-2026!'
 def ok(c,m):
     global n
@@ -29,8 +29,8 @@ class C:
             except Exception:return e.code,{}
 # el diccionario, leído del código (para comparar con la ruta de cada fuente)
 src=open(os.path.join(os.path.dirname(__file__),'..','servidor','app','src','Widgets','Metricas.php'),encoding='utf-8').read()
-DIC={m[0]:(m[1],m[2],m[3]) for m in re.findall(r"'([a-z_]+\.[a-z_]+)'=>\['[^']+','([a-z]+)','([a-z]+)','([^']+)'",src)}
-FU={'mes':('workspace/board-month',{'period':'{p}'}),'ventas':('workspace/ventas',{'mes':'{p}'}),'cuenta':('workspace/dashboard',{'connectionId':'{c}'}),'dia':('workspace/dia',{'connectionId':'{c}'}),'ganadas':('workspace/won',{'connectionId':'{c}'}),'tareas':('workspace/tareas',{})}
+DIC={m[0]:(m[1],m[2],m[3],int(m[4] or 1)) for m in re.findall(r"'([a-z_0-9]+\.[a-z_0-9]+)'=>\['[^']+','([a-z]+)','([a-z]+)','([^']+)','[^']*'(?:,(\d+))?\]",src)}
+FU={'mes':('workspace/board-month',{'period':'{p}'}),'ventas':('workspace/ventas',{'mes':'{p}'}),'cuenta':('workspace/dashboard',{'connectionId':'{c}'}),'dia':('workspace/dia',{'connectionId':'{c}'}),'ganadas':('workspace/won',{'connectionId':'{c}'}),'tareas':('workspace/tareas',{}),'reporte':('workspace/reporte',{})}
 def campo(d,ruta):
     for k in ruta.split('.'):
         if not isinstance(d,dict) or k not in d:return None
@@ -39,13 +39,18 @@ def campo(d,ruta):
 def coincide(cl,quien,periodo='2026-11',moneda='USD'):
     st,cat=cl.call('workspace/metricas/catalogo');ids=[m['id'] for m in cat.get('metricas',[])]
     ok(st==200 and len(ids)==len(DIC)>=30,f'{quien}: catálogo con {len(ids)} métricas')
-    st,v=cl.call('workspace/metricas?periodo='+periodo+'&ids='+urllib.parse.quote(','.join(ids)));val=v.get('valores',{})
+    val={}
+    for i in range(0,len(ids),40):val.update(cl.call('workspace/metricas?periodo='+periodo+'&ids='+urllib.parse.quote(','.join(ids[i:i+40])))[1].get('valores',{}))
     fuentes={};malas=[]
-    for id_,(u,f,ruta) in DIC.items():
+    for id_,(u,f,ruta,escala) in DIC.items():
         if f not in fuentes:
             r,q=FU[f];q={k:x.replace('{p}',periodo).replace('{c}',str(cl.ws)) for k,x in q.items()}
-            fuentes[f]=cl.call(r+('?'+urllib.parse.urlencode(q) if q else ''))
-        sst,d=fuentes[f];esperado=campo(d,ruta.replace('{moneda}',moneda)) if sst==200 else None
+            for _ in range(6):
+                fuentes[f]=cl.call(r+('?'+urllib.parse.urlencode(q) if q else ''))
+                if fuentes[f][0]!=429:break
+                time.sleep(float(fuentes[f][1].get('retryAfter',2))+0.5)
+        sst,d=fuentes[f];esperado=campo(d,ruta.replace('{moneda}',moneda).replace('{periodo}',periodo)) if sst==200 else None
+        if esperado is not None and escala!=1:esperado=round(esperado/escala,2)
         dado=val.get(id_,{}).get('valor')
         if f=='ventas' and u=='dinero' and esperado is None and sst==200:esperado=0
         if not ((esperado is None and dado is None) or (esperado is not None and dado is not None and abs(float(esperado)-float(dado))<1e-9)):malas.append((id_,esperado,dado))
@@ -121,6 +126,47 @@ for cl,q in [(eje,'ejecutivo'),(con,'consulta')]:
     ok(st==200 and v['puedeEditar'] is False and len(v['widgets'])==len(t2['widgets']),f'{q} ve el tablero del equipo pero no lo edita')
     ok(cl.call('workspace/tableros','PUT',{'modulo':'ventas','version':t2['version'],'widgets':[]})[0]==403,f'{q} no puede cambiar el tablero')
     ok(cl.call('workspace/tableros?modulo=ventas','DELETE',{'modulo':'ventas'})[0]==403,f'{q} no puede restablecer el tablero')
+# ---- 2.16.0 · fase 6: cifras del reporte mensual
+st,rep=adm.call('workspace/reporte');g=rep['reports']['2026-11']
+v=adm.call('workspace/metricas?periodo=2026-11&ids=rep.vendido,rep.inscritos,rep.costos_fijos,rep.anuncios')[1]['valores']
+ok(v['rep.vendido']['valor']==g['gc']['total']['vendido']/100 and v['rep.inscritos']['valor']==g['gc']['total']['inscritos'] and v['rep.costos_fijos']['valor']==g['costs']['fijos']['total']/100 and v['rep.anuncios']['valor']==g['ads']['total']['inversion']/100,'las cifras del reporte salen del reporte del mes (en dinero, no en centavos)')
+v=adm.call('workspace/metricas?periodo=2025-01&ids=rep.vendido')[1]['valores']['rep.vendido']
+ok(v['valor'] is None and 'reporte' in v['motivo'],'un mes sin reporte da «—» con la razón')
+ok(eje.call('workspace/metricas?periodo=2026-11&ids=rep.vendido')[1]['valores']['rep.vendido']['valor'] is None,'quien no puede ver el reporte tampoco lo ve en un widget')
+# ---- 2.16.0 · fase 4: series para los gráficos (mismas cifras que el widget)
+st,se=adm.call(f'workspace/metricas/serie?ids=mes.vendido,rep.vendido,f:{a["formula"]["id"]}&hasta=2026-11&meses=4')
+ok(st==200 and se['meses']==['2026-08','2026-09','2026-10','2026-11'],'la serie trae los meses pedidos, del más viejo al elegido')
+malas=[]
+for i,mm in enumerate(se['meses']):
+    vv=adm.call(f'workspace/metricas?periodo={mm}&ids=mes.vendido,rep.vendido,f:{a["formula"]["id"]}')[1]['valores']
+    for k in vv:
+        if vv[k]['valor']!=se['series'][k][i]['valor']:malas.append((mm,k,vv[k]['valor'],se['series'][k][i]['valor']))
+ok(not malas,f'cada punto del gráfico es igual a la cifra del widget en ese mes {malas[:3]}')
+ok(adm.call('workspace/metricas/serie?ids=a.b,c.d,e.f,g.h,i.j')[0]==422,'un gráfico lleva hasta 4 series')
+x=adm.call('workspace/metricas/serie?ids=cuenta.contactos&hasta=2026-11&meses=3')[1]['series']['cuenta.contactos'][0]
+ok(x['valor'] is None and 'hoy' in x['motivo'],'una cifra de hoy no tiene historia por mes: se explica')
+# ---- 2.16.0 · fase 5: detalle
+st,dt=adm.call(f'workspace/metricas/detalle?id=f:{c["formula"]["id"]}&periodo=2026-11')
+partes={p_['nombre']:p_['valor'] for p_ in dt.get('partes',[])}
+ok(st==200 and dt['tipo']=='formula' and partes.get('Prueba margen')==709.5 and partes.get('Prueba sueldo')==600 and dt['valor']['valor']==109.5,f'el detalle de una fórmula muestra cada parte y su total ({partes})')
+st,dt=adm.call('workspace/metricas/detalle?id=rep.vendido&periodo=2026-11')
+ok(st==200 and dt['tipo']=='metrica' and dt['grupo']=='Reporte mensual' and dt['descripcion'],'el detalle de una cifra dice qué mide y de dónde sale')
+ok(adm.call('workspace/metricas/detalle?id=f:99999999')[0]==404,'el detalle de algo que no existe da 404')
+# ---- tipos de gráfico, partes y quién ve
+st,t=adm.call('workspace/tableros?modulo=costos');adm.call('workspace/tableros?modulo=costos','DELETE',{'modulo':'costos'})
+G=lambda **k:{**W(**{x:y for x,y in k.items() if x in('id','fuente','ref')}),**{x:y for x,y in k.items() if x not in('id','fuente','ref')}}
+ok(adm.call('workspace/tableros','PUT',{'modulo':'costos','version':0,'widgets':[G(tipo='linea',ref='cuenta.contactos')]})[0]==422,'un gráfico por mes no acepta una cifra de hoy')
+st,r=adm.call('workspace/tableros','PUT',{'modulo':'costos','version':0,'visible':'administracion','widgets':[G(id='aaaaaa1',tipo='linea',meses=40,mas=[{'fuente':'metrica','ref':'rep.vendido'}]*5),G(id='aaaaaa2',tipo='dona',ref='rep.costos_fijos',mas=[{'fuente':'metrica','ref':'rep.nomina'}]*12),G(id='aaaaaa3',tipo='tabla',top=99,mas=[{'fuente':'formula','ref':b['formula']['id']}]),G(id='aaaaaa4',tipo='raro',semaforo={'activo':True,'verde':1,'ambar':0})]})
+w_=r.get('widgets',[])
+ok(st==200 and len(w_[0]['mas'])==3 and w_[0]['meses']==12 and len(w_[1]['mas'])==9 and w_[2]['top']==10 and w_[3]['tipo']=='cifra' and w_[3]['semaforo']['activo'],f'los gráficos se recortan a sus topes (3 series, 12 meses, 10 partes, top 10) y un tipo raro es cifra ({st})')
+ok(adm.call('workspace/formulas','DELETE',{'id':b['formula']['id']})[0]==409,'no se borra una fórmula que usa un gráfico como parte')
+ok(r.get('visible')=='administracion' and adm.call('workspace/tableros?modulo=costos')[1]['visible']=='administracion','el tablero puede ser solo de la administración')
+for cl,q in [(eje,'ejecutivo'),(con,'consulta')]:
+    st,v=cl.call('workspace/tableros?modulo=costos')
+    ok(st==200 and v['widgets']==[] and v['visible']=='administracion',f'{q} no ve un tablero que es solo de la administración')
+limpiar();sup=C('supervisor.asocim@agora.test',P)
+ok(len(sup.call('workspace/tableros?modulo=costos')[1]['widgets'])==4,'supervisión sí lo ve')
+adm.call('workspace/tableros?modulo=costos','DELETE',{'modulo':'costos'})
 ok(adm.call('workspace/tableros?modulo=ventas','DELETE',{'modulo':'ventas'})[0]==200 and adm.call('workspace/tableros?modulo=ventas')[1]['widgets']==[],'restablecer deja el módulo sin widgets')
 # limpieza
 for f in (c,b,a):adm.call('workspace/formulas','DELETE',{'id':f['formula']['id']})
