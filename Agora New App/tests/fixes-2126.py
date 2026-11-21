@@ -50,6 +50,10 @@ with sync_playwright() as p:
         ed.click();pg.wait_for_timeout(1500)
         foco=pg.evaluate("document.querySelector('.tarj-ed .pz-foco')?.textContent?.trim()||''")
         ok(foco.startswith(nombre[:10]),f'{quien}: «Editar» abre «Editar Dashboard» con «{nombre}» marcada ({foco[:30]})')
+        pg.goto(B+'/centro');pg.wait_for_timeout(4000);pg.keyboard.press('m');pg.wait_for_timeout(1000)
+        col=pg.evaluate("[...new Set([...document.querySelectorAll('.mdm-i .mdm-ic')].filter(e=>e.offsetParent).map(e=>getComputedStyle(e).backgroundColor))]")
+        ok(len(col)>=6,f'{quien}: 2.12.10 · el menú de módulos usa un color por categoría (también el dueño con subcuenta abierta) {col}')
+        pg.keyboard.press('Escape')
         ok(not errs,f'{quien}: sin errores {errs}');pg.context.close()
     pg,errs=entrar(br,'admin.asocim@agora.test','Agora-Pruebas-2026!',{'width':390,'height':844})
     malos=[]

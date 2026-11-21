@@ -881,3 +881,7 @@ main#app#app .cel:is(.is-hot,:hover)::before{opacity:1}
 .inicio-resumen-ver.btn{border-bottom:0!important;padding-bottom:0!important;text-decoration:none;color:var(--ink)}
 .inicio-resumen-ver.btn:hover{border-color:transparent}
 .inicio-resumen-acc{align-items:center!important}.inicio-resumen-acc > *{margin-top:0!important;margin-bottom:0!important}
+/* 2.12.10 · «Editar Dashboard» y «Dashboard» idénticos y alineados (mismo alto, relleno y línea de texto). */
+.inicio-resumen-acc > :is(.btn,.inicio-resumen-ver){display:inline-flex!important;align-items:center!important;gap:6px;height:34px!important;min-height:34px!important;padding:0 14px!important;line-height:1!important;font:600 13.5px/1 var(--font-text)!important;border:0!important;border-radius:999px!important;vertical-align:middle;box-sizing:border-box}
+.inicio-resumen-acc > :is(.btn,.inicio-resumen-ver) > span{line-height:1}
+.inicio-resumen-acc > :is(.btn,.inicio-resumen-ver) svg{width:15px;height:15px;flex:none}

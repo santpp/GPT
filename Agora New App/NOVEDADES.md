@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.10 · Botones alineados y colores del menú también para el dueño (21 nov):**
+- «Editar Dashboard» y «Dashboard» en «Resumen del día» ahora son idénticos: mismo alto, relleno y línea de texto (en el teléfono quedaban desalineados).
+- El color por categoría del menú de módulos no se aplicaba cuando el dueño entraba con una subcuenta abierta (ese arranque salía antes). Ahora se aplica siempre.
+
 **Novedades 2.12.9 · Línea roja solo al pasar y botones iguales en «Resumen del día» (21 nov):**
 - Las cifras quedan con su **línea fina gris** de siempre; la **línea roja con brillo aparece solo al pasar** (o al tocar en el teléfono).
 - **«Dashboard» / «Ir a Dashboard»** usa el mismo botón que «Editar Dashboard» (píldora gris), alineados en la misma línea.

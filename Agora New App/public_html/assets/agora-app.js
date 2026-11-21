@@ -4086,7 +4086,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.12.9').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.12.10').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -10530,6 +10530,9 @@ async function bootContratos() {
 }
 applyTheme();
 if (AG_READY && window.AGORA_MAINTENANCE !== false) { try { AG.installMaintenance(); } catch { /* sin vigilancia */ } }
+// 2.12.10 · Cada módulo toma el color de su categoría (Ventas vino, Facturación oro, Clientes azul, Gestión azul medio, Contratos rosa,
+// Administración vino oscuro). Va antes del arranque: el dueño con una subcuenta abierta sale del arranque por otro camino.
+Object.values(MODS).forEach(m => { if (m && GRUPOS[m.g] && m.g !== 'general') m.c = GRUPOS[m.g].c; });
 (async () => {
   await Promise.all([bootContratos(), bootAgora()]);
   if (ME && AGORA_ME && !esSuperAdmin()) await bootEspacio();
@@ -10547,8 +10550,6 @@ if (AG_READY && window.AGORA_MAINTENANCE !== false) { try { AG.installMaintenanc
     const target = esSuperAdmin() ? '/agencia' : (back && back !== '/entrar' && back !== '/' ? back : homePath());
     history.replaceState(null, '', HASH ? location.pathname + '#' + target : target);
   }
-  // 2.12.7 · Cada sección del menú con su color de la marca (vino, vino oscuro, rosa, azul profundo, azul medio, pizarra); sin oro.
-  Object.values(MODS).forEach(m => { if (m && GRUPOS[m.g] && m.g !== 'general') m.c = GRUPOS[m.g].c; });
   render();
 })();
 })();
