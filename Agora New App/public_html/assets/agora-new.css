@@ -918,3 +918,10 @@ main#app .live-toolbar .live-feedback{margin:0!important}
 .lg-panel .lg-ok{margin:-10px 0 16px;color:var(--ok,#1f7a43);font-weight:600}
 .lg-paso .lg-otp::placeholder{letter-spacing:normal;font:500 15px/1 var(--font-text)}
 .lg-paso .lg-help,.lg-paso .lg-paso-t{text-align:left}
+
+/* 2.13.1 · Pedido del usuario: la línea superior de cada cifra vuelve a ser azul de Ágora y al pasar se vuelve roja (con brillo).
+   Los botones «Editar» de las cifras van en gris oscuro sobre blanco con borde gris; al pasar, fondo rojo y letra blanca. */
+main#app#app .cel::before{opacity:1!important;background:var(--ag-2)!important;box-shadow:none!important}
+main#app#app .cel:is(.is-hot,:hover)::before{background:var(--ag-1)!important;box-shadow:0 0 10px 1px color-mix(in srgb,var(--ag-1) 55%,transparent)!important}
+main#app#app .cel .cel-ed{background:var(--surface,#fff)!important;color:var(--ink)!important;border:1px solid var(--line-2,#d4d4da)!important}
+main#app#app .cel .cel-ed:is(:hover,:focus-visible,:active){background:var(--ag-1)!important;border-color:var(--ag-1)!important;color:#fff!important}

@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.13.1 · Líneas azules, «Editar» gris y clave de dueño solo por terminal (21 nov):**
+- **Cifras:** la línea de arriba de cada cifra vuelve a ser **azul** y al pasar se vuelve **roja** con brillo. Los botones «Editar» van en **gris oscuro sobre blanco** con borde gris; al pasar, fondo rojo y letra blanca.
+- **La clave de un dueño (Master o Superadmin) solo se cambia por terminal** (`php servidor/bin/cambiar-clave.php correo`): sin «Cambiar mi clave», sin «¿Olvidaste tu clave?» (responde igual, pero no envía código) y el Master tampoco cambia la de otro dueño desde Usuarios. El servidor lo exige; en el perfil del dueño se explica. Los demás usuarios siguen igual.
+- Las cuentas de dueño siguen creándose solo por terminal (decisión confirmada).
+- Prueba nueva: `tests/dueno-clave.py`.
+
 **Novedades 2.13.0 · Correo de Ágora, código al entrar, «¿Olvidaste tu clave?» y sesión de 14 días (21 nov):**
 - **Correo de Ágora sin SMTP:** el dueño elige en Agencia → «Correo de Ágora» la subcuenta de la agencia por la que salen los correos del sistema. Usa el correo de esa cuenta. Botón «Probar envío». Solo el dueño (Master) lo ve y lo cambia.
 - **Código al iniciar sesión:** con el correo elegido, después de la clave llega un código de 6 dígitos (caduca en 10 minutos, 5 intentos, se usa una vez, «Reenviar código» cada minuto). Se puede apagar desde el mismo selector.

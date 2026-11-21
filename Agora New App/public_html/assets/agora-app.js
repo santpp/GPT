@@ -1084,7 +1084,7 @@ function openAccount() {
       ${opcion(`data-ir="${href(homePath())}"`, 'home', 'Ir al inicio')}
       ${esSuperAdmin() && !AGENCY_CONTEXT ? opcion('data-agency-back', 'briefcase', 'Volver a Agencia') : ''}
       ${opcion(`data-ir="${href(MODS.conexiones.path)}"`, 'gear', 'Ajustes')}
-      ${ME ? opcion('data-clave', 'lock', 'Cambiar mi clave') : ''}
+      ${ME && !esSuperAdmin() ? opcion('data-clave', 'lock', 'Cambiar mi clave') : ''}
       ${opcion('data-keys', 'keyboard', 'Atajos del teclado', '?')}
     </div>
     ${ESPACIO ? `<div class="acct-est">
@@ -1162,7 +1162,7 @@ function openCmd(initial = '') {
       {g: 'Acciones', i: 'athena', t: 'Preguntarle a Athena', d: 'Resume tus cifras del sistema', fn: () => abrirAthena()},
       ...(agoraReady() ? [{g: 'Acciones', i: 'coins', t: 'Ventas ganadas', d: 'Completar las que están sin monto', fn: () => { if (ws) ws.pendingOppTab = 'won'; go('/oportunidades'); }}] : []),
 
-      ...(ME ? [{g: 'Acciones', i: 'lock', t: 'Cambiar mi clave', d: 'La del panel de Contratos', fn: claveModal}] : []),
+      ...(ME && !esSuperAdmin() ? [{g: 'Acciones', i: 'lock', t: 'Cambiar mi clave', d: 'La del panel de Contratos', fn: claveModal}] : []),
       {g: 'Acciones', i: document.documentElement.dataset.theme === 'dark' ? 'sun' : 'moon', t: 'Cambiar tema', fn: toggleTheme},
       {g: 'Acciones', i: 'keyboard', t: 'Atajos de teclado', fn: keysModal},
     ];
@@ -1702,7 +1702,7 @@ V.perfil = {
         </aside>
         <div class="pf-main">
           ${profileEditForm()}
-          ${seccion('lock', 'Seguridad', 'Protege tu acceso a Ágora.', fila('Clave', 'Al cambiarla se cierran tus otras sesiones abiertas.', `<button class="btn btn-sm" type="button" data-pf-clave>${icon('lock')}Cambiar clave</button>`) + fila('Cerrar sesión', 'Sal de Ágora en este equipo.', `<button class="btn btn-sm" type="button" data-pf-salir>${icon('logout')}Cerrar sesión</button>`))}
+          ${seccion('lock', 'Seguridad', 'Protege tu acceso a Ágora.', (esSuperAdmin() ? fila('Clave', 'La clave de un dueño se cambia solo desde la terminal del servidor. Pídelo a quien administra el servidor (php servidor/bin/cambiar-clave.php).', '') : fila('Clave', 'Al cambiarla se cierran tus otras sesiones abiertas.', `<button class="btn btn-sm" type="button" data-pf-clave>${icon('lock')}Cambiar clave</button>`)) + fila('Cerrar sesión', 'Sal de Ágora en este equipo.', `<button class="btn btn-sm" type="button" data-pf-salir>${icon('logout')}Cerrar sesión</button>`))}
           ${seccion('briefcase', 'Tu rol', esc(role), `<p class="pf-text">${perfilRolTexto()}</p>${accesos}`)}
         </div>
       </div></div>`;
@@ -4172,7 +4172,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.13.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.13.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -9288,7 +9288,7 @@ function usrEditar(u) {
         ${esMasterU ? '<p class="bx-help">El Master entra a todas las subcuentas y no cambia de rol.</p>' : ''}
       </fieldset>
       <fieldset class="bx bx-wide"><legend>${icon('lock')}Contraseña</legend>
-        ${u.yo ? '<p class="bx-help">Tu propia contraseña se cambia en Mi perfil.</p>' : `<div class="usr-clave"><button type="button" class="btn btn-sm" data-usr-generar>${icon('refresh')}Generar contraseña temporal</button><span>o</span><label class="fld grow"><span class="sr-only">Nueva contraseña</span><input name="clave" type="password" minlength="8" maxlength="72" autocomplete="new-password" placeholder="Escribe una nueva"></label><button type="button" class="btn btn-sm" data-usr-clave>Guardar contraseña</button></div><p class="usr-temporal" data-usr-temporal hidden></p><p class="bx-help">Al cambiarla se cierran sus sesiones abiertas.</p>`}
+        ${['MASTER','SUPERADMIN'].includes(u.rol) ? '<p class="bx-help">La clave de un dueño se cambia solo desde la terminal del servidor.</p>' : u.yo ? '<p class="bx-help">Tu propia contraseña se cambia en Mi perfil.</p>' : `<div class="usr-clave"><button type="button" class="btn btn-sm" data-usr-generar>${icon('refresh')}Generar contraseña temporal</button><span>o</span><label class="fld grow"><span class="sr-only">Nueva contraseña</span><input name="clave" type="password" minlength="8" maxlength="72" autocomplete="new-password" placeholder="Escribe una nueva"></label><button type="button" class="btn btn-sm" data-usr-clave>Guardar contraseña</button></div><p class="usr-temporal" data-usr-temporal hidden></p><p class="bx-help">Al cambiarla se cierran sus sesiones abiertas.</p>`}
       </fieldset>
     </div>
     <p class="fld-err" role="alert"></p>

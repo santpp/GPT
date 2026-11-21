@@ -11,7 +11,7 @@ def ok(c,m):
     global n
     if not c:print('FALLA:',m);sys.exit(1)
     n+=1;print('PASS',m)
-VINO='rgb(173, 16, 60)'
+VINO='rgb(173, 16, 60)';AZUL='rgb(40, 46, 73)'
 LINEA="""(i)=>{const c=document.querySelectorAll('main .cel')[i];const b=getComputedStyle(c,'::before');return [b.backgroundColor,b.boxShadow,b.opacity]}"""
 def entrar(br,u,pw,vp,ws=None):
     subprocess.run(['mysql','--socket=/tmp/mdb/run/mysql.sock','agora_erp','-e','delete from agora_rate_limits'])
@@ -36,7 +36,7 @@ with sync_playwright() as p:
         a=pg.evaluate(LINEA,1)
         pg.locator('main .cel').nth(1).hover();pg.wait_for_timeout(600)
         b=pg.evaluate(LINEA,1)
-        ok(a[2]=='0' and b[0]==VINO and b[1]!='none' and b[2]=='1',f'{quien}: 2.12.9 · sin línea roja en reposo (solo la fina gris); al pasar aparece vino con brillo {a} → {b}')
+        ok(a[0]==AZUL and a[2]=='1' and b[0]==VINO and b[1]!='none',f'{quien}: 2.13.1 · la línea es azul en reposo y al pasar se vuelve roja con brillo {a} → {b}')
         sv=pg.evaluate("[...document.querySelectorAll('main [data-cel-ed]')].filter(e=>e.querySelector('svg')||e.textContent.trim()!=='Editar').length")
         ok(sv==0,f'{quien}: 2.12.8 · «Editar» va solo con la palabra, sin ícono ({sv})')
         cen=pg.evaluate("""[...document.querySelectorAll('main .cel')].filter(c=>c.offsetParent).filter(c=>{const v=c.querySelector('.ag-resumen-v, .t-metric, .inicio-resumen-v, .t-hero');if(!v)return false;const r=c.getBoundingClientRect(),b=v.getBoundingClientRect();return Math.abs((b.left+b.right)/2-(r.left+r.right)/2)>12}).length""")
@@ -45,7 +45,7 @@ with sync_playwright() as p:
         c0=ed.evaluate("e=>[getComputedStyle(e).backgroundColor,getComputedStyle(e).color]")
         ed.hover();pg.wait_for_timeout(600)
         c1=ed.evaluate("e=>[getComputedStyle(e).backgroundColor,getComputedStyle(e).color]")
-        ok(c0[1]==VINO and c1==[VINO,'rgb(255, 255, 255)'],f'{quien}: «Editar» vino con contorno y, al pasar, fondo vino y letra blanca {c0} → {c1}')
+        ok(c0[1]!=VINO and c0[0] in ('rgb(255, 255, 255)','rgba(0, 0, 0, 0)') and c1==[VINO,'rgb(255, 255, 255)'],f'{quien}: 2.13.1 · «Editar» gris oscuro sobre blanco y, al pasar, fondo rojo y letra blanca {c0} → {c1}')
         nombre=pg.evaluate("(()=>{const c=document.querySelectorAll('main .cel')[1];return (c.querySelector('.ag-resumen-t, :scope > h3, .t-label')?.textContent||'').trim()})()")
         ed.click();pg.wait_for_timeout(1500)
         foco=pg.evaluate("document.querySelector('.tarj-ed .pz-foco')?.textContent?.trim()||''")

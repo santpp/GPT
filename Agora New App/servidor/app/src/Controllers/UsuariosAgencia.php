@@ -100,6 +100,7 @@ final class UsuariosAgencia {
   $id=Http::integer($b['id']??0,1,PHP_INT_MAX);
   $u=$this->db->one('SELECT * FROM agora_users WHERE id=?',[$id]);if(!$u)Http::fail('Usuario no encontrado.',404);
   if($e=$this->editable($u))Http::fail($e,403);
+  if(in_array($u['role'],['MASTER','SUPERADMIN'],true))Http::fail('La clave de una cuenta de dueño se cambia solo desde la terminal del servidor: php servidor/bin/cambiar-clave.php correo',403); // 2.13.1
   if((int)$u['id']===(int)$this->auth->user['id'])Http::fail('Para tu propia contraseña usa Mi perfil.',403);
   $temporal=null;
   if(($b['generar']??false)===true){$abc='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';$temporal='';for($i=0;$i<14;$i++)$temporal.=$abc[random_int(0,strlen($abc)-1)];$clave=$temporal;}

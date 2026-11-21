@@ -162,6 +162,7 @@ final class Auth {
   $email=Http::email($b);$this->rate('olvido-ip:'.($_SERVER['REMOTE_ADDR']??''),10,900);$this->rate('olvido-email:'.$email,3,900);
   $c=$this->db->setting(0,'correo.canal',null);if(defined('AGORA_MODO_PRUEBAS')||!is_array($c)||!(int)($c['connectionId']??0))return ['ok'=>true,'disponible'=>false];
   $u=$this->db->one('SELECT * FROM agora_users WHERE email=? AND active=1',[$email]);
+  if($u&&in_array($u['role'],['MASTER','SUPERADMIN'],true))$u=null; // 2.13.1 · la clave de un dueño solo se cambia por terminal (misma respuesta)
   if($u){try{[$d]=$this->codigoNuevo($u,'reset',900,$this->desafioReset($u,$email));$this->audit('clave.codigo','sesion',(string)$u['id']);}catch(\Throwable){/* misma respuesta */}}
   return ['ok'=>true,'disponible'=>true];
  }
@@ -170,7 +171,7 @@ final class Auth {
   $email=Http::email($b);$this->rate('restablecer-email:'.$email,10,900);$this->rate('restablecer-ip:'.($_SERVER['REMOTE_ADDR']??''),30,900);
   $nueva=Http::password($b['clave']??'');
   $u=$this->db->one('SELECT * FROM agora_users WHERE email=? AND active=1',[$email]);
-  if(!$u)Http::fail('El código no es válido o ya venció. Pide uno nuevo.',401);
+  if(!$u||in_array($u['role'],['MASTER','SUPERADMIN'],true))Http::fail('El código no es válido o ya venció. Pide uno nuevo.',401);
   $desafio=$this->desafioReset($u,$email);
   $this->codigoValido($desafio,trim((string)($b['codigo']??'')),'reset',(int)$u['id']);
   $this->db->transaction(function()use($u,$nueva){
