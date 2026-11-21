@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.11 · «Resumen del día» como los demás módulos (21 nov):**
+- El título y los botones «Editar Dashboard» y «Dashboard» van **fuera de la tarjeta**; la tarjeta blanca es solo la caja de cifras. Título de 20 px (18 en el teléfono), como las secciones de los demás módulos.
+- Se revisaron todos los módulos (con y sin reporte): ningún «Editar Dashboard» ni «Dashboard» queda dentro de una tarjeta. `tests/fixes-2126.py` lo comprueba.
+
 **Novedades 2.12.10 · Botones alineados y colores del menú también para el dueño (21 nov):**
 - «Editar Dashboard» y «Dashboard» en «Resumen del día» ahora son idénticos: mismo alto, relleno y línea de texto (en el teléfono quedaban desalineados).
 - El color por categoría del menú de módulos no se aplicaba cuando el dueño entraba con una subcuenta abierta (ese arranque salía antes). Ahora se aplica siempre.

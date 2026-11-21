@@ -66,6 +66,7 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
   - Todo navega con `tarjIr(r)`. `tests/atajos.py` lo revisa.
 - **Inicio de sesión:** solo marca, Athena con su globo, «Inicia sesión», los campos, «Continuar» y «¿Olvidaste tu clave?». Sin emojis, puntos de estado, píldoras ni frases de relleno (el usuario los quitó en 2.11.7).
 - **Una caja por grupo de cifras en TODOS los módulos** (borde, radio 16 px, fondo blanco) con las cifras separadas por líneas finas; nada de tarjetas sueltas con espacio entre ellas. Lo hace el bloque 2.12.3 de `agora-new.css` para `.ag-resumen-grid`, `.g-hero` y `.grid` con `.micro`.
+- **Los botones de módulo («Editar Dashboard», «Dashboard», «Descargar») van siempre fuera de las tarjetas**, en la línea del título (2.12.11; también «Resumen del día»).
 - **«Editar Dashboard» en todo módulo con cifras:** con catálogo (`tarjEditar`) donde lo hay; si no (Tablero, vistas del reporte), el genérico `tgAplicar`/`tgEditar` lee las cifras en pantalla y guarda orden y ocultas (vista `g_<módulo>`).
 - **Tableros: 4 cifras por fila** en el ordenador (2 en pantallas medianas). Una tarjeta grande ocupa una columna más, no media pantalla.
 - **Colores (2.12.3):** dos familias del manual, vino y azul profundo, con sus tonos (`--ag-1`, `--ag-2`, `--ag-4` a `--ag-8`; módulos `--mod-*`). El oro solo para detalles pequeños y para la categoría Facturación; verde y ámbar solo para estados. Nada de selectores de color.
