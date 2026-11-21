@@ -164,7 +164,7 @@
       state = { ...alert2, connection, total: state && state.connection === connection && state.total ? state.total : alert2.count };
       paintChrome();
       if (alert2.count > 0 && dialog?.open) openDialog();
-      else if (alert2.count > 0 && popupPending) {
+      else if (alert2.count > 0 && popupPending && !window.agoraVentaGanada) { // Agora New App 2.12.13: en el ERP manda el formulario de venta (aviso «venta por completar»)
         popupPending = false;
         const urgent = !!alert2.escalate;
         Promise.resolve(gateFn ? gateFn(urgent ? "tutorial" : "all") : null).then(() => {
@@ -186,7 +186,7 @@
     });
     const bar = document.querySelector("#won-banner");
     if (bar) {
-      if (count > 0) {
+      if (count > 0 && !window.agoraVentaGanada) { // Agora New App 2.12.13: sin la franja del monto suelto; el ERP completa la venta entera
         bar.hidden = false;
         bar.classList.toggle("urgent", !!state.escalate);
         bar.innerHTML = `<p><b>${count === 1 ? "Tienes 1 venta ganada sin monto" : `Tienes ${count} ventas ganadas sin monto`}.</b> Cada venta necesita su monto para contar en el tablero y en las comisiones.</p><button type="button" class="primary" id="won-banner-go">Completar ahora</button>`;
@@ -2495,6 +2495,8 @@
       };
       const money3 = (value) => money(value) ?? String(value);
       async function winDialog(c) {
+        // Agora New App 2.12.13: el mismo paso que la ficha del contacto; al ganar se abre el formulario de venta de Ventas.
+        if (window.agoraGanar) return window.agoraGanar({ connection: select.value, conversationId: c.id, contactId: c.contactId, nombre: name(c), alTerminar: () => { if (recordatorios.has(c.id)) { recordatorios.delete(c.id); pintarRecordatorio(c); list(); } if (active()) loadContact(c, chatGeneration); } });
         const dialog2 = document.querySelector("#action-dialog"), content = document.querySelector("#dialog-content");
         const connection = select.value, version = chatGeneration;
         content.innerHTML = '<h2>¿Venta ganada?</h2><p class="dialog-copy">Cargando las oportunidades de este contacto…</p>';
@@ -3184,7 +3186,7 @@
         <button class="mobile-back" id="record-back" aria-label="Volver a la lista">←</button>
         <span class="avatar olive">${esc(initials(contact.name))}</span>
         <div><h2>${esc(contact.name)}</h2><p>${esc(contact.email||contact.phone||'Sin datos de contacto')}</p></div>
-        <div class="record-actions">${canWrite()?'<button class="primary" id="record-message">Enviar mensaje</button>':''}${record.canEdit?'<button class="secondary" id="record-edit">Editar ficha</button>':''}</div>
+        <div class="record-actions">${canWrite()?'<button class="primary" id="record-message">Enviar mensaje</button>':''}${canWrite()&&window.agoraGanar?'<button class="secondary" id="record-win">¿Venta ganada?</button>':''}${record.canEdit?'<button class="secondary" id="record-edit">Editar ficha</button>':''}</div>
        </header>
        ${contact.dnd?'<p class="record-flag">Marcado como no contactar.</p>':''}
        <div class="record-columns">
@@ -3196,6 +3198,16 @@
       panel.querySelector('#record-back').onclick=()=>{layout.classList.remove('record-open')};
       const edit=panel.querySelector('#record-edit');
       if(edit)edit.onclick=()=>{editing=true;show()};
+      // Agora New App 2.12.13: «¿Venta ganada?» también en la ficha del contacto (mismo paso que la Bandeja).
+      const win=panel.querySelector('#record-win');
+      if(win)win.onclick=async()=>{
+        win.disabled=true;const status=panel.querySelector('#record-status');status.textContent='Buscando sus oportunidades…';
+        try{
+          const {conversation}=await request(`workspace/contact-conversation?connectionId=${encodeURIComponent(connection)}`,'POST',{contactId:selected});
+          if(!active())return;status.textContent='';
+          window.agoraGanar({connection,conversationId:conversation.id,contactId:selected,nombre:contact.name});
+        }catch(error){status.textContent=friendly(error)}finally{win.disabled=false}
+      };
       const write=panel.querySelector('#record-message');
       if(write)write.onclick=async()=>{
         write.disabled=true;const status=panel.querySelector('#record-status');status.textContent='Abriendo la conversación…';

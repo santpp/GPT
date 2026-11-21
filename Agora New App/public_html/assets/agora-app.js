@@ -4086,7 +4086,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.12.12').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.12.13').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -6667,7 +6667,8 @@ function vgInterceptar() {
 async function vgGanada(url, res) {
   let d = {}; try { d = await res.json(); } catch { d = {}; }
   const op = d.opportunity || null;
-  const id = op?.id || new URL(url, location.href).searchParams.get('opportunityId');
+  // 2.12.13: al crear una oportunidad la cuenta responde {state, id}; antes se perdía el id y no se abría el formulario de venta.
+  const id = op?.id || (typeof d.id === 'string' ? d.id : '') || new URL(url, location.href).searchParams.get('opportunityId');
   if (!id || op?.ventaId || VG.abiertas.has(id) || !vgPuede()) return;
   VG.abiertas.add(id);
   window.dispatchEvent?.(new CustomEvent('agora:oportunidad-ganada', {detail: {id, oportunidad: op}}));
@@ -6676,6 +6677,48 @@ async function vgGanada(url, res) {
   setTimeout(() => vgAbrir(id, {nueva: true}), 380);
 }
 window.agoraVentaGanada = (oportunidadId, opts = {}) => vgAbrir(oportunidadId, {nueva: true, ...opts});
+/* 2.12.13 · «¿Venta ganada?» igual desde la Bandeja y desde la ficha del contacto (pedido del usuario): solo se elige la
+   oportunidad; al marcarla ganada se abre el formulario de venta de Ventas (cliente, producto y cobro, detalles, resumen), que
+   guarda el monto en la oportunidad, la venta, las tareas y los cobros. Así no se escribe el valor dos veces. */
+window.agoraGanar = async function ({connection, conversationId, contactId, nombre = '', alTerminar} = {}) {
+  const q = s => encodeURIComponent(s || '');
+  const s = openModal(modalHead('¿Venta ganada?', 'Elige la oportunidad que se ganó. Enseguida se abre el formulario de venta, el mismo de Ventas.') + `<div class="vgw"><p class="dialog-copy">Cargando las oportunidades de este contacto…</p></div>`);
+  const caja = s.querySelector('.vgw');
+  let found, pipes;
+  try {
+    [found, pipes] = await Promise.all([
+      agoraApi(`workspace/opportunities?connectionId=${q(connection)}&conversationId=${q(conversationId)}`),
+      agoraApi(`workspace/pipelines?connectionId=${q(connection)}`)]);
+  } catch (e) { caja.innerHTML = `<p class="fld-err" role="alert">${esc(e.message)}</p><div class="form-ft"><button class="btn" type="button" data-close>Cerrar</button></div>`; return; }
+  const lista = x => Array.isArray(x) ? x : (x?.items || []);
+  const abiertas = lista(found.items).filter(o => !['won', 'lost', 'abandoned'].includes(o.status));
+  const embudos = lista(pipes.pipelines);
+  const elegida = found.active && abiertas.some(o => o.id === found.active.id) ? found.active.id : abiertas[0]?.id || 'new';
+  caja.innerHTML = `<form class="bx-form vgw-form" novalidate>
+    <label class="fld"><span>Oportunidad</span><select name="op">${abiertas.map(o => `<option value="${esc(o.id)}" ${o.id === elegida ? 'selected' : ''}>${esc(o.name || 'Oportunidad sin nombre')}${o.stageName ? ' · ' + esc(o.stageName) : ''}</option>`).join('')}<option value="new" ${elegida === 'new' ? 'selected' : ''}>+ Nueva venta</option></select></label>
+    <div class="vgw-nueva" ${elegida === 'new' ? '' : 'hidden'}><label class="fld"><span>Nombre</span><input name="nombre" maxlength="190" value="${esc('Venta · ' + nombre)}"></label>
+      ${embudos.length > 1 ? `<label class="fld"><span>Embudo</span><select name="embudo">${embudos.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select></label>` : ''}</div>
+    <p class="fld-err" role="alert"></p>
+    <div class="form-ft"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="submit">${icon('check')}Continuar con la venta</button></div></form>`;
+  const form = caja.querySelector('form'), err = form.querySelector('.fld-err');
+  form.op.onchange = () => { form.querySelector('.vgw-nueva').hidden = form.op.value !== 'new'; };
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const op = form.op.value, previo = abiertas.find(o => o.id === op), valor = previo && Number(previo.monetaryValue) > 0 ? Number(previo.monetaryValue) : 0;
+    if (op === 'new' && !embudos.length) { err.textContent = 'Esta cuenta no tiene embudos donde guardar la venta.'; return; }
+    const cuerpo = op === 'new' ? {name: form.nombre.value.trim() || 'Venta · ' + nombre, pipelineId: form.embudo?.value || embudos[0].id, status: 'won', monetaryValue: valor}
+      : {status: 'won', monetaryValue: valor, claimIfUnassigned: true};
+    const ruta = op === 'new' ? `workspace/opportunity/new?connectionId=${q(connection)}&contactId=${q(contactId)}` : `workspace/opportunity/edit?connectionId=${q(connection)}&opportunityId=${q(op)}`;
+    const boton = form.querySelector('[type=submit]'); busy(boton, true, 'Guardando…'); err.textContent = '';
+    try {
+      const r = await agoraApi(ruta, {method: 'POST', body: {...cuerpo, requestId: (crypto.randomUUID?.() || String(Date.now())).replace(/-/g, '')}});
+      closeModal();
+      window.dispatchEvent(new Event('agora:opportunity-edited'));
+      if (!vgPuede() || r?.opportunity?.ventaId) toast('Oportunidad marcada como ganada.');
+      try { alTerminar?.(); } catch { /* la pantalla se refresca sola */ }
+    } catch (x) { busy(boton, false); err.textContent = x.message; }
+  };
+};
 vgInterceptar();
 
 /* ---------- 2. Formulario "Venta ganada" ---------- */

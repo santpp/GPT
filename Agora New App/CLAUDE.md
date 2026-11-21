@@ -99,6 +99,10 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
 - Entre una prueba y otra: 11 s de pausa y `delete from agora_rate_limits`.
 - Orden de las pruebas: `motor-puente.py duena@example.test 'Clave-Local-2026!'`, `permisos.py` (mismos argumentos), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `tarjetas.py`, `ventas-importadas.py`, `estudiantes.py`, `venta-cuenta.py` (no se puede repetir), `ui-estados.py`, `menu-principal.py`, `herramientas.py`, `fixes-296.py`, `graficos-gestion.py`, `costos-editar.py`, `facturacion.py`, `facturacion-ui.py` (necesita la anterior), `fixes-2111.py`, `tipografia.py`, `atajos.py`, `fixes-2117.py`, `consumos-reparto.py`, `fixes-2120.py`, `fixes-2121.py`, `fixes-2123.py`, `ghl-conexion.php`.
 
+## Venta ganada (2.12.13)
+
+- Un solo flujo: «¿Venta ganada?» (Bandeja y ficha del contacto) → `window.agoraGanar` elige la oportunidad → al quedar ganada, `vgInterceptar`/`vgGanada` abre el formulario de venta (`vgAbrir`), el mismo de Ventas registradas. No se pide el valor aparte; el formulario lo guarda en la oportunidad. Las ganadas sin venta son «ventas por completar».
+
 ## Facturación (2.11.0)
 
 - Categoría propia: Cobros (`tc_facturas`, ruta `/cobros`), Facturas, Libro de ventas, Datos fiscales y Tasas del día. Plan y decisiones: `PLAN-FACTURACION-FISCAL.md` y `../docs/decisiones.md`.

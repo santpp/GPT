@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.13 · «¿Venta ganada?» igual que en Ventas, también desde la ficha del contacto (21 nov):**
+- **Un solo flujo:** desde la conversación y desde la ficha del contacto (Contactos) se elige la oportunidad (o «+ Nueva venta») y enseguida se abre el **formulario de venta de Ventas** (Cliente · Producto y cobro · Detalles · Resumen), que guarda el monto en la oportunidad, la venta, las tareas y los cobros. Ya no se escribe el valor dos veces.
+- **Arreglo:** con «+ Nueva venta» el formulario de venta no se abría (la cuenta devuelve el código de la oportunidad nueva en otro campo y se perdía).
+- **Botón «¿Venta ganada?» en la ficha del contacto**, junto a «Enviar mensaje» y «Editar ficha».
+- Sin la ventana suelta «venta ganada sin monto» de la cuenta: en el ERP las ganadas sin venta salen como «ventas por completar» y llevan al formulario completo.
+- Prueba nueva: `tests/fixes-21213.py`. La cuenta simulada de pruebas ahora sabe crear oportunidades.
+
 **Novedades 2.12.12 · Íconos de categoría, sin frases obvias y Bandeja más arriba (21 nov):**
 - **Gestión y resultados** lleva un ícono de bolsa de valores (velas sobre ejes). **Administración y Ajustes** usan un engranaje de verdad (antes parecía un sol).
 - **Sin frases obvias bajo el título** de los módulos (por ejemplo «Todos los canales en una sola lista…»). La descripción de cada módulo queda solo en el Inicio. El Dashboard conserva su línea de fecha y hora de actualización.

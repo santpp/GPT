@@ -68,6 +68,7 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 65 | Con 3 cifras en una caja de 4 columnas quedaba un hueco o una cifra el doble de ancha; y en celdas angostas del teléfono el rótulo quedaba bajo el botón. | La rejilla era fija y el rótulo largo no podía partirse. | `cajaRellenar` reparte en partes iguales si hay menos cifras que columnas; en el teléfono se deja solo el lápiz. (2.12.6) |
 | 66 | El dueño con una subcuenta abierta veía el menú de módulos con los colores viejos. | El color por categoría se aplicaba al final del arranque, y ese camino del dueño sale antes. | Se aplica antes del arranque, para todos. (2.12.10) |
 | 67 | «Editar Dashboard» y «Dashboard» desalineados en el teléfono. | Distinto alto de línea y relleno inferior heredado del enlace subrayado. | Mismo alto, relleno y línea en los dos. (2.12.10) |
+| 68 | «¿Venta ganada?» con «+ Nueva venta» no abría el formulario de venta. | Al crear la oportunidad la cuenta responde `{state, id}` y la capa que abre el formulario solo buscaba `opportunity.id`. | `vgGanada` también lee `id`. (2.12.13) |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 

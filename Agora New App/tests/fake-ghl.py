@@ -144,6 +144,11 @@ class H(BaseHTTPRequestHandler):
         if p=='/opportunities/search':
             items=[o for o in OPPS if (q.get('status') in(None,'all') or o['status']==q.get('status')) and ('assigned_to' not in q or o['assignedTo']==q['assigned_to']) and ('contact_id' not in q or o['contactId']==q['contact_id'])]
             return self.out(200,{'opportunities':items,'meta':{'total':len(items)}})
+        if p in('/opportunities/','/opportunities') and m=='POST':
+            import time as _t
+            o={'id':'op-n%d'%int(_t.time()*1000),'name':b.get('name','Oportunidad'),'contactId':b.get('contactId',''),'pipelineId':b.get('pipelineId',''),'pipelineStageId':b.get('pipelineStageId',''),'status':b.get('status','open'),'monetaryValue':b.get('monetaryValue',0),'assignedTo':b.get('assignedTo'),'createdAt':__import__('datetime').datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),'contact':{'id':b.get('contactId','')}}
+            if o['status']=='won':o['lastStatusChangeAt']=o['createdAt']
+            OPPS.append(o);return self.out(201,{'opportunity':o})
         m5=re.match(r'^/opportunities/([\w-]+)/status$',p)
         if m5 and m=='PUT':
             o=next((x for x in OPPS if x['id']==m5.group(1)),None)
