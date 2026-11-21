@@ -35,7 +35,7 @@ Resumen de cómo trabajamos. El detalle por módulo y las decisiones de cada ver
 |---|---|---|
 | Qué es | App del vendedor (bandeja, contactos, oportunidades, tablero), PWA y Android | Gestión completa (ventas, facturación, reporte mensual, contratos, agencia) |
 | Dónde | Producción: nueva.agoradigital.app | Pruebas: tests.agoradigital.app (CyberPanel + OpenLiteSpeed) |
-| Versión | **1.10.35** | **2.13.1** |
+| Versión | **1.10.35** | **2.14.0** |
 | Código | 23 módulos ES (`public/assets/*.js`), `src/` PHP 8.3 | `public_html/assets/agora-app.js` (un archivo grande, se va a refactorizar), `agora-modulos.js` (pantallas de Mobile empaquetadas), `servidor/` |
 | Paquete | `python3 deploy/native/package.py "Agora Mobile/agora-update-X.zip" --update` + `deploy/native/UPDATE-X.md`; versión en `src/Installation.php`, pie de `public/index.html` y `tests/integration.php`; `.sha256` con `sha256sum` | `python3 tools/package.py` (revisa secretos, excluye config, storage, pruebas y demos) |
 | Pruebas | `tests/*.php` y `tests/*-ui.py` (servidor :8080) | `Agora New App/tests/*.py` (API :8090) |
@@ -81,5 +81,5 @@ Cuando el usuario pide «prueba todo / no arregles nada»:
   - Estudiantes solo en subcuentas de educación.
   - No se fusionan ni esconden módulos.
   - **Los gráficos van al final del módulo.**
-  - Widgets editables «tan personalizables o más que la cuenta», después de la Etapa 1.
+  - Widgets editables «tan personalizables o más que la cuenta»: **en construcción ya, en archivos aparte** (`servidor/app/src/Widgets/`). Solo administración crea widgets y fórmulas. Plan y fases: `Agora New App/PLAN-WIDGETS.md`.
 - Pendientes del ERP: `Agora New App/FIXES-PENDIENTES.txt`. Errores: `Agora New App/ERRORES.md`. Instalación: `Agora New App/INSTALAR-CYBERPANEL.md`.

@@ -28,6 +28,7 @@ final class Auth {
  public function financial():void{if(!in_array($this->requireUser()['role'],['MASTER','SUPERADMIN','ADMIN','SUPERVISOR'],true))Http::fail('No tienes acceso a información financiera global.',403);}
  public function assignedOnly():bool{return in_array($this->requireUser()['role'],['USUARIO','CONSULTA','VISOR','REMITENTE','EJECUTIVO'],true);}
  public const POLICY=[
+  'widgets.editar'=>['MASTER','SUPERADMIN','ADMIN','SUPERVISOR'], // 2.14.0 · crear fórmulas, variables y tableros (decisión del usuario: solo administración)
   'resumen.ver'=>['MASTER','SUPERADMIN'], 'espacios.administrar'=>['MASTER','SUPERADMIN'],
   'usuarios.administrar'=>['MASTER','SUPERADMIN','ADMIN'], 'ajustes.editar'=>['MASTER','SUPERADMIN','ADMIN'],
   'auditoria.ver'=>['MASTER','SUPERADMIN','ADMIN','SUPERVISOR'], 'equipo.metricas'=>['MASTER','SUPERADMIN','ADMIN','SUPERVISOR'],
@@ -43,6 +44,7 @@ final class Auth {
   'fiscal.configurar'=>['MASTER','SUPERADMIN','ADMIN'],
   'libro.ventas'=>['MASTER','SUPERADMIN','ADMIN','SUPERVISOR']
  ];
+ public function can(string $key):bool{return $this->user!==null&&in_array($this->user['role'],self::POLICY[$key]??[],true);}
  public function permit(string $key):void{
   $role=$this->requireUser()['role'];if(!in_array($role,self::POLICY[$key]??[],true))Http::fail('Tu rol no permite esta función.',403);
   if(in_array($role,['MASTER','SUPERADMIN'],true))return;

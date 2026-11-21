@@ -125,4 +125,4 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
 - **En espera:** módulo de agenda de citas (lo pidió el cliente; el usuario lo dejó para después).
 - **En pausa:** avisos al teléfono, publicar o borrar publicaciones, conexión directa con Meta.
 - **Refactorización de `agora-app.js`:** después del lanzamiento, cuando el usuario avise. Hasta entonces se trabaja sobre el archivo actual.
-- Widgets editables «tan personalizables o más que la cuenta», después de la refactorización.
+- **Widgets editables (2.14.0, en construcción):** en archivos aparte. Servidor: `Widgets/Metricas.php` (diccionario: cada métrica lee la misma ruta que la tarjeta; con la cuenta conectada el motor responde en modo captura, `MotorMobile::capturar`), `Widgets/Formula.php` (intérprete propio, sin eval) y `Widgets/Widgets.php` (`workspace/metricas`, `/catalogo`, `workspace/formulas`, `/probar`, `workspace/variables`). Solo administración (`widgets.editar`: Master, Superadmin, Admin, Supervisor) crea fórmulas y variables. Plan y fases: `PLAN-WIDGETS.md`. Pruebas: `tests/formulas.php`, `tests/widgets-api.py`.

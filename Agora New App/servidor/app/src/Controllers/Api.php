@@ -6,11 +6,11 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.13.1'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.14.0'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
-  // 2.13.1 · Código por correo al entrar y «¿Olvidaste tu clave?» (sin sesión).
+  // 2.14.0 · Código por correo al entrar y «¿Olvidaste tu clave?» (sin sesión).
   if($m==='POST'&&$p==='login/codigo')return $this->a->loginCodigo($b);
   if($m==='POST'&&$p==='login/reenviar')return $this->a->loginReenviar($b);
   if($m==='POST'&&$p==='clave/olvido')return $this->a->olvido($b);
@@ -25,7 +25,7 @@ final class Api {
   if($p==='ui/texts'&&in_array($m,['GET','PUT','DELETE']))return $this->ag->texts($m,$b);
   if($p==='workspace/connections'&&$m==='GET')return ['items'=>array_map(fn($t)=>['id'=>(int)$t['id'],'name'=>$t['subaccount'],'currency'=>$t['currency']],$this->a->tenants()),'reason'=>null];
   if($p==='workspace/active'&&$m==='POST'){$id=Http::integer($b['connectionId']??0,1,PHP_INT_MAX);$this->a->authorizeTenant($id);$this->db->run('UPDATE agora_sessions SET active_tenant_id=? WHERE token_hash=?',[$id,$this->a->session['token_hash']]);return ['ok'=>true,'accountId'=>$id];}
-  // 2.13.1 · Correo de Ágora: por qué subcuenta salen los correos del ERP. Solo el dueño (Master).
+  // 2.14.0 · Correo de Ágora: por qué subcuenta salen los correos del ERP. Solo el dueño (Master).
   if($p==='agency/correo'&&in_array($m,['GET','PUT'],true))return $this->ag->correo($m,$b);
   if($p==='agency/correo/probar'&&$m==='POST')return $this->ag->correoProbar();
   if($p==='agency/accounts'&&in_array($m,['GET','POST','PUT']))return $this->ag->accounts($m,$b);
@@ -46,15 +46,17 @@ final class Api {
   elseif(str_starts_with($p,'admin/')||in_array($p,['workspace/import','workspace/config-mensual','workspace/sync']))$permission='ajustes.editar';
   elseif($p==='workspace/branding'&&$m!=='GET')$permission='ajustes.editar';
   elseif(in_array($p,['workspace/productos','workspace/personalizar','workspace/etiquetas'],true)&&$m!=='GET')$permission='ajustes.editar';
-  // 2.13.1 · [11]: registrar una descarga lo puede cualquiera que consulta datos; ver la auditoría sigue siendo de quien tiene «auditoria.ver».
+  // 2.14.0 · [11]: registrar una descarga lo puede cualquiera que consulta datos; ver la auditoría sigue siendo de quien tiene «auditoria.ver».
   elseif($p==='workspace/auditoria'&&$m==='POST'&&str_starts_with((string)($b['accion']??''),'descargo.'))$permission='datos.consultar';
   elseif(in_array($p,['workspace/auditoria','registro']))$permission='auditoria.ver';
   elseif(in_array($p,['workspace/reporte','workspace/observaciones']))$permission='equipo.metricas';
   elseif($p==='workspace/resumen')$permission='resumen.ver';
   elseif($p==='workspace/assign')$permission='conversaciones.reasignar';
   elseif($m!=='GET'&&str_starts_with($p,'contratos'))$permission='convenios.enviar';
+  elseif(preg_match('~^workspace/(formulas|variables)(/|$)~',$p)&&$m!=='GET')$permission='widgets.editar'; // 2.14.0
   elseif($m!=='GET')$permission='conversaciones.atender';
   $this->a->permit($permission);
+  if(preg_match('~^workspace/(metricas|formulas|variables)(/|$)~',$p))return (new \Agora\Widgets\Widgets($this))->route($p,$m,$b); // 2.14.0 · widgets
   if($p==='workspace/permisos'||$p==='workspace/usuarios/permisos')return $this->u->permissions($p,$m,$b);
   if($p==='workspace/branding'&&in_array($m,['GET','POST']))return $this->ag->branding($m,$b);
   // 2.9.5 · Tarjetas que cada persona elige ver en una vista (como editar los widgets de un tablero). La administración puede fijar la vista por defecto del equipo.
@@ -128,7 +130,7 @@ final class Api {
   if($p==='contratos/calculo'&&$m==='POST')return Contracts::calculate($b);
   if(preg_match('~^contratos/([a-f0-9]{24})(?:/(enviar|enlace|revocar|editar|cliente))?$~D',$p,$match)){if($m==='GET'&&!isset($match[2]))return $this->c->detail($match[1]);if($m==='DELETE'&&!isset($match[2]))return $this->c->mutate($match[1],'delete',$b);if($m==='POST'&&isset($match[2]))return $this->c->mutate($match[1],$match[2],$b);}
   if(preg_match('~^contratos/([a-f0-9]{24})/pdf/(previa|enviado|firmado)$~D',$p,$match)&&$m==='GET'){$d=$this->c->detail($match[1]);if($match[2]==='firmado'&&$d['estado']!=='FIRMADO')Http::fail('No existe documento firmado.',404);header('Content-Type: application/pdf');header('Cache-Control: no-store');header('Content-Disposition: inline; filename="convenio-'.$match[1].'.pdf"');echo Contracts::document($d);exit;}
-  if($p==='ghl/contactos/buscar'&&$m==='POST'){$_GET['query']=$b['consulta']??$b['q']??$b['query']??$b['busqueda']??''/* 2.13.1 · M8: la pantalla manda «consulta» */;$page=$this->r->page('contact');return ['contactos'=>array_map(fn($c)=>['id'=>$c['id'],'nombre'=>$c['name']??trim(($c['firstName']??'').' '.($c['lastName']??'')),'correo'=>$c['email']??'','telefono'=>$c['phone']??'','cedula'=>$c['cedula']??''],$page['items'])];}
+  if($p==='ghl/contactos/buscar'&&$m==='POST'){$_GET['query']=$b['consulta']??$b['q']??$b['query']??$b['busqueda']??''/* 2.14.0 · M8: la pantalla manda «consulta» */;$page=$this->r->page('contact');return ['contactos'=>array_map(fn($c)=>['id'=>$c['id'],'nombre'=>$c['name']??trim(($c['firstName']??'').' '.($c['lastName']??'')),'correo'=>$c['email']??'','telefono'=>$c['phone']??'','cedula'=>$c['cedula']??''],$page['items'])];}
   if($p==='workspace/contacts'&&$m==='GET')return $this->r->page('contact');
   if($p==='workspace/record'&&in_array($m,['GET','POST']))return $this->w->contacts($m,$b);
   if($p==='workspace/pipelines'&&$m==='GET')return ['pipelines'=>$this->r->page('pipeline')['items'],'assignees'=>$this->w->assignees()];

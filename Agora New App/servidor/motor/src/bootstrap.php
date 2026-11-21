@@ -6,11 +6,15 @@ function db(): PDO {
     static $db;
     return $db ??= new PDO(getenv('DB_DSN') ?: '', getenv('DB_USER') ?: '', getenv('DB_PASSWORD') ?: '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false]);
 }
+/** Agora New App 2.14.0: los widgets del ERP leen respuestas del motor sin cortar la petición (modo captura). */
+final class MotorCaptura extends RuntimeException {public function __construct(public readonly array $body,public readonly int $status){parent::__construct('captura');}}
 function respond(array $body, int $status = 200): never {
     // Agora New App 2.9.6: el ERP puede ajustar la respuesta a sus reglas (por ejemplo, quién edita las cifras del mes).
     $t=$GLOBALS['motorPuente']['transformar']??null;
     if($status<400&&is_callable($t)){try{$body=$t($body);}catch(Throwable $e){}}
     motorEspejo($body,$status);
+    // La primera respuesta es la buena: si el motor atrapa la captura en un catch genérico y responde otra cosa, se repite la primera.
+    if(!empty($GLOBALS['motorCaptura'])){$GLOBALS['motorCapturado']??=[$body,$status];throw new MotorCaptura($GLOBALS['motorCapturado'][0],$GLOBALS['motorCapturado'][1]);}
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
@@ -30,6 +34,7 @@ function motorEspejo(array $body,int $status):void {
 }
 
 function respondThen(array $body, callable $after): never {
+    if(!empty($GLOBALS['motorCaptura']))respond($body); // Agora New App 2.14.0
     motorEspejo($body,200);
     $finish=function_exists('litespeed_finish_request')?'litespeed_finish_request':(function_exists('fastcgi_finish_request')?'fastcgi_finish_request':null);
     if($finish===null)respond($body);

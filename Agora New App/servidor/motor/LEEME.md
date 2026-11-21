@@ -27,3 +27,4 @@ oportunidades, embudos, ventas ganadas, tablero y consumos de la agencia.
 - Agora New App 2.12.13 (pantallas en `public_html/assets/agora-modulos.js`): «¿Venta ganada?» de la Bandeja y de la ficha del contacto llaman a `window.agoraGanar` (mismo paso, luego el formulario de venta del ERP); sin la ventana y la franja de «venta ganada sin monto» cuando existe `window.agoraVentaGanada`.
 
 - Agora New App 2.13.0: `AccessChannel::sendMail()` (correo general por la subcuenta elegida como canal; `deliver(..., onlyChannel)`). Lo usa `MotorMobile::correo()`.
+- Agora New App 2.14.0: `respond()` con `$GLOBALS['motorCaptura']` lanza `MotorCaptura` (respuesta capturable) para que los widgets del ERP lean las rutas del motor sin cortar la petición.

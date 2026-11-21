@@ -1,5 +1,13 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.14.0 · Widgets, primera entrega: diccionario de métricas y motor de fórmulas (21 nov, sin cambios visibles):**
+- **Decisiones del usuario:** los widgets se construyen ya, en archivos aparte; **solo administración** (Administración, Supervisión y dueños) crea widgets, fórmulas y variables; plantillas por rubro más adelante; funciones extra financieras y de fechas.
+- **Diccionario de 37 métricas** (ventas, cobros, metas, rentabilidad, cuenta, día, ganadas, tareas). Cada una lee la misma ruta que su tarjeta, con el mismo usuario y sus permisos: el widget da **exactamente** la cifra de hoy (probado con administración, ejecutivo, consulta y una subcuenta sin reporte).
+- **Motor de fórmulas propio** (nunca ejecuta texto como código): `+ − × ÷ ^`, paréntesis, comparaciones, SI/Y/O/NO, MIN, MAX, REDONDEAR, RAIZ, POTENCIA, LOG, PROMEDIO, MEDIANA, DESVIACIÓN, CRECIMIENTO, PORCENTAJE; **financieras** (PAGO, VF, VA, NPER, INTERES, INTERES_COMPUESTO) y **de fechas** (HOY, FECHA, DIAS, DIAS_HABILES, FIN_MES…). Controla las unidades (no suma dinero con porcentaje), «—» con la razón si falta un dato o se divide entre cero, y errores que señalan dónde está el problema.
+- **Fórmulas y variables guardadas por subcuenta:** una fórmula puede usar otras y variables por mes (por ejemplo, el sueldo de noviembre); «mes anterior» y «año pasado»; se rechazan vueltas y nombres repetidos.
+- Siguiente: la pantalla (editor de tableros y editor de fórmulas con vista previa).
+- Pruebas nuevas: `tests/formulas.php` (433, 300 al azar) y `tests/widgets-api.py` (36).
+
 **Novedades 2.13.1 · Líneas azules, «Editar» gris y clave de dueño solo por terminal (21 nov):**
 - **Cifras:** la línea de arriba de cada cifra vuelve a ser **azul** y al pasar se vuelve **roja** con brillo. Los botones «Editar» van en **gris oscuro sobre blanco** con borde gris; al pasar, fondo rojo y letra blanca.
 - **La clave de un dueño (Master o Superadmin) solo se cambia por terminal** (`php servidor/bin/cambiar-clave.php correo`): sin «Cambiar mi clave», sin «¿Olvidaste tu clave?» (responde igual, pero no envía código) y el Master tampoco cambia la de otro dueño desde Usuarios. El servidor lo exige; en el perfil del dueño se explica. Los demás usuarios siguen igual.

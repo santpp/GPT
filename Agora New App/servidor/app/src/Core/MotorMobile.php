@@ -230,6 +230,20 @@ final class MotorMobile {
   * 2.13.0 · Correo de Ágora: sale por la subcuenta que el dueño eligió (Agencia → Correo de Ágora), por el canal de
   * correo de esa cuenta. Sin SMTP. Devuelve false si no hay canal elegido; lanza RuntimeException con un mensaje claro si falla.
   */
+ /**
+  * 2.14.0 · Widgets: lee por dentro una ruta que con la subcuenta conectada atiende el motor (la misma cifra que ve la tarjeta).
+  * Devuelve ['status','body'] o null si esa ruta no la atiende el motor (entonces se usa el despachador normal del ERP).
+  */
+ public static function capturar(DB $erp,array $config,Auth $a,string $path,array $get):?array{
+  $tenant=(int)$a->tenant;$vivo=$path==='workspace/board-month'||self::atiende($path,'GET');
+  if(!$vivo||!self::conectada($erp,$tenant))return null;
+  $g=$_GET;$puente=$GLOBALS['motorPuente']??null;$_GET=$get;$GLOBALS['motorCaptura']=true;unset($GLOBALS['motorCapturado']);
+  try{$a->permit('datos.consultar');if($path==='workspace/board-month')self::mesTablero($erp,$config,$a,Http::period((string)($get['period']??gmdate('Y-m'))));else self::atender($erp,$config,$a,$path,'GET');}
+  catch(\MotorCaptura $c){return ['status'=>$c->status,'body'=>$c->body];}
+  catch(HttpError $e){return ['status'=>$e->getCode()?:400,'body'=>['error'=>$e->getMessage()]];}
+  finally{$_GET=$g;unset($GLOBALS['motorCaptura'],$GLOBALS['motorCapturado']);if($puente!==null)$GLOBALS['motorPuente']=$puente;else unset($GLOBALS['motorPuente']);}
+  return null;
+ }
  public static function canalCorreo(DB $erp):?int{$c=$erp->setting(0,'correo.canal',null);$id=is_array($c)?(int)($c['connectionId']??0):0;return $id>0?$id:null;}
  public static function correo(DB $erp,array $config,string $email,string $asunto,string $titulo,string $intro,?string $codigo,string $pie,string $texto):bool{
   $id=self::canalCorreo($erp);if(!$id)return false;

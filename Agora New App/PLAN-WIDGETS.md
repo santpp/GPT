@@ -4,7 +4,7 @@ Pedido del usuario (19 nov 2026):
 - Widgets editables a conveniencia y personalizables, «tan personalizables o más que la cuenta».
 - Crear widgets propios con operaciones aritméticas y algebraicas, las que sean.
 
-Estado: **plan, sin código.** Las decisiones marcadas con ❓ son del usuario.
+Estado: **en construcción.** Decisiones del usuario tomadas el 21 nov (punto 8). Entregado en 2.14.0: fase 1 (diccionario de métricas y `workspace/metricas`) y el motor de fórmulas del servidor (fase 3, sin pantalla).
 
 ---
 
@@ -133,19 +133,23 @@ Cada fase se entrega como una versión con sus pruebas y no rompe lo anterior.
 - Alertas cuando un widget cruza un umbral (esto depende de los avisos al teléfono, que están en pausa).
 - Widgets con datos de otras subcuentas para la agencia (consolidado).
 
-## 8. Decisiones del usuario ❓
+## 8. Decisiones del usuario (21 nov) ✅
 
-1. **Cuándo y cómo.** La decisión vigente dice «después de la Etapa 1 de la refactorización», y la refactorización quedó para después del lanzamiento.
-   - **Recomiendo** construir los widgets **ya, en archivos separados** (`servidor/app/src/Widgets/` y `assets/widgets.js`), tocando `agora-app.js` solo para conectarlos. Así no se agranda el archivo que luego se va a separar, y la refactorización no los afecta.
-   - La otra opción es esperar a la refactorización.
-2. **Quién crea widgets con fórmula.** Propuesta:
-   - Cualquiera crea widgets y fórmulas para **su** tablero.
-   - La administración publica el **tablero del equipo** y las fórmulas compartidas.
-   - Los dueños publican **plantillas** para todas las subcuentas.
-   - La consulta solo mira.
-3. **Plantillas por rubro** (educación, servicios…): ¿las quieren desde la fase 5?
-4. **Funciones extra:** ¿hace falta alguna además de las del punto 4, como financieras (interés, cuota) o de fechas (días entre fechas)?
-5. **Prioridad** frente a lo que está en curso (SERDIMPRE, divisas, pedidos del cliente).
+1. **Cómo:** ya, en archivos aparte (`servidor/app/src/Widgets/` y, para la pantalla, `assets/widgets.js`). `agora-app.js` solo se toca para conectarlos.
+2. **Quién crea widgets y fórmulas: solo administración** (Administración, Supervisión y dueños; permiso `widgets.editar`). El resto ve el tablero del equipo y los valores, sin editar. Por eso no hay «Mi tablero» personal por ahora.
+3. **Plantillas por rubro:** más adelante (no en la fase 5).
+4. **Funciones extra:** financieras (PAGO, VF, VA, NPER, INTERES, INTERES_COMPUESTO) y de fechas (HOY, FECHA, DIA, MES, AÑO, DIAS, SEMANA, DIAS_MES, DIAS_RESTANTES_MES, INICIO_MES, FIN_MES, DIAS_HABILES, INICIO_PERIODO, FIN_PERIODO). Hechas en 2.14.0.
+5. **Prioridad:** ahora.
+
+### Hecho en 2.14.0 (servidor, sin cambios visibles)
+- `Widgets/Metricas.php`: 37 métricas. No recalculan: leen la misma ruta que la tarjeta (con la cuenta conectada, el motor responde en «modo captura»).
+- `Widgets/Formula.php`: intérprete propio (sin eval), unidades, «—» con la razón, errores con su posición, límites (500 caracteres, 40 niveles, 400 elementos).
+- `Widgets/Widgets.php`: `workspace/metricas`, `workspace/metricas/catalogo`, `workspace/formulas` (+ `/probar`), `workspace/variables`. Migración `010_widgets.sql`.
+- Pruebas: `tests/formulas.php` (433, 300 al azar), `tests/widgets-api.py` (36).
+
+### Siguiente
+- **Fase 2 · editor de tableros** (pantalla): agregar, quitar, ordenar, tamaño, período, comparación, formato y semáforo, con las métricas y fórmulas del catálogo. Guardado en `agora_dashboards` (alcance «equipo»).
+- **Fase 3 · editor de fórmulas** (pantalla): autocompletar de métricas y variables, colores, error señalado y vista previa con el valor real.
 
 ## 9. Riesgos y cuidados
 
