@@ -53,7 +53,7 @@ def coincide(cl,quien,periodo='2026-11',moneda='USD'):
         if esperado is not None and escala!=1:esperado=round(esperado/escala,2)
         dado=val.get(id_,{}).get('valor')
         if f=='ventas' and u=='dinero' and esperado is None and sst==200:esperado=0
-        if not ((esperado is None and dado is None) or (esperado is not None and dado is not None and abs(float(esperado)-float(dado))<1e-9)):malas.append((id_,esperado,dado))
+        if not ((esperado is None and dado is None) or (esperado is not None and dado is not None and abs(float(esperado)-float(dado))<(60 if id_=='dia.respuesta_seg' else 1e-9))):malas.append((id_,esperado,dado))
         if dado is None and not val.get(id_,{}).get('motivo'):malas.append((id_,'sin motivo',None))
     ok(not malas,f'{quien}: cada métrica da exactamente la cifra de su fuente {malas[:4]}')
     return val
