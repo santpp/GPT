@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.15 · Pendientes medios resueltos: listo para desplegar (21 nov):**
+- **[9]** El registro de actividad (agencia y Auditoría) cuenta el detalle en palabras («Se cambió el token de la cuenta»): sin JSON ni identificadores.
+- **[10]** Abrir una venta cuya oportunidad ya no existe en la cuenta responde «La cuenta no encuentra esa oportunidad» y **no pausa la subcuenta** (antes, el Tablero quedaba ~15 s «en espera»).
+- **[11]** Las descargas de ejecutivos y de consulta **quedan en Auditoría**. Solo pueden registrar descargas; ver la auditoría sigue siendo de quien tiene el permiso.
+- **[13]** Teléfono: el aviso «venta por completar» va encima de la barra de abajo, deja espacio a los botones fijos y los avisos breves suben por encima.
+- Backend revisado antes de desplegar: los 109 archivos PHP sin errores y 13 pruebas de servidor en verde (256 comprobaciones). Prueba nueva: `tests/fixes-21215.py`.
+
 **Novedades 2.12.14 · Fixes menores y cabeceras de seguridad para el despliegue (21 nov):**
 - **Cabeceras de seguridad** en el `.htaccess`: política de contenido (CSP) más completa, HSTS (un año), permisos del navegador (sin cámara ni ubicación), aislamiento de ventana y de recursos (COOP/CORP), sin «X-Powered-By». Se bloquean los archivos ocultos y de trabajo (`.git`, `.env`, notas, respaldos, registros, guiones). La API manda las suyas aunque el servidor no aplique el `.htaccess` (sin marco, CSP cerrada, HSTS por HTTPS). Se revisaron 29 pantallas con dos cuentas: ninguna rompe la política.
 - **M2:** /modulos/general lleva al Inicio (antes, un módulo vacío).

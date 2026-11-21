@@ -6,7 +6,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.12.14'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.12.15'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -38,6 +38,8 @@ final class Api {
   elseif(str_starts_with($p,'admin/')||in_array($p,['workspace/import','workspace/config-mensual','workspace/sync']))$permission='ajustes.editar';
   elseif($p==='workspace/branding'&&$m!=='GET')$permission='ajustes.editar';
   elseif(in_array($p,['workspace/productos','workspace/personalizar','workspace/etiquetas'],true)&&$m!=='GET')$permission='ajustes.editar';
+  // 2.12.15 · [11]: registrar una descarga lo puede cualquiera que consulta datos; ver la auditoría sigue siendo de quien tiene «auditoria.ver».
+  elseif($p==='workspace/auditoria'&&$m==='POST'&&str_starts_with((string)($b['accion']??''),'descargo.'))$permission='datos.consultar';
   elseif(in_array($p,['workspace/auditoria','registro']))$permission='auditoria.ver';
   elseif(in_array($p,['workspace/reporte','workspace/observaciones']))$permission='equipo.metricas';
   elseif($p==='workspace/resumen')$permission='resumen.ver';
@@ -118,7 +120,7 @@ final class Api {
   if($p==='contratos/calculo'&&$m==='POST')return Contracts::calculate($b);
   if(preg_match('~^contratos/([a-f0-9]{24})(?:/(enviar|enlace|revocar|editar|cliente))?$~D',$p,$match)){if($m==='GET'&&!isset($match[2]))return $this->c->detail($match[1]);if($m==='DELETE'&&!isset($match[2]))return $this->c->mutate($match[1],'delete',$b);if($m==='POST'&&isset($match[2]))return $this->c->mutate($match[1],$match[2],$b);}
   if(preg_match('~^contratos/([a-f0-9]{24})/pdf/(previa|enviado|firmado)$~D',$p,$match)&&$m==='GET'){$d=$this->c->detail($match[1]);if($match[2]==='firmado'&&$d['estado']!=='FIRMADO')Http::fail('No existe documento firmado.',404);header('Content-Type: application/pdf');header('Cache-Control: no-store');header('Content-Disposition: inline; filename="convenio-'.$match[1].'.pdf"');echo Contracts::document($d);exit;}
-  if($p==='ghl/contactos/buscar'&&$m==='POST'){$_GET['query']=$b['consulta']??$b['q']??$b['query']??$b['busqueda']??''/* 2.12.14 · M8: la pantalla manda «consulta» */;$page=$this->r->page('contact');return ['contactos'=>array_map(fn($c)=>['id'=>$c['id'],'nombre'=>$c['name']??trim(($c['firstName']??'').' '.($c['lastName']??'')),'correo'=>$c['email']??'','telefono'=>$c['phone']??'','cedula'=>$c['cedula']??''],$page['items'])];}
+  if($p==='ghl/contactos/buscar'&&$m==='POST'){$_GET['query']=$b['consulta']??$b['q']??$b['query']??$b['busqueda']??''/* 2.12.15 · M8: la pantalla manda «consulta» */;$page=$this->r->page('contact');return ['contactos'=>array_map(fn($c)=>['id'=>$c['id'],'nombre'=>$c['name']??trim(($c['firstName']??'').' '.($c['lastName']??'')),'correo'=>$c['email']??'','telefono'=>$c['phone']??'','cedula'=>$c['cedula']??''],$page['items'])];}
   if($p==='workspace/contacts'&&$m==='GET')return $this->r->page('contact');
   if($p==='workspace/record'&&in_array($m,['GET','POST']))return $this->w->contacts($m,$b);
   if($p==='workspace/pipelines'&&$m==='GET')return ['pipelines'=>$this->r->page('pipeline')['items'],'assignees'=>$this->w->assignees()];

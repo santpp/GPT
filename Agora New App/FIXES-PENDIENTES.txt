@@ -14,33 +14,7 @@ se arregló en la 2.9.6. Lo de abajo sigue abierto.
 PRIORIDAD MEDIA
 ---------------
 
-[9] Registro de actividad de la agencia muestra texto técnico
-    Qué pasa: en Agencia → Registro de actividad, algunas filas muestran el detalle en bruto, por ejemplo
-    {"locationId":"LOC…","companyId":null,"tokenCambiado":true}.
-    Por qué importa: rompe la regla de no mostrar nombres técnicos en pantalla.
-    Cómo verlo: entrar como dueña → Agencia → Registro de actividad (fila «Cambió la conexión con la cuenta»).
-    Idea: traducir los campos conocidos («Se cambió el token», «Se cambió el identificador de la subcuenta»)
-    y no mostrar nunca los identificadores ni el JSON.
-
-[10] Una oportunidad borrada en la cuenta deja el Tablero «en espera» unos 15 segundos
-    Qué pasa: si se abre una venta cuya oportunidad ya no existe en la cuenta, la cuenta responde 404 y la
-    pasarela pausa la subcuenta como si fuera un error de cuota. Durante ~15 s el Tablero dice
-    «El tablero está en espera para respetar la cuota».
-    Cómo verlo: GET workspace/ventas/contexto?oportunidadId=noexiste y luego GET workspace/dashboard.
-    Idea: leer la oportunidad con GhlGateway::execute(..., soft: true) en MotorMobile::oportunidadCuenta,
-    para que un 404 no pause la subcuenta.
-
-[11] Las descargas de ejecutivos y de consulta no quedan en Auditoría
-    Qué pasa: al descargar un Excel, la pantalla avisa a POST workspace/auditoria y el servidor responde 403
-    a quien no tiene el permiso «auditoria.ver». La descarga funciona, pero no queda registrada.
-    Cómo verlo: entrar como ejecutivo1 → Ventas → Excel → Descargar lo que ves (en la consola sale el 403).
-    Idea: separar «registrar una descarga» (cualquiera con datos.consultar) de «ver la auditoría».
-
-[13] Teléfono: el aviso «Una venta ganada por completar» tapa la barra de abajo
-    Qué pasa: a 390 px el aviso queda encima de Inicio · Módulos · Buscar · Cuenta y, en Configuración
-    mensual, encima del botón Guardar. La píldora «Subcuenta activa» también se monta encima.
-    Idea: subir el aviso por encima de la barra (bottom = alto de la barra + zona segura) y dejar un
-    espacio abajo en las pantallas con botón fijo.
+(Ninguno: [9], [10], [11] y [13] se resolvieron en 2.12.15.)
 
 
 MENORES

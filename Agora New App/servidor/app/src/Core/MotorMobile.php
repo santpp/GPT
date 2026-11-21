@@ -242,7 +242,7 @@ final class MotorMobile {
  public static function oportunidadCuenta(DB $erp,array $config,int $tenant,string $id):array{
   if(!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$id))Http::fail('Oportunidad inválida.');
   $c=self::conexion($erp,$config,$tenant);$g=new \GhlGateway();$espejo=new \Agora\Services\Espejo($erp,$tenant);
-  try{$op=$g->execute($c,fn(\GhlClient $cl):array=>$cl->opportunity($id),false)['opportunity']??null;}catch(\Throwable $e){self::falla($e,'La venta');}
+  try{$op=$g->execute($c,fn(\GhlClient $cl):array=>$cl->opportunity($id),false,true)['opportunity']??null;}/* 2.12.15 · [10]: lectura suave, un 404 no pausa la subcuenta */catch(\GhlApiException $e){if($e->status===404)Http::fail('La cuenta no encuentra esa oportunidad.',404);self::falla($e,'La venta');}catch(\Throwable $e){self::falla($e,'La venta');}
   if(!is_array($op)||($op['id']??'')!==$id)Http::fail('La cuenta no encuentra esa oportunidad.',404);
   if(isset($op['locationId'])&&$op['locationId']!==$c['location_id'])Http::fail('Esa oportunidad no es de esta subcuenta.',403);
   $espejo->oportunidad($op);

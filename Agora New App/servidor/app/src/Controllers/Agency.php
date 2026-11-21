@@ -55,6 +55,15 @@ final class Agency {
  private function perfil(int $id):?array{$p=$this->db->setting($id,'cuenta.perfil',null);return is_array($p)?$p:null;}
  private function paleta(int $id):?array{$p=$this->db->setting($id,'ui.paleta',null);return is_array($p)&&isset($p['principal'],$p['acento'])?$p:null;}
  /** $modulo: solo los movimientos de ese módulo (2.8.5: «Registro» muestra solo convenios, no toda la bitácora). */
+ /** 2.12.15 · [9]: el detalle del registro se cuenta en palabras; nunca se muestran identificadores ni el JSON. */
+ private static function detalleLegible(mixed $d):string{
+  if(!is_array($d))return '';$t=[];
+  if(isset($d['detalle'])&&is_string($d['detalle'])&&!preg_match('/^[\[{]/',$d['detalle']))$t[]=$d['detalle'];
+  if(!empty($d['tokenCambiado']))$t[]='Se cambió el token de la cuenta';
+  if(array_key_exists('locationId',$d))$t[]='Se revisó la subcuenta conectada';
+  if(array_key_exists('companyId',$d)&&$d['companyId'])$t[]='Se registró la agencia en la cuenta';
+  return implode('. ',array_unique($t));
+ }
  public function audit(bool $agency,?string $modulo=null):array{
   $agency?$this->auth->agency():$this->auth->financial();$args=[];$where=$agency?'tenant_id IS NULL':'tenant_id=?';if(!$agency)$args[]=$this->auth->tenant;
   if($modulo!==null){$where.=' AND module=?';$args[]=$modulo;}
@@ -62,7 +71,7 @@ final class Agency {
   if(isset($_GET['period'])){$period=Http::period($_GET['period']);$where.=' AND created_at>=? AND created_at<DATE_ADD(?,INTERVAL 1 MONTH)';$args[]=$period.'-01';$args[]=$period.'-01';}
   $cursor=max(0,(int)($_GET['cursor']??0));if($cursor){$where.=' AND id<?';$args[]=$cursor;}
   $rows=$this->db->all("SELECT * FROM agora_audit WHERE $where ORDER BY id DESC LIMIT 101",$args);$more=count($rows)>100;if($more)array_pop($rows);
-  $items=array_map(function($r){$d=json_decode($r['details'],true);return ['id'=>(int)$r['id'],'at'=>$r['created_at'].'Z','fecha'=>$r['created_at'],'actor'=>$r['actor_name'],'admin'=>$r['actor_name'],'accion'=>$r['action'],'accionTexto'=>$r['action'],'tipo'=>$r['module'],'modulo'=>$r['module'],'objeto'=>$r['target'],'entidad'=>$r['target'],'codigo'=>$r['target'],'detalle'=>DB::json($d),'antes'=>$d['antes']??null,'despues'=>$d['despues']??null,'ip'=>$r['ip'],'origen'=>'sistema','tipoEvento'=>$r['action'],'creado_en'=>$r['created_at'],'uid'=>$r['target']];},$rows);
+  $items=array_map(function($r){$d=json_decode($r['details'],true);return ['id'=>(int)$r['id'],'at'=>$r['created_at'].'Z','fecha'=>$r['created_at'],'actor'=>$r['actor_name'],'admin'=>$r['actor_name'],'accion'=>$r['action'],'accionTexto'=>$r['action'],'tipo'=>$r['module'],'modulo'=>$r['module'],'objeto'=>$r['target'],'entidad'=>$r['target'],'codigo'=>$r['target'],'detalle'=>self::detalleLegible($d),'antes'=>$d['antes']??null,'despues'=>$d['despues']??null,'ip'=>$r['ip'],'origen'=>'sistema','tipoEvento'=>$r['action'],'creado_en'=>$r['created_at'],'uid'=>$r['target']];},$rows);
   return ['items'=>$items,'eventos'=>array_map(fn($r)=>$r+['tipo'=>$r['accion']],$items),'resumen'=>['total'=>count($items)],'hasMore'=>$more,'nextCursor'=>$more?(string)end($rows)['id']:null];
  }
  public function texts(string $method,array $b):array{

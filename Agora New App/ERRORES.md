@@ -70,6 +70,8 @@ Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de novi
 | 67 | «Editar Dashboard» y «Dashboard» desalineados en el teléfono. | Distinto alto de línea y relleno inferior heredado del enlace subrayado. | Mismo alto, relleno y línea en los dos. (2.12.10) |
 | 68 | «¿Venta ganada?» con «+ Nueva venta» no abría el formulario de venta. | Al crear la oportunidad la cuenta responde `{state, id}` y la capa que abre el formulario solo buscaba `opportunity.id`. | `vgGanada` también lee `id`. (2.12.13) |
 | 69 | «Buscar en la cartera» devolvía siempre los mismos contactos. | La ruta leía `q/query/busqueda` y la pantalla manda `consulta`. | La ruta también lee `consulta`. (2.12.14) |
+| 70 | Una oportunidad borrada en la cuenta pausaba la subcuenta ~15 s. | La lectura de la oportunidad no era «suave»: un 404 contaba como fallo de la pasarela. | `oportunidadCuenta` lee con `soft: true` y responde 404 claro. (2.12.15) |
+| 71 | Las descargas de ejecutivos no quedaban en Auditoría. | Registrar y ver la auditoría usaban el mismo permiso. | Registrar una descarga (`descargo.*`) pide `datos.consultar`. (2.12.15) |
 
 ## Errores encontrados al revisar (no los vio el usuario)
 

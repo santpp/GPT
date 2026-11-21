@@ -295,6 +295,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - **2.12.12 (21 de noviembre)**: ícono de bolsa para Gestión, engranaje para Administración y Ajustes, sin frases obvias bajo los títulos (solo en el Inicio) y Bandeja con la lista más arriba.
 - **2.12.13 (21 de noviembre)**: «¿Venta ganada?» con el mismo flujo de Ventas desde la conversación y desde la ficha del contacto; arreglo de «+ Nueva venta».
 - **2.12.14 (21 de noviembre)**: fixes menores M1–M8 y cabeceras de seguridad para el despliegue (CSP, HSTS, permisos, COOP/CORP, archivos de trabajo bloqueados).
+- **2.12.15 (21 de noviembre)**: pendientes medios [9], [10], [11] y [13] resueltos; backend revisado para el despliegue.
 - **2.12.4 (20 de noviembre)**: armonía jerárquica (radio 16, panel 20 × 24, 16 px entre cajas, 32/12 en los encabezados) en todos los módulos.
 - **2.12.3 (20 de noviembre)**: caja única de cifras en todos los módulos; solo vino y azul profundo; gráficos de ventas solo en Gestión Comercial; «Editar Dashboard» con orden en todos los módulos.
 - **2.12.2 (20 de noviembre)**: Tablero comercial con cajas de cifras separadas por líneas, como los demás tableros.
