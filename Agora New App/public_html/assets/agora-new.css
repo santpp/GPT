@@ -864,7 +864,7 @@ main#app#app .cel :is(.ag-resumen-d,.micro > .f,.inicio-resumen-d){margin-top:4p
 main#app#app .cel > div{align-items:center!important;text-align:center}
 main#app#app .cel :is(.ag-resumen-ic,.arp-mic-ic){display:none!important}
 main#app#app .g-hero > .hero.cel,main#app#app .g-hero > .hero{background:transparent!important}
-main#app#app .cel::before{background:color-mix(in srgb,var(--ag-1) 72%,#fff)!important;box-shadow:none;transition:background-color var(--dur-2,.28s) var(--ease-out,ease),box-shadow var(--dur-2,.28s) var(--ease-out,ease)}
+main#app#app .cel::before{background:transparent!important;box-shadow:none;transition:background-color var(--dur-2,.28s) var(--ease-out,ease),box-shadow var(--dur-2,.28s) var(--ease-out,ease)}
 main#app#app .cel:is(.is-hot,:hover)::before{background:var(--ag-1)!important;box-shadow:0 0 10px 1px color-mix(in srgb,var(--ag-1) 55%,transparent)}
 main#app#app .cel-acc{top:14px;right:16px}
 main#app#app .cel .cel-ed{height:26px!important;min-height:26px!important;padding:0 11px!important;border-radius:7px!important;font:600 12px/1 var(--font-text)!important;width:auto!important}
@@ -873,3 +873,11 @@ main#app#app .cel .cel-ed{height:26px!important;min-height:26px!important;paddin
   main#app#app .cel :is(.ag-resumen-t,h3,.inicio-resumen-l,.t-label){padding:0!important;font-size:13px!important}
   main#app#app .cel-acc{position:static!important;order:99;margin-top:10px;align-self:center}
 }
+
+/* 2.12.9 · Pedido del usuario: las cifras quedan con su línea fina gris de siempre; la línea roja con brillo aparece solo al pasar
+   (o al tocar en el teléfono). «Dashboard» va con el mismo botón que «Editar Dashboard». */
+main#app#app .cel::before{opacity:0;transition:opacity var(--dur-2,.28s) var(--ease-out,ease),box-shadow var(--dur-2,.28s) var(--ease-out,ease)}
+main#app#app .cel:is(.is-hot,:hover)::before{opacity:1}
+.inicio-resumen-ver.btn{border-bottom:0!important;padding-bottom:0!important;text-decoration:none;color:var(--ink)}
+.inicio-resumen-ver.btn:hover{border-color:transparent}
+.inicio-resumen-acc{align-items:center!important}.inicio-resumen-acc > *{margin-top:0!important;margin-bottom:0!important}

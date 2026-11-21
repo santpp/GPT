@@ -289,6 +289,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - **2.12.6 (20 de noviembre)**: nuevo estilo de las cifras (izquierda, descripción, ícono lineal), celdas vivas (línea azul → vino), «Editar» en cada cifra y «Resumen del día».
 - **2.12.7 (20 de noviembre)**: menú con un color de la marca por sección (sin oro) y color al pasar o tocar «Cancelar», «Cerrar» y la X.
 - **2.12.8 (20 de noviembre)**: cifras centradas y compactas sin íconos, línea roja que se ilumina, «Editar» solo con texto; «Tablero comercial» pasa a «Dashboard».
+- **2.12.9 (21 de noviembre)**: línea roja solo al pasar (en reposo, la fina gris); «Dashboard» con el mismo botón que «Editar Dashboard».
 - **2.12.4 (20 de noviembre)**: armonía jerárquica (radio 16, panel 20 × 24, 16 px entre cajas, 32/12 en los encabezados) en todos los módulos.
 - **2.12.3 (20 de noviembre)**: caja única de cifras en todos los módulos; solo vino y azul profundo; gráficos de ventas solo en Gestión Comercial; «Editar Dashboard» con orden en todos los módulos.
 - **2.12.2 (20 de noviembre)**: Tablero comercial con cajas de cifras separadas por líneas, como los demás tableros.

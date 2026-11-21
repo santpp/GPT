@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Agora New App 2.12.6 · Celdas vivas (idea del usuario, en todos los módulos):
-1 Cada cifra lleva arriba una línea roja de Ágora que se ilumina al pasar (2.12.8; en 2.12.6 era azul). Cifras centradas, sin íconos.
+1 Cada cifra lleva su línea fina gris; la línea roja con brillo aparece solo al pasar (2.12.9). Cifras centradas, sin íconos.
 2 Cada cifra tiene su botón «Editar» solo con la palabra (contorno vino) que al pasar se llena de vino con letra blanca
   y abre «Editar Dashboard» con esa cifra marcada.
 3 Ordenador y teléfono. Requiere la API local en :8090. Uso: python3 tests/fixes-2126.py"""
@@ -12,7 +12,7 @@ def ok(c,m):
     if not c:print('FALLA:',m);sys.exit(1)
     n+=1;print('PASS',m)
 VINO='rgb(173, 16, 60)'
-LINEA="""(i)=>{const c=document.querySelectorAll('main .cel')[i];const b=getComputedStyle(c,'::before');return [b.backgroundColor,b.boxShadow]}"""
+LINEA="""(i)=>{const c=document.querySelectorAll('main .cel')[i];const b=getComputedStyle(c,'::before');return [b.backgroundColor,b.boxShadow,b.opacity]}"""
 def entrar(br,u,pw,vp,ws=None):
     subprocess.run(['mysql','--socket=/tmp/mdb/run/mysql.sock','agora_erp','-e','delete from agora_rate_limits'])
     pg=br.new_context(viewport=vp,service_workers='block').new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
@@ -36,7 +36,7 @@ with sync_playwright() as p:
         a=pg.evaluate(LINEA,1)
         pg.locator('main .cel').nth(1).hover();pg.wait_for_timeout(600)
         b=pg.evaluate(LINEA,1)
-        ok(a[0]!=VINO and a[1]=='none' and b[0]==VINO and b[1]!='none',f'{quien}: 2.12.8 · la línea es roja suave y al pasar se ilumina (vino con brillo) {a} → {b}')
+        ok(a[2]=='0' and b[0]==VINO and b[1]!='none' and b[2]=='1',f'{quien}: 2.12.9 · sin línea roja en reposo (solo la fina gris); al pasar aparece vino con brillo {a} → {b}')
         sv=pg.evaluate("[...document.querySelectorAll('main [data-cel-ed]')].filter(e=>e.querySelector('svg')||e.textContent.trim()!=='Editar').length")
         ok(sv==0,f'{quien}: 2.12.8 · «Editar» va solo con la palabra, sin ícono ({sv})')
         cen=pg.evaluate("""[...document.querySelectorAll('main .cel')].filter(c=>c.offsetParent).filter(c=>{const v=c.querySelector('.ag-resumen-v, .t-metric, .inicio-resumen-v, .t-hero');if(!v)return false;const r=c.getBoundingClientRect(),b=v.getBoundingClientRect();return Math.abs((b.left+b.right)/2-(r.left+r.right)/2)>12}).length""")

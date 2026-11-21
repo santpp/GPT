@@ -22,6 +22,8 @@ with sync_playwright() as p:
         ok('Digital App' in f and 'Hola,' in f and '/' in f,f'franja «Ágora Digital App / Hola» ({W})')
         ver=pg.locator('.inicio-resumen-ver')
         ok(ver.inner_text().strip()==('Ir a Dashboard' if W>600 else 'Dashboard'),f'botón del tablero dice «{ver.inner_text().strip()}» ({W})')
+        ed=pg.locator('[data-ir-editar]');est=lambda l:l.evaluate("e=>{const c=getComputedStyle(e);return [c.backgroundColor,c.borderRadius,c.height,c.fontSize]}")
+        ok(est(ver)==est(ed),f'2.12.9 · «Dashboard» y «Editar Dashboard» con el mismo estilo de botón {est(ver)} {est(ed)}')
         ok('completo' not in pg.locator('.operations-home').inner_text().lower(),'sin la palabra «completo»')
         cs=pg.locator('.inicio-resumen-c');xs=[cs.nth(i).bounding_box() for i in range(cs.count())]
         ls=[cs.nth(i).locator('.inicio-resumen-l .ic').count() for i in range(cs.count())]

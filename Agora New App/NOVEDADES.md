@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.9 · Línea roja solo al pasar y botones iguales en «Resumen del día» (21 nov):**
+- Las cifras quedan con su **línea fina gris** de siempre; la **línea roja con brillo aparece solo al pasar** (o al tocar en el teléfono).
+- **«Dashboard» / «Ir a Dashboard»** usa el mismo botón que «Editar Dashboard» (píldora gris), alineados en la misma línea.
+
 **Novedades 2.12.8 · Cifras como la referencia del usuario y «Dashboard» (20 nov):**
 - **En todos los módulos**, las cifras van **centradas** y compactas: rótulo, descripción breve, cifra y nota, sin íconos y sin el degradado de la tarjeta grande. En las filas con una tarjeta más alta, el contenido de las demás queda centrado en vertical (sin hueco abajo).
 - **Línea roja de Ágora** arriba de cada cifra (antes azul), que **se ilumina** al pasar: vino intenso con un brillo suave.

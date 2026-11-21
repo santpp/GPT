@@ -111,7 +111,7 @@ Lo de arriba es de Ágora Mobile. El ERP (`Agora New App/`) **no** pasa por `mak
 | Cifra | 26 px, 700 | 22 px (20 px en la caja de Gestión Comercial) |
 | Nota | 12,5 px, 400 | igual |
 | Ícono | ninguno (2.12.8) | ninguno |
-| Línea superior de cada cifra | 3 px roja (`--ag-1` al 72 %); al pasar, vino intenso con brillo (`--dur-2`, `--ease-out`) | igual (al tocar) |
+| Línea superior de cada cifra | en reposo, la fina gris de la caja; al pasar aparece una de 3 px vino con brillo (`--dur-2`, `--ease-out`) (2.12.9) | igual (al tocar) |
 | Botón «Editar» en cada cifra | solo la palabra, 26 px de alto, 12 px, contorno vino, radio 7; al pasar fondo vino y letra blanca; arriba a la derecha | debajo de la cifra, centrado |
 
 **Paneles (2.12.4):** relleno 20 × 24 px (16 en el teléfono) y radio 16 px, igual que todas las cajas. **Ritmo:** 16 px entre cajas seguidas; encabezado de sección con 32 px arriba y 12 px hasta su caja; 20 px del título del módulo a la primera caja. **Área de trabajo:** relleno 28 px (20 × 16 en el teléfono).

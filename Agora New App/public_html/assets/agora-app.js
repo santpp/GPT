@@ -4086,7 +4086,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.12.8').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.12.9').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -5516,7 +5516,7 @@ function tableroInicioHtml() {
   /* 2.6.1 · un solo tablero: Inicio muestra el resumen de hoy (tres cifras reales) y lleva a ARP Comercial. */
   if (MODS.comercial && moduleAllowed('comercial') && !moduloOculto('comercial')) {
     const mio = !!ESPACIO?.permisos?.soloAsignado;
-    return `<section class="tb-inicio inicio-resumen" aria-labelledby="inicio-resumen-t"><header class="inicio-resumen-h"><h2 id="inicio-resumen-t">${mio ? 'Lo tuyo hoy' : 'Resumen del día'}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-ir-editar>${icon('edit')}Editar Dashboard</button><a class="inicio-resumen-ver" href="${href(MODS.comercial.path)}" aria-label="Ir a Dashboard"><span class="ir-largo">Ir a Dashboard</span><span class="ir-corto">Dashboard</span>${icon('chevR')}</a></span></header>
+    return `<section class="tb-inicio inicio-resumen" aria-labelledby="inicio-resumen-t"><header class="inicio-resumen-h"><h2 id="inicio-resumen-t">${mio ? 'Lo tuyo hoy' : 'Resumen del día'}</h2><span class="inicio-resumen-acc"><button type="button" class="btn btn-sm" data-ir-editar>${icon('edit')}Editar Dashboard</button><a class="btn btn-sm inicio-resumen-ver" href="${href(MODS.comercial.path)}" aria-label="Ir a Dashboard"><span class="ir-largo">Ir a Dashboard</span><span class="ir-corto">Dashboard</span>${icon('chevR')}</a></span></header>
       <div class="inicio-resumen-g">${iniCifras(tarjElegidas('inicio', INI_TARJETAS, INI_DEFECTO))}</div></section>`;
   }
   const c = tbConfig(); if (!c.visible) return '';
