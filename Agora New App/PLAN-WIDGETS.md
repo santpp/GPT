@@ -4,7 +4,7 @@ Pedido del usuario (19 nov 2026):
 - Widgets editables a conveniencia y personalizables, «tan personalizables o más que la cuenta».
 - Crear widgets propios con operaciones aritméticas y algebraicas, las que sean.
 
-Estado: **en construcción.** Decisiones del usuario tomadas el 21 nov (punto 8). Entregado en 2.14.0: fase 1 (diccionario de métricas y `workspace/metricas`) y el motor de fórmulas del servidor (fase 3, sin pantalla).
+Estado: **en construcción.** Decisiones del usuario tomadas el 21 nov (punto 8). Entregado en 2.14.0: fase 1 (diccionario de métricas y `workspace/metricas`) y el motor de fórmulas del servidor. Entregado en 2.15.0: fase 2 (editor de tableros, `workspace/tableros`) y fase 3 (editor de fórmulas con autocompletar, colores, error señalado, vista previa y variables), en `assets/widgets.js`. Siguiente: fase 4 (gráficos).
 
 ---
 

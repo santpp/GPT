@@ -1,5 +1,13 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.15.0 · Widgets del equipo: editor de tableros y editor de fórmulas (21 nov):**
+- **«Widgets del equipo»** en Inicio, Gestión Comercial, Ventas, Productos, Facturación, Facturas, Costos, Oportunidades, Tareas, Equipo, Publicidad, Tendencias, Calidad y Redes: van justo después de las cifras del módulo, con el mismo estilo (línea, «Editar» y hover rojo). Los ve todo el equipo; si un módulo no tiene widgets, solo la administración ve «Agregar widgets».
+- **Editor de tableros** (solo Administración, Supervisión y dueños): agregar una cifra del sistema o una fórmula, ordenar, duplicar, quitar; por widget: título, nota, tamaño (1 o 2 columnas), período (el del módulo, el mes en curso, el anterior o un mes fijo), comparar con el mes anterior o el mismo mes del año pasado, formato, decimales y **semáforo** (en meta / cerca / bajo, «mejor si es más alto o más bajo»). «Restablecer» quita los widgets del módulo. Si dos personas editan a la vez, la segunda recibe aviso en vez de pisar los cambios.
+- **Editor de fórmulas:** al escribir `{` sugiere cifras, fórmulas y variables (flechas, Enter); «Insertar función» con la ayuda de cada una; la fórmula se ve **con colores** y el error se **marca donde está**; **vista previa en vivo** con el valor real del mes; ejemplos de un toque (Margen, Margen %, Ticket promedio, Ventas que faltan para la meta, Crecimiento, Días hábiles que quedan).
+- **Fórmulas y variables:** lista de fórmulas para editarlas o borrarlas (no se borra una que use un tablero; se explica) y variables propias (por ejemplo, un sueldo o una meta) para todos los meses o solo uno.
+- Archivo aparte `assets/widgets.js` (decisión del usuario); `agora-app.js` solo expone lo necesario.
+- Pruebas: `tests/widgets-ui.py` (25, escritorio y teléfono, administración, ejecutivo y consulta) y `tests/widgets-api.py` ampliada a 52 (tableros: validación, conflicto de versión, permisos, fórmula en uso).
+
 **Novedades 2.14.0 · Widgets, primera entrega: diccionario de métricas y motor de fórmulas (21 nov, sin cambios visibles):**
 - **Decisiones del usuario:** los widgets se construyen ya, en archivos aparte; **solo administración** (Administración, Supervisión y dueños) crea widgets, fórmulas y variables; plantillas por rubro más adelante; funciones extra financieras y de fechas.
 - **Diccionario de 37 métricas** (ventas, cobros, metas, rentabilidad, cuenta, día, ganadas, tareas). Cada una lee la misma ruta que su tarjeta, con el mismo usuario y sus permisos: el widget da **exactamente** la cifra de hoy (probado con administración, ejecutivo, consulta y una subcuenta sin reporte).

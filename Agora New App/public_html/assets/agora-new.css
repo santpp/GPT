@@ -925,3 +925,55 @@ main#app#app .cel::before{opacity:1!important;background:var(--ag-2)!important;b
 main#app#app .cel:is(.is-hot,:hover)::before{background:var(--ag-1)!important;box-shadow:0 0 10px 1px color-mix(in srgb,var(--ag-1) 55%,transparent)!important}
 main#app#app .cel .cel-ed{background:var(--surface,#fff)!important;color:var(--ink)!important;border:1px solid var(--line-2,#d4d4da)!important}
 main#app#app .cel .cel-ed:is(:hover,:focus-visible,:active){background:var(--ag-1)!important;border-color:var(--ag-1)!important;color:#fff!important}
+
+/* 2.15.0 · Widgets del equipo (assets/widgets.js) */
+main#app section.wg{margin:18px 0 22px}
+main#app .wg-h{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 10px}
+main#app .wg-h .t-sec{margin:0}
+main#app .wg-vacio{margin:0;color:var(--ink-2,#5b5b66);font-size:.92rem}
+main#app .wg-grid{grid-auto-flow:row dense}
+main#app .wg-cel{position:relative;min-width:0}
+main#app .wg-cel .ag-resumen-v{overflow-wrap:anywhere}
+main#app .wg-sem{justify-self:center;margin-top:4px}
+main#app .wg-comp.is-up{color:var(--ok,#1f7a4d)}
+main#app .wg-comp.is-down{color:var(--ag-1,#b3122e)}
+main#app .wg-motivo{color:var(--ink-3,#7a7a85);font-size:.8rem}
+.wg-ed .wg-lista{max-height:min(52vh,520px);overflow:auto;padding:0;margin:0 0 12px}
+.wg-item{display:block;list-style:none;border:1px solid var(--line-2,#d4d4da);border-radius:10px;padding:10px 12px;margin:0 0 8px;background:var(--surface,#fff)}
+.wg-item.is-open{border-color:var(--ag-1,#b3122e)}
+.wg-item-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.wg-item-h > span:first-child{display:flex;flex-direction:column;min-width:0}
+.wg-item-h small{color:var(--ink-3,#7a7a85)}
+.wg-item-acc{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.wg-item-acc .icon-btn{width:32px;height:32px;display:inline-grid;place-items:center}
+.wg-item-acc .icon-btn:not(.wg-baja) svg{transform:rotate(180deg)}
+.wg-cfg{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:12px}
+.wg-semf{grid-column:1/-1;border:0;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;align-items:end}
+.wg-add{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
+.wg-add .fld{flex:1 1 240px;margin:0}
+.wg-fx-campo{position:relative}
+.wg-fx-campo textarea{width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.95rem}
+.wg-fx-ver{margin-top:6px;padding:8px 10px;border-radius:8px;background:var(--surface-2,#f5f5f7);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9rem;white-space:pre-wrap;overflow-wrap:anywhere}
+.fx-ref{color:var(--cat-clientes,#1f3f7a);font-weight:600}
+.fx-fn{color:var(--cat-ventas,#7a1730);font-weight:600}
+.fx-num{color:var(--cat-facturacion,#8a6a12)}
+.fx-op{color:var(--ink-2,#5b5b66)}
+.fx-err{background:color-mix(in srgb,var(--ag-1,#b3122e) 18%,transparent);border-bottom:2px solid var(--ag-1,#b3122e)}
+.fx-vacio{color:var(--ink-3,#7a7a85)}
+.wg-ac{position:absolute;left:0;right:0;top:calc(100% - 44px);z-index:20;margin:0;padding:4px;list-style:none;background:var(--surface,#fff);border:1px solid var(--line-2,#d4d4da);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);max-height:260px;overflow:auto}
+.wg-ac li{display:flex;justify-content:space-between;gap:10px;padding:7px 9px;border-radius:7px;cursor:pointer}
+.wg-ac li small{color:var(--ink-3,#7a7a85);white-space:nowrap}
+.wg-ac li.is-on,.wg-ac li:hover{background:var(--ag-1,#b3122e);color:#fff}
+.wg-ac li.is-on small,.wg-ac li:hover small{color:#fff}
+.wg-fx-fila{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+.wg-ej{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}
+.wg-ej > span{color:var(--ink-2,#5b5b66);font-size:.9rem}
+.wg-prev{margin:8px 0 0;padding:8px 10px;border-radius:8px;border:1px solid var(--line-2,#d4d4da)}
+.wg-prev.is-ok{border-color:var(--ok,#1f7a4d)}
+.wg-prev.is-err{border-color:var(--ag-1,#b3122e);color:var(--ag-1,#b3122e)}
+.wg-gestor h3{margin:14px 0 8px;font-size:1rem}
+.wg-g-item{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.wg-g-item > span{display:flex;flex-direction:column;min-width:0}
+.wg-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink-3,#7a7a85);overflow-wrap:anywhere}
+.wg-var{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;align-items:end;margin-top:10px}
+@media (max-width:640px){.wg-fx-fila{grid-template-columns:1fr 1fr}.wg-fx-fila .fld:first-child{grid-column:1/-1}.wg-cfg{grid-template-columns:1fr 1fr}}

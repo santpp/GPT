@@ -376,6 +376,7 @@ function paint(html, enter) {
     app.insertAdjacentHTML('afterbegin', `<p class="aviso-enlace" role="status">${icon('info')}<span><b>Tu usuario no está enlazado con la cuenta.</b> Por eso no ves conversaciones, contactos ni oportunidades. Pídele a quien administra tu subcuenta que te enlace en Usuarios y roles.</span></p>`);
   applyUiTexts();
   aplicarPaleta(); arpVigilar(); tgVigilar();
+  try { window.AgoraWidgets?.montar(app); } catch (e) { console.warn('widgets', e); } // 2.15.0
   syncAgencyRail();
 }
 const sinEnlace = () => !!(conectada() && ESPACIO?.permisos?.soloAsignado && !ESPACIO?.enlace);
@@ -4172,7 +4173,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.14.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.15.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -7171,7 +7172,7 @@ const tgId = r => { const w = r.normalize('NFD').replace(/[̀-ͯ]/g, '').replace
 const tgVista = () => ('g_' + String(R?.mod || R?.view || 'x').toLowerCase().replace(/[^a-z]/g, '_')).slice(0, 30);
 function tgTarjetas(main) {
   const out = [], vistos = new Set();
-  main.querySelectorAll(TG_SEL).forEach(t => { const r = tgRotulo(t); if (!r) return; let id = tgId(r); while (vistos.has(id)) id = (id + 'b').slice(-29); vistos.add(id); out.push({t, id, r}); });
+  main.querySelectorAll(TG_SEL).forEach(t => { if (t.closest('[data-wg]')) return; /* 2.15.0: los widgets tienen su editor */ const r = tgRotulo(t); if (!r) return; let id = tgId(r); while (vistos.has(id)) id = (id + 'b').slice(-29); vistos.add(id); out.push({t, id, r}); });
   return out;
 }
 /* 2.12.6 · Estilo de las cifras (idea del usuario): rótulo, una línea de descripción breve, la cifra y su nota; ícono de línea pequeño arriba a la derecha.
@@ -7195,7 +7196,7 @@ function cajaDescripciones(main) {
 /* Sin huecos: las cifras de la última fila de cada caja se estiran hasta llenar el ancho (también al ocultar o reordenar). */
 function cajaRellenar(main) {
   main.querySelectorAll('.ag-resumen-grid, .g-hero, .grid:has(> .micro), .gc-caja-g, .inicio-resumen-g').forEach(caja => {
-    if (!caja.offsetParent) return;
+    if (!caja.offsetParent || caja.matches('[data-wg]')) return;
     const celdas = [...caja.querySelectorAll(':scope > .ag-resumen, :scope > .hero, :scope > .micro, :scope > .grid > .micro, :scope > .inicio-resumen-c')]
       .filter(c => c.style.display !== 'none' && c.offsetParent !== null);
     celdas.forEach(c => c.style.removeProperty('grid-column')); caja.style.removeProperty('grid-template-columns');
@@ -7227,7 +7228,7 @@ function cajaVivo(main) {
   main.querySelectorAll(CEL_SEL).forEach((c, i) => {
     const nuevo = !c.dataset.cel; c.dataset.cel = '1'; c.classList.add('cel');
     const nombre = celRotulo(c);
-    if (puede && nombre && !c.querySelector('[data-cel-ed]')) {
+    if (puede && nombre && !c.querySelector('[data-cel-ed]') && !c.closest('[data-wg]')) {
       let acc = c.querySelector(':scope > .cel-acc');
       if (!acc) { acc = document.createElement('span'); acc.className = 'cel-acc'; c.append(acc); }
       const tag = c.matches('button, a') ? 'span' : 'button';
@@ -10662,6 +10663,14 @@ async function bootContratos() {
 }
 applyTheme();
 if (AG_READY && window.AGORA_MAINTENANCE !== false) { try { AG.installMaintenance(); } catch { /* sin vigilancia */ } }
+/* 2.15.0 · Widgets: lo que widgets.js usa de la app (vive aparte para no agrandar este archivo). */
+window.AgoraHost = {
+  confirmar: (t, x, l, fn, d) => confirmModal(t, x, l, fn, d),
+  api: (p, o) => agoraApi(p, o), openModal: (h, o) => openModal(h, o), closeModal: () => closeModal(), modalHead: (t, s) => modalHead(t, s), esc, icon, toast: m => toast(m), busy: (b, on, l) => busy(b, on, l),
+  modulo: () => R?.mod || '', nombreModulo: () => MODS[R?.mod]?.name || '', conPeriodo: () => !!MODS[R?.mod]?.periodo,
+  periodo: () => (MODS[R?.mod]?.periodo && /^\d{4}-\d{2}$/.test(PERIODO || '')) ? PERIODO : mesActualYM(), mesActual: () => mesActualYM(),
+  zona: () => { try { return dashZona('&'); } catch { return ''; } }, moneda: () => ESPACIO?.moneda || 'USD', puedeEditar: () => ['MASTER', 'SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(AGORA_ME?.rol || ME?.rol || ''),
+};
 // 2.12.10 · Cada módulo toma el color de su categoría (Ventas vino, Facturación oro, Clientes azul, Gestión azul medio, Contratos rosa,
 // Administración vino oscuro). Va antes del arranque: el dueño con una subcuenta abierta sale del arranque por otro camino.
 Object.values(MODS).forEach(m => { if (m && GRUPOS[m.g] && m.g !== 'general') m.c = GRUPOS[m.g].c; });

@@ -25,6 +25,7 @@ final class Widgets {
   if($p==='workspace/metricas'&&$m==='GET')return $this->valores();
   if($p==='workspace/formulas/probar'&&$m==='POST')return $this->probar($b);
   if($p==='workspace/formulas'){if($m==='GET')return ['formulas'=>$this->formulas()];if($m==='POST')return $this->guardarFormula($b,null);if($m==='PUT')return $this->guardarFormula($b,Http::integer($b['id']??0,1,PHP_INT_MAX));if($m==='DELETE')return $this->borrarFormula(Http::integer($b['id']??$_GET['id']??0,1,PHP_INT_MAX));}
+  if($p==='workspace/tableros'){if($m==='GET')return $this->tablero((string)($_GET['modulo']??''));if($m==='PUT')return $this->guardarTablero($b);if($m==='DELETE')return $this->borrarTablero((string)($b['modulo']??$_GET['modulo']??''));}
   if($p==='workspace/variables'){if($m==='GET')return ['variables'=>$this->variables()];if($m==='PUT')return $this->guardarVariable($b);if($m==='DELETE')return $this->borrarVariable($b);}
   Http::fail('Ruta no encontrada.',404);
  }
@@ -148,9 +149,52 @@ final class Widgets {
   foreach($this->db()->all('SELECT nombre,expresion FROM agora_widget_formulas WHERE tenant_id=? AND id<>?',[$this->t(),$id]) as $o){
    try{foreach(Formula::refs(Formula::parse($o['expresion'])) as [$r])if(Metricas::clave($r)===$f['nombre_clave'])Http::fail('«'.$o['nombre'].'» usa esta fórmula. Cámbiala primero.',409);}catch(FormulaError){}
   }
+  foreach($this->db()->all('SELECT modulo,config FROM agora_dashboards WHERE tenant_id=?',[$this->t()]) as $d){foreach((json_decode((string)$d['config'],true)['widgets']??[]) as $w)if(($w['fuente']??'')==='formula'&&(int)($w['ref']??0)===$id)Http::fail('El tablero de «'.$d['modulo'].'» usa esta fórmula. Quita ese widget primero.',409);}
   $this->db()->run('DELETE FROM agora_widget_formulas WHERE id=? AND tenant_id=?',[$id,$this->t()]);$this->api->a->audit('formula.borrada','widgets',(string)$id,['detalle'=>$f['nombre']]);
   return ['ok'=>true];
  }
+
+ /* ---------- tableros (2.15.0 · fase 2): un tablero de widgets por módulo, el del equipo ---------- */
+ private const TAM=['chico','ancho'];private const PER=['modulo','actual','anterior'];private const COMP=['','mes_anterior','ano_pasado'];private const FMT=['auto','dinero','numero','porcentaje'];
+ private static function modulo(string $m):string{if(!preg_match('/^[a-z][a-z_]{1,39}$/D',$m))Http::fail('Módulo no válido.');return $m;}
+ private function tablero(string $modulo):array{
+  $modulo=self::modulo($modulo);$r=$this->db()->one("SELECT config,version,updated_at FROM agora_dashboards WHERE tenant_id=? AND modulo=? AND alcance='equipo' AND user_id=0",[$this->t(),$modulo]);
+  $cfg=$r?json_decode((string)$r['config'],true):null;
+  return ['modulo'=>$modulo,'widgets'=>is_array($cfg['widgets']??null)?$cfg['widgets']:[],'version'=>$r?(int)$r['version']:0,'puedeEditar'=>$this->api->a->can('widgets.editar')];
+ }
+ /** Valida cada widget: solo campos conocidos, textos cortos, referencias que existen. */
+ private function widget(mixed $w,int $i):array{
+  if(!is_array($w))Http::fail('Widget '.($i+1).' no válido.');
+  $id=(string)($w['id']??'');if(!preg_match('/^[a-z0-9]{6,16}$/D',$id))$id=bin2hex(random_bytes(5));
+  $fuente=(string)($w['fuente']??'');$ref=$w['ref']??null;
+  if($fuente==='metrica'){if(!is_string($ref)||!isset(Metricas::LISTA[$ref]))Http::fail('El widget '.($i+1).' usa una cifra que no existe.');}
+  elseif($fuente==='formula'){$ref=is_numeric($ref)?(int)$ref:0;if(!$this->db()->one('SELECT id FROM agora_widget_formulas WHERE id=? AND tenant_id=?',[$ref,$this->t()]))Http::fail('El widget '.($i+1).' usa una fórmula que ya no existe.');}
+  else Http::fail('El widget '.($i+1).' no dice qué mide.');
+  $txt=fn($k,$max)=>mb_substr(trim(strip_tags((string)($w[$k]??''))),0,$max);
+  $per=(string)($w['periodo']??'modulo');if(!in_array($per,self::PER,true)&&!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/D',$per))$per='modulo';
+  $sem=is_array($w['semaforo']??null)?$w['semaforo']:[];$num=fn($v)=>is_numeric($v)&&abs((float)$v)<1e14?(float)$v:null;
+  $semaforo=!empty($sem['activo'])&&$num($sem['verde']??null)!==null&&$num($sem['ambar']??null)!==null?['activo'=>true,'verde'=>$num($sem['verde']),'ambar'=>$num($sem['ambar']),'mejor'=>($sem['mejor']??'mas')==='menos'?'menos':'mas']:['activo'=>false];
+  return ['id'=>$id,'fuente'=>$fuente,'ref'=>$ref,'titulo'=>$txt('titulo',60),'nota'=>$txt('nota',120),
+   'tamano'=>in_array($w['tamano']??'',self::TAM,true)?$w['tamano']:'chico','periodo'=>$per,
+   'comparar'=>in_array($w['comparar']??'',self::COMP,true)?$w['comparar']:'','formato'=>in_array($w['formato']??'',self::FMT,true)?$w['formato']:'auto',
+   'decimales'=>isset($w['decimales'])&&is_numeric($w['decimales'])?max(0,min(4,(int)$w['decimales'])):2,'semaforo'=>$semaforo];
+ }
+ private function guardarTablero(array $b):array{
+  $modulo=self::modulo((string)($b['modulo']??''));$ws=$b['widgets']??null;if(!is_array($ws)||!array_is_list($ws))Http::fail('Lista de widgets no válida.');
+  if(count($ws)>24)Http::fail('Un tablero lleva hasta 24 widgets.');
+  $lista=[];$ids=[];foreach($ws as $i=>$w){$x=$this->widget($w,$i);while(isset($ids[$x['id']]))$x['id']=bin2hex(random_bytes(5));$ids[$x['id']]=1;$lista[]=$x;}
+  $ver=isset($b['version'])?(int)$b['version']:-1;
+  return $this->db()->transaction(function()use($modulo,$lista,$ver){
+   $r=$this->db()->one("SELECT id,version FROM agora_dashboards WHERE tenant_id=? AND modulo=? AND alcance='equipo' AND user_id=0 FOR UPDATE",[$this->t(),$modulo]);
+   $actual=$r?(int)$r['version']:0;if($ver>=0&&$ver!==$actual)Http::fail('Otra persona cambió este tablero mientras lo editabas. Vuelve a abrirlo para ver lo último.',409);
+   $cfg=\Agora\Core\DB::json(['widgets'=>$lista]);$u=$this->api->a->user['id']??null;
+   if($r)$this->db()->run('UPDATE agora_dashboards SET config=?,version=version+1,updated_by=? WHERE id=?',[$cfg,$u,$r['id']]);
+   else $this->db()->run("INSERT INTO agora_dashboards(tenant_id,modulo,alcance,user_id,config,version,updated_by) VALUES(?,?,'equipo',0,?,1,?)",[$this->t(),$modulo,$cfg,$u]);
+   $this->api->a->audit('tablero.guardado','widgets',$modulo,['detalle'=>count($lista).' widgets']);
+   return ['modulo'=>$modulo,'widgets'=>$lista,'version'=>$actual+1];
+  });
+ }
+ private function borrarTablero(string $modulo):array{$modulo=self::modulo($modulo);$this->db()->run("DELETE FROM agora_dashboards WHERE tenant_id=? AND modulo=? AND alcance='equipo' AND user_id=0",[$this->t(),$modulo]);$this->api->a->audit('tablero.restablecido','widgets',$modulo);return ['ok'=>true];}
 
  /* ---------- variables ---------- */
  private function guardarVariable(array $b):array{
