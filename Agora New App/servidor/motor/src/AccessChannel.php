@@ -69,10 +69,19 @@ final class AccessChannel {
             "El canal de acceso de Ágora ha entregado este mensaje de prueba.\n\nYa puedes probar el acceso del equipo.\n");
     }
 
-    private function deliver(int $tenant,string $email,string $subject,string $html,string $text):void {
+    /**
+     * Agora New App 2.13.0 · Correo general del ERP (código de acceso, cambio de clave y lo que venga):
+     * siempre sale por la subcuenta que el dueño eligió en Agencia → Correo de Ágora, nunca por otra.
+     */
+    public function sendMail(int $tenant,string $email,string $subject,string $title,string $intro,?string $code,string $foot,string $text):void {
+        $this->deliver($tenant,$email,$subject,self::template($title,$intro,$code,$foot),$text,true);
+    }
+
+    private function deliver(int $tenant,string $email,string $subject,string $html,string $text,bool $onlyChannel=false):void {
         $email=self::email($email);
         // El código sale desde la subcuenta a la que pertenece la persona; la cuenta elegida como canal queda de respaldo.
-        $connection=self::connectionFor($tenant,$email)??self::connection($tenant);
+        // Agora New App 2.13.0: con $onlyChannel sale siempre por la cuenta elegida como canal.
+        $connection=$onlyChannel?self::connection($tenant):(self::connectionFor($tenant,$email)??self::connection($tenant));
         if(!$connection)throw new AccessDeliveryProblem('access_channel_unconfigured');
         if($connection['status']!=='connected')throw new AccessDeliveryProblem('access_channel_unverified');
         $id=(int)$connection['id'];

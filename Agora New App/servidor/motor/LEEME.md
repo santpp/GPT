@@ -25,3 +25,5 @@ oportunidades, embudos, ventas ganadas, tablero y consumos de la agencia.
 - 2.11.8 (después del paquete) · `AgencyWallet::label()`: «whatsapp conversation» se leía con doble espacio; ahora «WhatsApp · conversation». Va en el próximo paquete del ERP.
 
 - Agora New App 2.12.13 (pantallas en `public_html/assets/agora-modulos.js`): «¿Venta ganada?» de la Bandeja y de la ficha del contacto llaman a `window.agoraGanar` (mismo paso, luego el formulario de venta del ERP); sin la ventana y la franja de «venta ganada sin monto» cuando existe `window.agoraVentaGanada`.
+
+- Agora New App 2.13.0: `AccessChannel::sendMail()` (correo general por la subcuenta elegida como canal; `deliver(..., onlyChannel)`). Lo usa `MotorMobile::correo()`.

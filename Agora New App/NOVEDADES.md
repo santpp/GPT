@@ -1,5 +1,14 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.13.0 · Correo de Ágora, código al entrar, «¿Olvidaste tu clave?» y sesión de 14 días (21 nov):**
+- **Correo de Ágora sin SMTP:** el dueño elige en Agencia → «Correo de Ágora» la subcuenta de la agencia por la que salen los correos del sistema. Usa el correo de esa cuenta. Botón «Probar envío». Solo el dueño (Master) lo ve y lo cambia.
+- **Código al iniciar sesión:** con el correo elegido, después de la clave llega un código de 6 dígitos (caduca en 10 minutos, 5 intentos, se usa una vez, «Reenviar código» cada minuto). Se puede apagar desde el mismo selector.
+- **Recuérdame (14 días):** la sesión dura 14 días y ese navegador queda **de confianza**: no vuelve a pedir el código en 14 días. Es una cookie segura y aleatoria del navegador, **no la IP** (no falla con CGNAT ni con datos móviles). Sin «Recuérdame», la sesión es normal y cada entrada pide código.
+- **«¿Olvidaste tu clave?»** en pasos: correo → código (15 minutos) → clave nueva dos veces. Responde igual exista o no el correo. Al cambiarla se cierran todas las sesiones y se olvidan los equipos de confianza.
+- **Seguridad:** los códigos nunca se guardan ni se muestran (solo su huella), límites de intentos por correo e IP, y si la subcuenta que envía se desconecta se vuelve a entrar solo con la clave (nadie queda fuera).
+- Convenios: el texto ya no promete un correo («se genera el enlace de firma para compartirlo con el cliente»).
+- Pruebas nuevas: `tests/acceso-correo.py` (23) y `tests/acceso-ui.py` (15). La cuenta simulada ahora recibe correos.
+
 **Novedades 2.12.15 · Pendientes medios resueltos: listo para desplegar (21 nov):**
 - **[9]** El registro de actividad (agencia y Auditoría) cuenta el detalle en palabras («Se cambió el token de la cuenta»): sin JSON ni identificadores.
 - **[10]** Abrir una venta cuya oportunidad ya no existe en la cuenta responde «La cuenta no encuentra esa oportunidad» y **no pausa la subcuenta** (antes, el Tablero quedaba ~15 s «en espera»).

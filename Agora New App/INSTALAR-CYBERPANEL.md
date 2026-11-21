@@ -346,3 +346,16 @@ curl -s -o /dev/null -w "%{http_code}\n" https://tests.agoradigital.app/NOVEDADE
 ```
 
 Si la primera no muestra las cabeceras, en CyberPanel: el sitio → «vHost Conf» → confirmar que `allowOverride` permite `Headers` (o «Rewrite» y «Headers»), y reiniciar OpenLiteSpeed. La API manda sus propias cabeceras aunque eso falle.
+
+
+## Correo de Ágora y código al entrar (2.13.0)
+
+No hace falta SMTP. Después de instalar:
+
+1. Entra como dueño → **Agencia** → **Correo de Ágora** → «Elegir subcuenta». Elige la subcuenta de la agencia (debe estar conectada y su cuenta debe tener el canal de correo activo).
+2. Pulsa **Probar envío**: te llega un correo a tu dirección de dueño.
+3. Desde ese momento, entrar pide un código por correo. Con «Recuérdame en este equipo (14 días)», ese navegador no lo vuelve a pedir en 14 días.
+4. La migración `009_acceso.sql` se aplica sola al primer pedido a la API. Si quieres hacerlo a mano: `php servidor/bin/migrate.php`.
+5. En `servidor/config/config.php`, `remember_seconds` puede quedar como estaba: el valor antiguo (604800) se toma como 14 días. Para otro valor, ponlo en segundos.
+
+Permisos que necesita la cuenta de la subcuenta elegida (guía para la agencia): contactos (leer y escribir, para el contacto interno del destinatario) y conversaciones/mensajes (escribir, para enviar el correo).

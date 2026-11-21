@@ -81,9 +81,103 @@ final class Auth {
   $this->rate('login-ip:'.($_SERVER['REMOTE_ADDR']??''),40,900);$this->rate('login-email:'.$email,15,900);
   $u=$this->db->one('SELECT * FROM agora_users WHERE email=?',[$email]);$dummy='$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.';
   if(!password_verify($pw,$u['password_hash']??$dummy)||!($u['active']??false))Http::fail('Correo o contraseña incorrectos.',401);
-  $remember=($b['recordar']??false)===true;$token=bin2hex(random_bytes(32));$expiry=time()+($remember?(int)($this->config['remember_seconds']??604800):(int)$this->config['session_seconds']);
+  $remember=($b['recordar']??false)===true;
+  // 2.13.0 · Código por correo al entrar (si el dueño eligió el correo de Ágora). Un equipo de confianza no lo vuelve a pedir.
+  if($this->otpActivo()&&!$this->equipoConfiable((int)$u['id'],(int)$u['auth_version'])){
+   [$desafio]=$this->codigoNuevo($u,'login',600);
+   $this->audit('codigo.enviado','sesion',(string)$u['id']);
+   return ['codigo'=>true,'desafio'=>$desafio,'destino'=>self::ocultarCorreo($u['email']),'recordar'=>$remember];
+  }
+  return $this->abrirSesion($u,$remember,false);
+ }
+ /** Crea la sesión (14 días si «Recuérdame»; si no, la duración normal) y, si se pide, marca el equipo como de confianza. */
+ private function recordarSegundos():int{$v=(int)($this->config['remember_seconds']??0);return $v>0&&$v!==604800?$v:1209600;} // 2.13.0: 14 días (el antiguo valor por defecto de 7 días se toma como 14)
+ private function abrirSesion(array $u,bool $remember,bool $confiar):array{
+  $token=bin2hex(random_bytes(32));$expiry=time()+($remember?$this->recordarSegundos():(int)$this->config['session_seconds']);
   $this->db->transaction(function()use($u,$token,$expiry){if($this->session)$this->db->run('DELETE FROM agora_sessions WHERE token_hash=?',[$this->session['token_hash']]);$this->db->run('INSERT INTO agora_sessions(token_hash,user_id,auth_version,active_tenant_id,expires_at) VALUES(?,?,?,?,?)',[hash('sha256',$token),$u['id'],$u['auth_version'],$u['local_tenant_id'],gmdate('Y-m-d H:i:s',$expiry)]);$this->db->run('UPDATE agora_users SET last_login_at=UTC_TIMESTAMP() WHERE id=?',[$u['id']]);});
-  $this->cookie('agora_session',$token,$remember?$expiry:0);$this->user=$u;$this->audit('entro','sesion',(string)$u['id'],$remember?['recordar'=>true]:[]);return ['usuario'=>$this->publicUser($u),'csrf'=>$this->csrf(),'activeTenantId'=>$u['local_tenant_id']?(int)$u['local_tenant_id']:null];
+  $this->cookie('agora_session',$token,$remember?$expiry:0);
+  if($confiar&&$remember)$this->confiarEquipo($u);
+  $this->user=$u;$this->audit('entro','sesion',(string)$u['id'],$remember?['recordar'=>true]:[]);return ['usuario'=>$this->publicUser($u),'csrf'=>$this->csrf(),'activeTenantId'=>$u['local_tenant_id']?(int)$u['local_tenant_id']:null];
+ }
+ /* ---------- 2.13.0 · Códigos de acceso por correo, equipos de confianza y «¿Olvidaste tu clave?» ----------
+    El código nunca se guarda ni se muestra: solo su huella (HMAC con app_key). Caduca, tiene 5 intentos y se usa una vez.
+    El equipo de confianza es una cookie aleatoria propia del navegador (no la IP, que cambia con CGNAT y redes móviles). */
+ public function otpActivo():bool{if(defined('AGORA_MODO_PRUEBAS'))return false;$c=$this->db->setting(0,'correo.canal',null);if(!is_array($c)||(int)($c['connectionId']??0)<=0||($c['codigoAlEntrar']??true)===false)return false;
+  // Si la subcuenta que envía se desconectó, se entra solo con la clave (nadie queda fuera por un correo que no puede salir).
+  return (bool)$this->db->one("SELECT 1 ok FROM agora_ghl_connections WHERE tenant_id=? AND status='conectada'",[(int)$c['connectionId']]);}
+ private function huella(string $desafio,string $codigo):string{return hash_hmac('sha256',$desafio.'|'.$codigo,(string)$this->config['app_key']);}
+ private static function ocultarCorreo(string $e):string{[$a,$d]=array_pad(explode('@',$e,2),2,'');return mb_substr($a,0,1).str_repeat('•',max(2,min(6,mb_strlen($a)-1))).'@'.$d;}
+ private function codigoNuevo(array $u,string $uso,int $segundos,?string $desafio=null):array{
+  $desafio??=bin2hex(random_bytes(24));$codigo=str_pad((string)random_int(0,999999),6,'0',STR_PAD_LEFT);
+  $this->db->run('UPDATE agora_access_codes SET used_at=UTC_TIMESTAMP() WHERE user_id=? AND purpose=? AND used_at IS NULL AND challenge_hash<>?',[$u['id'],$uso,hash('sha256',$desafio)]);
+  $this->db->run('INSERT INTO agora_access_codes(challenge_hash,user_id,purpose,code_hash,expires_at) VALUES(?,?,?,?,?) ON DUPLICATE KEY UPDATE code_hash=VALUES(code_hash),attempts=0,expires_at=VALUES(expires_at),sent_at=UTC_TIMESTAMP(),used_at=NULL',
+   [hash('sha256',$desafio),$u['id'],$uso,$this->huella($desafio,$codigo),gmdate('Y-m-d H:i:s',time()+$segundos)]);
+  $min=intdiv($segundos,60);
+  [$asunto,$titulo,$intro]=$uso==='reset'?['Cambia tu clave de Ágora','Cambia tu clave','Escribe este código en Ágora para elegir una clave nueva.']:['Tu código para entrar a Ágora','Tu código de acceso','Escribe este código en Ágora para terminar de entrar.'];
+  try{\Agora\Core\MotorMobile::correo($this->db,$this->config,$u['email'],$asunto,$titulo,$intro,$codigo,"Caduca en $min minutos y se usa una sola vez. Si no fuiste tú, ignora este correo y avisa a quien administra tu empresa.","$titulo: $codigo\n\nCaduca en $min minutos y se usa una sola vez.\n");}
+  catch(\Throwable $e){Http::fail('No pudimos enviar el código por correo. Inténtalo de nuevo en unos minutos o avisa a quien administra Ágora.',503);}
+  return [$desafio];
+ }
+ /** Comprueba un código: 5 intentos, sin caducar y una sola vez. Devuelve la fila o falla con un mensaje común. */
+ private function codigoValido(string $desafio,string $codigo,string $uso,?int $userId=null):array{
+  $r=$this->db->one('SELECT * FROM agora_access_codes WHERE challenge_hash=? AND purpose=?'.($userId?' AND user_id='.(int)$userId:''),[hash('sha256',$desafio),$uso]);
+  $malo='El código no es válido o ya venció. Pide uno nuevo.';
+  if(!$r||$r['used_at']!==null||strtotime($r['expires_at'].' UTC')<time()||(int)$r['attempts']>=5)Http::fail($malo,401);
+  $this->db->run('UPDATE agora_access_codes SET attempts=attempts+1 WHERE id=?',[$r['id']]);
+  if(!preg_match('/^\d{6}$/D',$codigo)||!hash_equals($r['code_hash'],$this->huella($desafio,$codigo)))Http::fail((int)$r['attempts']>=4?$malo:'El código no coincide. Revisa el correo e inténtalo de nuevo.',401);
+  $this->db->run('UPDATE agora_access_codes SET used_at=UTC_TIMESTAMP() WHERE id=?',[$r['id']]);
+  return $r;
+ }
+ public function loginCodigo(array $b):array{
+  $this->rate('login-codigo:'.($_SERVER['REMOTE_ADDR']??''),30,900);
+  $desafio=(string)($b['desafio']??'');if(!preg_match('/^[a-f0-9]{48}$/D',$desafio))Http::fail('El código no es válido o ya venció. Pide uno nuevo.',401);
+  $r=$this->codigoValido($desafio,trim((string)($b['codigo']??'')),'login');
+  $u=$this->db->one('SELECT * FROM agora_users WHERE id=? AND active=1',[$r['user_id']]);if(!$u)Http::fail('Correo o contraseña incorrectos.',401);
+  return $this->abrirSesion($u,($b['recordar']??false)===true,true);
+ }
+ public function loginReenviar(array $b):array{
+  $desafio=(string)($b['desafio']??'');if(!preg_match('/^[a-f0-9]{48}$/D',$desafio))Http::fail('Vuelve a escribir tu clave para pedir otro código.',401);
+  $r=$this->db->one('SELECT * FROM agora_access_codes WHERE challenge_hash=? AND purpose=\'login\' AND used_at IS NULL',[hash('sha256',$desafio)]);
+  if(!$r||strtotime($r['created_at'].' UTC')<time()-1800)Http::fail('Vuelve a escribir tu clave para pedir otro código.',401);
+  if(strtotime($r['sent_at'].' UTC')>time()-60)Http::fail('Espera un minuto antes de pedir otro código.',429);
+  $this->rate('login-reenviar:'.$r['user_id'],5,900);
+  $u=$this->db->one('SELECT * FROM agora_users WHERE id=? AND active=1',[$r['user_id']]);if(!$u)Http::fail('Vuelve a escribir tu clave para pedir otro código.',401);
+  $this->codigoNuevo($u,'login',600,$desafio);return ['ok'=>true];
+ }
+ private function equipoConfiable(int $userId,int $version):bool{
+  $t=$_COOKIE['agora_device']??'';if(!is_string($t)||!preg_match('/^[a-f0-9]{64}$/D',$t))return false;
+  $r=$this->db->one('SELECT token_hash FROM agora_trusted_devices WHERE token_hash=? AND user_id=? AND auth_version=? AND expires_at>UTC_TIMESTAMP()',[hash('sha256',$t),$userId,$version]);
+  if($r)$this->db->run('UPDATE agora_trusted_devices SET last_used_at=UTC_TIMESTAMP() WHERE token_hash=?',[$r['token_hash']]);
+  return (bool)$r;
+ }
+ private function confiarEquipo(array $u):void{
+  $t=bin2hex(random_bytes(32));$exp=time()+$this->recordarSegundos();
+  $ua=mb_substr(preg_replace('/[^\p{L}\p{N} .,;:()\/_-]/u','',(string)($_SERVER['HTTP_USER_AGENT']??'')),0,120);
+  $this->db->run('INSERT INTO agora_trusted_devices(token_hash,user_id,auth_version,label,expires_at) VALUES(?,?,?,?,?)',[hash('sha256',$t),$u['id'],$u['auth_version'],$ua,gmdate('Y-m-d H:i:s',$exp)]);
+  $this->db->run('DELETE FROM agora_trusted_devices WHERE expires_at<UTC_TIMESTAMP()');
+  $this->cookie('agora_device',$t,$exp);
+ }
+ /** «¿Olvidaste tu clave?» · Siempre responde lo mismo, exista o no el correo (no revela quién tiene cuenta). */
+ public function olvido(array $b):array{
+  $email=Http::email($b);$this->rate('olvido-ip:'.($_SERVER['REMOTE_ADDR']??''),10,900);$this->rate('olvido-email:'.$email,3,900);
+  $c=$this->db->setting(0,'correo.canal',null);if(defined('AGORA_MODO_PRUEBAS')||!is_array($c)||!(int)($c['connectionId']??0))return ['ok'=>true,'disponible'=>false];
+  $u=$this->db->one('SELECT * FROM agora_users WHERE email=? AND active=1',[$email]);
+  if($u){try{[$d]=$this->codigoNuevo($u,'reset',900,$this->desafioReset($u,$email));$this->audit('clave.codigo','sesion',(string)$u['id']);}catch(\Throwable){/* misma respuesta */}}
+  return ['ok'=>true,'disponible'=>true];
+ }
+ private function desafioReset(array $u,string $email):string{return substr(hash_hmac('sha256','reset|'.$u['id'].'|'.$email,(string)$this->config['app_key']),0,48);}
+ public function restablecer(array $b):array{
+  $email=Http::email($b);$this->rate('restablecer-email:'.$email,10,900);$this->rate('restablecer-ip:'.($_SERVER['REMOTE_ADDR']??''),30,900);
+  $nueva=Http::password($b['clave']??'');
+  $u=$this->db->one('SELECT * FROM agora_users WHERE email=? AND active=1',[$email]);
+  if(!$u)Http::fail('El código no es válido o ya venció. Pide uno nuevo.',401);
+  $desafio=$this->desafioReset($u,$email);
+  $this->codigoValido($desafio,trim((string)($b['codigo']??'')),'reset',(int)$u['id']);
+  $this->db->transaction(function()use($u,$nueva){
+   $this->db->run('UPDATE agora_users SET password_hash=?,auth_version=auth_version+1 WHERE id=?',[password_hash($nueva,PASSWORD_DEFAULT),$u['id']]);
+   $this->db->run('DELETE FROM agora_sessions WHERE user_id=?',[$u['id']]);$this->db->run('DELETE FROM agora_trusted_devices WHERE user_id=?',[$u['id']]);});
+  $this->user=$u;$this->audit('clave.restablecida','sesion',(string)$u['id']);$this->user=null;
+  return ['ok'=>true];
  }
  public function logout():array{if($this->session)$this->db->run('DELETE FROM agora_sessions WHERE token_hash=?',[$this->session['token_hash']]);$this->cookie('agora_session','',time()-3600);return ['ok'=>true];}
  public function audit(string $action,string $module,string $target='',array $detail=[]):void{$this->db->run('INSERT INTO agora_audit(tenant_id,actor_id,actor_name,action,module,target,details,ip) VALUES(?,?,?,?,?,?,?,?)',[$this->tenant,$this->user['id']??null,$this->user['name']??'Sistema',$action,$module,$target,DB::json($detail),substr($_SERVER['REMOTE_ADDR']??'CLI',0,45)]);}

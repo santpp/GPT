@@ -109,7 +109,7 @@ async function api(path, {method = 'GET', body} = {}) {
   let d = {}; try { d = await r.json(); } catch { if (r.ok && r.status !== 204) throw new Error('El servidor no devolvió una respuesta válida. Revisa la conexión de la API.'); }
   checkContext(epoch);
   // Si caduca la sesión de Contratos pero sigue abierta la de Ágora, no se echa a nadie.
-  if (r.status === 401 && path !== 'login' && path !== 'yo') {
+  if (r.status === 401 && !/^(login|yo|clave\/(olvido|restablecer))(\/|$)/.test(path)) { // 2.13.0: los pasos de acceso devuelven 401 sin que haya sesión que cerrar
     ME = null; DATA.reset();
     AGORA_ME = null; go('/entrar', {replace: true});
   }
@@ -702,7 +702,7 @@ V.detalle = {
     if (can('editar') && e !== 'FIRMADO') acts.push(`<button class="btn" type="button" data-act="editar">${icon('edit')}Editar cálculo</button>`);
     if (e === 'BORRADOR' && d.version === 1 && can('editar')) acts.push(`<button class="btn btn-danger" type="button" data-act="eliminar">Eliminar borrador</button>`);
     const est = {
-      BORRADOR: ['gray', 'edit', 'Revisa el cálculo y el convenio antes de enviar. Al enviar, el cliente recibe el enlace por correo.'],
+      BORRADOR: ['gray', 'edit', 'Revisa el cálculo y el convenio antes de enviar. Al enviar, se genera el enlace de firma para compartirlo con el cliente.'],
       ENVIADO: ['info', 'clock', 'El enlace está activo y el cliente todavía no ha firmado.'],
       FIRMADO: ['ok', 'check', 'El convenio está firmado. El cliente y el personal responsable reciben la copia por correo.'],
       REVOCADA: ['bad', 'warn', 'Este enlace fue revocado. Edita el cálculo para crear una versión nueva y enviarla otra vez.'],
@@ -945,7 +945,7 @@ V.entrar = {
             <label class="lg-f"><span class="sr-only">Usuario o correo</span><input id="lg-mail" type="text" placeholder="Usuario o correo" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus></label>
             <label class="lg-f"><span class="sr-only">Clave</span><input id="lg-pw" type="password" placeholder="Clave" autocomplete="current-password" required><button class="lg-eye" type="button" aria-pressed="false" aria-label="Mostrar clave">${icon('eye')}</button></label>
           </div>
-          <label class="lg-remember"><input type="checkbox" id="lg-rec" role="switch"><span class="lg-sw" aria-hidden="true"></span><span>Recuérdame en este equipo (7 días)</span></label>
+          <label class="lg-remember"><input type="checkbox" id="lg-rec" role="switch"><span class="lg-sw" aria-hidden="true"></span><span>Recuérdame en este equipo (14 días)</span></label>
           <p class="fld-err" role="alert"></p>
           <button class="btn btn-cta lg-go" type="submit"><span>Continuar</span><span class="lg-go-ic" aria-hidden="true">${icon('arrowR')}</span></button>
         </form>
@@ -959,14 +959,69 @@ V.entrar = {
     athenaEscena(s.querySelector('.lg-stage'));
     const eye = s.querySelector('.lg-eye'), pw = s.querySelector('#lg-pw');
     eye.onclick = () => { const v = pw.type === 'password'; pw.type = v ? 'text' : 'password'; eye.innerHTML = icon(v ? 'eyeOff' : 'eye'); eye.setAttribute('aria-label', v ? 'Ocultar clave' : 'Mostrar clave'); eye.setAttribute('aria-pressed', String(v)); };
-    s.querySelector('.lg-forgot').onclick = () => { const h = s.querySelector('#lg-forgot-help'); h.hidden = !h.hidden; };
+    /* 2.13.0 · Código por correo al entrar y «¿Olvidaste tu clave?» en pasos, dentro de la misma tarjeta. */
+    const listo = async d => { if (!d.usuario) throw new Error('El servidor no devolvió la identidad de usuario.'); ME = d.usuario; DATA.reset(); await entrado(); if (!AGORA_ME) throw new Error('El servidor debe habilitar la sesión unificada para Operación Comercial.'); };
+    // Los pasos van en su propio bloque: lo de «Inicia sesión» solo se esconde (no se pierden sus botones ni lo escrito).
+    let ocultos = [];
+    const paso = (titulo, html) => { card.querySelector('.lg-paso')?.remove(); if (!ocultos.length) ocultos = [...card.children].filter(n => !n.hidden); ocultos.forEach(n => n.hidden = true);
+      card.insertAdjacentHTML('beforeend', `<div class="lg-paso"><div class="lg-logo">${LOGO}<small>Digital App</small></div><h2 class="lg-paso-t">${titulo}</h2>${html}</div>`); };
+    const volver = (aviso = '') => { card.querySelector('.lg-paso')?.remove(); ocultos.forEach(n => n.hidden = false); ocultos = []; card.querySelector('.lg-ok')?.remove();
+      if (aviso) card.querySelector('h1').insertAdjacentHTML('afterend', `<p class="lg-help lg-ok" role="status">${esc(aviso)}</p>`); };
+    const codigoInput = `<label class="lg-f"><span class="sr-only">Código de 6 dígitos</span><input name="codigo" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="Código de 6 dígitos" required class="lg-otp"></label>`;
+    function pasoCodigo(d, recordar) {
+      paso('Revisa tu correo', `<p class="lg-help">Te enviamos un código de 6 dígitos a <b>${esc(d.destino || 'tu correo')}</b>. Caduca en 10 minutos.</p>
+        <form novalidate class="lg-step"><div class="lg-fields">${codigoInput}</div><p class="fld-err" role="alert"></p>
+        <button class="btn btn-cta lg-go" type="submit"><span>Entrar</span><span class="lg-go-ic" aria-hidden="true">${icon('arrowR')}</span></button></form>
+        <div class="lg-step-acts"><button class="lg-link" type="button" data-reenviar disabled>Reenviar código</button><button class="lg-link" type="button" data-volver>Volver</button></div>`);
+      const f = card.querySelector('.lg-paso form'), err = f.querySelector('.fld-err'), re = card.querySelector('[data-reenviar]');
+      let t = 60; const tic = () => { re.disabled = t > 0; re.textContent = t > 0 ? `Reenviar código (${t} s)` : 'Reenviar código'; if (t-- > 0) setTimeout(tic, 1000); }; tic();
+      card.querySelector('[data-volver]').onclick = () => volver();
+      re.onclick = async () => { re.disabled = true; err.textContent = ''; try { await api('login/reenviar', {method: 'POST', body: {desafio: d.desafio}}); toast('Te enviamos otro código.'); t = 60; tic(); } catch (x) { err.textContent = x.message; re.disabled = false; } };
+      const inp = f.codigo; inp.focus(); inp.oninput = () => { inp.value = inp.value.replace(/\D/g, '').slice(0, 6); if (inp.value.length === 6) f.requestSubmit(); };
+      f.onsubmit = async e => { e.preventDefault(); const bt = f.querySelector('.lg-go'); if (!/^\d{6}$/.test(inp.value)) { err.textContent = 'Escribe los 6 dígitos del código.'; return; }
+        busy(bt, true, 'Entrando…'); err.textContent = '';
+        try { await listo(await api('login/codigo', {method: 'POST', body: {desafio: d.desafio, codigo: inp.value, recordar}})); }
+        catch (x) { busy(bt, false); err.textContent = x.message; inp.select(); } };
+    }
+    function pasoOlvido(correo = '') {
+      paso('¿Olvidaste tu clave?', `<p class="lg-help">Escribe tu correo. Si tienes cuenta, te enviamos un código para elegir una clave nueva.</p>
+        <form novalidate class="lg-step"><div class="lg-fields"><label class="lg-f"><span class="sr-only">Correo</span><input name="correo" type="email" placeholder="Correo" autocomplete="username" value="${esc(correo)}" required></label></div><p class="fld-err" role="alert"></p>
+        <button class="btn btn-cta lg-go" type="submit"><span>Enviar código</span><span class="lg-go-ic" aria-hidden="true">${icon('arrowR')}</span></button></form>
+        <div class="lg-step-acts"><button class="lg-link" type="button" data-volver>Volver a iniciar sesión</button></div>`);
+      const f = card.querySelector('.lg-paso form'), err = f.querySelector('.fld-err');
+      card.querySelector('[data-volver]').onclick = () => volver(); f.correo.focus();
+      f.onsubmit = async e => { e.preventDefault(); const c = f.correo.value.trim(), bt = f.querySelector('.lg-go');
+        if (!/^\S+@\S+\.\S+$/.test(c)) { err.textContent = 'Escribe tu correo completo.'; return; }
+        busy(bt, true, 'Enviando…'); err.textContent = '';
+        try { const r = await api('clave/olvido', {method: 'POST', body: {correo: c}}); if (r.disponible === false) { busy(bt, false); err.textContent = 'Pide a quien administra tu empresa que restablezca tu clave desde Usuarios y roles.'; return; } pasoNueva(c); }
+        catch (x) { busy(bt, false); err.textContent = x.message; } };
+    }
+    function pasoNueva(correo) {
+      paso('Elige tu clave nueva', `<p class="lg-help">Si <b>${esc(correo)}</b> tiene cuenta, te llegó un código de 6 dígitos. Caduca en 15 minutos.</p>
+        <form novalidate class="lg-step"><div class="lg-fields">${codigoInput}
+          <label class="lg-f"><span class="sr-only">Clave nueva</span><input name="clave" type="password" placeholder="Clave nueva (mínimo 12 caracteres)" autocomplete="new-password" minlength="12" required></label>
+          <label class="lg-f"><span class="sr-only">Repite la clave</span><input name="clave2" type="password" placeholder="Repite la clave nueva" autocomplete="new-password" required></label></div><p class="fld-err" role="alert"></p>
+        <button class="btn btn-cta lg-go" type="submit"><span>Cambiar clave</span><span class="lg-go-ic" aria-hidden="true">${icon('arrowR')}</span></button></form>
+        <div class="lg-step-acts"><button class="lg-link" type="button" data-otro>Pedir otro código</button><button class="lg-link" type="button" data-volver>Volver a iniciar sesión</button></div>`);
+      const f = card.querySelector('.lg-paso form'), err = f.querySelector('.fld-err');
+      card.querySelector('[data-volver]').onclick = () => volver(); card.querySelector('[data-otro]').onclick = () => pasoOlvido(correo); f.codigo.focus();
+      f.codigo.oninput = () => { f.codigo.value = f.codigo.value.replace(/\D/g, '').slice(0, 6); };
+      f.onsubmit = async e => { e.preventDefault(); const bt = f.querySelector('.lg-go');
+        if (!/^\d{6}$/.test(f.codigo.value)) { err.textContent = 'Escribe los 6 dígitos del código.'; return; }
+        if (f.clave.value.length < 12) { err.textContent = 'La clave nueva debe tener al menos 12 caracteres.'; return; }
+        if (f.clave.value !== f.clave2.value) { err.textContent = 'Las dos claves no coinciden.'; return; }
+        busy(bt, true, 'Guardando…'); err.textContent = '';
+        try { await api('clave/restablecer', {method: 'POST', body: {correo, codigo: f.codigo.value, clave: f.clave.value}}); volver('Listo. Entra con tu clave nueva.'); const m = card.querySelector('#lg-mail'); if (m) m.value = correo; card.querySelector('#lg-pw')?.focus(); }
+        catch (x) { busy(bt, false); err.textContent = x.message; } };
+    }
+    s.querySelector('.lg-forgot').onclick = () => pasoOlvido(s.querySelector('#lg-mail')?.value.trim() || '');
     s.querySelector('form').onsubmit = async e => {
       e.preventDefault();
       const correo = s.querySelector('#lg-mail').value.trim(), clave = pw.value, err = card.querySelector('.fld-err'), b = s.querySelector('.lg-go');
       const shake = () => { card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); };
       if (!correo || !clave) { err.textContent = 'Escribe tu usuario o correo y tu clave.'; shake(); (correo ? pw : s.querySelector('#lg-mail')).focus(); return; }
       busy(b, true, 'Entrando…'); err.textContent = '';
-      try { const d = await api('login', {method: 'POST', body: {correo, clave, recordar: s.querySelector('#lg-rec').checked}}); if (!d.usuario) throw new Error('El servidor no devolvió la identidad de usuario.'); ME = d.usuario; DATA.reset(); await entrado(); if (!AGORA_ME) throw new Error('El servidor debe habilitar la sesión unificada para Operación Comercial.'); }
+      try { const recordar = s.querySelector('#lg-rec').checked; const d = await api('login', {method: 'POST', body: {correo, clave, recordar}}); if (d.codigo) { busy(b, false); pasoCodigo(d, recordar); return; } await listo(d); }
       catch (x) { busy(b, false); err.textContent = x.message; shake(); pw.select(); }
     };
     s.querySelector(document.activeElement?.id === 'lg-pw' ? '#lg-pw' : '#lg-mail')?.focus();
@@ -2391,6 +2446,31 @@ function conexionEstadoHtml(c) {
 }
 /* Agora New App · conexión de la agencia (Company ID + token de agencia). Una sola para toda la agencia:
    la usa Consumos para leer la billetera, el gasto y el plan de cada subcuenta. Solo dueños (lo comprueba el servidor). */
+/* 2.13.0 · Correo de Ágora (solo el dueño): por qué subcuenta salen los correos del ERP (código al entrar y cambio de clave).
+   Sin SMTP: usa el correo de esa cuenta. Se elige, se prueba y se puede apagar el código al entrar. */
+async function agenciaCorreoPintar(box) {
+  if (!box) return;
+  let s; try { s = await agoraApi('agency/correo'); } catch { box.hidden = true; return; }
+  if (!box.isConnected) return;
+  const sel = (s.opciones || []).find(o => o.id === s.connectionId);
+  box.hidden = false; box.className = 'agency-conn ' + (sel ? 'is-ok' : 'is-none');
+  box.innerHTML = `<span class="agency-conn-ic">${icon('mail')}</span>
+    <div class="agency-conn-tx"><b>Correo de Ágora</b><span>${sel ? `Sale por <b>${esc(sel.nombre)}</b> · código al entrar ${s.codigoAlEntrar ? 'activado' : 'apagado'}` : 'Sin elegir. Elige la subcuenta de la agencia por la que saldrán los códigos de acceso y los cambios de clave.'}</span></div>
+    <div class="agency-conn-acts">${sel ? `<button class="btn btn-sm" type="button" data-correo-probar>${icon('send')}Probar envío</button>` : ''}<button class="btn btn-sm ${sel ? '' : 'btn-cta'}" type="button" data-correo-editar>${sel ? 'Cambiar' : 'Elegir subcuenta'}</button></div>`;
+  box.querySelector('[data-correo-probar]')?.addEventListener('click', async e => { const b = e.currentTarget; busy(b, true, 'Enviando…'); try { const r = await agoraApi('agency/correo/probar', {method: 'POST', body: {}}); toast(`Prueba enviada a ${r.destino}.`); } catch (x) { toast(x.message); } finally { busy(b, false); } });
+  box.querySelector('[data-correo-editar]').onclick = () => {
+    const m = openModal(modalHead('Correo de Ágora', 'Los correos del sistema (código al entrar y cambio de clave) salen por el correo de esta subcuenta. No hace falta SMTP.') + `<form class="form" novalidate>
+      <label class="fld">Subcuenta que envía<select name="conn"><option value="">Ninguna (sin correos: se entra solo con la clave)</option>${(s.opciones || []).map(o => `<option value="${o.id}" ${o.id === s.connectionId ? 'selected' : ''}>${esc(o.nombre)}</option>`).join('')}</select></label>
+      <label class="bx-check"><input type="checkbox" name="otp" ${s.codigoAlEntrar ? 'checked' : ''}> Pedir un código por correo al iniciar sesión (los equipos marcados con «Recuérdame» no lo vuelven a pedir en 14 días)</label>
+      <p class="bx-help">Cada persona que reciba un correo queda como contacto interno en esa subcuenta, con la etiqueta «agora-acceso-interno». Si la subcuenta se desconecta, se vuelve a entrar solo con la clave.</p>
+      <p class="fld-err" role="alert"></p>
+      <div class="form-ft"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="submit">Guardar</button></div></form>`);
+    const f = m.querySelector('form');
+    f.onsubmit = async e => { e.preventDefault(); const b = f.querySelector('[type=submit]'); busy(b, true, 'Guardando…');
+      try { await agoraApi('agency/correo', {method: 'PUT', body: {connectionId: f.conn.value ? +f.conn.value : null, codigoAlEntrar: f.otp.checked}}); closeModal(); toast('Correo de Ágora guardado.'); agenciaCorreoPintar(box); }
+      catch (x) { busy(b, false); f.querySelector('.fld-err').textContent = x.message; } };
+  };
+}
 async function agenciaConexionPintar(box) {
   if (!box) return;
   let s;
@@ -4092,7 +4172,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.12.15').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.13.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 V.agencyActivity = {
@@ -10324,13 +10404,14 @@ V.agencia = {
       </div>
       <div class="agency-active-chips-bar" data-adv-chips hidden></div>
       <p class="agency-filter-empty" id="agency-filter-empty" hidden>No hay subcuentas que coincidan con los filtros.<br><button type="button" class="btn btn-sm" id="agency-filter-reset">Restablecer filtros</button></p>` : '';
-    return launcherFrame('agencia', `<div class="agency-shell"><header class="operations-heading"><p class="operations-eyebrow"><span></span>Administración de Agencia</p><h1>Hola, <em>${esc(name)}</em></h1><p class="operations-lede">Elige una empresa y entra a su espacio de trabajo.</p><p class="launch-summary"><strong>${accounts ? accounts.length : '—'} subcuentas</strong> · Cada empresa con sus usuarios, módulos y datos aparte. <a class="launch-summary-link" href="${href('/agencia/control')}">Ver cómo va la agencia en ${AG_GOB_NOMBRE} ${icon('chevR')}</a></p></header><section class="agency-conn" id="agency-conn" aria-label="Conexión de la agencia" hidden></section><section aria-labelledby="launch-accounts"><div class="launch-section-heading"><h2 id="launch-accounts">Todas las subcuentas</h2><div class="acts"><button type="button" class="btn" id="agency-export" ${accounts?.length ? '' : 'disabled'}>${icon('download')}Informe</button><button type="button" class="btn" id="agency-start-tour">${icon('spark')}Guía</button><button type="button" class="btn btn-cta" data-agency-create ${esMaster() ? '' : 'disabled title="Solo el Master puede crear subcuentas"'}>${icon('plus')}Nueva subcuenta</button></div></div>${filterBar}<div class="agency-grid" id="agency-cards-grid">${cards}</div></section>${accounts?.length ? agenciaPanelFiltrosHtml(accounts) : ''}</div>`);
+    return launcherFrame('agencia', `<div class="agency-shell"><header class="operations-heading"><p class="operations-eyebrow"><span></span>Administración de Agencia</p><h1>Hola, <em>${esc(name)}</em></h1><p class="operations-lede">Elige una empresa y entra a su espacio de trabajo.</p><p class="launch-summary"><strong>${accounts ? accounts.length : '—'} subcuentas</strong> · Cada empresa con sus usuarios, módulos y datos aparte. <a class="launch-summary-link" href="${href('/agencia/control')}">Ver cómo va la agencia en ${AG_GOB_NOMBRE} ${icon('chevR')}</a></p></header><section class="agency-conn" id="agency-conn" aria-label="Conexión de la agencia" hidden></section><section class="agency-conn" id="agency-correo" aria-label="Correo de Ágora" hidden></section><section aria-labelledby="launch-accounts"><div class="launch-section-heading"><h2 id="launch-accounts">Todas las subcuentas</h2><div class="acts"><button type="button" class="btn" id="agency-export" ${accounts?.length ? '' : 'disabled'}>${icon('download')}Informe</button><button type="button" class="btn" id="agency-start-tour">${icon('spark')}Guía</button><button type="button" class="btn btn-cta" data-agency-create ${esMaster() ? '' : 'disabled title="Solo el Master puede crear subcuentas"'}>${icon('plus')}Nueva subcuenta</button></div></div>${filterBar}<div class="agency-grid" id="agency-cards-grid">${cards}</div></section>${accounts?.length ? agenciaPanelFiltrosHtml(accounts) : ''}</div>`);
   },
   mounted(root) {
     root.querySelector('#agency-start-tour')?.addEventListener('click', () => agenciaIniciarTour(1));
     root.querySelector('#agency-export')?.addEventListener('click', () => exportarInformeSubcuentas(AGENCY_ACCOUNTS || []));
     root.querySelector('[data-agency-create]')?.addEventListener('click', () => agenciaCuentaEditar(null));
     agenciaConexionPintar(root.querySelector('#agency-conn'));
+    if (esMaster()) agenciaCorreoPintar(root.querySelector('#agency-correo'));
     root.querySelectorAll('[data-agency-open]').forEach(el => el.onclick = () => abrirCuentaAgencia(el.dataset.agencyOpen));
     root.querySelectorAll('[data-agency-manage]').forEach(el => el.onclick = () => {
       const a = AGENCY_ACCOUNTS?.find(x => String(x.id) === String(el.dataset.agencyManage));

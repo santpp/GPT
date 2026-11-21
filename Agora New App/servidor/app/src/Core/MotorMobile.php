@@ -226,6 +226,20 @@ final class MotorMobile {
  }
 
  /* ---------- 2.9.0 · Venta ganada con la cuenta: la oportunidad y el contacto viven en la cuenta; el espejo guarda la última lectura. ---------- */
+ /**
+  * 2.13.0 · Correo de Ágora: sale por la subcuenta que el dueño eligió (Agencia → Correo de Ágora), por el canal de
+  * correo de esa cuenta. Sin SMTP. Devuelve false si no hay canal elegido; lanza RuntimeException con un mensaje claro si falla.
+  */
+ public static function canalCorreo(DB $erp):?int{$c=$erp->setting(0,'correo.canal',null);$id=is_array($c)?(int)($c['connectionId']??0):0;return $id>0?$id:null;}
+ public static function correo(DB $erp,array $config,string $email,string $asunto,string $titulo,string $intro,?string $codigo,string $pie,string $texto):bool{
+  $id=self::canalCorreo($erp);if(!$id)return false;
+  self::conexion($erp,$config,$id);
+  require_once dirname(__DIR__,3).'/motor/src/AccessChannel.php';
+  \AccessChannel::select(self::AGENCIA,$id);
+  try{(new \AccessChannel())->sendMail(self::AGENCIA,$email,$asunto,$titulo,$intro,$codigo,$pie,$texto);}
+  catch(\AccessDeliveryProblem $e){throw new \RuntimeException($e->getMessage(),0,$e);}
+  return true;
+ }
  private static function conexion(DB $erp,array $config,int $tenant):array{
   self::instalar($erp,$config);self::arrancar($config);
   $c=\query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$tenant,self::AGENCIA])->fetch();

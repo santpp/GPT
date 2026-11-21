@@ -907,3 +907,14 @@ main#app .live-toolbar .live-feedback{margin:0!important}
   body:has(.vg-aviso) main#app{padding-bottom:calc(var(--tab-h,60px) + var(--safe-b,0px) + 96px)!important}
   body:has(.vg-aviso) #toast{bottom:calc(var(--tab-h,60px) + var(--safe-b,0px) + 96px)!important}
 }
+/* 2.13.0 · Pasos de acceso (código por correo y «¿Olvidaste tu clave?»): mismo lenguaje que «Inicia sesión». */
+.lg-paso .lg-paso-t{margin:0 0 14px;font:700 clamp(26px,3.2vw,36px)/1.1 var(--font-display);letter-spacing:-.02em;color:var(--ink)}
+.lg-paso .lg-help{margin:0 0 16px;font-size:14.5px;line-height:1.45;color:var(--muted)}
+.lg-paso .lg-help b{color:var(--ink)}
+.lg-paso .lg-otp{letter-spacing:.35em;font:600 20px/1 var(--font-text);text-align:center}
+.lg-paso .lg-step .lg-fields{display:grid;gap:10px}
+.lg-step-acts{display:flex;justify-content:space-between;gap:12px;margin-top:16px;flex-wrap:wrap}
+.lg-step-acts .lg-link:disabled{color:var(--muted);cursor:default}
+.lg-panel .lg-ok{margin:-10px 0 16px;color:var(--ok,#1f7a43);font-weight:600}
+.lg-paso .lg-otp::placeholder{letter-spacing:normal;font:500 15px/1 var(--font-text)}
+.lg-paso .lg-help,.lg-paso .lg-paso-t{text-align:left}

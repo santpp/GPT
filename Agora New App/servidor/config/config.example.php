@@ -8,7 +8,7 @@ return [
  'vault_key' => 'REEMPLAZAR_POR_OTROS_64_CARACTERES_HEXADECIMALES', // cifra los tokens de las cuentas. No la cambies después.
  'db' => ['host'=>'localhost','port'=>3306,'name'=>'u123_agora','user'=>'u123_agora','password'=>'CAMBIAR','persistent'=>true],
  'session_seconds'=>28800,     // sesión normal: 8 horas
- 'remember_seconds'=>604800,   // «Recuérdame en este equipo»: 7 días
+ 'remember_seconds'=>1209600,  // «Recuérdame en este equipo»: 14 días (sesión y equipo de confianza)
  'cookie_secure'=>true,
  'page_size'=>100,
  // Las conexiones con las cuentas se escriben en la app (Agencia → Editar datos) y se guardan cifradas.

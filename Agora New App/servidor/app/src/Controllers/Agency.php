@@ -55,6 +55,27 @@ final class Agency {
  private function perfil(int $id):?array{$p=$this->db->setting($id,'cuenta.perfil',null);return is_array($p)?$p:null;}
  private function paleta(int $id):?array{$p=$this->db->setting($id,'ui.paleta',null);return is_array($p)&&isset($p['principal'],$p['acento'])?$p:null;}
  /** $modulo: solo los movimientos de ese módulo (2.8.5: «Registro» muestra solo convenios, no toda la bitácora). */
+ /** 2.13.0 · Correo de Ágora: el dueño elige la subcuenta conectada por la que salen los correos (códigos de acceso,
+  * cambio de clave). Sin SMTP: usa el canal de correo de esa cuenta. Se puede apagar el código al entrar. */
+ public function correo(string $m,array $b):array{
+  $this->auth->master();
+  $actual=$this->db->setting(0,'correo.canal',null);$actual=is_array($actual)?$actual:[];
+  if($m==='PUT'){
+   $id=($b['connectionId']??null)===null||$b['connectionId']===''?null:Http::integer($b['connectionId'],1,PHP_INT_MAX);
+   if($id){$ok=$this->db->one("SELECT t.id FROM agora_tenants t JOIN agora_ghl_connections g ON g.tenant_id=t.id WHERE t.id=? AND g.status='conectada'",[$id]);if(!$ok)Http::fail('Esa subcuenta no está conectada con su cuenta.',422);}
+   $actual=['connectionId'=>$id,'codigoAlEntrar'=>($b['codigoAlEntrar']??true)!==false];
+   $this->db->saveSetting(0,'correo.canal',$actual);$this->auth->audit('correo.canal','agencia',(string)($id??''));
+  }
+  $opciones=array_map(fn($r)=>['id'=>(int)$r['id'],'nombre'=>$r['name']],$this->db->all("SELECT t.id,t.name FROM agora_tenants t JOIN agora_ghl_connections g ON g.tenant_id=t.id WHERE g.status='conectada' ORDER BY t.name LIMIT 500"));
+  return ['connectionId'=>isset($actual['connectionId'])?(int)$actual['connectionId']?:null:null,'codigoAlEntrar'=>($actual['codigoAlEntrar']??true)!==false,'opciones'=>$opciones];
+ }
+ public function correoProbar():array{
+  $this->auth->master();$u=$this->auth->requireUser();$this->auth->rate('correo-probar:'.$u['id'],5,600);
+  try{$ok=\Agora\Core\MotorMobile::correo($this->db,$this->auth->config,$u['email'],'Prueba del correo de Ágora','El correo de Ágora funciona','Este mensaje confirma que Ágora puede enviar correos por la subcuenta elegida.',null,'Desde ahora, los códigos de acceso y los cambios de clave salen por aquí.',"El correo de Ágora funciona.\n");}
+  catch(\Throwable $e){Http::fail('No se pudo enviar la prueba: '.$e->getMessage(),502);}
+  if(!$ok)Http::fail('Primero elige la subcuenta por la que saldrán los correos.',409);
+  $this->auth->audit('correo.prueba','agencia');return ['ok'=>true,'destino'=>$u['email']];
+ }
  /** 2.12.15 · [9]: el detalle del registro se cuenta en palabras; nunca se muestran identificadores ni el JSON. */
  private static function detalleLegible(mixed $d):string{
   if(!is_array($d))return '';$t=[];

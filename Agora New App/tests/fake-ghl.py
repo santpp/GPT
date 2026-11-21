@@ -138,6 +138,21 @@ class H(BaseHTTPRequestHandler):
             if __import__('os').path.exists('/tmp/fake-ghl-sin-anuncios'):return self.out(200,{'adAccounts':[]})
             return self.out(200,{'adAccounts':[{'id':'act_1','name':'ASOCIM'}]})
         if p=='/__tasks':return self.out(200,{'tasks':TASKS})
+        # 2.13.0 · Correo por la cuenta: buscar por correo, crear el contacto interno, etiquetarlo y un buzón de prueba (/__sent).
+        if p=='/__sent':return self.out(200,{'sent':SENT})
+        if p=='/contacts/search/duplicate':
+            c=next((c for c in CONTACTS.values() if c.get('email') and c.get('email')==q.get('email')),None)
+            return self.out(200,{'contact':c})
+        if p=='/contacts/upsert' and m=='POST':
+            c=next((c for c in CONTACTS.values() if c.get('email') and c.get('email')==b.get('email')),None)
+            if c:return self.out(200,{'new':False,'contact':c})
+            k='n'+__import__('uuid').uuid4().hex[:18];CONTACTS[k]={'id':k,'locationId':LOC,'contactName':b.get('name') or 'Acceso','firstName':b.get('name') or 'Acceso','lastName':'','email':b.get('email'),'phone':'','assignedTo':None,'tags':[],'dateAdded':'2026-11-21T00:00:00Z','customFields':[]}
+            return self.out(201,{'new':True,'contact':CONTACTS[k]})
+        mt=re.match(r'^/contacts/([\w-]+)/tags$',p)
+        if mt and m=='POST':
+            c=CONTACTS.get(mt.group(1))
+            if c is not None:c.setdefault('tags',[]);c['tags']=list(set(c['tags']+b.get('tags',[])))
+            return self.out(201,{'tags':(c or {}).get('tags',[])})
         if re.match(r'^/contacts/[\w-]+/(notes|tasks|appointments)$',p):
             key=p.rsplit('/',1)[1];return self.out(200,{key:[] ,'events':[]})
         if p=='/opportunities/pipelines':return self.out(200,{'pipelines':PIPES})

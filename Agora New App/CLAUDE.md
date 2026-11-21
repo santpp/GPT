@@ -99,6 +99,13 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
 - Entre una prueba y otra: 11 s de pausa y `delete from agora_rate_limits`.
 - Orden de las pruebas: `motor-puente.py duena@example.test 'Clave-Local-2026!'`, `permisos.py` (mismos argumentos), `enlaces.py`, `tareas.py`, `contactos.py`, `redes.py`, `campanas.py`, `tarjetas.py`, `ventas-importadas.py`, `estudiantes.py`, `venta-cuenta.py` (no se puede repetir), `ui-estados.py`, `menu-principal.py`, `herramientas.py`, `fixes-296.py`, `graficos-gestion.py`, `costos-editar.py`, `facturacion.py`, `facturacion-ui.py` (necesita la anterior), `fixes-2111.py`, `tipografia.py`, `atajos.py`, `fixes-2117.py`, `consumos-reparto.py`, `fixes-2120.py`, `fixes-2121.py`, `fixes-2123.py`, `ghl-conexion.php`.
 
+## Acceso y correo (2.13.0)
+
+- **Correo de Ágora:** sin SMTP. `MotorMobile::correo()` → `AccessChannel::sendMail()` envía por la subcuenta guardada en `agora_settings(0,'correo.canal')` (`connectionId`, `codigoAlEntrar`). La elige el dueño en Agencia (`agency/correo`, `agency/correo/probar`, solo Master). Cada destinatario queda como contacto interno con la etiqueta `agora-acceso-interno`.
+- **Entrar:** clave → si hay canal conectado y el navegador no es de confianza, código de 6 dígitos (`login/codigo`, `login/reenviar`). Códigos en `agora_access_codes` (solo HMAC con `app_key`, 10 min, 5 intentos, un uso). «Recuérdame» = sesión de 14 días + equipo de confianza (`agora_trusted_devices`, cookie `agora_device`, ligada a `auth_version`). Nunca por IP.
+- **¿Olvidaste tu clave?:** `clave/olvido` (respuesta igual exista o no el correo) y `clave/restablecer` (código de 15 min; sube `auth_version`, borra sesiones y equipos de confianza).
+- Si la subcuenta que envía se desconecta, se entra solo con la clave. Las pruebas dejan el canal apagado (`tests/acceso-correo.py`, `tests/acceso-ui.py`).
+
 ## Venta ganada (2.12.13)
 
 - Un solo flujo: «¿Venta ganada?» (Bandeja y ficha del contacto) → `window.agoraGanar` elige la oportunidad → al quedar ganada, `vgInterceptar`/`vgGanada` abre el formulario de venta (`vgAbrir`), el mismo de Ventas registradas. No se pide el valor aparte; el formulario lo guarda en la oportunidad. Las ganadas sin venta son «ventas por completar».
