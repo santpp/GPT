@@ -17,7 +17,7 @@ JS="""()=>{const m=document.querySelector('main');const out={fam:{},h1:[],sec:[]
  for(const e of m.querySelectorAll('*')){if(!vis(e))continue;if(![...e.childNodes].some(n=>n.nodeType===3&&n.textContent.trim()))continue;
    const f=getComputedStyle(e).fontFamily.split(',')[0].replace(/["']/g,'').trim();out.fam[f]=(out.fam[f]||0)+1;}
  const take=(k,s)=>m.querySelectorAll(s).forEach(e=>{if(vis(e))out[k].push(px(e))});
- take('h1','h1');take('sec','h2.t-sec,h2.hx-sec,#manual h2');take('pan','.pf-sec-h h2,h2.t-panel,#inicio-resumen-t');
+ take('h1','h1');take('sec','h2.t-sec,h2.hx-sec,#manual h2,#inicio-resumen-t');take('pan','.pf-sec-h h2,h2.t-panel');
  take('t','.ag-resumen-t,.micro > h3,.inicio-resumen-l');take('v','.ag-resumen-v,.micro .t-metric,.inicio-resumen-v');
  take('b','.mod-h .btn,.inicio-resumen-h .btn,#period-btn');return out}"""
 def recorrer(pg,ancho):
