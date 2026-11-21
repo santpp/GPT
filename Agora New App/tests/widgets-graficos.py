@@ -49,7 +49,7 @@ with sync_playwright() as p:
         pg.click('.modal [data-close] >> nth=-1');pg.wait_for_timeout(300)
         pg.click('.wg-graf[data-wg-id=dona001] [data-wg-det]');pg.wait_for_selector('.wg-det-v');pg.click('.modal [data-close] >> nth=-1')
         # editor: tipos, series, «solo la administración» y copiar
-        pg.locator('section.wg-g [data-wg-abrir]').click();pg.wait_for_selector('[data-wg-visible]')
+        abrir_ed(pg);pg.wait_for_selector('[data-wg-visible]')
         pg.select_option('[data-wg-nuevo]','mes.vendido');pg.wait_for_timeout(200)
         pg.select_option('.wg-item.is-open [data-k=tipo]','area');pg.wait_for_timeout(200)
         ok(pg.locator('.wg-item.is-open [data-k=meses]').count()==1 and pg.locator('.wg-item.is-open [data-k=comparar]').count()==0 and pg.locator('.wg-item.is-open [data-k=sem]').count()==0,'al elegir un gráfico aparecen «Meses» y las series; la comparación y el semáforo son de las cifras')
@@ -63,7 +63,7 @@ with sync_playwright() as p:
         ok(pg.locator('section.wg .wg-cel, section.wg-g .wg-graf').count()==0,'el ejecutivo no ve un tablero que es solo de la administración')
         pg.close()
         pg=entrar(br,'admin.asocim@agora.test');pg.goto(B+'/costos');pg.wait_for_timeout(5000)
-        pg.click('section.wg [data-wg-abrir]');pg.wait_for_selector('[data-wg-copiar]')
+        abrir_ed(pg);pg.wait_for_selector('[data-wg-copiar]')
         pg.select_option('[data-wg-copiar]','ventas');pg.wait_for_timeout(1200)
         ok(pg.locator('.wg-item').count()==6,'«Copiar los widgets de otro módulo» trae los 6 de Ventas')
         pg.click('[data-wg-guardar]');pg.wait_for_timeout(6000)

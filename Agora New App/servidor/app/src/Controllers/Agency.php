@@ -62,11 +62,14 @@ final class Agency {
   $actual=$this->db->setting(0,'correo.canal',null);$actual=is_array($actual)?$actual:[];
   if($m==='PUT'){
    $id=($b['connectionId']??null)===null||$b['connectionId']===''?null:Http::integer($b['connectionId'],1,PHP_INT_MAX);
-   if($id){$ok=$this->db->one("SELECT t.id FROM agora_tenants t JOIN agora_ghl_connections g ON g.tenant_id=t.id WHERE t.id=? AND g.status='conectada'",[$id]);if(!$ok)Http::fail('Esa subcuenta no está conectada con su cuenta.',422);}
+   // 2.18.0: una conexión guardada pero sin probar se prueba aquí mismo (antes no aparecía en la lista).
+   if($id){$g=$this->db->one('SELECT g.status FROM agora_tenants t JOIN agora_ghl_connections g ON g.tenant_id=t.id WHERE t.id=?',[$id]);
+    if(!$g)Http::fail('Esa subcuenta no tiene conexión con su cuenta.',422);
+    if($g['status']!=='conectada'){try{$r=$this->ghl()->test($id);}catch(\Agora\Core\HttpError $e){throw $e;}catch(\Throwable){Http::fail('La conexión de esa subcuenta no responde: vuelve a escribir su token en la ficha de la subcuenta.',422);}if(($r['estado']??'')!=='conectada')Http::fail('La conexión de esa subcuenta no responde: '.($r['error']??'revisa el token en la ficha de la subcuenta.'),422);}}
    $actual=['connectionId'=>$id,'codigoAlEntrar'=>($b['codigoAlEntrar']??true)!==false];
    $this->db->saveSetting(0,'correo.canal',$actual);$this->auth->audit('correo.canal','agencia',(string)($id??''));
   }
-  $opciones=array_map(fn($r)=>['id'=>(int)$r['id'],'nombre'=>$r['name']],$this->db->all("SELECT t.id,t.name FROM agora_tenants t JOIN agora_ghl_connections g ON g.tenant_id=t.id WHERE g.status='conectada' ORDER BY t.name LIMIT 500"));
+  $opciones=array_map(fn($r)=>['id'=>(int)$r['id'],'nombre'=>$r['name'].($r['status']==='conectada'?'':' (se prueba al guardar)')],$this->db->all("SELECT t.id,t.name,g.status FROM agora_tenants t JOIN agora_ghl_connections g ON g.tenant_id=t.id ORDER BY g.status='conectada' DESC,t.name LIMIT 500"));
   return ['connectionId'=>isset($actual['connectionId'])?(int)$actual['connectionId']?:null:null,'codigoAlEntrar'=>($actual['codigoAlEntrar']??true)!==false,'opciones'=>$opciones];
  }
  public function correoProbar():array{

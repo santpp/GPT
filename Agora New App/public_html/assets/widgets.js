@@ -5,7 +5,7 @@
 (() => {
   'use strict';
   const H = () => window.AgoraHost;
-  const MODULOS = ['centro', 'inicio', 'comercial', 'oportunidades', 'tareas', 'equipo', 'publicidad', 'ventas', 'facturacion', 'costos', 'catalogo', 'tendencias', 'calidad', 'facturas', 'redes', 'productos'];
+  const MODULOS = ['inicio', 'comercial', 'oportunidades', 'tareas', 'equipo', 'publicidad', 'ventas', 'facturacion', 'costos', 'catalogo', 'tendencias', 'calidad', 'facturas', 'redes', 'productos'];
   const GRAF = ['linea', 'barras', 'area', 'dona', 'tabla'], SERIE = ['linea', 'barras', 'area'];
   const TIPOS = [['cifra', 'Cifra'], ['linea', 'Gráfico de línea'], ['barras', 'Gráfico de barras'], ['area', 'Gráfico de área'], ['dona', 'Dona (partes de un total)'], ['tabla', 'Tabla de los primeros']];
   /* Paleta categórica en orden fijo (validada para daltonismo, claro y oscuro). Más de 5 partes se juntan en «Otros». */
@@ -91,18 +91,18 @@
     if (gen !== st.gen || !sec.isConnected) return;
     st.tab[mod] = t;
     const cifras = t.widgets.filter(w => !esGraf(w)), grafs = t.widgets.filter(esGraf);
-    const boton = edita ? `<button class="btn" type="button" data-wg-abrir>${ic('edit')}${t.widgets.length ? 'Editar widgets' : 'Agregar widgets'}</button>` : '';
+    // 2.18.0 · Pedido del usuario: los widgets se crean y editan desde «Editar Dashboard» de cada módulo (no hay botón suelto).
     const soloAdm = t.visible === 'administracion' ? '<span class="sc wg-priv">Solo la administración</span>' : '';
-    sec.hidden = !cifras.length && !(edita && !grafs.length);
-    const cab = `<div class="wg-h"><h2 class="t-sec">Widgets del equipo${soloAdm}</h2>${boton}</div>`;
+    sec.hidden = !cifras.length;
+    const cab = soloAdm ? `<div class="wg-h wg-h-min">${soloAdm}</div>` : '';
     const cat = t.widgets.length ? await catalogo().catch(() => null) : null;
     if (gen !== st.gen || !sec.isConnected) return;
-    if (!t.widgets.length) sec.innerHTML = cab + '<p class="wg-vacio">Arma cifras y gráficos propios para este módulo: elige una cifra del sistema o crea una fórmula con tus datos.</p>';
+    if (!t.widgets.length) sec.innerHTML = '';
     else if (cifras.length) sec.innerHTML = cab + `<div class="ag-resumen-grid wg-grid" data-wg>${cifras.map(w => celda(w, {}, cat, edita)).join('')}</div>`;
     else sec.innerHTML = '';
     if (gsec) {
       gsec.hidden = !grafs.length;
-      gsec.innerHTML = grafs.length ? `<div class="wg-h"><h2 class="t-sec">Gráficos del equipo${soloAdm}</h2>${cifras.length ? (edita ? `<button class="btn" type="button" data-wg-abrir>${ic('edit')}Editar gráficos</button>` : '') : boton}</div><div class="wg-ggrid" data-wg>${grafs.map(w => tarjetaGraf(w, cat, edita)).join('')}</div>` : '';
+      gsec.innerHTML = grafs.length ? `<div class="wg-h"><h2 class="t-sec">Gráficos del equipo${soloAdm}</h2></div><div class="wg-ggrid" data-wg>${grafs.map(w => tarjetaGraf(w, cat, edita)).join('')}</div>` : '';
       enlazar(gsec, mod, t, cat); grafs.forEach(w => cargarGraf(gsec.querySelector(`[data-wg-id="${w.id}"]`), w, cat));
     }
     enlazar(sec, mod, t, cat); const g0 = sec.querySelector('[data-wg]'); if (g0) rellenar(g0);
@@ -127,6 +127,10 @@
   function montar(app) {
     const mod = H().modulo();
     vigia?.disconnect(); vigia = null;
+    if (mod === 'centro') { // Inicio: solo los avisos (los widgets viven en los tableros de cada módulo)
+      const ponerAv = () => { if (app.querySelector('section.wg-avisos')) return; const a = app.querySelector('.kpi-inicio') || app.querySelector('.inicio-resumen'); if (!a) return; const av = document.createElement('section'); av.className = 'wg-avisos'; av.hidden = true; a.before(av); avisos(av); };
+      ponerAv(); let t0 = 0; vigia = new MutationObserver(() => { clearTimeout(t0); t0 = setTimeout(() => { if (H().modulo() === 'centro') ponerAv(); }, 250); }); vigia.observe(app, {childList: true, subtree: true}); return;
+    }
     if (!MODULOS.includes(mod)) return;
     const ancla = () => { const c = [...app.querySelectorAll('.cel')].find(x => !x.closest('section.wg, .modal, .scrim')); return c?.parentElement || app.querySelector('.kpi-inicio, .mod-h'); };
     const fondo = () => app.querySelector('.view-enter') || app;
@@ -140,9 +144,20 @@
       sec = document.createElement('section'); sec.className = 'wg'; sec.hidden = true; sec.dataset.wgMod = mod;
       a.after(sec); pintar(sec, mod); return true;
     };
-    poner();
+    // módulos sin «Editar Dashboard» propio: se agrega uno en la cabecera que abre los widgets del equipo
+    const boton = () => {
+      if (!H().puedeEditar()) return;
+      const propio = [...app.querySelectorAll('button, a')].some(x => !x.matches('[data-wg-dashbtn]') && x.textContent.trim() === 'Editar Dashboard');
+      if (propio) { app.querySelector('[data-wg-dashbtn]')?.remove(); return; }
+      if (app.querySelector('[data-wg-dashbtn]')) return;
+      const h = app.querySelector('.mod-h'); if (!h) return;
+      let acts = h.querySelector(':scope > .acts'); if (!acts) { acts = document.createElement('div'); acts.className = 'acts'; h.append(acts); }
+      acts.insertAdjacentHTML('beforeend', `<button class="btn" type="button" data-wg-dashbtn>${ic('edit')}Editar Dashboard</button>`);
+      acts.querySelector('[data-wg-dashbtn]').onclick = async () => { try { if (!st.tab[mod]) st.tab[mod] = await api(`workspace/tableros?modulo=${enc(mod)}`); } catch {} editorTablero(mod); };
+    };
+    poner(); boton();
     let t = 0;
-    vigia = new MutationObserver(() => { clearTimeout(t); t = setTimeout(() => { if (H().modulo() === mod) poner(); }, 200); });
+    vigia = new MutationObserver(() => { clearTimeout(t); t = setTimeout(() => { if (H().modulo() === mod) { poner(); boton(); } }, 200); });
     vigia.observe(app, {childList: true, subtree: true, attributes: true, attributeFilter: ['data-cel']});
   }
   const repintar = mod => { const sec = document.querySelector(`section.wg[data-wg-mod="${mod}"]`); if (sec) pintar(sec, mod); };
@@ -278,8 +293,9 @@
         ${det.tipo === 'formula' ? `<dt>Fórmula</dt><dd><code class="wg-fx-ver">${colores(det.expresion)}</code></dd>` : ''}</dl>
         ${det.partes.length ? `<h3>Cada parte en ${esc(nombreMes(det.periodo))}</h3><table class="wg-tabla"><thead><tr><th>Parte</th><th>Valor</th></tr></thead><tbody>${det.partes.map(x => `<tr><td>${esc(x.nombre)}</td><td>${esc(fmt(x.valor, x.unidad))}${x.valor === null && x.motivo ? `<small>${esc(x.motivo)}</small>` : ''}</td></tr>`).join('')}</tbody></table>` : ''}
         ${filas.length ? `<h3>Últimos 6 meses</h3><table class="wg-tabla"><thead><tr><th>Mes</th><th>Valor</th></tr></thead><tbody>${filas.map(([mm, r]) => `<tr><td>${esc(nombreMes(mm))}</td><td>${esc(fmt(r.valor, u(r), w.decimales ?? 2))}${r.valor === null && r.motivo ? `<small>${esc(r.motivo)}</small>` : ''}</td></tr>`).join('')}</tbody></table>` : det.deHoy ? '<p class="wg-motivo">Es una cifra de hoy: no guarda historia por mes.</p>' : ''}
-        <div class="form-ft"><span class="grow"></span><button class="btn" type="button" data-close>Cerrar</button><button class="btn btn-cta" type="button" data-wg-csv>${ic('download')}Descargar</button></div>`;
+        <div class="form-ft">${det.tipo === 'formula' && H().puedeEditar() ? '<button class="btn" type="button" data-wg-obj>Buscar objetivo</button>' : ''}<span class="grow"></span><button class="btn" type="button" data-close>Cerrar</button><button class="btn btn-cta" type="button" data-wg-csv>${ic('download')}Descargar</button></div>`;
       caja.removeAttribute('aria-busy');
+      caja.querySelector('[data-wg-obj]')?.addEventListener('click', () => objetivo({id: +String(id).slice(2), nombre: det.nombre, formato: w.formato}, () => detalle(w, cat)));
       caja.querySelector('[data-wg-csv]').onclick = async () => {
         const n2 = new Intl.NumberFormat('es-VE', {minimumFractionDigits: 0, maximumFractionDigits: 4, useGrouping: false});
         const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, num = v => v === null || v === undefined ? '' : n2.format(v);
@@ -312,7 +328,7 @@
         <label class="fld">Copiar los widgets de otro módulo<select data-wg-copiar><option value="">Elige un módulo…</option>${otros.map(x => `<option value="${x}">${esc(h.nombreDe(x))}</option>`).join('')}</select></label></div>
       <ol class="pz-list wg-lista" data-wg-lista></ol>
       <div class="wg-add"><label class="fld grow"><span>Agregar una cifra o un gráfico</span><select data-wg-nuevo>${opcionesRef(cat)}</select></label>
-        <button class="btn" type="button" data-wg-formula>${ic('plus')}Nueva fórmula</button><button class="btn" type="button" data-wg-formulas>${ic('edit')}Fórmulas y variables</button></div>
+        <button class="btn" type="button" data-wg-formula>${ic('plus')}Nueva fórmula</button><button class="btn" type="button" data-wg-formulas>${ic('edit')}Fórmulas y variables</button><button class="btn" type="button" data-wg-plantillas>${ic('spark')}Plantillas</button></div>
       <p class="fld-err" role="alert"></p>
       <div class="form-ft"><button class="btn" type="button" data-wg-restablecer>${ic('refresh')}Restablecer</button><span class="grow"></span><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="button" data-wg-guardar>Guardar</button></div></div>`, {wide: true});
     const lista = m.querySelector('[data-wg-lista]'), err = m.querySelector('.fld-err');
@@ -340,7 +356,8 @@
             <label class="fld">Decimales<select data-k="decimales">${[0, 1, 2, 3, 4].map(d => `<option ${(w.decimales ?? 2) === d ? 'selected' : ''}>${d}</option>`).join('')}</select></label>
             ${graf ? '' : `<fieldset class="wg-semf"><label class="bx-check"><input type="checkbox" data-k="sem" ${w.semaforo?.activo ? 'checked' : ''}> Semáforo</label>
               ${w.semaforo?.activo ? `<label class="fld">En meta desde<input type="number" step="any" data-k="verde" value="${w.semaforo.verde ?? ''}"></label><label class="fld">Cerca desde<input type="number" step="any" data-k="ambar" value="${w.semaforo.ambar ?? ''}"></label>
-              <label class="fld">Mejor si es<select data-k="mejor"><option value="mas" ${w.semaforo.mejor !== 'menos' ? 'selected' : ''}>Más alto</option><option value="menos" ${w.semaforo.mejor === 'menos' ? 'selected' : ''}>Más bajo</option></select></label>` : ''}</fieldset>`}
+              <label class="fld">Mejor si es<select data-k="mejor"><option value="mas" ${w.semaforo.mejor !== 'menos' ? 'selected' : ''}>Más alto</option><option value="menos" ${w.semaforo.mejor === 'menos' ? 'selected' : ''}>Más bajo</option></select></label>
+              <label class="bx-check wg-alerta"><input type="checkbox" data-k="alerta" ${w.alerta ? 'checked' : ''}> Avisar en Inicio si queda en «Cerca» o «Bajo»</label>` : ''}</fieldset>`}
           </div>` : ''}</li>`;
       }).join('') : '<li class="pz-vacio">Todavía no hay widgets. Agrega el primero abajo.</li>';
       lista.querySelectorAll('[data-i]').forEach(li => {
@@ -364,6 +381,7 @@
           if (k === 'sem') { w.semaforo = v ? {activo: true, verde: w.semaforo?.verde ?? 100, ambar: w.semaforo?.ambar ?? 70, mejor: 'mas'} : {activo: false}; pintarLista(); return; }
           if (['verde', 'ambar'].includes(k)) { w.semaforo[k] = v === '' ? null : +v; return; }
           if (k === 'mejor') { w.semaforo.mejor = v; return; }
+          if (k === 'alerta') { w.alerta = !!v; return; }
           if (e.type === 'input' || el.tagName === 'INPUT') campo(w, k, v); else { campo(w, k, v); }
         });
       });
@@ -377,6 +395,7 @@
     };
     m.querySelector('[data-wg-formula]').onclick = () => editorFormula(null, () => editorTablero(mod, null, s), f => { s.ws.push({id: uid(), fuente: 'formula', ref: f.id, titulo: '', nota: '', tamano: 'chico', periodo: 'modulo', comparar: '', formato: 'auto', decimales: 2, semaforo: {activo: false}}); s.abierto = s.ws.at(-1).id; });
     m.querySelector('[data-wg-formulas]').onclick = () => gestor(() => editorTablero(mod, null, s));
+    m.querySelector('[data-wg-plantillas]').onclick = () => plantillas(mod, () => { delete st.tab[mod]; api(`workspace/tableros?modulo=${enc(mod)}`).then(t => { st.tab[mod] = t; editorTablero(mod); }).catch(() => H().closeModal()); });
     m.querySelector('[data-wg-visible]').onchange = e => { s.visible = e.target.value; };
     m.querySelector('[data-wg-copiar]').onchange = async e => {
       const x = e.target.value; if (!x) return; err.textContent = '';
@@ -486,7 +505,7 @@
     const h = H(); let cat; try { cat = await catalogo(true); } catch (e) { h.toast(e.message); return; }
     const vars = {}; (cat.variables || []).forEach(v => { (vars[v.nombre] ||= []).push(v); });
     const m = h.openModal(h.modalHead('Fórmulas y variables', 'Las fórmulas calculan con las cifras del sistema. Las variables son valores propios (una meta, un sueldo) que se pueden cambiar mes a mes.') + `<div class="wg-gestor">
-      <h3>Fórmulas</h3><ul class="pz-list">${(cat.formulas || []).map(f => `<li class="pz-item wg-g-item"><span><b>${esc(f.nombre)}</b><small class="wg-code">${esc(f.expresion)}</small></span><button class="btn btn-sm" type="button" data-fx="${f.id}">Editar</button></li>`).join('') || '<li class="pz-vacio">Todavía no hay fórmulas.</li>'}</ul>
+      <h3>Fórmulas</h3><ul class="pz-list">${(cat.formulas || []).map(f => `<li class="pz-item wg-g-item"><span><b>${esc(f.nombre)}</b><small class="wg-code">${esc(f.expresion)}</small></span><span class="wg-g-acc"><button class="btn btn-sm" type="button" data-fx-obj="${f.id}">Buscar objetivo</button><button class="btn btn-sm" type="button" data-fx="${f.id}">Editar</button></span></li>`).join('') || '<li class="pz-vacio">Todavía no hay fórmulas.</li>'}</ul>
       <button class="btn" type="button" data-fx-nueva>${ic('plus')}Nueva fórmula</button>
       <h3>Variables</h3><ul class="pz-list">${Object.entries(vars).map(([n, vs]) => `<li class="pz-item wg-g-item"><span><b>${esc(n)}</b><small>${vs.map(v => `${v.periodo ? esc(nombreMes(v.periodo)) : 'Todos los meses'}: ${esc(fmt(v.valor, v.unidad))}`).join(' · ')}</small></span>${vs.map(v => `<button class="btn btn-sm" type="button" data-var-borrar="${esc(n)}|${esc(v.periodo)}" title="Quitar ${esc(v.periodo ? nombreMes(v.periodo) : 'el valor general')}">Quitar ${esc(v.periodo ? v.periodo : 'general')}</button>`).join('')}</li>`).join('') || '<li class="pz-vacio">Todavía no hay variables.</li>'}</ul>
       <form class="wg-var" novalidate><label class="fld">Nombre<input name="nombre" maxlength="60" required placeholder="Sueldo base"></label><label class="fld">Tipo<select name="unidad"><option value="dinero">Dinero</option><option value="numero">Número</option><option value="porcentaje">Porcentaje</option></select></label>
@@ -498,6 +517,7 @@
     m.querySelector('[data-volver]').onclick = () => { volver ? volver() : H().closeModal(); };
     m.querySelector('[data-fx-nueva]').onclick = () => editorFormula(null, otra);
     m.querySelectorAll('[data-fx]').forEach(b => b.onclick = () => editorFormula((cat.formulas || []).find(f => f.id === +b.dataset.fx), otra));
+    m.querySelectorAll('[data-fx-obj]').forEach(b => b.onclick = () => objetivo((cat.formulas || []).find(f => f.id === +b.dataset.fxObj), otra));
     m.querySelectorAll('[data-var-borrar]').forEach(b => b.onclick = async () => { const [nombre, periodo] = b.dataset.varBorrar.split('|'); try { await api('workspace/variables', {method: 'DELETE', body: {nombre, periodo}}); st.cat = null; otra(); } catch (x) { err.textContent = x.message; } });
     m.querySelector('.wg-var').onsubmit = async e => {
       e.preventDefault(); const f = e.target; err.textContent = '';
@@ -506,5 +526,152 @@
     };
   }
 
-  window.AgoraWidgets = {montar, editorTablero, editorFormula, gestor, _fmt: fmt};
+  /* ---------- 2.18.0 · «Buscar objetivo»: qué valor necesita una variable para que la fórmula llegue a una meta ---------- */
+  async function objetivo(f, volver) {
+    const h = H(); let cat; try { cat = await catalogo(true); } catch (e) { h.toast(e.message); return; }
+    const vars = [...new Map((cat.variables || []).map(v => [v.nombre, v])).values()];
+    const p = h.periodo();
+    const m = h.openModal(h.modalHead('Buscar objetivo', `${esc(f.nombre)}: ¿cuánto tiene que valer una variable para llegar a la meta?`) + `<form class="form wg-obj" novalidate>
+      ${vars.length ? `<p class="wg-motivo">Ágora prueba valores de la variable hasta que «${esc(f.nombre)}» dé la meta en ${esc(nombreMes(p))}. No cambia nada hasta que tú lo guardes.</p>
+      <div class="wg-fx-fila"><label class="fld">Quiero que «${esc(f.nombre)}» dé<input name="meta" type="number" step="any" required placeholder="Meta"></label>
+        <label class="fld">Cambiando la variable<select name="variable">${vars.map(v => `<option>${esc(v.nombre)}</option>`).join('')}</select></label></div>
+      <p class="wg-prev" aria-live="polite" hidden></p><p class="fld-err" role="alert"></p>
+      <div class="form-ft"><span class="grow"></span><button class="btn" type="button" data-volver>${volver ? 'Volver' : 'Cerrar'}</button><button class="btn" type="button" data-guardar hidden>Guardar ese valor</button><button class="btn btn-cta" type="submit">Calcular</button></div>`
+      : `<p class="wg-vacio">Para buscar un objetivo hace falta una variable propia (una meta, un sueldo, un precio) que la fórmula use. Créala en «Fórmulas y variables».</p><div class="form-ft"><span class="grow"></span><button class="btn" type="button" data-volver>${volver ? 'Volver' : 'Cerrar'}</button></div>`}</form>`);
+    m.querySelector('[data-volver]').onclick = () => { volver ? volver() : h.closeModal(); };
+    if (!vars.length) return;
+    const form = m.querySelector('form'), prev = m.querySelector('.wg-prev'), err = m.querySelector('.fld-err'), guardar = m.querySelector('[data-guardar]');
+    let r = null;
+    form.onsubmit = async e => {
+      e.preventDefault(); err.textContent = ''; prev.hidden = true; guardar.hidden = true;
+      if (form.meta.value === '') { err.textContent = 'Escribe la meta.'; form.meta.focus(); return; }
+      const b = form.querySelector('[type=submit]'); h.busy(b, true, 'Calculando…');
+      try {
+        r = await api('workspace/formulas/objetivo', {method: 'POST', body: {id: f.id, variable: form.variable.value, meta: +form.meta.value, periodo: p}});
+        const fu = f.formato && f.formato !== 'auto' ? f.formato : r.unidad;
+        prev.hidden = false; prev.className = 'wg-prev is-ok';
+        prev.innerHTML = `Para que «${esc(r.formula)}» dé <b>${esc(fmt(r.meta, fu))}</b>, «${esc(r.variable)}» tiene que ser <b>${esc(fmt(r.valor, r.unidad))}</b>${r.actual !== null && r.actual !== undefined ? ` (hoy vale ${esc(fmt(r.actual, r.unidad))})` : ''}. Con ese valor da ${esc(fmt(r.resultado, fu))}.`;
+        guardar.hidden = !h.puedeEditar(); guardar.textContent = `Guardar ${fmt(r.valor, r.unidad)} en «${r.variable}» para ${nombreMes(p)}`;
+      } catch (x) { err.textContent = x.message; }
+      h.busy(b, false);
+    };
+    guardar.onclick = async () => {
+      if (!r) return; h.busy(guardar, true, 'Guardando…');
+      try { await api('workspace/variables', {method: 'PUT', body: {nombre: r.variable, unidad: r.unidad, valor: r.valor, periodo: p}}); st.cat = null; h.toast(`«${r.variable}» quedó en ${fmt(r.valor, r.unidad)} para ${nombreMes(p)}.`); volver ? volver() : h.closeModal(); document.querySelectorAll('section.wg').forEach(sec => pintar(sec, sec.dataset.wgMod)); }
+      catch (x) { h.busy(guardar, false); err.textContent = x.message; }
+    };
+    form.meta.focus();
+  }
+
+  /* ---------- 2.18.0 · Avisos de los widgets en Inicio (dentro de Ágora: los avisos al teléfono siguen en pausa) ---------- */
+  async function avisos(caja) {
+    let r; try { r = await api(`workspace/alertas?periodo=${H().mesActual()}&hoy=${hoy()}${H().zona()}`); } catch { caja.hidden = true; return; }
+    if (!caja.isConnected) return;
+    if (!r.alertas.length) { caja.hidden = true; return; }
+    caja.hidden = false;
+    caja.innerHTML = `<div class="wg-h"><h2 class="t-sec">Avisos de los widgets</h2></div><ul class="wg-av-l">${r.alertas.map(a => `<li class="wg-av ${a.estado === 'bajo' ? 'is-bajo' : 'is-cerca'}"><span class="sc ${a.estado === 'bajo' ? 'sc-bad' : 'sc-warn'}">${a.estado === 'bajo' ? 'Bajo' : 'Cerca'}</span>
+      <span class="wg-av-t"><b>${esc(a.titulo)}</b><small>${esc(H().nombreDe(a.modulo) || a.modulo)} · ${esc(nombreMes(a.periodo))} · meta ${a.mejor === 'menos' ? 'hasta' : 'desde'} ${esc(fmt(a.verde, a.unidad))}</small></span><b class="wg-av-v">${esc(fmt(a.valor, a.unidad))}</b>
+      ${H().rutaDe(a.modulo) ? `<a class="btn btn-sm" href="${esc(H().rutaDe(a.modulo))}">Ver</a>` : ''}</li>`).join('')}</ul>`;
+  }
+
+  /* ---------- 2.18.0 · Plantillas por rubro ---------- */
+  const RUBROS = ['Educación', 'Telecomunicaciones / ISP', 'Servicios profesionales', 'Comercio', 'Salud', 'Inmobiliario', 'Otro'];
+  async function plantillas(mod, volver) {
+    const h = H(); let d; try { d = await api('workspace/plantillas'); } catch (e) { h.toast(e.message); return; }
+    const tarjeta = x => `<li class="wg-pl"><div class="wg-pl-h"><b>${esc(x.nombre)}</b><span class="sc">${esc(x.rubro || 'Todos los rubros')}</span>${x.propia ? '' : '<span class="sc sc-info">Incluida en Ágora</span>'}</div>
+      <p>${esc(x.descripcion)}</p><small>${x.widgets} widgets en ${x.modulos.map(mm => esc(h.nombreDe(mm) || mm)).join(', ')}${x.formulas.length ? ` · fórmulas: ${x.formulas.map(esc).join(', ')}` : ''}</small>
+      <div class="wg-pl-acc">${d.puedeAplicar ? `<button class="btn btn-sm btn-cta" type="button" data-pl-aplicar="${esc(x.id)}" data-modo="agregar">Agregar a mis widgets</button><button class="btn btn-sm" type="button" data-pl-aplicar="${esc(x.id)}" data-modo="reemplazar">Reemplazar</button>` : ''}${x.propia && d.puedeCrear ? `<button class="btn btn-sm" type="button" data-pl-borrar="${esc(x.id)}">Borrar</button>` : ''}</div></li>`;
+    const del = d.plantillas.filter(x => x.delRubro), otras = d.plantillas.filter(x => !x.delRubro);
+    const m = h.openModal(h.modalHead('Plantillas de widgets', `Tableros listos por rubro. Esta subcuenta es de ${esc(d.rubro || 'rubro sin definir')}.`) + `<div class="wg-pls">
+      <h3>Para ${esc(d.rubro || 'cualquier rubro')}</h3><ul class="pz-list">${del.map(tarjeta).join('') || '<li class="pz-vacio">No hay plantillas para este rubro todavía.</li>'}</ul>
+      ${otras.length ? `<details><summary>Otros rubros (${otras.length})</summary><ul class="pz-list">${otras.map(tarjeta).join('')}</ul></details>` : ''}
+      ${d.puedeCrear ? `<form class="wg-pl-nueva" novalidate><h3>Guardar los widgets de esta subcuenta como plantilla</h3><p class="wg-motivo">Se guardan los tableros, las fórmulas que usan y sus variables (con su valor general). Nunca datos de clientes.</p>
+        <div class="wg-fx-fila"><label class="fld">Nombre<input name="nombre" maxlength="80" required placeholder="Por ejemplo: Academia"></label><label class="fld">Rubro<select name="rubro"><option value="">Todos los rubros</option>${RUBROS.map(x => `<option ${x === d.rubro ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label></div>
+        <label class="fld">Descripción<input name="descripcion" maxlength="240"></label><button class="btn" type="submit">Guardar como plantilla</button></form>` : ''}
+      <p class="fld-err" role="alert"></p><div class="form-ft"><span class="grow"></span><button class="btn" type="button" data-volver>${volver ? 'Volver' : 'Cerrar'}</button></div></div>`, {wide: true});
+    const err = m.querySelector('.fld-err'), otra = () => plantillas(mod, volver);
+    m.querySelector('[data-volver]').onclick = () => { volver ? volver() : h.closeModal(); };
+    m.querySelectorAll('[data-pl-aplicar]').forEach(b => b.onclick = () => {
+      const x = d.plantillas.find(y => y.id === b.dataset.plAplicar), reemplaza = b.dataset.modo === 'reemplazar';
+      h.confirmar(reemplaza ? 'Reemplazar con la plantilla' : 'Agregar la plantilla', reemplaza ? `Los widgets de ${x.modulos.map(mm => esc(h.nombreDe(mm) || mm)).join(', ')} se cambian por los de «${esc(x.nombre)}». Los demás módulos no se tocan.` : `Se agregan los widgets de «${esc(x.nombre)}» a los que ya tienes (hasta 24 por módulo).`, reemplaza ? 'Reemplazar' : 'Agregar', async () => {
+        const r = await api('workspace/plantillas/aplicar', {method: 'POST', body: {id: x.id, modo: b.dataset.modo}}); st.cat = null;
+        h.toast(`Plantilla aplicada en ${r.modulos.length} ${r.modulos.length === 1 ? 'módulo' : 'módulos'}${r.formulasCreadas ? ` y ${r.formulasCreadas} fórmulas nuevas` : ''}.${r.avisos.length ? ' ' + r.avisos[0] : ''}`);
+        document.querySelectorAll('section.wg').forEach(sec => pintar(sec, sec.dataset.wgMod));
+      }, reemplaza);
+    });
+    m.querySelectorAll('[data-pl-borrar]').forEach(b => b.onclick = () => h.confirmar('Borrar plantilla', 'Las subcuentas que ya la aplicaron conservan sus widgets.', 'Borrar', async () => { await api('workspace/plantillas', {method: 'DELETE', body: {id: b.dataset.plBorrar}}); h.toast('Plantilla borrada.'); setTimeout(otra, 0); }, true));
+    m.querySelector('.wg-pl-nueva')?.addEventListener('submit', async e => {
+      e.preventDefault(); const f = e.target; err.textContent = '';
+      if (f.nombre.value.trim().length < 3) { err.textContent = 'Escribe un nombre de al menos 3 letras.'; f.nombre.focus(); return; }
+      try { const r = await api('workspace/plantillas', {method: 'POST', body: {nombre: f.nombre.value.trim(), rubro: f.rubro.value, descripcion: f.descripcion.value.trim()}}); h.toast(`Plantilla guardada: ${r.modulos.length} módulos, ${r.formulas} fórmulas.`); otra(); }
+      catch (x) { err.textContent = x.message; }
+    });
+  }
+
+  /* ---------- 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas ---------- */
+  async function consolidado(caja) {
+    if (!caja) return;
+    let cat; try { cat = (await api('agency/consolidado')).catalogo; } catch (e) { caja.innerHTML = `<p class="wg-motivo">${esc(e.message)}</p>`; return; }
+    let sel; try { sel = JSON.parse(localStorage.getItem('agora.consolidado') || 'null'); } catch {}
+    if (!Array.isArray(sel) || !sel.length) sel = ['mes.vendido', 'mes.cierres', 'ventas.cobrado', 'ventas.por_cobrar'].filter(id => cat.some(c => c.id === id));
+    let periodo = H().mesActual(), datos = null;
+    const grupos = {}; cat.forEach(c => { (grupos[c.grupo] ||= []).push(c); });
+    caja.innerHTML = `<div class="wg-con-f"><label class="fld">Mes<input type="month" data-con-mes value="${periodo}"></label>
+      <details class="wg-con-cifras"><summary>Cifras (${sel.length} de 8)</summary><div>${Object.entries(grupos).map(([g, cs]) => `<fieldset><legend>${esc(g)}</legend>${cs.map(c => `<label class="bx-check"><input type="checkbox" value="${esc(c.id)}" ${sel.includes(c.id) ? 'checked' : ''}> ${esc(c.nombre)}</label>`).join('')}</fieldset>`).join('')}</div></details>
+      <button class="btn" type="button" data-con-csv>${ic('download')}Descargar</button></div><div class="wg-con-t" aria-live="polite"><p class="wg-motivo">Cargando…</p></div>`;
+    const tabla = caja.querySelector('.wg-con-t');
+    const SIMB = mon => SIM[mon] || mon;
+    const fmtM = (v, u, mon) => v === null || v === undefined ? '—' : u === 'dinero' ? `${SIMB(mon)} ${NF(2).format(v)}` : fmt(v, u);
+    const pintarT = () => {
+      if (!datos) return;
+      const monedas = [...new Set(datos.filas.map(f => f.moneda))];
+      const tot = monedas.map(mon => ({mon, v: Object.fromEntries(datos.metricas.map(mm => { const vs = datos.filas.filter(f => f.moneda === mon).map(f => f.valores[mm.id]?.valor).filter(v => v !== null && v !== undefined); return [mm.id, mm.unidad === 'porcentaje' || !vs.length ? null : vs.reduce((a, b) => a + b, 0)]; }))}));
+      tabla.innerHTML = `<div class="tw full"><table class="wg-tabla wg-con-tabla" data-wg><thead><tr><th>Subcuenta</th>${datos.metricas.map(mm => `<th>${esc(mm.nombre)}</th>`).join('')}</tr></thead><tbody>
+        ${datos.filas.map(f => `<tr><td><b>${esc(f.nombre)}</b><small>${esc(f.rubro || 'Sin rubro')}${f.estado !== 'activa' ? ' · ' + esc(f.estado) : ''}</small></td>${datos.metricas.map(mm => { const r = f.valores[mm.id] || {}; return `<td>${esc(fmtM(r.valor, mm.unidad, f.moneda))}${r.valor === null && r.motivo ? `<small>${esc(r.motivo)}</small>` : ''}</td>`; }).join('')}</tr>`).join('')}</tbody>
+        <tfoot>${tot.map(t => `<tr><th>Total${monedas.length > 1 ? ' en ' + esc(t.mon) : ''}</th>${datos.metricas.map(mm => `<th>${esc(mm.unidad === 'porcentaje' ? '—' : fmtM(t.v[mm.id], mm.unidad, t.mon))}</th>`).join('')}</tr>`).join('')}</tfoot></table></div>
+        ${monedas.length > 1 ? '<p class="wg-motivo">Las subcuentas tienen monedas distintas: los totales van por moneda, sin convertir.</p>' : ''}
+        ${(() => { const mm = datos.metricas[0], mon = monedas[0], fs = datos.filas.filter(f => f.moneda === mon && f.valores[mm.id]?.valor !== null && f.valores[mm.id]?.valor !== undefined).sort((a, b) => b.valores[mm.id].valor - a.valores[mm.id].valor), max = Math.max(...fs.map(f => Math.abs(f.valores[mm.id].valor)), 0);
+          return fs.length && max ? `<section class="wg-con-g"><h3>${esc(mm.nombre)} por subcuenta · ${esc(nombreMes(datos.periodo))}</h3><ul>${fs.map(f => `<li><span>${esc(f.nombre)}</span><span class="wg-barra"><i style="width:${Math.abs(f.valores[mm.id].valor) / max * 100}%"></i></span><b>${esc(fmtM(f.valores[mm.id].valor, mm.unidad, f.moneda))}</b></li>`).join('')}</ul></section>` : ''; })()}`;
+    };
+    const cargar = async () => {
+      tabla.setAttribute('aria-busy', 'true');
+      try { datos = await api(`agency/consolidado?periodo=${periodo}&ids=${enc(sel.join(','))}`); pintarT(); }
+      catch (e) { tabla.innerHTML = `<p class="wg-motivo">${esc(e.message)}</p>`; }
+      tabla.removeAttribute('aria-busy');
+    };
+    caja.querySelector('[data-con-mes]').onchange = e => { if (/^\d{4}-\d{2}$/.test(e.target.value)) { periodo = e.target.value; cargar(); } };
+    caja.querySelectorAll('.wg-con-cifras input').forEach(i => i.onchange = () => {
+      const marcadas = [...caja.querySelectorAll('.wg-con-cifras input:checked')].map(x => x.value);
+      if (marcadas.length > 8 || !marcadas.length) { i.checked = !i.checked; H().toast(marcadas.length ? 'Se comparan hasta 8 cifras a la vez.' : 'Deja al menos una cifra.'); return; }
+      sel = marcadas; try { localStorage.setItem('agora.consolidado', JSON.stringify(sel)); } catch {}
+      caja.querySelector('.wg-con-cifras summary').textContent = `Cifras (${sel.length} de 8)`; cargar();
+    });
+    caja.querySelector('[data-con-csv]').onclick = () => {
+      if (!datos) return;
+      const n2 = new Intl.NumberFormat('es-VE', {maximumFractionDigits: 4, useGrouping: false}), q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      const lineas = [['Consolidado de la agencia', nombreMes(datos.periodo)], [], ['Subcuenta', 'Rubro', 'Moneda', ...datos.metricas.map(mm => mm.nombre)], ...datos.filas.map(f => [f.nombre, f.rubro, f.moneda, ...datos.metricas.map(mm => { const v = f.valores[mm.id]?.valor; return v === null || v === undefined ? '' : n2.format(v); })])];
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + lineas.map(l => l.map(q).join(';')).join('\r\n')], {type: 'text/csv;charset=utf-8'})); a.download = `Consolidado ${datos.periodo}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    };
+    cargar();
+  }
+
+  /* 2.18.0 · «Editar Dashboard» de cada módulo trae la entrada a los widgets del equipo (cifras, fórmulas, gráficos y plantillas). */
+  const capa = () => document.getElementById('layer');
+  function enganchar() {
+    const l = capa(); if (!l || l._wg) return; l._wg = true;
+    new MutationObserver(() => {
+      const mod = H()?.modulo(); if (!MODULOS.includes(mod) || !H().puedeEditar()) return;
+      l.querySelectorAll('.modal').forEach(m => {
+        if (m.querySelector('.wg-dash') || m.querySelector('.wg-ed, .wg-fx, .wg-gestor, .wg-pls, .wg-obj, .wg-detalle')) return;
+        const t = m.querySelector('.modal-h h2')?.textContent.trim(); if (t !== 'Editar Dashboard') return;
+        const n = (st.tab[mod]?.widgets || []).length;
+        m.querySelector('.modal-h').insertAdjacentHTML('afterend', `<div class="wg-dash"><div><b>Widgets del equipo</b><small>${n ? `${n} ${n === 1 ? 'widget' : 'widgets'} en este tablero.` : 'Cifras propias, fórmulas, gráficos y plantillas por rubro para este tablero.'} Los ve todo el equipo.</small></div><button class="btn btn-cta" type="button" data-wg-desde-dash>${ic('plus')}${n ? 'Editar widgets' : 'Agregar widgets'}</button></div>`);
+        m.querySelector('[data-wg-desde-dash]').onclick = async () => { try { if (!st.tab[mod]) st.tab[mod] = await api(`workspace/tableros?modulo=${enc(mod)}`); } catch {} editorTablero(mod); };
+      });
+    }).observe(l, {childList: true, subtree: true});
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', enganchar); else enganchar();
+  setTimeout(enganchar, 1500);
+
+  window.AgoraWidgets = {montar, editorTablero, editorFormula, gestor, objetivo, plantillas, consolidado, _fmt: fmt};
 })();

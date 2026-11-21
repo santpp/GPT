@@ -1045,3 +1045,39 @@ main#app#app .cel:not(:has(> .cel-acc)) :is(.ag-resumen-t,h3,.inicio-resumen-l,.
 .op-conf [data-ok]:disabled{opacity:.45;cursor:not-allowed}
 .ctx button.is-danger,.pop button.is-danger{color:var(--ag-1,#AD103C)}
 .acc-usr-acc{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+
+/* 2.18.0 · Avisos de los widgets, buscar objetivo, plantillas por rubro y consolidado de la agencia */
+main#app section.wg-avisos{margin:18px 0 8px}
+main#app .wg-av-l{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+main#app .wg-av{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--line-2,#d4d4da);border-left:4px solid var(--warn,#B8860F);border-radius:12px;background:var(--surface,#fff)}
+main#app .wg-av.is-bajo{border-left-color:var(--ag-1,#AD103C)}
+main#app .wg-av-t{display:flex;flex-direction:column;min-width:0}
+main#app .wg-av-t small{color:var(--ink-3,#7a7a85)}
+main#app .wg-av-v{font-variant-numeric:tabular-nums}
+.wg-pls h3{margin:14px 0 8px;font-size:1rem}
+.wg-pl{display:flex;flex-direction:column;gap:6px;list-style:none;padding:12px 14px;margin:0 0 8px;border:1px solid var(--line-2,#d4d4da);border-radius:12px;background:var(--surface,#fff)}
+.wg-pl-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.wg-pl p{margin:0;color:var(--ink-2,#5b5b66)}.wg-pl small{color:var(--ink-3,#7a7a85)}
+.wg-pl-acc{display:flex;gap:6px;flex-wrap:wrap}
+.wg-pl-nueva{margin-top:16px;padding-top:12px;border-top:1px solid var(--line,#e6e6ea);display:grid;gap:10px}
+.wg-pls details summary{cursor:pointer;margin:12px 0 8px;font-weight:600}
+.wg-g-acc{display:flex;gap:6px;flex-wrap:wrap}
+.wg-obj .wg-prev b{white-space:nowrap}
+.wg-con-f{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin:0 0 14px}
+.wg-con-cifras{flex:1 1 280px}
+.wg-con-cifras summary{cursor:pointer;padding:10px 12px;border:1px solid var(--line-2,#d4d4da);border-radius:10px}
+.wg-con-cifras > div{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px 16px;padding:12px 4px}
+.wg-con-cifras fieldset{border:0;margin:0;padding:0;display:grid;gap:4px}.wg-con-cifras legend{font-weight:600;font-size:.82rem;color:var(--ink-3,#7a7a85);margin-bottom:4px}
+.wg-con-tabla td small{display:block}
+.wg-con-tabla tfoot th{border-top:2px solid var(--line-2,#d4d4da);padding:8px;text-align:left}.wg-con-tabla tfoot th:not(:first-child){text-align:right}
+.wg-con-tabla td,.wg-con-tabla th{text-align:right}.wg-con-tabla td:first-child,.wg-con-tabla thead th:first-child{text-align:left}
+.wg-con-g{margin-top:22px}.wg-con-g h3{font-size:1rem;margin:0 0 10px}
+.wg-con-g ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.wg-con-g li{display:grid;grid-template-columns:minmax(110px,200px) 1fr auto;gap:12px;align-items:center}
+.wg-con-g .wg-barra{margin:0;height:10px}
+@media (max-width:640px){main#app .wg-av{grid-template-columns:auto 1fr;}main#app .wg-av-v{grid-column:2}.wg-con-g li{grid-template-columns:1fr auto}.wg-con-g li .wg-barra{grid-column:1/-1;grid-row:2}}
+/* 2.18.0 · entrada a los widgets dentro de «Editar Dashboard» */
+.wg-dash{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 14px;padding:12px 14px;border:1px solid var(--line-2,#d4d4da);border-left:4px solid var(--ag-1,#AD103C);border-radius:12px;background:var(--surface,#fff)}
+.wg-dash > div{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 220px}.wg-dash small{color:var(--ink-3,#7a7a85)}
+main#app section.wg:not([hidden]){margin-top:14px}
+main#app .wg-h-min{margin:0 0 6px}

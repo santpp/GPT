@@ -14,10 +14,16 @@ use Agora\Controllers\Api;
  *   GET/PUT/DELETE  workspace/tableros           el tablero del equipo de un módulo (2.15.0), con gráficos y «quién lo ve» (2.16.0)
  *   GET    workspace/metricas/serie?ids=&hasta=&meses=   valores mes a mes para los gráficos (2.16.0 · fase 4)
  *   GET    workspace/metricas/detalle?id=&periodo=       qué mide una cifra y, si es fórmula, el valor de cada parte (2.16.0 · fase 5)
+ *   POST   workspace/formulas/objetivo                   «Buscar objetivo»: qué valor necesita una variable para que la fórmula llegue a una meta (2.18.0)
+ *   GET    workspace/alertas?periodo=                    widgets con aviso que están en «Bajo» o «Cerca» (2.18.0)
+ *   GET    agency/consolidado?ids=&periodo=              las mismas cifras en todas las subcuentas de la agencia (2.18.0)
+ *   workspace/plantillas…                                plantillas por rubro (2.18.0, ver Plantillas.php)
  * Quién crea: Administración, Supervisión y dueños (permiso widgets.editar). El resto ve los valores.
  */
 final class Widgets {
  private array $cache=[];private int $vueltas=0;
+ /** 2.18.0 · valores fijados a mano para «Buscar objetivo»: [clave de la variable => valor] en el mes $fijoPer. */
+ private array $fijos=[];private string $fijoPer='';
  private const MODS=['MES ANTERIOR'=>-1,'ANO PASADO'=>-12,'MISMO MES DEL ANO PASADO'=>-12];
  public function __construct(private Api $api){}
  private function t():int{return (int)$this->api->a->tenant;}
@@ -28,6 +34,9 @@ final class Widgets {
   if($p==='workspace/metricas'&&$m==='GET')return $this->valores();
   if($p==='workspace/metricas/serie'&&$m==='GET')return $this->serie();
   if($p==='workspace/metricas/detalle'&&$m==='GET')return $this->detalle();
+  if($p==='workspace/formulas/objetivo'&&$m==='POST')return $this->objetivo($b);
+  if($p==='workspace/alertas'&&$m==='GET')return $this->alertas();
+  if(str_starts_with($p,'workspace/plantillas'))return (new Plantillas($this->api,$this))->route($p,$m,$b);
   if($p==='workspace/formulas/probar'&&$m==='POST')return $this->probar($b);
   if($p==='workspace/formulas'){if($m==='GET')return ['formulas'=>$this->formulas()];if($m==='POST')return $this->guardarFormula($b,null);if($m==='PUT')return $this->guardarFormula($b,Http::integer($b['id']??0,1,PHP_INT_MAX));if($m==='DELETE')return $this->borrarFormula(Http::integer($b['id']??$_GET['id']??0,1,PHP_INT_MAX));}
   if($p==='workspace/tableros'){if($m==='GET')return $this->tablero((string)($_GET['modulo']??''));if($m==='PUT')return $this->guardarTablero($b);if($m==='DELETE')return $this->borrarTablero((string)($b['modulo']??$_GET['modulo']??''));}
@@ -98,6 +107,7 @@ final class Widgets {
     $r=Formula::evaluar(Formula::parse($f['expresion']),$this->resolver($p,[...$pila,$clave]),$this->ctx($p));
     return self::conFormato($r,$f['formato']);
    }
+   if(array_key_exists($clave,$this->fijos)&&$p===$this->fijoPer){$x=$this->variable($clave,$p);return ['v'=>$this->fijos[$clave],'u'=>$x&&$x['v']!==null?$x['u']:($this->unidadVariable($clave)??'numero'),'m'=>''];}
    if($v=$this->variable($clave,$p))return $v;
    throw new FormulaError('No hay ninguna cifra, fórmula o variable llamada «'.$nombre.'».',$pos);
   };
@@ -109,7 +119,7 @@ final class Widgets {
   catch(FormulaError $e){return ['valor'=>null,'unidad'=>'numero','motivo'=>'La fórmula tiene un error: '.$e->getMessage()];}
  }
  /** Valor de «mes.vendido» o «f:12» en un mes. */
- private function valorDe(string $id,string $periodo):array{
+ public function valorDe(string $id,string $periodo):array{
   if(isset(Metricas::LISTA[$id])){$r=$this->metrica($id,$periodo);return ['valor'=>$r['v'],'unidad'=>$r['u'],'motivo'=>$r['m']];}
   if(preg_match('/^f:(\d{1,12})$/D',$id,$mm)&&($f=$this->db()->one('SELECT * FROM agora_widget_formulas WHERE id=? AND tenant_id=?',[(int)$mm[1],$this->t()]))){$this->vueltas=0;return $this->calcularFormula($f,$periodo);}
   return ['valor'=>null,'unidad'=>'numero','motivo'=>'Esa cifra ya no existe.'];
@@ -135,6 +145,71 @@ final class Widgets {
     try{$r=$res($nom,$mod,0);$partes[$k]=['nombre'=>$k,'valor'=>$r['v'],'unidad'=>$r['u'],'motivo'=>$r['m']];}catch(FormulaError $e){$partes[$k]=['nombre'=>$k,'valor'=>null,'unidad'=>'numero','motivo'=>$e->getMessage()];}}
   }catch(FormulaError){}
   return ['id'=>$id,'tipo'=>'formula','nombre'=>$f['nombre'],'descripcion'=>$f['descripcion'],'expresion'=>$f['expresion'],'grupo'=>'Fórmulas del equipo','deHoy'=>false,'periodo'=>$periodo,'valor'=>$this->valorDe($id,$periodo),'partes'=>array_values($partes)];
+ }
+ private function unidadVariable(string $clave):?string{$r=$this->db()->one('SELECT unidad FROM agora_widget_variables WHERE tenant_id=? AND nombre_clave=? LIMIT 1',[$this->t(),$clave]);return $r['unidad']??null;}
+ /** 2.18.0 · «Buscar objetivo»: el valor que necesita una variable para que la fórmula dé la meta (secante y, si no, bisección). */
+ private function objetivo(array $b):array{
+  $id=Http::integer($b['id']??0,1,PHP_INT_MAX);$f=$this->db()->one('SELECT * FROM agora_widget_formulas WHERE id=? AND tenant_id=?',[$id,$this->t()]);if(!$f)Http::fail('Esa fórmula no existe.',404);
+  $var=is_string($b['variable']??null)?trim($b['variable']):'';$clave=Metricas::clave($var);$unidad=$this->unidadVariable($clave);
+  if($var===''||$unidad===null)Http::fail('Elige una de tus variables (por ejemplo, una meta o un sueldo).',422);
+  if(!isset($b['meta'])||!is_numeric($b['meta'])||abs((float)$b['meta'])>1e14)Http::fail('Escribe la meta como un número.',422);
+  $meta=(float)$b['meta'];$periodo=$this->periodo(isset($b['periodo'])?(string)$b['periodo']:null);
+  $actual=$this->variable($clave,$periodo)['v']??null;
+  $g=function(float $x)use($f,$periodo,$clave):?float{$this->fijos=[$clave=>$x];$this->fijoPer=$periodo;$this->vueltas=0;$r=$this->calcularFormula($f,$periodo);$this->fijos=[];return is_numeric($r['valor'])?(float)$r['valor']:null;};
+  $x0=(float)($actual??0);$x1=$x0==0.0?1.0:$x0*1.1;$y0=$g($x0);$y1=$g($x1);
+  if($y0===null||$y1===null)Http::fail('La fórmula no da un número con estos datos de '.$periodo.': no se puede buscar el objetivo.',422);
+  if(abs($y1-$y0)<1e-12){$y2=$g($x0+1000);if($y2===null||abs($y2-$y0)<1e-12)Http::fail('«'.$f['nombre'].'» no cambia con «'.$var.'»: esa variable no está en la fórmula.',422);}
+  $tol=max(1e-6,abs($meta)*1e-7);$x=null;$it=0;
+  for($a=$x0,$fa=$y0-$meta,$c=$x1,$fc=$y1-$meta;$it<60;$it++){
+   if(abs($fc)<=$tol){$x=$c;break;}if(abs($fc-$fa)<1e-15)break;
+   $n=$c-$fc*($c-$a)/($fc-$fa);if(!is_finite($n)||abs($n)>1e15)break;$yn=$g($n);if($yn===null)break;$a=$c;$fa=$fc;$c=$n;$fc=$yn-$meta;
+  }
+  if($x===null){ // bisección: busca un tramo donde la fórmula cruce la meta
+   $paso=max(1.0,abs($x0));$lo=null;$hi=null;$f0=$y0-$meta;
+   // se prueba lejos (hacia arriba y abajo) y también hacia cero, por si la respuesta es mucho más chica que el valor de hoy
+   for($k=0;$k<50&&$lo===null;$k++){foreach([$x0+$paso*2**$k,$x0-$paso*2**$k,$x0/2**($k+1),-$x0/2**($k+1)] as $z){if($z==$x0)continue;$yz=$g($z);if($yz!==null&&($yz-$meta)*$f0<=0){[$lo,$hi]=$z<$x0?[$z,$x0]:[$x0,$z];break;}}}
+   if($lo===null)Http::fail('No hay un valor de «'.$var.'» con el que «'.$f['nombre'].'» llegue a esa meta.',422);
+   $flo=$g($lo)-$meta;for($i=0;$i<200;$i++){$mid=($lo+$hi)/2;$fm=$g($mid)-$meta;if(abs($fm)<=$tol||($hi-$lo)<1e-9){$x=$mid;break;}if($fm*$flo<0)$hi=$mid;else{$lo=$mid;$flo=$fm;}}$x??=($lo+$hi)/2;$it+=$i;
+  }
+  $x=round($x,$unidad==='dinero'?2:6);$res=$g($x);
+  return ['ok'=>true,'formula'=>$f['nombre'],'variable'=>$var,'unidad'=>$unidad,'meta'=>$meta,'valor'=>$x,'actual'=>$actual,'resultado'=>$res,'periodo'=>$periodo,'pasos'=>$it];
+ }
+ /** Mes de un widget: el del módulo (el pedido), el en curso, el anterior o uno fijo. */
+ private function periodoWidget(array $w,string $modulo):string{$per=(string)($w['periodo']??'modulo');$hoy=gmdate('Y-m');return $per==='actual'?$hoy:($per==='anterior'?self::mover($hoy,-1):(preg_match('/^\d{4}-\d{2}$/D',$per)?$per:$modulo));}
+ /** 2.18.0 · Avisos dentro de Ágora (sin notificaciones al teléfono, que están en pausa): widgets marcados «avisar» que quedaron en Bajo o Cerca. */
+ private function alertas():array{
+  $periodo=$this->periodo();$edita=$this->api->a->can('widgets.editar');$out=[];$n=0;
+  foreach($this->db()->all("SELECT modulo,config FROM agora_dashboards WHERE tenant_id=? AND alcance='equipo' AND user_id=0 ORDER BY modulo",[$this->t()]) as $d){
+   $cfg=json_decode((string)$d['config'],true);if(!is_array($cfg))continue;if(($cfg['visible']??'todos')==='administracion'&&!$edita)continue;
+   foreach($cfg['widgets']??[] as $w){
+    if(empty($w['alerta'])||empty($w['semaforo']['activo'])||($w['tipo']??'cifra')!=='cifra')continue;if(++$n>40)break 2;
+    $id=($w['fuente']??'')==='formula'?'f:'.(int)$w['ref']:(string)$w['ref'];$p=$this->periodoWidget($w,$periodo);$r=$this->valorDe($id,$p);if($r['valor']===null)continue;
+    $s=$w['semaforo'];$v=(float)$r['valor'];$menos=($s['mejor']??'mas')==='menos';
+    $estado=($menos?$v<=$s['verde']:$v>=$s['verde'])?'meta':(($menos?$v<=$s['ambar']:$v>=$s['ambar'])?'cerca':'bajo');if($estado==='meta')continue;
+    $nombre=$w['titulo']?:(isset(Metricas::LISTA[$id])?Metricas::LISTA[$id][0]:($this->db()->one('SELECT nombre FROM agora_widget_formulas WHERE id=? AND tenant_id=?',[(int)$w['ref'],$this->t()])['nombre']??'Fórmula'));
+    $out[]=['modulo'=>$d['modulo'],'widget'=>$w['id'],'titulo'=>$nombre,'valor'=>$v,'unidad'=>($w['formato']??'auto')!=='auto'?$w['formato']:$r['unidad'],'estado'=>$estado,'verde'=>$s['verde'],'mejor'=>$menos?'menos':'mas','periodo'=>$p];
+   }
+  }
+  usort($out,fn($a,$b)=>[$a['estado']!=='bajo',$a['modulo']]<=>[$b['estado']!=='bajo',$b['modulo']]);
+  return ['periodo'=>$periodo,'alertas'=>$out];
+ }
+ /** 2.18.0 · Consolidado de la agencia: las mismas cifras (las que van por mes) en cada subcuenta a su alcance, cada una en su moneda. */
+ public static function consolidado(Api $api):array{
+  $api->a->agency();$periodo=preg_match('/^\d{4}-(0[1-9]|1[0-2])$/D',(string)($_GET['periodo']??''))?(string)$_GET['periodo']:gmdate('Y-m');
+  $ids=array_values(array_unique(array_filter(array_map('trim',explode(',',(string)($_GET['ids']??''))))));
+  if(!$ids){$c=[];foreach(Metricas::LISTA as $id=>[$n,$u,$f])if(Metricas::FUENTES[$f][2])$c[]=['id'=>$id,'nombre'=>$n,'unidad'=>$u,'grupo'=>Metricas::FUENTES[$f][3]];return ['catalogo'=>$c];}
+  if(count($ids)>8)Http::fail('Se comparan hasta 8 cifras a la vez.');
+  foreach($ids as $id)if(!isset(Metricas::LISTA[$id])||!Metricas::FUENTES[Metricas::LISTA[$id][2]][2])Http::fail('Solo se consolidan cifras por mes del sistema.',422);
+  $hdr=$_SERVER['HTTP_X_WORKSPACE_ID']??null;$filas=[];
+  try{
+   foreach($api->a->tenants() as $t){
+    $tid=(int)$t['id'];try{$api->a->authorizeTenant($tid,true);}catch(\Throwable){continue;}
+    $_SERVER['HTTP_X_WORKSPACE_ID']=(string)$tid;$api->a->tenant=$tid;$w=new self($api);$v=[];
+    foreach($ids as $id){try{$v[$id]=$w->valorDe($id,$periodo);}catch(\Throwable){$v[$id]=['valor'=>null,'unidad'=>Metricas::LISTA[$id][1],'motivo'=>'No se pudo leer.'];}}
+    $filas[]=['id'=>$tid,'nombre'=>$t['name'],'rubro'=>$t['industry']??'','moneda'=>strtoupper((string)($t['currency']??'USD')),'estado'=>$t['status']??'activa','valores'=>$v];
+   }
+  } finally {if($hdr===null)unset($_SERVER['HTTP_X_WORKSPACE_ID']);else $_SERVER['HTTP_X_WORKSPACE_ID']=$hdr;$api->a->tenant=null;}
+  return ['periodo'=>$periodo,'metricas'=>array_map(fn($id)=>['id'=>$id,'nombre'=>Metricas::LISTA[$id][0],'unidad'=>Metricas::LISTA[$id][1]],$ids),'filas'=>$filas];
  }
  private function valores():array{
   $periodo=$this->periodo();$ids=array_values(array_unique(array_filter(array_map('trim',explode(',',(string)($_GET['ids']??''))))));
@@ -201,7 +276,7 @@ final class Widgets {
   return ['modulo'=>$modulo,'widgets'=>$ws,'visible'=>$visible,'version'=>$r?(int)$r['version']:0,'puedeEditar'=>$edita];
  }
  /** Valida cada widget: solo campos conocidos, textos cortos, referencias que existen. */
- private function widget(mixed $w,int $i):array{
+ public function widget(mixed $w,int $i):array{
   if(!is_array($w))Http::fail('Widget '.($i+1).' no válido.');
   $id=(string)($w['id']??'');if(!preg_match('/^[a-z0-9]{6,16}$/D',$id))$id=bin2hex(random_bytes(5));
   $tipo=in_array($w['tipo']??'cifra',self::TIPOS,true)?($w['tipo']??'cifra'):'cifra';
@@ -217,7 +292,7 @@ final class Widgets {
    'tamano'=>in_array($w['tamano']??'',self::TAM,true)?$w['tamano']:'chico','periodo'=>$per,
    'comparar'=>in_array($w['comparar']??'',self::COMP,true)?$w['comparar']:'','formato'=>in_array($w['formato']??'',self::FMT,true)?$w['formato']:'auto',
    'decimales'=>isset($w['decimales'])&&is_numeric($w['decimales'])?max(0,min(4,(int)$w['decimales'])):2,'semaforo'=>$tipo==='cifra'?$semaforo:['activo'=>false],
-   'tipo'=>$tipo,'mas'=>$mas,'meses'=>isset($w['meses'])&&is_numeric($w['meses'])?max(3,min(12,(int)$w['meses'])):6,'top'=>isset($w['top'])&&is_numeric($w['top'])?max(3,min(10,(int)$w['top'])):5];
+   'alerta'=>$tipo==='cifra'&&$semaforo['activo']&&!empty($w['alerta']),'tipo'=>$tipo,'mas'=>$mas,'meses'=>isset($w['meses'])&&is_numeric($w['meses'])?max(3,min(12,(int)$w['meses'])):6,'top'=>isset($w['top'])&&is_numeric($w['top'])?max(3,min(10,(int)$w['top'])):5];
  }
  /** [fuente, ref] de un widget o de una serie extra, comprobando que exista. */
  private function referencia(array $w,int $i):array{

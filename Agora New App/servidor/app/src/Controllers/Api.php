@@ -6,7 +6,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.17.0'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.18.0'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -42,6 +42,7 @@ final class Api {
   if($p==='agency/accounts/conexion/probar'&&$m==='POST')return $this->ag->ghlTest($b);
   if($p==='agency/team'&&in_array($m,['GET','POST','PUT']))return $m==='GET'?$this->u->listing(true):$this->u->save($b,true,$m==='PUT');
   if($p==='agency/activity'&&$m==='GET')return $this->ag->audit(true);
+  if($p==='agency/consolidado'&&$m==='GET')return \Agora\Widgets\Widgets::consolidado($this); // 2.18.0
   // 2.1.17 · gestión unificada de usuarios (Master y Superadmin editan a cualquiera a su alcance)
   if(str_starts_with($p,'agency/usuarios'))return (new UsuariosAgencia($this->db,$this->a))->route($p,$m,$b);
   // 2.17.0 · Desde Agencia: borrar un usuario de una subcuenta (con la operación aritmética firmada).
@@ -69,10 +70,11 @@ final class Api {
   elseif($p==='workspace/resumen')$permission='resumen.ver';
   elseif($p==='workspace/assign')$permission='conversaciones.reasignar';
   elseif($m!=='GET'&&str_starts_with($p,'contratos'))$permission='convenios.enviar';
-  elseif(preg_match('~^workspace/(formulas|variables|tableros)(/|$)~',$p)&&$m!=='GET')$permission='widgets.editar'; // 2.14.0
+  elseif(preg_match('~^workspace/(formulas|variables|tableros)(/|$)~',$p)&&$m!=='GET')$permission='widgets.editar';
+  elseif(preg_match('~^workspace/plantillas(/|$)~',$p)&&$m!=='GET')$permission='datos.consultar'; // 2.18.0: quién crea o aplica se revisa en Plantillas.php // 2.14.0
   elseif($m!=='GET')$permission='conversaciones.atender';
   $this->a->permit($permission);
-  if(preg_match('~^workspace/(metricas|formulas|variables|tableros)(/|$)~',$p))return (new \Agora\Widgets\Widgets($this))->route($p,$m,$b); // 2.14.0 · widgets
+  if(preg_match('~^workspace/(metricas|formulas|variables|tableros|alertas|plantillas)(/|$)~',$p))return (new \Agora\Widgets\Widgets($this))->route($p,$m,$b); // 2.14.0 · widgets
   if($p==='workspace/permisos'||$p==='workspace/usuarios/permisos')return $this->u->permissions($p,$m,$b);
   if($p==='workspace/branding'&&in_array($m,['GET','POST']))return $this->ag->branding($m,$b);
   // 2.9.5 · Tarjetas que cada persona elige ver en una vista (como editar los widgets de un tablero). La administración puede fijar la vista por defecto del equipo.
