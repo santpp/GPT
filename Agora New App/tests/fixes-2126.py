@@ -54,6 +54,16 @@ with sync_playwright() as p:
         for r in ['/centro','/inicio','/comercial','/ventas','/cobros','/facturas','/costos','/equipo','/publicidad','/tendencias','/calidad','/redes']:
             pg.goto(B+r);pg.wait_for_timeout(3500)
             dentro+=[f'{r}: {x}' for x in pg.evaluate("""()=>[...document.querySelectorAll('main button, main a.btn')].filter(b=>b.offsetParent&&/Editar Dashboard|^Dashboard|Ir a Dashboard/.test(b.textContent.trim())).map(b=>{let p=b.parentElement;while(p&&p.id!=='app'){const c=getComputedStyle(p);if(/255, 255, 255/.test(c.backgroundColor)&&parseFloat(c.borderTopWidth)>0)return b.textContent.trim();p=p.parentElement}return null}).filter(Boolean)""")]
+        if ws is None:
+            frases=[]
+            for r in ['/bandeja','/contactos','/oportunidades','/tareas','/ventas','/costos','/equipo']:
+                pg.goto(B+r);pg.wait_for_timeout(3000)
+                if pg.evaluate("[...document.querySelectorAll('main .mod-h .lede')].some(e=>e.offsetParent&&e.id!=='dashboard-feedback')"):frases.append(r)
+            ok(not frases,f'2.12.12 · sin frases obvias bajo el título de los módulos {frases}')
+            pg.goto(B+'/centro');pg.wait_for_timeout(3500)
+            ok(pg.evaluate("!!document.querySelector('main .operations-lede')?.offsetParent"),'2.12.12 · el Inicio conserva su descripción')
+            ic=pg.evaluate("(()=>{const f=t=>[...document.querySelectorAll('.side .acc-b, .acc-b')].find(b=>b.textContent.includes(t))?.querySelector('.mdm-ic svg')?.innerHTML||'';return [f('Gestión y resultados'),f('Administración')]})()")
+            ok('rect' in ic[0] and 'M3 3v18h18' in ic[0] and 'M12.22 2' in ic[1],'2.12.12 · Gestión y resultados con ícono de bolsa (velas) y Administración con engranaje')
         ok(not dentro,f'{quien}: 2.12.11 · «Editar Dashboard» y «Dashboard» van fuera de las tarjetas en todos los módulos {dentro}')
         pg.goto(B+'/centro');pg.wait_for_timeout(4000);pg.keyboard.press('m');pg.wait_for_timeout(1000)
         col=pg.evaluate("[...new Set([...document.querySelectorAll('.mdm-i .mdm-ic')].filter(e=>e.offsetParent).map(e=>getComputedStyle(e).backgroundColor))]")

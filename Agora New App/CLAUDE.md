@@ -75,6 +75,7 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
 - **Menús:** el de la agencia y el de las subcuentas hablan igual: fondo claro, ícono en recuadro de color (`.mdm-ic`), activo con fondo suave de marca y rótulos en tipo oración. Nada de mayúsculas espaciadas, franjas de color ni avisos «Próximamente» en el menú.
 - **Cifras de la cuenta = cifras de Mobile.** Todo lo que dependa de «hoy» se pide con la zona del dispositivo (`dashZona()`), igual que Mobile.
 - Confirmaciones con `toast('…')` cortas («Costos guardados.»). Nada de franjas, insignias o íconos nuevos para confirmar: el usuario lo rechazó por «verse muy IA».
+- **Sin frases bajo el título del módulo** (2.12.12: «son obviedades»): `head()` puede recibir `lede`, pero no se muestra; la descripción de cada módulo vive solo en el Inicio. Excepción: la línea de estado del Dashboard. Íconos de categoría: Gestión y resultados `stocks` (velas), Administración y Ajustes `gear` (engranaje).
 - Sin textos repetidos (la etiqueta superior no repite el título). **Los gráficos van al final del módulo.**
 - Botones de icono solo cuando su significado es obvio. Si no, icono + texto (por ejemplo, «Ficha» en la Bandeja).
 - En el teléfono (390 px): nada se desborda; las tablas se leen como fichas.

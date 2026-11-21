@@ -1,5 +1,10 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.12.12 · Íconos de categoría, sin frases obvias y Bandeja más arriba (21 nov):**
+- **Gestión y resultados** lleva un ícono de bolsa de valores (velas sobre ejes). **Administración y Ajustes** usan un engranaje de verdad (antes parecía un sol).
+- **Sin frases obvias bajo el título** de los módulos (por ejemplo «Todos los canales en una sola lista…»). La descripción de cada módulo queda solo en el Inicio. El Dashboard conserva su línea de fecha y hora de actualización.
+- **Bandeja:** el conteo y «Mostrar» van en una sola fila compacta; la lista de conversaciones empieza bastante más arriba.
+
 **Novedades 2.12.11 · «Resumen del día» como los demás módulos (21 nov):**
 - El título y los botones «Editar Dashboard» y «Dashboard» van **fuera de la tarjeta**; la tarjeta blanca es solo la caja de cifras. Título de 20 px (18 en el teléfono), como las secciones de los demás módulos.
 - Se revisaron todos los módulos (con y sin reporte): ningún «Editar Dashboard» ni «Dashboard» queda dentro de una tarjeta. `tests/fixes-2126.py` lo comprueba.
