@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.12 · Entrada solo con el símbolo (22 nov):**
+- Pedido del usuario: la animación de entrada ya no usa el nombre «Ágora», **solo el símbolo** (aro y estrella). Al terminar de cargar, sus piezas vuelan al símbolo del logo que se ve en pantalla; el nombre de ese logo no se toca.
+- Prueba: `tests/fixes-2188.py` actualizada (13).
+
 **Novedades 2.18.11 · Ruedas del Dashboard: verlas a tu manera y abrir el detalle (22 nov):**
 - **«Sin leer por asesor», «Fuente de los leads» y «Leads por ejecutivo»** traen arriba **Dona · Barras · Cifras**. Cada persona elige cómo verlas y se recuerda en su equipo.
 - **Administración (Master, Superadmin, Admin) puede tocar un asesor o una fuente** (en la leyenda, la rueda, la barra o la cifra) y ver quiénes son: las conversaciones sin leer de ese asesor (nombre, último mensaje y hora; un toque abre la bandeja en esa conversación) o los leads de hoy de esa fuente o ejecutivo (un toque abre el contacto). Hasta 50 por grupo.
