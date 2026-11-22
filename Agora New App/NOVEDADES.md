@@ -1,5 +1,8 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.5 · Sin la nota de «Leads asignados a mí» (22 nov):**
+- Pedido del usuario: se quita «Los que tienes a tu nombre en la cuenta» del Dashboard. Si el usuario está enlazado con la cuenta, solo se ve «Leads asignados a mí» y la cifra; si no lo está, sigue la indicación para enlazarlo.
+
 **Novedades 2.18.4 · El resultado llena la tarjeta (22 nov):**
 - Pedido del usuario (no compactar, sino agrandar): **la cifra ocupa todo el alto libre de la tarjeta**, centrada, y su letra crece según el ancho de la tarjeta y lo largo de la cifra: de 30 a 84 px en el ordenador (24 a 56 px en el teléfono). «4» se ve grande y «US$ 10.260,06» cabe sin cortarse. Comprobado en 7 módulos, ordenador y teléfono: ninguna cifra se sale.
 - Se deshizo lo compactado en 2.18.3 (la nota de «Leads asignados a mí» vuelve a verse).

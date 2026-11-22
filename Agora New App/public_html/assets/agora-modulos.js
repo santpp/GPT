@@ -998,7 +998,7 @@
       const heroValue = leads ? leadsValue : number(data.conversations?.total ?? 0);
       const heroNote = leads ? leadsValue === null ? noData : nowLabel() : "En esta cuenta";
       const mineValue = leads ? leads.mine === null || leads.mine === void 0 ? null : number(leads.mine) : number(unread);
-      const heroPair = leads ? `<div class="pair" title="${esc3(leads.linked ? (mineValue === null ? noData : "Los que tienes a tu nombre en la cuenta") : (typeof unlinked === "object" ? "Enlaza tu usuario con la cuenta en Usuarios y roles" : unlinked))}"><span>Leads asignados a mí</span><b>${mineValue === null ? "—" : esc3(mineValue)}</b></div><p class="f">${leads.linked ? mineValue === null ? esc3(noData) : "Los que tienes a tu nombre en la cuenta" : typeof unlinked === "object" ? unlinked.html : esc3(unlinked)}</p>` : `<div class="pair"><span>Sin leer</span><b>${esc3(mineValue)}</b></div>`;
+      const heroPair = leads ? `<div class="pair" ><span>Leads asignados a mí</span><b>${mineValue === null ? "—" : esc3(mineValue)}</b></div>${leads.linked && mineValue !== null ? "" : `<p class="f">${leads.linked ? esc3(noData) : typeof unlinked === "object" ? unlinked.html : esc3(unlinked)}</p>`}` : `<div class="pair"><span>Sin leer</span><b>${esc3(mineValue)}</b></div>`;
       const tiles2 = [
         ...leads ? [metric("Conversaciones", number(data.conversations?.total ?? 0))] : [],
         ...leads ? [metric("Sin leer", number(unread))] : [],

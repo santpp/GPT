@@ -26,6 +26,7 @@ with sync_playwright() as pw:
         ok(r and all(w<=lim for _,w,lim,_ in r),'2.18.4: ninguna cifra se sale de su tarjeta')
         cortas=[f for f,_,_,n in r if n<=2]
         ok(cortas and min(cortas)>=60,f'2.18.4: las cifras cortas llenan la tarjeta (≥60 px: {sorted(set(int(x) for x in cortas))[:3]})')
+        ok('Los que tienes a tu nombre' not in pg.inner_text('main#app'),'2.18.5: ya no aparece «Los que tienes a tu nombre en la cuenta»')
         b=pg.evaluate("[...document.querySelectorAll('#period-bar .per-b')].filter(b=>!b.hidden&&b.offsetParent).map(b=>b.textContent.trim())")
         ok(b==['Ayer','Hoy','Otro periodo'],f'el filtro del Dashboard dice Ayer, Hoy y Otro periodo {b}')
         pg.click('#period-btn');pg.wait_for_timeout(400)
