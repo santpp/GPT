@@ -6,7 +6,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.18.14'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.18.15'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -42,6 +42,7 @@ final class Api {
   if($p==='agency/accounts/conexion/probar'&&$m==='POST')return $this->ag->ghlTest($b);
   if($p==='agency/team'&&in_array($m,['GET','POST','PUT']))return $m==='GET'?$this->u->listing(true):$this->u->save($b,true,$m==='PUT');
   if($p==='agency/activity'&&$m==='GET')return $this->ag->audit(true);
+  if($p==='agency/accesos'&&$m==='GET')return $this->ag->accesos(); // 2.18.15: accesos con código (solo dueños)
   if($p==='agency/consolidado'&&$m==='GET')return \Agora\Widgets\Widgets::consolidado($this); // 2.18.0
   // 2.1.17 · gestión unificada de usuarios (Master y Superadmin editan a cualquiera a su alcance)
   if(str_starts_with($p,'agency/usuarios'))return (new UsuariosAgencia($this->db,$this->a))->route($p,$m,$b);

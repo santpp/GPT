@@ -1158,3 +1158,20 @@ main#app#app :is(.g-hero,.grid):has(> .grid > .micro) > .grid{display:contents}
 .dn-h { grid-area: h; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
 .dn-mas { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
 @media (max-width: 600px) { .rep-cif { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* 2.18.15 · Agencia → Accesos con código */
+.acc-fil { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 16px; }
+.acc-f { display: flex; flex-direction: column; gap: 4px; min-width: 170px; }
+.acc-f span { font-size: 12.5px; color: var(--muted); }
+.acc-q { flex: 1; min-width: 220px; }
+.acc-ip-l { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.acc-ip { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border: 1px solid var(--line, #e3e1e6); border-radius: 12px; background: #fff; font: inherit; cursor: pointer; }
+.acc-ip:hover, .acc-ip:focus-visible { border-color: var(--ag-2); }
+.acc-ip b { font-size: 14px; font-variant-numeric: tabular-nums; }
+.acc-ip span { font-size: 12.5px; color: var(--muted); }
+.acc-ip em { font-style: normal; }
+.acc-ip em.acc-alerta { color: var(--bad, #b42318); font-weight: 600; }
+.acc-sub { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
+#view .acc-ipb, .acc-ipb { border: 0; background: none; padding: 0; min-height: 0; font: inherit; color: var(--ag-2); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-variant-numeric: tabular-nums; }
+.acc-mas { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
+.acc-ips { margin-bottom: 16px; }

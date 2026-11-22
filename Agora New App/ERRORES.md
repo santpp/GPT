@@ -1,5 +1,7 @@
 # Agora New App · lista de errores
 
+- **2.18.15 · Códigos de acceso sin tope de intentos (grave, arreglado).** `public_html/api/index.php` corre toda escritura dentro de una transacción y la deshace si la respuesta es un error. En `login/codigo`, `login/reenviar`, `clave/olvido` y `clave/restablecer` eso deshacía el `attempts+1` del código y los `rate()` por IP y correo, así que el tope de 5 intentos y los límites nunca contaban. Ahora esas rutas van fuera de la transacción (como `login`). Prueba: `tests/fixes-21815.py`.
+
 Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de noviembre de 2026), con su causa y su estado. Se actualiza en cada versión.
 
 **Estados:** Corregido (ya está en el paquete) · Por confirmar (falta verlo en el servidor) · Pendiente (no hecho todavía).

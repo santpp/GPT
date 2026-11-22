@@ -88,6 +88,19 @@ final class Agency {
   if(array_key_exists('companyId',$d)&&$d['companyId'])$t[]='Se registró la agencia en la cuenta';
   return implode('. ',array_unique($t));
  }
+ /** 2.18.15 · Accesos con código (solo dueños): quién pidió o usó un código, de qué subcuenta, desde qué IP y navegador. Nunca el código. */
+ public function accesos():array{
+  $this->auth->agency();
+  $dias=(int)($_GET['dias']??7);if(!in_array($dias,[1,7,30,90,180],true))$dias=7;
+  $where=['l.created_at>=UTC_TIMESTAMP()-INTERVAL '.$dias.' DAY'];$args=[];
+  $ev=(string)($_GET['evento']??'');if($ev!==''){if(!in_array($ev,['enviado','reenviado','correcto','incorrecto','vencido','invalido','no_enviado','sin_cuenta','dueno_bloqueado'],true))\Agora\Core\Http::fail('Filtro no válido.',422);$where[]='l.evento=?';$args[]=$ev;}
+  $q=trim(mb_substr((string)($_GET['q']??''),0,80));if($q!==''){$where[]='(l.correo LIKE ? OR l.ip LIKE ? OR u.name LIKE ? OR t.name LIKE ?)';$like='%'.addcslashes($q,'%_\\').'%';array_push($args,$like,$like,$like,$like);}
+  $rows=$this->db->all('SELECT l.id,l.created_at,l.evento,l.uso,l.correo,l.ip,l.navegador,l.user_id,u.name nombre,u.role rol,t.name subcuenta FROM agora_access_log l LEFT JOIN agora_users u ON u.id=l.user_id LEFT JOIN agora_tenants t ON t.id=l.tenant_id WHERE '.implode(' AND ',$where).' ORDER BY l.id DESC LIMIT 301',$args);
+  $mas=count($rows)>300;if($mas)array_pop($rows);
+  $res=$this->db->all('SELECT l.ip,COUNT(*) n,SUM(l.evento=\'incorrecto\') malos,COUNT(DISTINCT l.correo) cuentas FROM agora_access_log l WHERE l.created_at>=UTC_TIMESTAMP()-INTERVAL '.$dias.' DAY AND l.ip<>\'\' GROUP BY l.ip ORDER BY n DESC LIMIT 5',[]);
+  return ['items'=>array_map(fn($r)=>['id'=>(int)$r['id'],'fecha'=>gmdate('c',strtotime($r['created_at'].' UTC')),'evento'=>$r['evento'],'uso'=>$r['uso'],'correo'=>$r['correo'],'nombre'=>$r['nombre'],'rol'=>$r['rol'],'subcuenta'=>$r['subcuenta']??($r['rol']&&in_array($r['rol'],['MASTER','SUPERADMIN'],true)?'Agencia':null),'ip'=>$r['ip'],'navegador'=>$r['navegador']],$rows),'mas'=>$mas,'dias'=>$dias,
+   'ips'=>array_map(fn($r)=>['ip'=>$r['ip'],'n'=>(int)$r['n'],'malos'=>(int)$r['malos'],'cuentas'=>(int)$r['cuentas']],$res)];
+ }
  public function audit(bool $agency,?string $modulo=null):array{
   $agency?$this->auth->agency():$this->auth->financial();$args=[];$where=$agency?'tenant_id IS NULL':'tenant_id=?';if(!$agency)$args[]=$this->auth->tenant;
   if($modulo!==null){$where.=' AND module=?';$args[]=$modulo;}

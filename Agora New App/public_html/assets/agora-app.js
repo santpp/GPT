@@ -257,6 +257,7 @@ function route() {
   if (p === '/agencia/actividad') return {view:'agencyActivity'};
   if (p === '/agencia/consumos') return {view:'agencyConsumos'};
   if (p === '/agencia/consolidado') return {view:'agencyConsolidado'}; // 2.18.0
+  if (p === '/agencia/accesos') return {view:'agencyAccesos'}; // 2.18.15
   if (p === '/agencia/textos') return {view:'agencyTexts'};
   if (p === '/agencia/estudio-ia') return {view:'agencyStudio'};
   if (p === '/perfil') return {view:'perfil'};
@@ -326,7 +327,7 @@ function render(focus) {
   const root = document.documentElement;
   if (!ME || !AGORA_ME) { root.classList.add('is-auth'); return V.entrar.render(); }
   if (R.view === 'entrar') { go(homePath(), {replace: true}); return; }
-  if (esSuperAdmin() && AGENCY_CONTEXT && !['agencia','perfil','agencyControl','agencyAccount','agencyTeam','agencyTexts','agencyStudio','agencyActivity','agencyConsumos','agencyConsolidado'].includes(R.view)) { toast('Selecciona una subcuenta para abrir sus módulos.'); go('/agencia', {replace:true}); return; }
+  if (esSuperAdmin() && AGENCY_CONTEXT && !['agencia','perfil','agencyControl','agencyAccount','agencyTeam','agencyTexts','agencyStudio','agencyActivity','agencyConsumos','agencyConsolidado','agencyAccesos'].includes(R.view)) { toast('Selecciona una subcuenta para abrir sus módulos.'); go('/agencia', {replace:true}); return; }
   if (R.view === 'agencia' && !esSuperAdmin()) { go(homePath(), {replace:true}); return; }
   if (R.view === 'agencia' && esSuperAdmin() && !AGENCY_CONTEXT) { resetAccountData(); AGENCY_CONTEXT = true; }
   root.classList.remove('is-auth'); $('#lg')?.remove();
@@ -337,7 +338,7 @@ function render(focus) {
     R = {view: 'ag_inbox', mod: 'bandeja'};
   }
   if (R.unknown) { toast('Esa dirección no existe. Te llevamos al inicio.'); go(homePath(), {replace:true}); return; }
-  if (['agencyControl','agencyAccount','agencyTeam','agencyTexts','agencyStudio','agencyActivity','agencyConsumos','agencyConsolidado'].includes(R.view) && !esSuperAdmin()) { topbar();paint(agencyRouteDenied());return; }
+  if (['agencyControl','agencyAccount','agencyTeam','agencyTexts','agencyStudio','agencyActivity','agencyConsumos','agencyConsolidado','agencyAccesos'].includes(R.view) && !esSuperAdmin()) { topbar();paint(agencyRouteDenied());return; }
   topbar();
   const gen = ++GEN;
   const v = V[R.view];
@@ -1599,7 +1600,7 @@ function launcherFrame(mode, content) {
   if (!agency) return `<div class="launch-layout launch-no-rail"><div class="launch-content">${content}</div></div>`;
   const name = ME?.nombre || AGORA_ME?.user?.name || 'Mi cuenta';
   const groupIcons = {general:'home',ingresos:'invoice',clientes:'users',gestion:'stocks',contratos:'receipt',administracion:'gear'};
-  return `<div class="launch-layout"><aside class="launch-rail" aria-label="Navegación de ${agency ? 'Agencia' : 'subcuenta'}"><div class="launch-brand launch-brand-logo" aria-label="Ágora Digital App">${LOGO}</div><p class="launch-rail-label">${agency ? 'Agencia' : esc(ws?.name() || 'Mi subcuenta')}</p><nav class="launch-primary"><a class="${R.view==='agencia'?'is-current':''}" href="${href(agency ? '/agencia' : '/centro')}" ${R.view==='agencia'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--brand)">${icon(agency ? 'users' : 'home')}</span>${agency ? 'Subcuentas' : 'Inicio de subcuenta'}</a>${!agency && esSuperAdmin() ? `<button type="button" data-agency-return>${icon('users')}Ir a subcuentas</button>` : ''}${agency ? '' : Object.entries(GRUPOS).map(([id,g]) => `<button type="button" data-launch-group="group-${id}">${icon(groupIcons[id])}${esc(g.name)}</button>`).join('')}</nav><div class="launch-system"><p class="launch-rail-label">${AG_GOB_NOMBRE}</p><a href="${href('/agencia/control')}" ${R.view==='agencyControl'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-vino)">${icon('pie')}</span>Resumen</a><a href="${href('/agencia/usuarios')}" ${R.view==='agencyTeam'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-azul)">${icon('team')}</span>Gestión de usuarios</a><a href="${href('/agencia/actividad')}" ${R.view==='agencyActivity'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-seguridad)">${icon('shield')}</span>Registro de actividad</a><a href="${href('/agencia/consumos')}" ${R.view==='agencyConsumos'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-oro)">${icon('wallet')}</span>Consumos</a><a href="${href('/agencia/consolidado')}" ${R.view==='agencyConsolidado'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-azul)">${icon('stocks')}</span>Consolidado</a>${!agency ? `<p class="launch-rail-label">Mi espacio</p><a href="${href('/ajustes')}">${icon('gear')}Ajustes</a><a href="${href('/ayuda')}">${icon('info')}Ayuda</a>` : ''}</div><a class="launch-person" href="${href('/perfil')}" ${R.view==='perfil'?'aria-current="page"':''}><span class="launch-avatar">${personalAvatar()}</span><span><b>${esc(name)}</b><small>${esSuperAdmin() ? (esMaster() ? 'Master · Dueño' : 'Superadmin de Agencia') : 'Mi perfil y cuenta'}</small></span>${icon('chevR')}</a></aside><div class="launch-content">${content}</div></div>`;
+  return `<div class="launch-layout"><aside class="launch-rail" aria-label="Navegación de ${agency ? 'Agencia' : 'subcuenta'}"><div class="launch-brand launch-brand-logo" aria-label="Ágora Digital App">${LOGO}</div><p class="launch-rail-label">${agency ? 'Agencia' : esc(ws?.name() || 'Mi subcuenta')}</p><nav class="launch-primary"><a class="${R.view==='agencia'?'is-current':''}" href="${href(agency ? '/agencia' : '/centro')}" ${R.view==='agencia'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--brand)">${icon(agency ? 'users' : 'home')}</span>${agency ? 'Subcuentas' : 'Inicio de subcuenta'}</a>${!agency && esSuperAdmin() ? `<button type="button" data-agency-return>${icon('users')}Ir a subcuentas</button>` : ''}${agency ? '' : Object.entries(GRUPOS).map(([id,g]) => `<button type="button" data-launch-group="group-${id}">${icon(groupIcons[id])}${esc(g.name)}</button>`).join('')}</nav><div class="launch-system"><p class="launch-rail-label">${AG_GOB_NOMBRE}</p><a href="${href('/agencia/control')}" ${R.view==='agencyControl'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-vino)">${icon('pie')}</span>Resumen</a><a href="${href('/agencia/usuarios')}" ${R.view==='agencyTeam'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-azul)">${icon('team')}</span>Gestión de usuarios</a><a href="${href('/agencia/actividad')}" ${R.view==='agencyActivity'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-seguridad)">${icon('shield')}</span>Registro de actividad</a><a href="${href('/agencia/accesos')}" ${R.view==='agencyAccesos'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-seguridad)">${icon('lock')}</span>Accesos con código</a><a href="${href('/agencia/consumos')}" ${R.view==='agencyConsumos'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-oro)">${icon('wallet')}</span>Consumos</a><a href="${href('/agencia/consolidado')}" ${R.view==='agencyConsolidado'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-azul)">${icon('stocks')}</span>Consolidado</a>${!agency ? `<p class="launch-rail-label">Mi espacio</p><a href="${href('/ajustes')}">${icon('gear')}Ajustes</a><a href="${href('/ayuda')}">${icon('info')}Ayuda</a>` : ''}</div><a class="launch-person" href="${href('/perfil')}" ${R.view==='perfil'?'aria-current="page"':''}><span class="launch-avatar">${personalAvatar()}</span><span><b>${esc(name)}</b><small>${esSuperAdmin() ? (esMaster() ? 'Master · Dueño' : 'Superadmin de Agencia') : 'Mi perfil y cuenta'}</small></span>${icon('chevR')}</a></aside><div class="launch-content">${content}</div></div>`;
 }
 document.addEventListener('click', e => {
   const button = e.target.closest('[data-launch-group]');
@@ -4205,7 +4206,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.18.14').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.18.15').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */
@@ -4215,6 +4216,56 @@ V.agencyConsolidado = {
     return launcherFrame('agencia', head(AG_GOB_NOMBRE, 'Consolidado', 'Las mismas cifras en todas tus subcuentas, mes a mes. Cada subcuenta en su moneda; los totales no mezclan monedas.') + '<section class="panel" id="wg-consol"><p class="wg-motivo">Cargando…</p></section>');
   },
   mounted(root) { try { window.AgoraWidgets?.consolidado(root.querySelector('#wg-consol')); } catch (e) { console.warn('consolidado', e); } },
+};
+/* 2.18.15 · Accesos con código (pedido del usuario, solo dueños): quién pidió o usó un código de 6 dígitos, de qué subcuenta,
+   desde qué IP y navegador. Nunca se ve el código (ni se guarda). Se conserva 6 meses. */
+const ACC = {dias: 7, evento: '', q: '', datos: null};
+const ACC_EV = {
+  enviado: ['Código enviado', 'sc-gray'], reenviado: ['Pidió otro código', 'sc-gray'], correcto: ['Código correcto', 'sc-ok'],
+  incorrecto: ['Código equivocado', 'sc-warn'], vencido: ['Código vencido o ya usado', 'sc-warn'], invalido: ['Código sin pedido válido', 'sc-bad'], no_enviado: ['No se pudo enviar', 'sc-bad'],
+  sin_cuenta: ['Pidió cambiar la clave de un correo sin cuenta', 'sc-bad'], dueno_bloqueado: ['Pidió cambiar la clave de un dueño', 'sc-bad'],
+};
+function accNavegador(ua) {
+  ua = String(ua || ''); if (!ua) return '—';
+  const nav = /Edg\//.test(ua) ? 'Edge' : /OPR\/|Opera/.test(ua) ? 'Opera' : /SamsungBrowser/.test(ua) ? 'Samsung Internet' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'Otro navegador';
+  const so = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Windows/.test(ua) ? 'Windows' : /Mac OS X|Macintosh/.test(ua) ? 'Mac' : /Linux/.test(ua) ? 'Linux' : '';
+  return so ? `${nav} en ${so}` : nav;
+}
+async function accCargar() {
+  const q = new URLSearchParams({dias: String(ACC.dias)}); if (ACC.evento) q.set('evento', ACC.evento); if (ACC.q) q.set('q', ACC.q);
+  ACC.datos = await agoraApi('agency/accesos?' + q.toString());
+}
+V.agencyAccesos = {
+  need: async () => { if (!window.__DEMO__) await accCargar(); },
+  render() {
+    if (!esSuperAdmin()) return agencyRouteDenied();
+    const d = ACC.datos || {items: [], ips: []}, items = d.items || [];
+    const fecha = iso => { const t = new Date(iso); return isNaN(t) ? '—' : t.toLocaleString('es-VE', {day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit'}); };
+    const filtros = `<div class="acc-fil">
+      <label class="fld acc-f"><span>Periodo</span><select data-acc-dias>${[[1, 'Últimas 24 horas'], [7, 'Últimos 7 días'], [30, 'Últimos 30 días'], [90, 'Últimos 90 días'], [180, 'Últimos 6 meses']].map(([v, t]) => `<option value="${v}" ${ACC.dias === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      <label class="fld acc-f"><span>Qué pasó</span><select data-acc-ev><option value="">Todo</option>${Object.entries(ACC_EV).map(([k, [t]]) => `<option value="${k}" ${ACC.evento === k ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
+      <label class="fld acc-f acc-q"><span>Buscar</span><input type="search" data-acc-q value="${esc(ACC.q)}" placeholder="Persona, correo, subcuenta o IP" maxlength="80"></label>
+    </div>`;
+    const ips = (d.ips || []).length ? `<section class="panel acc-ips">${secH('shield', 'IP con más movimientos', 'Si una IP pide códigos de varias cuentas o se equivoca muchas veces, conviene revisarla.')}
+      <ul class="acc-ip-l">${d.ips.map(x => `<li><button type="button" class="acc-ip" data-acc-ip="${esc(x.ip)}"><b>${esc(x.ip)}</b><span>${int(x.n)} ${x.n === 1 ? 'movimiento' : 'movimientos'} · ${int(x.cuentas)} ${x.cuentas === 1 ? 'cuenta' : 'cuentas'}${x.malos ? ` · <em class="${x.malos >= 3 ? 'acc-alerta' : ''}">${int(x.malos)} ${x.malos === 1 ? 'código equivocado' : 'códigos equivocados'}</em>` : ''}</span></button></li>`).join('')}</ul></section>` : '';
+    const filas = items.map(r => { const [t, c] = ACC_EV[r.evento] || [r.evento, 'sc-gray'];
+      return `<tr><td data-l="Fecha">${esc(fecha(r.fecha))}</td><td data-l="Persona"><b>${esc(r.nombre || r.correo || 'Sin identificar')}</b>${r.nombre && r.correo ? `<small class="acc-sub">${esc(r.correo)}</small>` : ''}</td>
+        <td data-l="Subcuenta">${esc(r.subcuenta || '—')}</td><td data-l="Qué pasó"><span class="sc ${c}">${esc(t)}</span>${r.uso === 'reset' && !['sin_cuenta', 'dueno_bloqueado'].includes(r.evento) ? '<small class="acc-sub">Cambio de clave</small>' : ''}</td>
+        <td data-l="IP"><button type="button" class="acc-ipb" data-acc-ip="${esc(r.ip)}" title="Ver todo lo de esta IP">${esc(r.ip || '—')}</button></td><td data-l="Navegador">${esc(accNavegador(r.navegador))}</td></tr>`; }).join('');
+    const tabla = items.length ? `<div class="tw acc-tw"><table><thead><tr><th>Fecha</th><th>Persona</th><th>Subcuenta</th><th>Qué pasó</th><th>IP</th><th>Navegador</th></tr></thead><tbody>${filas}</tbody></table></div>${d.mas ? '<p class="acc-mas">Se muestran los 300 más recientes. Acota el periodo o busca para ver otros.</p>' : ''}`
+      : `<p class="empty empty-sobrio">No hay pedidos de código en este periodo${ACC.evento || ACC.q ? ' con este filtro' : ''}.</p>`;
+    return launcherFrame('agencia', head(AG_GOB_NOMBRE, 'Accesos con código', '') + filtros + ips + `<section class="panel acc-lista">${secH('team', 'Pedidos y usos de código', 'Nunca se muestra el código. Se guardan 6 meses.')}${tabla}</section>`);
+  },
+  mounted(root) {
+    let t = 0;
+    const ir = async () => { const enQ = document.activeElement?.matches?.('[data-acc-q]'); try { await accCargar(); } catch (x) { toast(x.message); } repaint();
+      if (enQ) { const n = document.querySelector('[data-acc-q]'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } } };
+    root.querySelector('[data-acc-dias]')?.addEventListener('change', e => { ACC.dias = +e.target.value; ir(); });
+    root.querySelector('[data-acc-ev]')?.addEventListener('change', e => { ACC.evento = e.target.value; ir(); });
+    const q = root.querySelector('[data-acc-q]');
+    q?.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { ACC.q = q.value.trim(); ir(); }, 450); });
+    root.querySelectorAll('[data-acc-ip]').forEach(b => b.onclick = () => { ACC.q = b.dataset.accIp; ir(); });
+  },
 };
 V.agencyActivity = {
   need:async()=>{if(!window.__DEMO__){const d=await agoraApi('agency/activity');AGENCY_AUDIT_LOGS=d.items||[];}},
@@ -10553,6 +10604,7 @@ V.agencyControl = {
           ${herramienta('/agencia/usuarios', 'team', 'Gestión de usuarios', 'Quién de tu equipo administra la agencia y a qué subcuentas entra.')}
           ${herramienta('/agencia/actividad', 'shield', 'Registro de actividad', 'Todo lo que se ha hecho, con fecha, hora y responsable.')}
           ${herramienta('/agencia/consolidado', 'stocks', 'Consolidado', 'Las mismas cifras en todas tus subcuentas: ventas, cobros, metas y más.')}
+          ${herramienta('/agencia/accesos', 'shield', 'Accesos con código', 'Quién pidió o usó un código para entrar, de qué subcuenta y desde qué IP.')}
           <div class="ag-tool is-soon" aria-disabled="true"><span class="ag-tool-ic" aria-hidden="true">${icon('spark')}</span><span class="ag-tool-tx"><b>Estudio <em class="soon-chip">Próximamente</em></b><small>Textos del panel, importaciones y borradores con IA.</small></span></div>
         </div></section>`);
   },
@@ -10794,7 +10846,7 @@ Object.values(MODS).forEach(m => { if (m && GRUPOS[m.g] && m.g !== 'general') m.
   if (ME && AGORA_ME && !esSuperAdmin()) await bootEspacio();
   await loadUiTexts();
   const p = path();
-  if (ME && AGORA_ME && esSuperAdmin() && !['/', '/entrar', '/agencia', '/perfil','/agencia/control','/agencia/usuarios','/agencia/actividad','/agencia/consolidado','/agencia/textos','/agencia/estudio-ia'].includes(p) && !/^\/agencia\/subcuenta\//.test(p) && !route().unknown && ws?.current()) {
+  if (ME && AGORA_ME && esSuperAdmin() && !['/', '/entrar', '/agencia', '/perfil','/agencia/control','/agencia/usuarios','/agencia/actividad','/agencia/consolidado','/agencia/accesos','/agencia/textos','/agencia/estudio-ia'].includes(p) && !/^\/agencia\/subcuenta\//.test(p) && !route().unknown && ws?.current()) {
     const activated = await cambiarSubcuenta(ws.current());
     if (activated) go(p, {replace:true});
     return;

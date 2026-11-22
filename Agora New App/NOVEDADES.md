@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.15 · Accesos con código para los dueños, y tope real de intentos (22 nov):**
+- **Agencia → «Accesos con código»** (solo dueños: Master y Superadmin; también en el menú de Agencia y en el Panel de control). Lista quién pidió o usó un código de 6 dígitos, **de qué subcuenta, desde qué IP y con qué navegador**, y qué pasó: código enviado, pidió otro, código correcto, código equivocado, vencido o ya usado, sin pedido válido, no se pudo enviar, cambio de clave de un correo sin cuenta y **cambio de clave de un dueño** (que no se permite por la web). Filtros por periodo (24 h a 6 meses), por lo que pasó y búsqueda por persona, correo, subcuenta o IP; tocar una IP muestra todo lo de esa IP. Arriba, las IP con más movimientos, con las que se equivocan en rojo.
+- **Nunca se guarda ni se muestra el código.** El registro se conserva 6 meses (tabla `agora_access_log`, migración 013).
+- **Seguridad (fallo grave arreglado):** los pasos de acceso corrían dentro de la transacción de la petición y, al fallar, se deshacían también el contador de intentos del código y los límites por IP. En la práctica **se podían probar códigos sin límite**. Ahora el código se invalida a los 5 intentos y la IP se frena a los 30 en 15 minutos, al entrar y al cambiar la clave.
+- Prueba: `tests/fixes-21815.py` (35).
+
 **Novedades 2.18.14 · Correos de Ágora con logo y código fácil de copiar (22 nov):**
 - **Plantilla nueva** de todos los correos de Ágora (código para entrar, cambio de clave, prueba del correo): logo de Ágora arriba, caja blanca con bordes redondeados, textos más grandes y legibles en el teléfono.
 - **Código listo para copiar:** el asunto empieza con el código («541244 es tu código de acceso a Ágora»), la vista previa del aviso y la primera frase también, y el código va solo en un bloque grande que se selecciona entero con un toque. Así Gmail y los avisos del teléfono lo reconocen y ofrecen «Copiar código» (ese botón lo pone el programa de correo, no se puede poner desde el correo).

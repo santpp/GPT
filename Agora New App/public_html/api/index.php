@@ -46,7 +46,9 @@ try{
  if($path==='sign')$api->a->rate('sign:'.($_SERVER['REMOTE_ADDR']??''),100,300);
  if($api->a->user&&$method!=='GET')$api->a->rate('writes:'.$api->a->user['id'],120,60);
  $call=fn()=>$api->dispatch($path,$method,$body);
- if($method!=='GET'&&$path!=='login'){
+ // 2.18.15 · Los pasos de acceso van fuera de la transacción: si fallan (código equivocado), sus intentos, límites y el registro de accesos
+ // tienen que quedar guardados. Antes se deshacían con el error y el tope de 5 intentos y los límites por IP no contaban.
+ if($method!=='GET'&&!in_array($path,['login','login/codigo','login/reenviar','clave/olvido','clave/restablecer'],true)){
   $result=$db->transaction(function()use($api,$db,$path,$method,$body,$call){
    $key=$_SERVER['HTTP_IDEMPOTENCY_KEY']??$body['requestId']??null;$t=(int)($_SERVER['HTTP_X_WORKSPACE_ID']??0);$u=(int)($api->a->user['id']??0);
    if($key!==null&&$u&&$t){if(!is_string($key)||!preg_match('/^[A-Za-z0-9_-]{8,80}$/D',$key))\Agora\Core\Http::fail('Clave de operación inválida.');$api->a->authorizeTenant($t);$hash=hash('sha256',$method.$path.\Agora\Core\DB::json($body));$old=$db->one('SELECT * FROM agora_idempotency WHERE tenant_id=? AND user_id=? AND request_key=? FOR UPDATE',[$t,$u,$key]);if($old){if(!hash_equals($old['request_hash'],$hash))\Agora\Core\Http::fail('Clave de operación reutilizada con otros datos.',409);return json_decode($old['response'],true,512,JSON_THROW_ON_ERROR);}$db->run('INSERT INTO agora_idempotency(tenant_id,user_id,request_key,request_hash) VALUES(?,?,?,?)',[$t,$u,$key,$hash]);$out=$call();$db->run('UPDATE agora_idempotency SET response=? WHERE tenant_id=? AND user_id=? AND request_key=?',[\Agora\Core\DB::json($out),$t,$u,$key]);return $out;}

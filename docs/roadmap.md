@@ -303,6 +303,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - **2.18.12 (22 de noviembre)**: la entrada usa solo el símbolo del logo, sin el nombre.
 - **2.18.13 (22 de noviembre)**: la entrada espera los números (pantalla quieta, tope 20 s); las tarjetas se arreglan antes de pintarse; página siempre fresca y recarga única si el navegador abrió una versión vieja.
 - **2.18.14 (22 de noviembre)**: plantilla de correos con logo y código listo para copiar (asunto, vista previa y bloque seleccionable).
+- **2.18.15 (22 de noviembre)**: Agencia → «Accesos con código» (solo dueños: IP, persona, subcuenta, navegador y qué pasó; 6 meses). Arreglo grave: el tope de intentos del código y los límites por IP se deshacían con el error y no contaban.
 - **2.18.9 (22 de noviembre)**: la entrada ya no se divide: cada pieza del logo vuela a su pieza del logo visible (dos salidas: antes y después de iniciar sesión).
 - **2.18.8 (22 de noviembre)**: pantalla de entrada con el logo pieza por pieza al abrir, recargar e iniciar sesión.
 - **2.18.7 (22 de noviembre)**: tarjetas siempre 4 por fila (2 en el teléfono).
