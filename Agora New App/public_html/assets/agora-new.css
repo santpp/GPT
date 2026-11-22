@@ -1112,3 +1112,22 @@ main#app#app .cel:has(> .cel-acc) :is(.ag-resumen-s,.ag-resumen-t,h3,.inicio-res
 main#app#app :is(.ag-resumen-grid,.gc-caja-g,.inicio-resumen-g,.g-hero,.grid:has(> .micro),.grid:has(> .cel)):not(.wg-ggrid){grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(max-width:700px){main#app#app :is(.ag-resumen-grid,.gc-caja-g,.inicio-resumen-g,.g-hero,.grid:has(> .micro),.grid:has(> .cel)):not(.wg-ggrid){grid-template-columns:repeat(2,minmax(0,1fr))}}
 main#app#app :is(.g-hero,.grid):has(> .grid > .micro) > .grid{display:contents}
+
+/* 2.18.10 · Lista de cifras predeterminadas en el editor de widgets (en lugar de «copiar de otro módulo») */
+.wg-top{grid-template-columns:1fr!important}
+.wg-pre{border:1px solid var(--line-2,#d4d4da);border-radius:12px;padding:10px 12px;margin:0 0 10px;background:var(--surface,#fff)}
+.wg-pre-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 8px}
+.wg-pre-h input{flex:1 1 180px;max-width:260px;min-height:34px;border-radius:9px;border:1px solid var(--line-2,#d4d4da);padding:0 10px;font:inherit;background:var(--surface-2,#f5f5f7)}
+.wg-pre-l{max-height:220px;overflow:auto;display:grid;gap:8px}
+.wg-pre-g > small{display:block;color:var(--ink-3,#7a7a85);font-weight:600;margin:0 0 4px}
+.wg-pre-g > div{display:flex;flex-wrap:wrap;gap:6px}
+.wg-chip{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:999px;border:1px solid var(--line-2,#d4d4da);background:var(--surface,#fff);color:var(--ink,#1d1d1f);font:500 12.5px/1.2 var(--font-text);cursor:pointer}
+.wg-chip svg{width:13px;height:13px}
+.wg-chip:is(:hover,:focus-visible){background:var(--ag-1,#AD103C);border-color:var(--ag-1,#AD103C);color:#fff}
+/* 2.18.10 · El selector de «Otro periodo» no se sale de la pantalla en el teléfono */
+@media(max-width:700px){#view.ag .period .pop,#period-menu.pop{left:0!important;right:auto!important;width:min(360px,calc(100vw - 32px))!important;transform:none!important}}
+/* 2.18.10 · «Editar» de una tarjeta edita solo esa tarjeta */
+.modal.tarj-una .tarj-ed .pz-item:not(.pz-foco),.modal.tarj-una .tarj-ed .pz-l,.modal.tarj-una .tarj-ed .pz-vacio,.modal.tarj-una .wg-dash,.modal.tarj-una .tarj-ed .pz-list:not(:has(.pz-foco)){display:none!important}
+.modal.tarj-una .tarj-ed .pz-foco{border-color:var(--ag-1,#AD103C)!important}
+.tarj-una-acc{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
+.wg-solo .wg-item:not(.is-open),.wg-solo .wg-pre,.wg-solo .wg-add,.wg-solo [data-wg-restablecer],.wg-solo [data-cfg],.wg-solo [data-dup],.wg-solo [data-mv]{display:none!important}

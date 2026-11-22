@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.10 · «Editar» de cada tarjeta, lista de cifras y entrada para dueños (22 nov):**
+- **«Editar» de una tarjeta edita SOLO esa tarjeta** (pedido del usuario): las del sistema se muestran u ocultan y cambian de lugar («Al principio», «Subir», «Bajar», «Al final»); los widgets abren solo su configuración (título, tipo, período, comparación, semáforo…). La lista completa sigue en «Editar Dashboard».
+- **Editor de widgets:** ya no se copia de otro módulo; se ve la **lista de cifras predeterminadas** agrupada, con buscador, y las fórmulas del equipo. Un toque la agrega.
+- **Entrada también para los dueños** al abrir una subcuenta desde Agencia: tapa el esqueleto hasta que cargan los números.
+- **Teléfono:** el selector de «Otro periodo» ya no se sale de la pantalla.
+- Pruebas: `tests/fixes-21810.py` (8) y `tests/fixes-2188.py` ampliada a 13.
+
 **Novedades 2.18.9 · La entrada encaja en el logo de la pantalla (22 nov):**
 - Pedido del usuario: ya no se divide la palabra hacia los lados. Al terminar de cargar, **cada pieza del logo (aro, dos rayos de la estrella, Á, tilde, g, o, r, a) vuela una tras otra a su misma pieza del logo que se ve en pantalla** y encaja ahí. Es genérico: sirve en cualquier pantalla porque todas tienen el logo.
 - **Dos salidas:** antes de iniciar sesión, las piezas van al logo de la cabecera y el fondo se desvanece; después de iniciar sesión y al recargar, van al logo de arriba y el fondo **se recoge hacia el logo**, como si la app se abriera desde él.

@@ -158,3 +158,5 @@ Cada fase se entrega como una versión con sus pruebas y no rompe lo anterior.
 - **Fórmulas maliciosas o pesadas:** intérprete propio, límites y sin ejecutar código.
 - **Monedas mezcladas:** nunca se suman Bs con US$ sin convertir, y el widget dice con qué tasa convirtió.
 - **Complejidad para el usuario:** el editor trae ejemplos («Margen», «Falta para la meta») que se agregan con un toque, y siempre se puede volver a «Restablecer».
+
+- 2.18.10: sin «copiar de otro módulo» (decisión del usuario); el editor muestra la lista de cifras predeterminadas. «Editar» de una tarjeta edita solo esa tarjeta.

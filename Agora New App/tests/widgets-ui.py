@@ -35,7 +35,7 @@ def abrir_ed(pg):
     """2.18.0: los widgets se editan desde «Editar Dashboard» del módulo."""
     pg.get_by_role('button',name='Editar Dashboard').first.click();pg.wait_for_timeout(700)
     if pg.locator('[data-wg-desde-dash]').count():pg.click('[data-wg-desde-dash]')
-    pg.wait_for_selector('[data-wg-nuevo]')
+    pg.wait_for_selector('[data-wg-buscar]')
 def limpiar_datos():
     limpiar();a=C('admin.asocim@agora.test')
     for m in ('ventas','comercial'):a.call(f'workspace/tableros?modulo={m}','DELETE',{'modulo':m})
@@ -54,7 +54,7 @@ with sync_playwright() as p:
         pg.keyboard.press('Escape');pg.wait_for_timeout(300)
         ok(pg.evaluate("document.querySelector('section.wg').previousElementSibling.querySelector('.cel')!==null"),'los widgets van justo después de las cifras del módulo')
         abrir_ed(pg)
-        pg.select_option('[data-wg-nuevo]','mes.vendido');pg.wait_for_timeout(300)
+        pg.click('[data-wg-pre="mes.vendido"]');pg.wait_for_timeout(300)
         pg.fill('[data-k=titulo]','Prueba vendido');pg.select_option('[data-k=comparar]','mes_anterior');pg.check('[data-k=sem]');pg.wait_for_timeout(200)
         pg.fill('[data-k=verde]','100');pg.fill('[data-k=ambar]','50')
         # nueva fórmula desde el editor de tableros
@@ -73,7 +73,7 @@ with sync_playwright() as p:
         ta.fill('');pg.select_option('[data-fn]','REDONDEAR');pg.wait_for_timeout(200)
         ok(ta.input_value()=='REDONDEAR()','«Insertar función» pone la función con sus paréntesis')
         ta.fill('{Vendido del mes} - {Costos fijos}');pg.select_option('select[name=formato]','dinero');pg.wait_for_timeout(500)
-        pg.click('.wg-fx [type=submit]');pg.wait_for_selector('[data-wg-nuevo]');pg.wait_for_timeout(500)
+        pg.click('.wg-fx [type=submit]');pg.wait_for_selector('[data-wg-buscar]');pg.wait_for_timeout(500)
         items=pg.evaluate("[...document.querySelectorAll('.wg-item b')].map(x=>x.textContent)")
         ok(items==['Prueba vendido','Prueba UI margen'],f'la fórmula nueva vuelve al editor de tableros ya agregada, sin perder lo anterior ({items})')
         pg.click('.wg-item[data-i="1"] [data-mv="-1"]');pg.wait_for_timeout(200)

@@ -28,7 +28,7 @@ with sync_playwright() as pw:
             pg.goto(B+'/'+m);pg.wait_for_timeout(5000)
             ok(pg.get_by_role('button',name='Editar Dashboard').count()==1 and pg.locator('[data-wg-abrir]').count()==0,f'[2] {m}: un solo «Editar Dashboard» y ningún botón suelto de widgets')
             pg.get_by_role('button',name='Editar Dashboard').first.click();pg.wait_for_timeout(800)
-            ok(pg.locator('.wg-dash [data-wg-desde-dash]').count()==1 or pg.locator('[data-wg-nuevo]').count()==1,f'[2] {m}: desde «Editar Dashboard» se llega a los widgets')
+            ok(pg.locator('.wg-dash [data-wg-desde-dash]').count()==1 or pg.locator('[data-wg-buscar]').count()==1,f'[2] {m}: desde «Editar Dashboard» se llega a los widgets')
             pg.keyboard.press('Escape');pg.wait_for_timeout(300)
         ok(not pg.errs,f'sin errores de la página {pg.errs[:2]}')
         pg.close()

@@ -298,6 +298,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - **2.12.15 (21 de noviembre)**: pendientes medios [9], [10], [11] y [13] resueltos; backend revisado para el despliegue.
 - **2.13.0 (21 de noviembre)**: Correo de Ágora por la subcuenta de la agencia (sin SMTP), código al entrar, equipos de confianza de 14 días (cookie, no IP) y «¿Olvidaste tu clave?» en pasos.
 - **2.13.1 (21 de noviembre)**: líneas de las cifras azules (rojas al pasar), «Editar» gris sobre blanco, y la clave de los dueños solo por terminal.
+- **2.18.10 (22 de noviembre)**: «Editar» de cada tarjeta edita solo esa tarjeta; lista de cifras predeterminadas en lugar de copiar; entrada al abrir subcuenta (dueños); selector de fechas dentro de la pantalla en el teléfono.
 - **2.18.9 (22 de noviembre)**: la entrada ya no se divide: cada pieza del logo vuela a su pieza del logo visible (dos salidas: antes y después de iniciar sesión).
 - **2.18.8 (22 de noviembre)**: pantalla de entrada con el logo pieza por pieza al abrir, recargar e iniciar sesión.
 - **2.18.7 (22 de noviembre)**: tarjetas siempre 4 por fila (2 en el teléfono).

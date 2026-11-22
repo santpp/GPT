@@ -4200,7 +4200,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.18.9').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.18.10').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */
@@ -7301,9 +7301,28 @@ const celRotulo = c => (c.querySelector('.ag-resumen-t, :scope > h3, .t-label, .
 function celEditar(main, nombre) {
   const b = main.querySelector('[data-tg-editar]') || [...main.querySelectorAll('button')].find(x => x.offsetParent && /Editar Dashboard/.test(x.textContent));
   if (!b) return; b.click();
-  let n = 0; const marcar = () => { const it = [...document.querySelectorAll('.tarj-ed .pz-item')].find(li => (li.textContent || '').trim().startsWith(nombre));
-    if (!it) { if (++n < 30) setTimeout(marcar, 100); return; }
-    it.classList.add('pz-foco'); it.scrollIntoView({block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}); };
+  // 2.18.10 · pedido del usuario: «Editar» de una tarjeta edita SOLO esa tarjeta (mostrar u ocultar y su lugar); la lista completa queda en «Editar Dashboard»
+  const enfocar = () => {
+    const modal = document.querySelector('#layer .modal'); if (!modal) return false;
+    const it = [...modal.querySelectorAll('.tarj-ed .pz-item')].find(li => (li.textContent || '').trim().startsWith(nombre)); if (!it) return false;
+    modal.classList.add('tarj-una'); modal.querySelectorAll('.tarj-ed .pz-foco').forEach(x => x !== it && x.classList.remove('pz-foco')); it.classList.add('pz-foco');
+    const h = modal.querySelector('.modal-h h2');
+    if (h && !h.dataset.una) { h.dataset.una = '1'; h.textContent = `Editar «${nombre}»`; const p = modal.querySelector('.modal-h p'); if (p) p.textContent = 'Muéstrala u ocúltala y elige su lugar en el tablero. Para ver todas las tarjetas, usa «Editar Dashboard».'; }
+    if (!modal.querySelector('.tarj-una-acc')) {
+      modal.querySelector('.tarj-ed').insertAdjacentHTML('afterend', `<div class="tarj-una-acc"><button type="button" class="btn btn-sm" data-una="-99">Al principio</button><button type="button" class="btn btn-sm" data-una="-1">Subir</button><button type="button" class="btn btn-sm" data-una="1">Bajar</button><button type="button" class="btn btn-sm" data-una="99">Al final</button></div>`);
+      modal.querySelectorAll('[data-una]').forEach(btn => btn.onclick = () => {
+        const d = +btn.dataset.una, paso = d < 0 ? '-1' : '1';
+        for (let k = 0; k < Math.min(Math.abs(d), 60); k++) {
+          enfocar(); const f = modal.querySelector('.tarj-ed .pz-foco'), m = f?.querySelector(`[data-tarj-mover$="|${paso}"], [data-tg-mov$="|${paso}"]`);
+          if (!m || m.disabled) break; m.click();
+        }
+        enfocar();
+      });
+      new MutationObserver(() => enfocar()).observe(modal.querySelector('.tarj-ed'), {childList: true, subtree: true});
+    }
+    return true;
+  };
+  let n = 0; const marcar = () => { if (!enfocar()) { if (++n < 30) setTimeout(marcar, 100); } };
   marcar();
 }
 function cajaVivo(main) {
@@ -10455,6 +10474,7 @@ async function abrirCuentaAgencia(id) {
   if (!AGORA_CONN.some(x => String(x.id) === String(id))) {
     toast(esMaster() ? 'No se pudo abrir la subcuenta. Recarga la página e inténtalo de nuevo.' : 'Esta subcuenta no está asignada a tu usuario. Pídele a la Master que te la asigne en Gestión de usuarios.'); return false;
   }
+  try { window.AgoraEntrada?.mostrar(); } catch {} // 2.18.10: la entrada tapa el esqueleto mientras cargan los números de la subcuenta
   return cambiarSubcuenta(id);
 }
 V.agencia = {

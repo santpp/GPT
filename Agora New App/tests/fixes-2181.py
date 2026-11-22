@@ -14,7 +14,7 @@ with sync_playwright() as pw:
         ok_=''
         if nb:
             pg.get_by_role('button',name='Editar Dashboard').first.click();pg.wait_for_timeout(800)
-            ok_='dash' if pg.locator('.wg-dash').count() else ('editor' if pg.locator('[data-wg-nuevo]').count() else 'nada')
+            ok_='dash' if pg.locator('.wg-dash').count() else ('editor' if pg.locator('[data-wg-buscar]').count() else 'nada')
             pg.keyboard.press('Escape');pg.wait_for_timeout(300)
         ok(nb==1 and ok_ in ('dash','editor'),f'{m}: un solo «Editar Dashboard» y desde ahí se llega a los widgets ({ok_})')
     ok(not pg.errs,f'sin errores de la página {pg.errs[:2]}');br.close()

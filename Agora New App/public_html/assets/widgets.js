@@ -157,7 +157,7 @@
   }
   function enlazar(sec, mod, t, cat) {
     sec.querySelectorAll('[data-wg-abrir]').forEach(b => b.onclick = () => editorTablero(mod));
-    sec.querySelectorAll('[data-wg-ed]').forEach(b => b.onclick = e => { e.stopPropagation(); editorTablero(mod, b.dataset.wgEd); });
+    sec.querySelectorAll('[data-wg-ed]').forEach(b => b.onclick = e => { e.stopPropagation(); editorTablero(mod, b.dataset.wgEd, null, {solo: true}); });
     sec.querySelectorAll('.wg-cel[data-wg-id]').forEach(c => { const w = t?.widgets.find(x => x.id === c.dataset.wgId); if (!w || c.dataset.wgOn) return; c.dataset.wgOn = '1';
       c.setAttribute('role', 'button'); c.tabIndex = 0; c.title = 'Ver el detalle';
       const abrir = e => { if (e.target.closest('.cel-acc')) return; detalle(w, cat); };
@@ -363,17 +363,20 @@
     return `<option value="">Elige una cifra o una fórmula…</option>${Object.entries(grupos).map(([g, ms]) => `<optgroup label="${esc(g)}">${ms.map(m => `<option value="${esc(m.id)}" ${sel === m.id ? 'selected' : ''}>${esc(m.nombre)}</option>`).join('')}</optgroup>`).join('')}
       ${(cat.formulas || []).length ? `<optgroup label="Fórmulas del equipo">${cat.formulas.map(f => `<option value="f:${f.id}" ${sel === 'f:' + f.id ? 'selected' : ''}>${esc(f.nombre)}</option>`).join('')}</optgroup>` : ''}`;
   }
-  async function editorTablero(mod, foco, estado) {
+  async function editorTablero(mod, foco, estado, opc = {}) {
     const h = H();
     let cat; try { cat = await catalogo(true); } catch (e) { h.toast(e.message); return; }
     const t = st.tab[mod] || {widgets: [], version: 0};
     const s = estado || {ws: JSON.parse(JSON.stringify(t.widgets)), version: t.version, abierto: foco || null, visible: t.visible || 'todos'};
-    const otros = MODULOS.filter(x => x !== mod && h.nombreDe(x));
-    const m = h.openModal(h.modalHead('Editar widgets', `Cifras y gráficos del equipo en ${esc(h.nombreModulo())}. Solo la administración los cambia; los gráficos van al final del módulo.`) + `<div class="wg-ed">
-      <div class="wg-top"><label class="fld">Quién los ve<select data-wg-visible><option value="todos" ${s.visible !== 'administracion' ? 'selected' : ''}>Todo el equipo</option><option value="administracion" ${s.visible === 'administracion' ? 'selected' : ''}>Solo la administración</option></select></label>
-        <label class="fld">Copiar los widgets de otro módulo<select data-wg-copiar><option value="">Elige un módulo…</option>${otros.map(x => `<option value="${x}">${esc(h.nombreDe(x))}</option>`).join('')}</select></label></div>
+    const solo = opc.solo && foco ? s.ws.find(w => w.id === foco) : null; if (solo) s.abierto = solo.id;
+    const m = h.openModal(h.modalHead(solo ? `Editar «${esc(solo.titulo || nombreRef(solo, cat))}»` : 'Editar widgets', solo ? 'Cambia solo este widget. Para ver y ordenar todos, usa «Editar Dashboard».' : `Cifras y gráficos del equipo en ${esc(h.nombreModulo())}. Solo la administración los cambia; los gráficos van al final del módulo.`) + `<div class="wg-ed${solo ? ' wg-solo' : ''}">
+      <div class="wg-top"${solo ? ' hidden' : ''}><label class="fld">Quién los ve<select data-wg-visible><option value="todos" ${s.visible !== 'administracion' ? 'selected' : ''}>Todo el equipo</option><option value="administracion" ${s.visible === 'administracion' ? 'selected' : ''}>Solo la administración</option></select></label>
+</div>
       <ol class="pz-list wg-lista" data-wg-lista></ol>
-      <div class="wg-add"><label class="fld grow"><span>Agregar una cifra o un gráfico</span><select data-wg-nuevo>${opcionesRef(cat)}</select></label>
+      <div class="wg-pre"><div class="wg-pre-h"><b>Cifras predeterminadas</b><input type="search" data-wg-buscar placeholder="Buscar una cifra…" aria-label="Buscar una cifra"></div>
+        <div class="wg-pre-l">${Object.entries((cat.metricas || []).reduce((g, x) => ((g[x.grupo] ||= []).push(x), g), {})).map(([g, ms]) => `<div class="wg-pre-g"><small>${esc(g)}</small><div>${ms.map(x => `<button type="button" class="wg-chip" data-wg-pre="${esc(x.id)}" title="${esc(x.descripcion || '')}">${ic('plus')}${esc(x.nombre)}</button>`).join('')}</div></div>`).join('')}
+        ${(cat.formulas || []).length ? `<div class="wg-pre-g"><small>Fórmulas del equipo</small><div>${cat.formulas.map(f => `<button type="button" class="wg-chip" data-wg-pre="f:${f.id}">${ic('plus')}${esc(f.nombre)}</button>`).join('')}</div></div>` : ''}</div></div>
+      <div class="wg-add">
         <button class="btn" type="button" data-wg-formula>${ic('plus')}Nueva fórmula</button><button class="btn" type="button" data-wg-formulas>${ic('edit')}Fórmulas y variables</button><button class="btn" type="button" data-wg-plantillas>${ic('spark')}Plantillas</button></div>
       <p class="fld-err" role="alert"></p>
       <div class="form-ft"><button class="btn" type="button" data-wg-restablecer>${ic('refresh')}Restablecer</button><span class="grow"></span><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="button" data-wg-guardar>Guardar</button></div></div>`, {wide: true});
@@ -434,22 +437,18 @@
       if (foco) { lista.querySelector('.wg-item.is-open')?.scrollIntoView({block: 'center'}); foco = null; }
     };
     pintarLista();
-    m.querySelector('[data-wg-nuevo]').onchange = e => {
-      const v = e.target.value; if (!v) return; if (s.ws.length >= 24) { err.textContent = 'Un tablero lleva hasta 24 widgets.'; e.target.value = ''; return; }
+    const agregar = v => {
+      if (!v) return; if (s.ws.length >= 24) { err.textContent = 'Un tablero lleva hasta 24 widgets.'; return; }
       const w = {id: uid(), tipo: 'cifra', fuente: v.startsWith('f:') ? 'formula' : 'metrica', ref: v.startsWith('f:') ? +v.slice(2) : v, titulo: '', nota: '', tamano: 'chico', periodo: 'modulo', comparar: '', formato: 'auto', decimales: 2, semaforo: {activo: false}, mas: [], meses: 6, top: 5};
-      s.ws.push(w); s.abierto = w.id; e.target.value = ''; pintarLista(); lista.lastElementChild?.scrollIntoView({block: 'nearest'});
+      s.ws.push(w); s.abierto = w.id; pintarLista(); lista.lastElementChild?.scrollIntoView({block: 'nearest'});
     };
+    m.querySelectorAll('[data-wg-pre]').forEach(b => b.onclick = () => agregar(b.dataset.wgPre));
+    m.querySelector('[data-wg-buscar]').oninput = e => { const q = e.target.value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+      m.querySelectorAll('.wg-pre-g').forEach(g => { let n = 0; g.querySelectorAll('[data-wg-pre]').forEach(b => { const v = !q || b.textContent.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(q); b.hidden = !v; n += v; }); g.hidden = !n; }); };
     m.querySelector('[data-wg-formula]').onclick = () => editorFormula(null, () => editorTablero(mod, null, s), f => { s.ws.push({id: uid(), fuente: 'formula', ref: f.id, titulo: '', nota: '', tamano: 'chico', periodo: 'modulo', comparar: '', formato: 'auto', decimales: 2, semaforo: {activo: false}}); s.abierto = s.ws.at(-1).id; });
     m.querySelector('[data-wg-formulas]').onclick = () => gestor(() => editorTablero(mod, null, s));
     m.querySelector('[data-wg-plantillas]').onclick = () => plantillas(mod, () => { delete st.tab[mod]; api(`workspace/tableros?modulo=${enc(mod)}`).then(t => { st.tab[mod] = t; editorTablero(mod); }).catch(() => H().closeModal()); });
     m.querySelector('[data-wg-visible]').onchange = e => { s.visible = e.target.value; };
-    m.querySelector('[data-wg-copiar]').onchange = async e => {
-      const x = e.target.value; if (!x) return; err.textContent = '';
-      try { const o = await api(`workspace/tableros?modulo=${enc(x)}`); if (!o.widgets.length) { err.textContent = `«${h.nombreDe(x)}» no tiene widgets para copiar.`; }
-        else { const cabe = 24 - s.ws.length; o.widgets.slice(0, cabe).forEach(w => s.ws.push({...w, id: uid()})); if (o.widgets.length > cabe) err.textContent = `Se copiaron ${Math.max(0, cabe)} de ${o.widgets.length}: un tablero lleva hasta 24 widgets.`; else h.toast(`Se copiaron ${o.widgets.length} widgets de «${h.nombreDe(x)}». Revisa y guarda.`); pintarLista(); } }
-      catch (y) { err.textContent = y.message; }
-      e.target.value = '';
-    };
     m.querySelector('[data-wg-restablecer]').onclick = () => h.confirmar('Quitar los widgets', 'Se quitan todos los widgets de este módulo para todo el equipo. Las fórmulas y variables no se borran.', 'Quitar widgets', async () => { await api(`workspace/tableros?modulo=${enc(mod)}`, {method: 'DELETE', body: {modulo: mod}}); h.toast('Widgets quitados.'); repintar(mod); }, true);
     m.querySelector('[data-wg-guardar]').onclick = async e => {
       const b = e.currentTarget; h.busy(b, true, 'Guardando…'); err.textContent = '';

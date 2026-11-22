@@ -35,7 +35,7 @@ Resumen de cómo trabajamos. El detalle por módulo y las decisiones de cada ver
 |---|---|---|
 | Qué es | App del vendedor (bandeja, contactos, oportunidades, tablero), PWA y Android | Gestión completa (ventas, facturación, reporte mensual, contratos, agencia) |
 | Dónde | Producción: nueva.agoradigital.app | Pruebas: tests.agoradigital.app (CyberPanel + OpenLiteSpeed) |
-| Versión | **1.10.35** | **2.18.9** |
+| Versión | **1.10.35** | **2.18.10** |
 | Código | 23 módulos ES (`public/assets/*.js`), `src/` PHP 8.3 | `public_html/assets/agora-app.js` (un archivo grande, se va a refactorizar), `agora-modulos.js` (pantallas de Mobile empaquetadas), `servidor/` |
 | Paquete | `python3 deploy/native/package.py "Agora Mobile/agora-update-X.zip" --update` + `deploy/native/UPDATE-X.md`; versión en `src/Installation.php`, pie de `public/index.html` y `tests/integration.php`; `.sha256` con `sha256sum` | `python3 tools/package.py` (revisa secretos, excluye config, storage, pruebas y demos) |
 | Pruebas | `tests/*.php` y `tests/*-ui.py` (servidor :8080) | `Agora New App/tests/*.py` (API :8090) |
