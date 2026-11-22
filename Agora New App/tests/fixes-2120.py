@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.12.0 · Pedidos del usuario (20 nov):
 1 Tasas del día: BCV dólar, BCV euro y USDT de Binance (automáticas o a mano, por subcuenta).
 2 Factura: los precios se escriben en Bs, US$ o €; el SERVIDOR los pasa a Bs con la tasa elegida (no se fía del navegador), guarda de dónde

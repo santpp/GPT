@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.9.6 · Arreglos de la revisión completa del 18 nov.
 1 Con la subcuenta conectada, Tareas no ofrece plantilla ni «Cargar desde Excel» (antes abría Migración en Productos).
 2 Las ventas empiezan desde el 1/1/2026 (crear, editar e importar).

@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.16 · Derechos de autor (22 nov):**
+- **`LICENSE.txt`** en el ERP y dentro del paquete: «Copyright © 2026 Santiago Rafael Pérez Pérez. Todos los derechos reservados», software propietario de Ágora Digital App. La fuente Author conserva su propia licencia.
+- **Cabecera de derechos en cada archivo de código propio** (PHP, JS, CSS, HTML y Python) y `<meta name="author">` y `<meta name="copyright">` en la página. Las migraciones SQL no se tocan (el servidor comprueba su huella), quedan cubiertas por `LICENSE.txt`. Solo el ERP (decisión del usuario).
+
 **Novedades 2.18.15 · Accesos con código para los dueños, y tope real de intentos (22 nov):**
 - **Agencia → «Accesos con código»** (solo dueños: Master y Superadmin; también en el menú de Agencia y en el Panel de control). Lista quién pidió o usó un código de 6 dígitos, **de qué subcuenta, desde qué IP y con qué navegador**, y qué pasó: código enviado, pidió otro, código correcto, código equivocado, vencido o ya usado, sin pedido válido, no se pudo enviar, cambio de clave de un correo sin cuenta y **cambio de clave de un dueño** (que no se permite por la web). Filtros por periodo (24 h a 6 meses), por lo que pasó y búsqueda por persona, correo, subcuenta o IP; tocar una IP muestra todo lo de esa IP. Arriba, las IP con más movimientos, con las que se equivocan en rojo.
 - **Nunca se guarda ni se muestra el código.** El registro se conserva 6 meses (tabla `agora_access_log`, migración 013).

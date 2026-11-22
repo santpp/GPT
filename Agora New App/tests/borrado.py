@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.17.0 · Eliminar subcuenta (solo el dueño Master), eliminar y suspender usuarios de subcuenta.
 Lo irreversible pide resolver una operación aritmética que el servidor firma y vuelve a comprobar.
 Requiere la API local en :8090 y la cuenta simulada. Uso: python3 tests/borrado.py"""

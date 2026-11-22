@@ -1,4 +1,5 @@
 <?php
+/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 declare(strict_types=1);
 // Included only after authentication. All object access is tenant scoped.
 if ($u['role'] !== 'administrator') respond(['error'=>'Sólo el administrador puede configurar integraciones'],403);

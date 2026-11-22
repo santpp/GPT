@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.18.0 · Punto 7 del plan de widgets y plantillas por rubro:
 «Buscar objetivo», avisos de los widgets en Inicio, consolidado de la agencia y plantillas (incluidas y de los dueños).
 Requiere la API local en :8090 y la cuenta simulada (ASOCIM conectada). Uso: python3 tests/widgets-p7.py"""

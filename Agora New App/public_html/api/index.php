@@ -1,4 +1,5 @@
 <?php
+/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 declare(strict_types=1);
 ini_set('display_errors','0');header('Cache-Control: no-store');header('X-Content-Type-Options: nosniff');header('Referrer-Policy: no-referrer');
 // 2.12.14 · Cabeceras de seguridad propias de la API (por si el servidor no aplica las del .htaccess).

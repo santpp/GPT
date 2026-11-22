@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App · «Nuevo contacto» escribe en la cuenta conectada.
 Necesita lo mismo que tests/motor-puente.py y haberlo corrido antes (deja ASOCIM conectada).
 Uso: python3 tests/contactos.py"""

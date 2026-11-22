@@ -1,4 +1,5 @@
 <?php
+/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 declare(strict_types=1);
 namespace Agora\Widgets;
 use Agora\Core\{Http,HttpError};

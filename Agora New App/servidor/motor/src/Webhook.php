@@ -1,4 +1,5 @@
 <?php
+/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 declare(strict_types=1);
 final class Webhook {
     public static function verify(string $raw, string $signature, string $key, int $now): array {

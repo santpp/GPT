@@ -1,4 +1,5 @@
 <?php
+/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 // Agora New App 2.14.0 · Intérprete de fórmulas de los widgets: cientos de fórmulas con resultado conocido, errores claros
 // con su posición, unidades, funciones financieras y de fechas, y entradas maliciosas rechazadas.
 // Uso: php tests/formulas.php

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.11.6 · Criterio único de atajos en las tarjetas de cifras.
 1 El Tablero comercial, como «Resumen de hoy», lleva de cada tarjeta a su módulo: rótulo con chevron y la tarjeta entera es el enlace.
 2 Con el filtro puesto: «Sin leer» abre la bandeja en «Sin leer»; «Oportunidades abiertas» abre Oportunidades.

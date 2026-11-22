@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.13.1 · La clave de una cuenta de dueño (Master o Superadmin) solo se cambia por terminal
 (php servidor/bin/cambiar-clave.php correo). Ni «Cambiar mi clave», ni «¿Olvidaste tu clave?», ni el Master desde Usuarios.
 Los demás usuarios siguen igual. Requiere la API local en :8090 y la cuenta simulada. Deja el canal de correo apagado.

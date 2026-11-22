@@ -1,3 +1,4 @@
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """2.9.1 · Catálogo → Estudiantes: filtro por vendedor y cédula, Excel solo con lo filtrado, estado a mano y recurrencia de activos.
 Requiere la API local en :8090 con la subcuenta ASOCIM (motor-puente.py antes) y ventas registradas (venta-cuenta.py / ventas-importadas.py).
 2.9.2: solo con rubro de educación. La prueba pone el rubro de ASOCIM en la base local (socket de MariaDB de pruebas).

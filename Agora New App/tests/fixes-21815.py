@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.18.15 · Accesos con código (pedido del usuario): el dueño ve quién pidió o usó un código de 6 dígitos,
 de qué subcuenta, desde qué IP y navegador. Nunca el código. Solo dueños (Master y Superadmin).
 Requiere la API local en :8090 y la cuenta simulada. Deja el canal apagado al terminar. Uso: python3 tests/fixes-21815.py"""

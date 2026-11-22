@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.11.1 · Correcciones del usuario (19 nov):
 1 Facturación solo en bolívares: el editor no ofrece otra moneda de factura; «Facturar» un cobro en dólares abre con precios en US$ y tasa BCV (2.12.0).
 2 «Por forma de cobro» muestra siempre Recurrente, Venta no recurrente y Venta única.

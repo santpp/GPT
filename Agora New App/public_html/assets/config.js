@@ -1,3 +1,4 @@
+/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 /* Backend unificado: mantener frontend y API en el mismo dominio HTTPS. */
 window.AGORA_API='/api/';
 window.CONTRATOS_API='/api/';

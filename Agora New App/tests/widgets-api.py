@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.14.0 · Widgets, fase 1 y motor de fórmulas (sin cambios visibles):
 - Coincidencia: cada métrica del diccionario da EXACTAMENTE la cifra de su fuente (la misma ruta que usan las tarjetas),
   con cada rol (administración, ejecutivo, consulta) y en una subcuenta sin reporte ni cuenta conectada.

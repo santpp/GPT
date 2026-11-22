@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.18.14 · Plantilla de los correos de Ágora (pedido del usuario):
 con el logo y el código listo para copiarlo en el teléfono (asunto, vista previa y primera frase con el código, como lo reconocen Gmail
 y los avisos del teléfono para ofrecer «Copiar código»; el código se selecciona entero con un toque).

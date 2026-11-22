@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.18.2 · Pedido del usuario sobre las tarjetas y el filtro del Dashboard:
 - menos espacio en blanco: el contenido empieza arriba; el resultado va centrado y más grande;
 - todas las líneas del mismo grosor (4 px) y una línea que cierra la caja abajo;

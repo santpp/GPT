@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.13.0 · Pantallas de acceso: código por correo, «¿Olvidaste tu clave?» y «Correo de Ágora» de la agencia.
 Ordenador y teléfono. Requiere la API local en :8090 y la cuenta simulada. Deja el canal apagado y la clave de pruebas al terminar.
 Uso: python3 tests/acceso-ui.py"""

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.12.1 · Pedidos del usuario (20 nov, tarde):
 1 Formulario de factura: «Moneda y tasa» antes de los productos (sin el campo fijo «Moneda: Bolívares»), tasa con todos sus decimales,
   el equivalente en Bs de cada línea y un total que cuadra a la vista (base + IVA = total) con lo que calcula el servidor.

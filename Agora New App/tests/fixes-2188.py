@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.18.8 · Pantalla de entrada (pedido del usuario, idea «Casa Momo» con el logo de Ágora):
 aparece al abrir o recargar y al iniciar sesión; el logo entra pieza por pieza; se va cuando la pantalla terminó de cargar
 (no antes de 0,9 s, nunca más de 7 s): cada pieza vuela a su pieza del logo visible (2.18.9). Inicio no tiene widgets (van en cada módulo).

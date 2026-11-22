@@ -1,4 +1,5 @@
 <?php
+/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 declare(strict_types=1);
 spl_autoload_register(function(string $name){if(str_starts_with($name,'Agora\\')){$path=__DIR__.'/app/src/'.str_replace('\\','/',substr($name,6)).'.php';if(is_file($path))require $path;}});
 require_once __DIR__.'/app/src/Core/Http.php';

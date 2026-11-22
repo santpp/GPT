@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App · paquete de PRODUCCIÓN para CyberPanel (sin Docker, MySQL).
 Uso: python3 tools/package.py [versión]   → agora-new-app-<versión>.zip junto a este archivo.
 Deja fuera: modo pruebas y datos sintéticos, demos, logos de clientes, pruebas, herramientas,
@@ -6,7 +7,7 @@ config.php real, storage y cualquier archivo con aspecto de clave. El ZIP de dem
 (agora-cyberpanel-2.1.19-demo.zip)."""
 import hashlib,pathlib,re,sys,zipfile
 ROOT=pathlib.Path(__file__).resolve().parent.parent
-version=sys.argv[1] if len(sys.argv)>1 else '2.18.15'
+version=sys.argv[1] if len(sys.argv)>1 else '2.18.16'
 out=ROOT/f'agora-new-app-{version}.zip'
 FUERA=[r'^servidor/datos-sinteticos/',r'^servidor/bin/sembrar-sinteticos\.php$',r'^servidor/storage/(?!\.gitkeep$|\.gitignore$)',
        r'^servidor/config/config\.php$',r'^public_html/assets/demo(-capas)?\.js$',r'^public_html/assets/asocim-',
@@ -19,6 +20,7 @@ for top in ('public_html','servidor'):
         if any(re.search(p,rel) for p in FUERA):continue
         files.append((f,rel))
 files.append((ROOT/'INSTALAR-CYBERPANEL.md','INSTALAR-CYBERPANEL.md'))
+files.append((ROOT/'LICENSE.txt','LICENSE.txt'))  # 2.18.16 · aviso de derechos de autor (todos los derechos reservados)
 SECRETO=re.compile(rb'(pit-[0-9a-f]{8}-[0-9a-f]{4}|-----BEGIN [A-Z ]*PRIVATE KEY|eyJhbGciOi[A-Za-z0-9_-]{20,}\.)')
 with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as z:
     for f,rel in files:

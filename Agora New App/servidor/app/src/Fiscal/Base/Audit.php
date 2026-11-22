@@ -1,4 +1,5 @@
 <?php
+/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 declare(strict_types=1);
 namespace Agora\Fiscal\Base;
 /** Agora New App · la auditoría fiscal se escribe en la auditoría del ERP (agora_audit) mediante la función que entrega el controlador. */

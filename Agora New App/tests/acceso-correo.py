@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.13.0 · Correo de Ágora, código al entrar, equipo de confianza y «¿Olvidaste tu clave?».
 - Solo el dueño elige por qué subcuenta salen los correos (Agencia → Correo de Ágora) y puede probar el envío.
 - Con el canal elegido, entrar pide un código de 6 dígitos que llega por correo; sin «Recuérdame» la sesión es normal.

@@ -1,0 +1,19 @@
+Ágora Digital App · Agora New App (ERP)
+Copyright © 2026 Santiago Rafael Pérez Pérez. Todos los derechos reservados.
+
+Este software, su código fuente, su diseño, su documentación y sus recursos gráficos
+son propiedad exclusiva de Santiago Rafael Pérez Pérez y forman parte de Ágora Digital App.
+
+Es software propietario. Sin autorización previa y por escrito del titular, no está permitido:
+copiarlo, reproducirlo, modificarlo, adaptarlo, traducirlo, distribuirlo, publicarlo, venderlo,
+sublicenciarlo, alquilarlo, prestarlo, descompilarlo, aplicarle ingeniería inversa
+ni usarlo para crear obras derivadas, en todo o en parte.
+
+La instalación de una copia en un servidor no transfiere ningún derecho de propiedad:
+solo permite el uso que el titular haya autorizado por escrito.
+
+Componentes de terceros: la fuente tipográfica Author conserva su propia licencia
+(public_html/assets/fonts/Author-LICENSE.txt). Las marcas y logotipos de clientes
+pertenecen a sus respectivos dueños.
+
+Contacto del titular: Santiago Rafael Pérez Pérez · Ágora Digital App.

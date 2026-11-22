@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.11.5 · Una sola fuente y una sola escala en todos los módulos.
 Fuente: Author en todo el texto (solo los códigos usan letra de ancho fijo). Escala (escritorio):
 título del módulo 28 px · títulos de sección 20 px · títulos de panel 16,5 px · tarjetas: rótulo 14 px (13 en el teléfono; 2.12.6) y cifra 26 px

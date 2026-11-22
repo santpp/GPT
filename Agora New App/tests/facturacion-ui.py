@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.11.0 · Facturación (pantallas).
 1 El menú tiene la categoría «Facturación» (Cobros, Facturas, Libro de ventas, Datos fiscales, Tasas del día) y «Ventas» ya no dice «y facturación».
 2 Sin datos fiscales (subcuenta 1): factura simple desde el teléfono, emitida e impresa «sin validez fiscal», sin número de control.

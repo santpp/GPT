@@ -8,6 +8,11 @@ Se carga junto con el `CLAUDE.md` de la raíz (reglas generales, Git, entregas, 
 - Servidor de pruebas: **tests.agoradigital.app** (CyberPanel + OpenLiteSpeed). Instalación: `INSTALAR-CYBERPANEL.md`.
 - Ágora Mobile es otro producto: **no se toca desde aquí**. El ERP lleva su propia copia del motor de Mobile (`servidor/motor/`, de 1.10.14) y de sus pantallas (`public_html/assets/agora-modulos.js`). Cambios en esas copias: marca «Agora New App» y anótalos en `servidor/motor/LEEME.md`.
 
+## Derechos de autor (2.18.16)
+
+- El ERP es software propietario: **© 2026 Santiago Rafael Pérez Pérez · Ágora Digital App. Todos los derechos reservados** (`LICENSE.txt`, va en el paquete).
+- **Todo archivo nuevo de código propio** (PHP, JS, CSS, HTML, Python) empieza con la cabecera de una línea que ya tienen los demás (en PHP, justo después de `<?php`; en HTML, después de `<!doctype html>`). **Nunca se agrega a una migración SQL ya aplicada** (el servidor compara su huella y no arranca). La licencia de la fuente Author no se toca.
+
 ## Mapa del código
 
 | Parte | Dónde |

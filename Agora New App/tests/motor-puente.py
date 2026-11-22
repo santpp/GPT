@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App · el motor de Ágora Mobile detrás de la bandeja, contactos, oportunidades y consumos.
 Necesita, en desarrollo: la API en http://127.0.0.1:8090 (APP_ENV=development, AGORA_GHL_FAKE=http://127.0.0.1:8099),
 la cuenta simulada (python3 tests/fake-ghl.py 8099) y los datos sintéticos sembrados (bin/sembrar-sinteticos.php).

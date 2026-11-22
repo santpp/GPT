@@ -1,4 +1,5 @@
 <?php
+/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 declare(strict_types=1);
 // Agora New App · conexión de una subcuenta con su cuenta: cifrado, validaciones y «Probar conexión».
 // Uso: AGORA_CONFIG=/ruta/config.php php tests/ghl-conexion.php  (base MySQL de pruebas, nunca la real)
