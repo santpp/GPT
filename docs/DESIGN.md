@@ -460,3 +460,4 @@ Lo que se deja para otro momento.
 - **Tarjetas (2.18.2):** contenido arriba (sin centrar en vertical); solo el resultado centrado, 28–36 px (26 px en teléfono). Línea superior de 4 px pegada al borde en todas las filas y línea de 4 px que cierra la caja abajo. Filtro del Dashboard: Ayer · Hoy · Otro periodo (selector de fechas).
 - **Cifras (2.18.4):** el resultado llena la tarjeta: ocupa el alto libre, centrado; tamaño `clamp(30px, 100cqi·0,86 / (largo·0,54), 84px)` (teléfono 24–56 px). `--wgn` = largo de la cifra, lo pone widgets.js.
 - **Filas (2.18.6):** si la última fila de una caja tiene menos tarjetas, se reparten el ancho por igual (la caja pasa a columnas×resto). Títulos y enunciados dejan 76 px al botón «Editar».
+- **Cuadrícula (2.18.7):** las cajas de tarjetas van siempre a 4 columnas (2 en teléfono ≤700 px); los gráficos no.

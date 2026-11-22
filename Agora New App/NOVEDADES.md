@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.7 · Tarjetas siempre 4 por fila (22 nov):**
+- Pedido del usuario: en todos los módulos las tarjetas van **4 por fila** (2 en el teléfono); los gráficos no entran en esta regla. La última fila, si tiene menos, se reparte el ancho por igual. Comprobado en 11 módulos, ordenador y teléfono.
+- `tests/fixes-2182.py` ampliada a 24.
+
 **Novedades 2.18.6 · Dos tarjetas de leads, filas parejas y «Editar» en su lugar (22 nov):**
 - Pedido del usuario: **«Leads de hoy» y «Leads asignados a mí» son dos tarjetas** del mismo tamaño, cada una con su número grande y su enunciado («Leads del día asignados a ti»). Se ordenan u ocultan por separado. Si el usuario no está enlazado con la cuenta, la tarjeta lo indica.
 - **Proporciones:** cuando la última fila tiene menos tarjetas, se reparten el ancho por igual (antes una quedaba el doble de ancha). Comprobado en 9 módulos, ordenador y teléfono.
