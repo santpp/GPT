@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.4 · El resultado llena la tarjeta (22 nov):**
+- Pedido del usuario (no compactar, sino agrandar): **la cifra ocupa todo el alto libre de la tarjeta**, centrada, y su letra crece según el ancho de la tarjeta y lo largo de la cifra: de 30 a 84 px en el ordenador (24 a 56 px en el teléfono). «4» se ve grande y «US$ 10.260,06» cabe sin cortarse. Comprobado en 7 módulos, ordenador y teléfono: ninguna cifra se sale.
+- Se deshizo lo compactado en 2.18.3 (la nota de «Leads asignados a mí» vuelve a verse).
+
 **Novedades 2.18.3 · Dashboard aún más compacto (22 nov):**
 - La tarjeta «Leads de hoy» estiraba toda su fila con su bloque extra. Ahora «Leads asignados a mí» va en una línea corta (separada por una raya punteada) y su nota pasa a la ayuda al pasar el ratón; si el usuario no está enlazado con la cuenta, la indicación sigue visible. Menos aire entre título y cifra y relleno más chico en todas las tarjetas.
 - La primera fila del Dashboard pasa de 263 px (2.18.1) a 170 px.

@@ -1096,13 +1096,10 @@ main#app#app .cel::before{top:0!important;height:4px!important}
 main#app#app :is(.ag-resumen-grid,.g-hero,.grid,.gc-caja-g,.inicio-resumen-g):has(> .cel)::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--ag-2);z-index:1;pointer-events:none}
 main#app .per-b[hidden]{display:none!important}
 @media(max-width:600px){main#app#app .cel :is(.ag-resumen-v,.t-metric,.inicio-resumen-v,.t-hero){font-size:26px!important}main#app#app .cel{padding:12px 10px 14px!important}}
-/* 2.18.3 · Pedido del usuario: aún mucho espacio. La tarjeta «Leads de hoy» del Dashboard estiraba toda la fila con su bloque extra:
-   «Leads asignados a mí» queda en una línea corta y su nota pasa a texto chico (sin recuadro). Menos aire entre título y cifra. */
-main#app#app .g-hero > .hero .pair{margin:6px 0 0!important;padding:6px 0 0!important;font-size:13px!important;display:flex!important;justify-content:center;align-items:baseline;gap:8px;min-height:0!important}
-main#app#app .g-hero > .hero .pair b{font-size:15px!important}
-main#app#app .g-hero > .hero :is(.pair + .f, .f){background:none!important;border:0!important;padding:0!important;margin:2px 0 0!important;font-size:12px!important;line-height:1.35!important;color:var(--ink-3,#7a7a85)!important;align-self:center;text-align:center}
-main#app#app .g-hero > .hero :is(.chip,.pt-chip,.sc){margin-top:4px!important}
-main#app#app .cel :is(.ag-resumen-v,.t-metric,.inicio-resumen-v,.t-hero){margin:6px 0 0!important}
-main#app#app .cel{padding:12px 16px 12px!important}
-main#app#app .g-hero > .hero .goal{margin:8px 0 0!important;padding:6px 0 0!important;gap:0!important;border-top:1px dashed var(--line-2,#d4d4da)!important}
-main#app#app .g-hero > .hero .goal > .f.f-ayuda{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important} /* la nota pasa a la ayuda al pasar (title) */
+
+/* 2.18.4 · Pedido del usuario: el resultado llena la tarjeta. Ocupa todo el alto libre (centrado) y su letra crece según el ancho
+   de la tarjeta y lo largo de la cifra (--wgn lo pone widgets.js): «4» se ve grande y «US$ 10.260,06» cabe sin cortarse. */
+main#app#app .cel{container-type:inline-size}
+main#app#app .cel :is(.ag-resumen-v,.t-metric,.inicio-resumen-v,.t-hero){flex:1 1 auto!important;display:flex!important;align-items:center!important;justify-content:center!important;align-self:stretch!important;
+  font-size:clamp(30px,calc(100cqi * .86 / (max(var(--wgn,4),3) * .54)),84px)!important;line-height:1!important;margin:8px 0!important;white-space:nowrap}
+@media(max-width:600px){main#app#app .cel :is(.ag-resumen-v,.t-metric,.inicio-resumen-v,.t-hero){font-size:clamp(24px,calc(100cqi * .86 / (max(var(--wgn,4),3) * .54)),56px)!important}}

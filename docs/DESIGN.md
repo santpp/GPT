@@ -458,3 +458,4 @@ Lo que se deja para otro momento.
 - Los correos de prueba terminan en `@example.test`; los teléfonos son de ejemplo.
 
 - **Tarjetas (2.18.2):** contenido arriba (sin centrar en vertical); solo el resultado centrado, 28–36 px (26 px en teléfono). Línea superior de 4 px pegada al borde en todas las filas y línea de 4 px que cierra la caja abajo. Filtro del Dashboard: Ayer · Hoy · Otro periodo (selector de fechas).
+- **Cifras (2.18.4):** el resultado llena la tarjeta: ocupa el alto libre, centrado; tamaño `clamp(30px, 100cqi·0,86 / (largo·0,54), 84px)` (teléfono 24–56 px). `--wgn` = largo de la cifra, lo pone widgets.js.

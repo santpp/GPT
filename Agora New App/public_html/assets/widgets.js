@@ -719,5 +719,12 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', enganchar); else enganchar();
   setTimeout(enganchar, 1500);
 
+  /* 2.18.4 · el tamaño de la cifra de cada tarjeta depende de lo largo que es (la hoja de estilos usa --wgn) */
+  const SEL_CIFRA = 'main#app .cel :is(.ag-resumen-v,.t-metric,.inicio-resumen-v,.t-hero)';
+  const medir = () => document.querySelectorAll(SEL_CIFRA).forEach(v => { const n = String(v.textContent || '').trim().length || 1; if (v.style.getPropertyValue('--wgn') !== String(n)) v.style.setProperty('--wgn', String(n)); });
+  (() => { let t = 0; const ir = () => { const app = document.querySelector('main#app'); if (!app) { setTimeout(ir, 500); return; }
+    new MutationObserver(() => { clearTimeout(t); t = setTimeout(medir, 60); }).observe(app, {childList: true, subtree: true, characterData: true}); medir(); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ir); else ir(); })();
+
   window.AgoraWidgets = {entradas, montar, editorTablero, editorFormula, gestor, objetivo, plantillas, consolidado, _fmt: fmt};
 })();
