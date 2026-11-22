@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.9 · La entrada encaja en el logo de la pantalla (22 nov):**
+- Pedido del usuario: ya no se divide la palabra hacia los lados. Al terminar de cargar, **cada pieza del logo (aro, dos rayos de la estrella, Á, tilde, g, o, r, a) vuela una tras otra a su misma pieza del logo que se ve en pantalla** y encaja ahí. Es genérico: sirve en cualquier pantalla porque todas tienen el logo.
+- **Dos salidas:** antes de iniciar sesión, las piezas van al logo de la cabecera y el fondo se desvanece; después de iniciar sesión y al recargar, van al logo de arriba y el fondo **se recoge hacia el logo**, como si la app se abriera desde él.
+- Si no hay logo a la vista o está activado «reducir movimiento», se desvanece sin moverse.
+- `tests/fixes-2188.py` ampliada a 11.
+
 **Novedades 2.18.8 · Pantalla de entrada con el logo de Ágora (22 nov):**
 - Pedido del usuario (idea «Casa Momo», sutil): al **abrir o recargar** y al **iniciar sesión**, el fondo de la app tapa la carga y el logo entra **pieza por pieza**: el aro, la estrella, y las letras de «Ágora» una a una, con una línea fina que avanza debajo. Cuando la pantalla terminó de cargar (sin esqueletos y con la letra lista; nunca antes de 0,9 s ni más de 7 s), **se abre en dos**: el símbolo se va a la izquierda, el nombre a la derecha y la app aparece en medio. Así no se ven los recursos llegando a destiempo.
 - Con «reducir movimiento» en el teléfono solo se desvanece. Va dentro de `index.html` para verse desde el primer instante.
