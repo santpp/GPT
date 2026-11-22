@@ -351,6 +351,71 @@
   var tile = (l, v, f = "", cls = "") => `<div class="micro ${cls}"><h3>${esc2(l)}</h3><p class="t-metric">${v}</p>${f ? `<span class="f">${f}</span>` : ""}</div>`;
   var cargando = (n) => `<div class="grid g2">${'<div class="micro"><span class="sk w60"></span><span class="sk big"></span></div>'.repeat(n)}</div>`;
   // Agora New App 2.10.0: «Inversión en anuncios» se mudó a Costos (pedido del usuario); el Tablero ya no tiene su lugar.
+  // Agora New App 2.18.11: las tres ruedas del Dashboard se pueden ver como dona, barras o cifras (cada persona elige, se recuerda en este equipo)
+  // y, para administración, cada asesor o fuente se abre para ver quiénes son.
+  var VISTAS_REP = [["dona", "Dona"], ["barras", "Barras"], ["cifras", "Cifras"]];
+  var repVista = (k) => { try { const v = localStorage.getItem("agora.rep." + k); return VISTAS_REP.some((x) => x[0] === v) ? v : "dona"; } catch (e) { return "dona"; } };
+  var REP_DATOS = {};
+  function repCuerpo(k) {
+    const r = REP_DATOS[k]; if (!r) return "";
+    const lista = r.items.filter((x) => Number(x.n) > 0).sort((a, b) => b.n - a.n);
+    const ver = UI().verDetalle ? UI().verDetalle() : false;
+    const v = repVista(k);
+    if (!lista.length) return rueda([], r.opc);
+    const suma = lista.reduce((a, b) => a + Number(b.n), 0);
+    const pct = (n) => nf.format(Math.round(100 * n / suma)) + " %";
+    let html;
+    if (v === "barras") html = barras(lista.map((x) => ({ l: x.l, v: x.n, texto: num(x.n) })));
+    else if (v === "cifras") html = `<div class="rep-cif">${lista.map((x) => `<div class="rep-c"><span>${esc2(x.l)}</span><b>${num(x.n)}</b><small>${pct(x.n)}</small></div>`).join("")}<div class="rep-c rep-tot"><span>Total</span><b>${num(suma)}</b><small>100 %</small></div></div>`;
+    else html = rueda(lista, r.opc);
+    // Lo clicable: filas de la leyenda, barras o cifras, en el mismo orden que la lista.
+    if (ver) html = `<div class="rep-clic" data-rep-k="${k}">${html}</div>`;
+    return html;
+  }
+  function reparto(k, titulo, sub, items, opc) {
+    REP_DATOS[k] = { titulo, items, opc };
+    const v = repVista(k);
+    const sel = `<div class="rep-sel" role="group" aria-label="Ver como">${VISTAS_REP.map(([c, t]) => `<button type="button" class="rep-b${c === v ? " on" : ""}" data-rep-v="${c}" data-rep-k="${k}" aria-pressed="${c === v}">${t}</button>`).join("")}</div>`;
+    const ayuda = UI().verDetalle && UI().verDetalle() && items.some((x) => x.det && x.det.length) ? " Toca un nombre para ver quiénes." : "";
+    return panelx(titulo, sub + ayuda, `${sel}<div class="rep-body" data-rep="${k}">${repCuerpo(k)}</div>`).replace('<section class="panel">', `<section class="panel rep" data-rep-panel="${k}">`);
+  }
+  function repDetalle(k, i) {
+    const r = REP_DATOS[k]; if (!r) return;
+    const lista = r.items.filter((x) => Number(x.n) > 0).sort((a, b) => b.n - a.n);
+    const it = lista[i]; if (!it) return;
+    const det = it.det || [];
+    const hora = (iso) => { if (!iso) return ""; const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString("es-VE", { hour: "numeric", minute: "2-digit" }); };
+    let cuerpo;
+    if (!det.length) cuerpo = `<p class="empty empty-sobrio">No hay detalle para mostrar todavía.</p>`;
+    else if (k === "sinleer") cuerpo = `<ul class="dn-items">${det.map((c) => `<li><button type="button" data-dn-conv="${esc2(c.id)}"><span class="dn-n">${esc2(c.nombre || "Sin nombre")}</span><span class="dn-m">${esc2(c.ultimo || "")}</span><span class="dn-h">${hora(c.hora)}${c.sinLeer > 1 ? ` · ${num(c.sinLeer)} sin leer` : ""}</span></button></li>`).join("")}</ul>`;
+    else cuerpo = `<ul class="dn-items">${det.map((c) => `<li><button type="button" data-dn-cont="${esc2(c.id || "")}"${c.id ? "" : " disabled"}><span class="dn-n">${esc2(c.nombre || "Sin nombre")}</span><span class="dn-m">${esc2(k === "fuente" ? c.asesor || "" : c.fuente || "")}</span><span class="dn-h">${hora(c.hora)}</span></button></li>`).join("")}</ul>`;
+    const mas = it.n > det.length && det.length ? `<p class="dn-mas">Se muestran ${num(det.length)} de ${num(it.n)}.</p>` : "";
+    UI().modal && UI().modal(`${r.titulo}: ${it.l}`, `${num(it.n)} ${k === "sinleer" ? (it.n === 1 ? "conversación sin leer" : "conversaciones sin leer") : it.n === 1 ? "lead de hoy" : "leads de hoy"}`, cuerpo + mas);
+  }
+  if (!window.__agoraRep) {
+    window.__agoraRep = true;
+    document.addEventListener("click", (e) => {
+      const t = e.target;
+      const b = t.closest?.("[data-rep-v]");
+      if (b) {
+        const k = b.dataset.repK;
+        try { localStorage.setItem("agora.rep." + k, b.dataset.repV); } catch (x) {}
+        const panel = b.closest("[data-rep-panel]");
+        panel?.querySelectorAll("[data-rep-v]").forEach((x) => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-pressed", on); });
+        const body = panel?.querySelector("[data-rep]"); if (body) body.innerHTML = repCuerpo(k);
+        return;
+      }
+      const cv = t.closest?.("[data-dn-conv]"); if (cv) { UI().irConversacion && UI().irConversacion(cv.dataset.dnConv); return; }
+      const ct = t.closest?.("[data-dn-cont]"); if (ct) { UI().irContacto && UI().irContacto(ct.dataset.dnCont); return; }
+      const zona = t.closest?.(".rep-clic"); if (!zona) return;
+      const k = zona.dataset.repK;
+      const fila = t.closest(".dn-lg li, .bar-row, .rep-c:not(.rep-tot), circle[data-i]");
+      if (!fila) return;
+      const filas = [...zona.querySelectorAll(".dn-lg li, .bar-row, .rep-c:not(.rep-tot)")];
+      const i = fila.dataset.i !== undefined ? Number(fila.dataset.i) : filas.indexOf(fila);
+      if (i >= 0) repDetalle(k, i);
+    });
+  }
   var slotsDia = () => '<div id="arp-dia"></div>';
   var slotEficacia = () => '<div id="arp-efi"></div>';
   function pintarDia(nodo, d) {
@@ -385,9 +450,9 @@
       </div>
     </div>
     <div class="grid g3 mt">
-      ${panelx("Sin leer por asesor", "Quién tiene conversaciones esperando.", rueda((d.sinLeerPorAsesor || []).map((x) => ({ l: x.nombre, n: x.n })), { rotulo: "Conversaciones sin leer por asesor" , vacio: "Nadie tiene conversaciones sin leer ahora." }))}
-      ${panelx("Fuente de los leads", "Por dónde entraron hoy.", rueda((d.leadsPorFuente || []).map((x) => ({ l: x.fuente, n: x.n })), { rotulo: "Fuente de los leads", vacio: d.leads === null || d.leads === void 0 ? "Todavía no hay datos de leads para hoy." : "Hoy todavía no entró ningún lead." }))}
-      ${panelx("Leads por ejecutivo", "A quién le tocaron.", rueda((d.leadsPorUsuario || []).map((x) => ({ l: x.nombre, n: x.n })), { rotulo: "Leads asignados por ejecutivo", vacio: d.leads === null || d.leads === void 0 ? "Todavía no hay datos de leads para hoy." : "Hoy no se asignó ningún lead." }))}
+      ${reparto("sinleer", "Sin leer por asesor", "Quién tiene conversaciones esperando.", (d.sinLeerPorAsesor || []).map((x) => ({ l: x.nombre, n: x.n, det: x.detalle })), { rotulo: "Conversaciones sin leer por asesor", vacio: "Nadie tiene conversaciones sin leer ahora." })}
+      ${reparto("fuente", "Fuente de los leads", "Por dónde entraron hoy.", (d.leadsPorFuente || []).map((x) => ({ l: x.fuente, n: x.n, det: x.detalle })), { rotulo: "Fuente de los leads", vacio: d.leads === null || d.leads === void 0 ? "Todavía no hay datos de leads para hoy." : "Hoy todavía no entró ningún lead." })}
+      ${reparto("ejecutivo", "Leads por ejecutivo", "A quién le tocaron.", (d.leadsPorUsuario || []).map((x) => ({ l: x.nombre, n: x.n, det: x.detalle })), { rotulo: "Leads asignados por ejecutivo", vacio: d.leads === null || d.leads === void 0 ? "Todavía no hay datos de leads para hoy." : "Hoy no se asignó ningún lead." })}
     </div>`;
   }
   // Agora New App 2.10.0: Costos dibuja «Inversión en anuncios» con este mismo código.

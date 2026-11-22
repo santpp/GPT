@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.11 · Ruedas del Dashboard: verlas a tu manera y abrir el detalle (22 nov):**
+- **«Sin leer por asesor», «Fuente de los leads» y «Leads por ejecutivo»** traen arriba **Dona · Barras · Cifras**. Cada persona elige cómo verlas y se recuerda en su equipo.
+- **Administración (Master, Superadmin, Admin) puede tocar un asesor o una fuente** (en la leyenda, la rueda, la barra o la cifra) y ver quiénes son: las conversaciones sin leer de ese asesor (nombre, último mensaje y hora; un toque abre la bandeja en esa conversación) o los leads de hoy de esa fuente o ejecutivo (un toque abre el contacto). Hasta 50 por grupo.
+- **Los vendedores no ven el detalle:** el servidor no se lo manda a quien solo ve lo suyo y la pantalla no lo abre.
+- Prueba: `tests/fixes-21811.py` (22, ordenador y teléfono).
+
 **Novedades 2.18.10 · «Editar» de cada tarjeta, lista de cifras y entrada para dueños (22 nov):**
 - **«Editar» de una tarjeta edita SOLO esa tarjeta** (pedido del usuario): las del sistema se muestran u ocultan y cambian de lugar («Al principio», «Subir», «Bajar», «Al final»); los widgets abren solo su configuración (título, tipo, período, comparación, semáforo…). La lista completa sigue en «Editar Dashboard».
 - **Editor de widgets:** ya no se copia de otro módulo; se ve la **lista de cifras predeterminadas** agrupada, con buscador, y las fórmulas del equipo. Un toque la agrega.

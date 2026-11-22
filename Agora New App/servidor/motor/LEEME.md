@@ -31,3 +31,5 @@ oportunidades, embudos, ventas ganadas, tablero y consumos de la agencia.
 - 2.18.3/2.18.4 (Agora New App): agora-modulos.js · «Leads asignados a mí» lleva su nota también como ayuda (title); la nota sigue visible. El filtro del Dashboard (2.18.2) quedó en Ayer, Hoy y Otro periodo.
 - 2.18.5 (Agora New App): agora-modulos.js · sin la nota «Los que tienes a tu nombre en la cuenta» bajo «Leads asignados a mí» (pedido del usuario).
 - 2.18.6 (Agora New App): agora-modulos.js · «Leads asignados a mí» pasa a ser su propia tarjeta (metric) en el Dashboard; la tarjeta grande muestra solo «Leads de hoy».
+
+- **2.18.11 · `OperationsReport::operationDay()`:** la caché `dia-leads` guarda también `id` y `name` de cada contacto; para quien ve todo el equipo, `sinLeerPorAsesor`, `leadsPorFuente` y `leadsPorUsuario` traen `detalle` (hasta 50 por grupo). A quien solo ve lo suyo (`assignedDataOnly`) no se le manda.

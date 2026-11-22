@@ -74,14 +74,15 @@ final class OperationsReport
         $names = self::names($id);
         $rows = query('SELECT payload FROM conversation_index WHERE connection_id=?', [$id])->fetchAll();
         $today = $waiting = [];
-        $unread = 0; $unreadBy = [];
+        $unread = 0; $unreadBy = []; $unreadDet = [];
         foreach ($rows as $row) {
             $c = json_decode((string)$row['payload'], true);
             if (!is_array($c)) continue;
             $owner = is_string($c['assignedTo'] ?? null) && $c['assignedTo'] !== '' ? $c['assignedTo'] : null;
             if ($restricted && $owner !== $mine) continue;
             $count = max(0, (int)($c['unreadCount'] ?? 0));
-            if ($count > 0) { $unread++; $label = $owner !== null ? ($names[$owner] ?? 'Sin nombre') : 'Sin asignar'; $unreadBy[$label] = ($unreadBy[$label] ?? 0) + 1; }
+            if ($count > 0) { $unread++; $label = $owner !== null ? ($names[$owner] ?? 'Sin nombre') : 'Sin asignar'; $unreadBy[$label] = ($unreadBy[$label] ?? 0) + 1;
+                if (count($unreadDet[$label] ?? []) < 50) $unreadDet[$label][] = ['id' => (string)($c['id'] ?? ''), 'contacto' => (string)($c['contactId'] ?? ''), 'nombre' => mb_substr((string)($c['contactName'] ?? $c['fullName'] ?? 'Sin nombre'), 0, 80), 'sinLeer' => $count, 'ultimo' => mb_substr((string)($c['lastMessageBody'] ?? ''), 0, 90), 'hora' => ($t = self::seconds($c['lastMessageDate'] ?? null)) ? gmdate('c', $t) : null]; }
             $at = self::seconds($c['lastMessageDate'] ?? null);
             if ($at === null || $at < $from || $at >= $to) continue;
             $today[] = $c + ['_at' => $at, '_owner' => $owner];
@@ -107,7 +108,7 @@ final class OperationsReport
             'atendidas' => $attended,
             'sinLeer' => $unread,
             'sinLeerAyer' => $before['sinLeer'] ?? null,
-            'sinLeerPorAsesor' => array_map(fn($n, $k) => ['nombre' => (string)$k, 'n' => $n], $unreadBy, array_keys($unreadBy)),
+            'sinLeerPorAsesor' => array_map(fn($n, $k) => ['nombre' => (string)$k, 'n' => $n] + ($restricted ? [] : ['detalle' => $unreadDet[$k] ?? []]), $unreadBy, array_keys($unreadBy)),
             'slaIncumplido' => $late,
             'slaIncumplidoAyer' => $before['slaIncumplido'] ?? null,
             'slaTolerancia' => self::SLA_TOLERANCE,
@@ -119,8 +120,9 @@ final class OperationsReport
             'peorAsesor' => $worstBy,
             'leads' => $leads['hoy'],
             'leadsAyer' => $leads['ayer'] ?? ($before['leads'] ?? null),
-            'leadsPorFuente' => $leads['fuentes'],
-            'leadsPorUsuario' => $leads['usuarios'],
+            // Agora New App 2.18.11: el detalle (quiénes) solo para quien ve todo el equipo.
+            'leadsPorFuente' => $restricted ? array_map(fn($r) => array_diff_key($r, ['detalle' => 1]), $leads['fuentes']) : $leads['fuentes'],
+            'leadsPorUsuario' => $restricted ? array_map(fn($r) => array_diff_key($r, ['detalle' => 1]), $leads['usuarios']) : $leads['usuarios'],
             // De dónde sale el tiempo de respuesta: lo que está esperando ahora, no la primera respuesta ya dada.
             'slaBase' => 'pendientes',
         ];
@@ -159,7 +161,7 @@ final class OperationsReport
                     $out = [];
                     foreach ($items as $c) {
                         if (!is_array($c)) continue;
-                        $out[] = ['at' => self::seconds($c['dateAdded'] ?? null), 'source' => is_string($c['source'] ?? null) ? mb_substr($c['source'], 0, 60) : null, 'to' => is_string($c['assignedTo'] ?? null) ? $c['assignedTo'] : null];
+                        $out[] = ['at' => self::seconds($c['dateAdded'] ?? null), 'source' => is_string($c['source'] ?? null) ? mb_substr($c['source'], 0, 60) : null, 'to' => is_string($c['assignedTo'] ?? null) ? $c['assignedTo'] : null, 'id' => is_string($c['id'] ?? null) ? $c['id'] : null, 'name' => mb_substr(trim((string)($c['contactName'] ?? trim(($c['firstName'] ?? '') . ' ' . ($c['lastName'] ?? '')))), 0, 80)]; // Agora New App 2.18.11: id y nombre para ver el detalle
                     }
                     return [$out];
                 }, false);
@@ -171,7 +173,7 @@ final class OperationsReport
         [$from, $to] = self::bounds($day);
         $dayBefore = $from - 86400;
         $names = self::names($id);
-        $today = $yesterday = 0; $bySource = $byUser = [];
+        $today = $yesterday = 0; $bySource = $byUser = []; $detSource = $detUser = [];
         foreach ($contacts as $c) {
             if (!is_array($c) || !is_int($c['at'] ?? null)) continue;
             if ($only !== null && ($c['to'] ?? null) !== $only) continue;
@@ -182,12 +184,15 @@ final class OperationsReport
             $bySource[$src] = ($bySource[$src] ?? 0) + 1;
             $who = ($c['to'] ?? null) !== null ? ($names[$c['to']] ?? 'Sin nombre') : 'Sin asignar';
             $byUser[$who] = ($byUser[$who] ?? 0) + 1;
+            $item = ['id' => $c['id'] ?? null, 'nombre' => ($c['name'] ?? '') !== '' ? $c['name'] : 'Sin nombre', 'hora' => gmdate('c', $c['at']), 'fuente' => $src, 'asesor' => $who];
+            if (count($detSource[$src] ?? []) < 50) $detSource[$src][] = $item;
+            if (count($detUser[$who] ?? []) < 50) $detUser[$who][] = $item;
         }
         arsort($bySource); arsort($byUser);
         // Con 100 contactos leídos, un día muy movido puede quedar corto: se avisa.
         return ['hoy' => $today, 'ayer' => $yesterday,
-            'fuentes' => array_map(fn($n, $k) => ['fuente' => (string)$k, 'n' => $n], $bySource, array_keys($bySource)),
-            'usuarios' => array_map(fn($n, $k) => ['nombre' => (string)$k, 'n' => $n], $byUser, array_keys($byUser))];
+            'fuentes' => array_map(fn($n, $k) => ['fuente' => (string)$k, 'n' => $n, 'detalle' => $detSource[$k] ?? []], $bySource, array_keys($bySource)),
+            'usuarios' => array_map(fn($n, $k) => ['nombre' => (string)$k, 'n' => $n, 'detalle' => $detUser[$k] ?? []], $byUser, array_keys($byUser))];
     }
 
     // ---------------------------------------------------------------------------------------------

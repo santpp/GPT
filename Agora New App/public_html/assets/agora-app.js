@@ -2037,7 +2037,7 @@ function donut(items, {centro = '', rotulo = '', vacio = ''} = {}) {
   let corrido = 0;
   const arcos = lista.map((it, i) => {
     const largo = (Number(it.n) / suma) * C;
-    const arco = `<circle cx="70" cy="70" r="${R}" fill="none" stroke="${PAL[i % PAL.length]}" stroke-width="17" stroke-dasharray="${largo.toFixed(2)} ${(C - largo).toFixed(2)}" stroke-dashoffset="${(-corrido).toFixed(2)}" transform="rotate(-90 70 70)"><title>${esc(it.l)}: ${int(it.n)}</title></circle>`;
+    const arco = `<circle data-i="${i}" cx="70" cy="70" r="${R}" fill="none" stroke="${PAL[i % PAL.length]}" stroke-width="17" stroke-dasharray="${largo.toFixed(2)} ${(C - largo).toFixed(2)}" stroke-dashoffset="${(-corrido).toFixed(2)}" transform="rotate(-90 70 70)"><title>${esc(it.l)}: ${int(it.n)}</title></circle>`;
     corrido += largo;
     return arco;
   }).join('');
@@ -2046,7 +2046,7 @@ function donut(items, {centro = '', rotulo = '', vacio = ''} = {}) {
       <circle cx="70" cy="70" r="${R}" fill="none" stroke="var(--fill-3)" stroke-width="17"></circle>${arcos}
       <text x="70" y="70" class="dn-c" text-anchor="middle" dominant-baseline="central">${esc(centro || int(suma))}</text>
     </svg>
-    <ul class="dn-lg">${lista.map((it, i) => `<li><i style="background:${PAL[i % PAL.length]}" aria-hidden="true"></i><span>${esc(it.l)}</span><b>${int(it.n)}</b></li>`).join('')}</ul>
+    <ul class="dn-lg">${lista.map((it, i) => `<li data-i="${i}"><i style="background:${PAL[i % PAL.length]}" aria-hidden="true"></i><span>${esc(it.l)}</span><b>${int(it.n)}</b></li>`).join('')}</ul>
   </div>`;
 }
 
@@ -2980,6 +2980,11 @@ async function guardarIdentidad(form) {
    ===================================================================================== */
 window.AgoraUI = {
   donut, barras, lineaArea, usd, firmado, mesNombre, mesCorto,
+  // 2.18.11: el detalle de las ruedas del Dashboard (quiénes y cuáles) solo para administración; el servidor tampoco lo manda a quien ve solo lo suyo.
+  verDetalle: () => !!ME && ['MASTER', 'SUPERADMIN', 'ADMIN'].includes(ME.rol),
+  irConversacion: id => { if (!id) return; closeModal(); if (ws) ws.pendingConversation = {id, explicit: true}; go('/bandeja'); },
+  irContacto: id => { if (!id) return; closeModal(); if (ws) ws.pendingContact = id; go(MODS.contactos.path); },
+  modal: (titulo, sub, cuerpo) => openModal(`${modalHead(esc(titulo), esc(sub))}<div class="dn-det">${cuerpo}</div>`, {wide: true}),
   guardarDia: d => { DATOS.dia = d; },
   guardarAds: a => { DATOS.ads = a; },
   guardarEficacia: e => { DATOS.eficacia = e; },
@@ -4200,7 +4205,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.18.10').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.18.11').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */
