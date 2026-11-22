@@ -28,3 +28,4 @@ oportunidades, embudos, ventas ganadas, tablero y consumos de la agencia.
 
 - Agora New App 2.13.0: `AccessChannel::sendMail()` (correo general por la subcuenta elegida como canal; `deliver(..., onlyChannel)`). Lo usa `MotorMobile::correo()`.
 - Agora New App 2.14.0: `respond()` con `$GLOBALS['motorCaptura']` lanza `MotorCaptura` (respuesta capturable) para que los widgets del ERP lean las rutas del motor sin cortar la petición.
+- 2.18.3 (Agora New App): agora-modulos.js · «Leads asignados a mí» lleva su nota como ayuda (title) y la clase f-ayuda cuando el usuario está enlazado. El filtro del Dashboard (2.18.2) quedó en Ayer, Hoy y Otro periodo.

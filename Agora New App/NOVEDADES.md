@@ -1,5 +1,9 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.3 · Dashboard aún más compacto (22 nov):**
+- La tarjeta «Leads de hoy» estiraba toda su fila con su bloque extra. Ahora «Leads asignados a mí» va en una línea corta (separada por una raya punteada) y su nota pasa a la ayuda al pasar el ratón; si el usuario no está enlazado con la cuenta, la indicación sigue visible. Menos aire entre título y cifra y relleno más chico en todas las tarjetas.
+- La primera fila del Dashboard pasa de 263 px (2.18.1) a 170 px.
+
 **Novedades 2.18.2 · Tarjetas más compactas y filtro del Dashboard (22 nov):**
 - **Menos espacio en blanco:** en todas las tarjetas el contenido empieza arriba (antes se centraba en vertical). Solo el **resultado** va centrado, y **más grande** (28 a 36 px; 26 px en el teléfono). Títulos y enunciados siguen a la izquierda.
 - **Líneas iguales:** la línea de arriba de cada tarjeta mide 4 px en todas las filas (antes la primera fila quedaba recortada y se veía más fina) y cada caja **cierra con una línea abajo**.
