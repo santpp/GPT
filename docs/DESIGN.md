@@ -461,3 +461,4 @@ Lo que se deja para otro momento.
 - **Cifras (2.18.4):** el resultado llena la tarjeta: ocupa el alto libre, centrado; tamaño `clamp(30px, 100cqi·0,86 / (largo·0,54), 84px)` (teléfono 24–56 px). `--wgn` = largo de la cifra, lo pone widgets.js.
 - **Filas (2.18.6):** si la última fila de una caja tiene menos tarjetas, se reparten el ancho por igual (la caja pasa a columnas×resto). Títulos y enunciados dejan 76 px al botón «Editar».
 - **Cuadrícula (2.18.7):** las cajas de tarjetas van siempre a 4 columnas (2 en teléfono ≤700 px); los gráficos no.
+- **Entrada (2.18.8):** `#ag-entrada` en `index.html` (estilo en `<head>`, marcado y guion al abrir `<body>`): fondo de la app, aro → estrella → letras (70 ms entre letras), línea fina; sale al estar lista la pantalla (0,9–7 s) con las dos mitades hacia los lados (0,72 s). `AgoraEntrada.mostrar()` la usa el inicio de sesión. Con reducir movimiento, solo se desvanece.

@@ -977,7 +977,7 @@ V.entrar = {
         ${window.__DEMO__ ? '<p class="lg-help lg-demo"><b>Cuenta de prueba:</b> usuario <b>admin</b> · clave <b>123456789</b><br><small>Solo funciona en prueba.html; no es una cuenta real.</small></p>' : ''}
       </section>
     </div>`;
-    const entrado = async () => { await Promise.all([bootContratos(), bootAgora()]); if (!esSuperAdmin()) await bootEspacio(); await loadUiTexts(); const back = store.get('volver', ''); store.set('volver', ''); go(esSuperAdmin() ? '/agencia' : (back && back !== '/entrar' ? back : homePath()), {replace: true}); };
+    const entrado = async () => { try { window.AgoraEntrada?.mostrar(); } catch {} /* 2.18.8: entrada al iniciar sesión */ await Promise.all([bootContratos(), bootAgora()]); if (!esSuperAdmin()) await bootEspacio(); await loadUiTexts(); const back = store.get('volver', ''); store.set('volver', ''); go(esSuperAdmin() ? '/agencia' : (back && back !== '/entrar' ? back : homePath()), {replace: true}); };
     const card = s.querySelector('.lg-card');
     athenaEscena(s.querySelector('.lg-stage'));
     const eye = s.querySelector('.lg-eye'), pw = s.querySelector('#lg-pw');
@@ -4200,7 +4200,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.18.7').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.18.8').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */

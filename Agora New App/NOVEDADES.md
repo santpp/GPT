@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.8 · Pantalla de entrada con el logo de Ágora (22 nov):**
+- Pedido del usuario (idea «Casa Momo», sutil): al **abrir o recargar** y al **iniciar sesión**, el fondo de la app tapa la carga y el logo entra **pieza por pieza**: el aro, la estrella, y las letras de «Ágora» una a una, con una línea fina que avanza debajo. Cuando la pantalla terminó de cargar (sin esqueletos y con la letra lista; nunca antes de 0,9 s ni más de 7 s), **se abre en dos**: el símbolo se va a la izquierda, el nombre a la derecha y la app aparece en medio. Así no se ven los recursos llegando a destiempo.
+- Con «reducir movimiento» en el teléfono solo se desvanece. Va dentro de `index.html` para verse desde el primer instante.
+- Recordatorio: desde 2.18.0 Inicio no lleva widgets; se crean en «Editar Dashboard» de cada módulo.
+- Prueba nueva: `tests/fixes-2188.py` (10).
+
 **Novedades 2.18.7 · Tarjetas siempre 4 por fila (22 nov):**
 - Pedido del usuario: en todos los módulos las tarjetas van **4 por fila** (2 en el teléfono); los gráficos no entran en esta regla. La última fila, si tiene menos, se reparte el ancho por igual. Comprobado en 11 módulos, ordenador y teléfono.
 - `tests/fixes-2182.py` ampliada a 24.

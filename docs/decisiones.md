@@ -72,3 +72,5 @@ Al cerrar una versión, anota aquí las decisiones nuevas del usuario y el detal
 
 - **Widgets (2.18.1, decisión del usuario):** los widgets son parte del tablero de cada módulo, como en la cuenta: entran en la misma cuadrícula de tarjetas y se ordenan como un todo desde «Editar Dashboard», en todos los módulos y submódulos. Las tarjetas existentes conservan títulos, enunciados y separaciones. Los gráficos siguen al final del módulo. Inicio no lleva widgets (solo avisos).
 - **Tarjetas (2.18.7, decisión del usuario):** siempre 4 por fila (2 en el teléfono), salvo gráficos. Idea del usuario en estudio: que tarjetas y botones sean un solo recurso que la app reparte en cada tablero (ver propuesta en la respuesta del 22 nov).
+- **Recurso único de tarjetas y botones (decisión del usuario, 22 nov):** se hace junto con la refactorización de `agora-app.js`, después del lanzamiento.
+- **Entrada (2.18.8):** pantalla de entrada sutil con el logo de Ágora pieza por pieza al abrir, recargar e iniciar sesión.
