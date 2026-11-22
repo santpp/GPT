@@ -21,8 +21,8 @@ with sync_playwright() as pw:
     try:
         for w,h in ((390,844),(1280,800)):
             pg=entrar(br,'admin.asocim@agora.test',w,h);pg.goto(B+'/centro');pg.wait_for_selector('#ag-entrada',state='detached',timeout=25000)
-            # Cuenta lenta, como la real: cada consulta de cifras tarda 3 s más (en total unos 9 a 12 s, como en el video).
-            pg.add_init_script("(()=>{const f=window.fetch;window.fetch=function(u,o){const p=f.apply(this,arguments);const s=String(u&&u.url||u);if(/\\/api\\/workspace\\//.test(s)&&!(o&&o.method&&o.method!=='GET'))return p.then(r=>new Promise(ok=>setTimeout(()=>ok(r),3000)));return p}})()")
+            # Cuenta lenta, como la real del video: las cifras del día y del mes (las que vienen de la cuenta) tardan 7 s más.
+            pg.add_init_script("(()=>{const f=window.fetch;window.fetch=function(u,o){const p=f.apply(this,arguments);const s=String(u&&u.url||u);if(/\\/api\\/workspace\\/(dia|board-month)/.test(s)&&!(o&&o.method&&o.method!=='GET'))return p.then(r=>new Promise(ok=>setTimeout(()=>ok(r),7000)));return p}})()")
             pg.add_init_script(VIG)
             t0=time.time();pg.goto(B+'/comercial',wait_until='domcontentloaded')
             pg.wait_for_selector('#ag-entrada',state='detached',timeout=40000);d=time.time()-t0
