@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.13 · La entrada espera los números y la caché no deja versiones viejas (22 nov):**
+- **La entrada se queda hasta que están los números** (pedido del usuario, video del 22 nov): antes tenía un tope de 7 s y con la cuenta real (unos 9 s) se iba dejando los esqueletos. Ahora espera a que no haya esqueletos y la pantalla esté quieta; el tope sube a 20 s solo como seguro. Los esqueletos se quedan para los cambios entre módulos.
+- **Ya no se ven las tarjetas «viejas» que luego se acomodan:** el arreglo de las tarjetas (rótulo, «Editar», orden, filas) se hacía 250 ms después de que llegaban los datos; ahora se hace antes de pintar. Tampoco aparecen dos «Editar Dashboard» por un instante.
+- **Caché:** la página se pide siempre fresca (sin la copia del navegador) y, si el navegador abrió una versión vieja, la app lo nota con `version.json`, borra lo guardado y se recarga **una sola vez**.
+- Prueba: `tests/fixes-21813.py` (cuenta lenta simulada de 8 s por consulta, teléfono y escritorio).
+
 **Novedades 2.18.12 · Entrada solo con el símbolo (22 nov):**
 - Pedido del usuario: la animación de entrada ya no usa el nombre «Ágora», **solo el símbolo** (aro y estrella). Al terminar de cargar, sus piezas vuelan al símbolo del logo que se ve en pantalla; el nombre de ese logo no se toca.
 - Prueba: `tests/fixes-2188.py` actualizada (13).

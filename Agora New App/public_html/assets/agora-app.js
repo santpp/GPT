@@ -4205,7 +4205,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.18.12').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.18.13').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */
@@ -7395,7 +7395,9 @@ function tgEditar(main) {
 let TG_OBS = null, TG_RAF = 0;
 function tgVigilar() {
   const main = document.querySelector('main#app'); if (!main || TG_OBS) return;
-  TG_OBS = new MutationObserver(() => { clearTimeout(TG_RAF); TG_RAF = setTimeout(() => tgAplicar(main), 250); });
+  // 2.18.13: se aplica en el mismo instante en que cambia la pantalla (antes de pintarla), no 250 ms después: así nunca se ven las tarjetas sin arreglar.
+  // tgAplicar no vuelve a tocar lo que ya arregló, así que no se repite sin fin. Queda el repaso de 250 ms por si algo llega tarde.
+  TG_OBS = new MutationObserver(() => { try { tgAplicar(main); } catch {} clearTimeout(TG_RAF); TG_RAF = setTimeout(() => tgAplicar(main), 250); });
   TG_OBS.observe(main, {childList: true, subtree: true});
 }
 /* 2.11.6 · Criterio único de atajos: toda tarjeta de cifras cuyo dato vive en otro módulo lleva a ese módulo
