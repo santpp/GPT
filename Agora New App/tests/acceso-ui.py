@@ -25,7 +25,17 @@ class C:
             try:return e.code,json.loads(e.read() or b'{}')
             except Exception:return e.code,{}
 def pagina(br,vp):
-    limpiar();pg=br.new_context(viewport=vp,service_workers='block').new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)));pg.goto(B+'/entrar');pg.wait_for_timeout(1500);return pg,errs
+    limpiar();pg=br.new_context(viewport=vp,service_workers='block').new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
+    # 2.18.13: la entrada tapa la página hasta que termina de cargar; las pruebas esperan a que se vaya antes de tocar.
+    ir=pg.goto
+    def goto(url,**k):
+        r=ir(url,**k)
+        try:pg.wait_for_selector('#ag-entrada',state='detached',timeout=25000)
+        except Exception:pass
+        pg.wait_for_timeout(600)
+        if pg.locator('#layer .scrim').count():pg.keyboard.press('Escape');pg.wait_for_timeout(400)  # guía de bienvenida de la primera visita
+        return r
+    pg.goto=goto;pg.goto(B+'/entrar');pg.wait_for_timeout(1500);return pg,errs
 limpiar();duena=C('duena@example.test','Clave-Local-2026!')
 with sync_playwright() as p:
     br=p.chromium.launch(executable_path='/opt/pw-browsers/chromium',args=['--no-sandbox'])
