@@ -1,5 +1,14 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.19.2 · Auditoría de errores: todo error con su código (22 nov):**
+- **Auditoría de las 155 rutas** con los cuatro métodos y datos vacíos, como administración, ejecutivo, dueña y sin sesión (954 llamadas, 876 errores): **todos traen su código y todos los códigos (50) están en el diccionario**.
+- **Lo que faltaba:** el motor de la cuenta (Bandeja, contactos, oportunidades, tareas, envíos, Consumos) respondía sus errores por su cuenta, sin código y sin bitácora (183 respuestas posibles). Ahora pasan por la misma puerta (`$GLOBALS['agoraError']` en `api/index.php`) y llevan código, referencia y registro.
+- **Áreas corregidas:** mensajes, envíos, contactos, oportunidades y tareas son `CTA` (la cuenta), no `GES`; Consumos y el correo de Ágora son `AGE`.
+- **Errores internos arreglados (7 rutas):** crear, editar y cambiar estado de una oportunidad, el contacto de una conversación, y reglas y ajustes de Consumos respondían 500 con datos vacíos. Ahora responden qué falta, y unos datos mal formados son un error claro con código.
+- **Guardados vacíos que borraban datos:** «Cifras del mes» y «Productos y servicios» se guardaban vacíos si llegaban sin datos (borraban metas, costos o el catálogo). Ahora se rechazan («no se cambió nada»).
+- Revisadas las otras 14 acciones que aceptan datos vacíos (buscar, probar, sincronizar el equipo, marca, perfil…): ninguna borra nada.
+- Prueba: `tests/errores-cobertura.py` (8, recorre todo; lista de rutas en `tests/rutas-api.json`).
+
 **Novedades 2.19.1 · Bandeja: quién envió cada mensaje (22 nov):**
 - Cada mensaje saliente lleva abajo a la izquierda **las iniciales de quien lo envió** (al pasar el cursor, su nombre), tanto si lo mandó desde Ágora como desde la cuenta.
 - Si lo envió **una automatización** (flujo, campaña, envío masivo o integración), lleva un **ícono nuevo de automatización** y, al pasar el cursor, qué fue.

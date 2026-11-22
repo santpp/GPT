@@ -1,5 +1,7 @@
 # Agora New App · lista de errores
 
+- **2.19.2 · 500 con datos vacíos en el motor (arreglado).** `motor/src/bootstrap.php::body()` lanzaba una excepción con `{}` o JSON roto: crear, editar y cambiar estado de oportunidad, contacto de conversación, reglas y ajustes de Consumos respondían 500. Ahora `{}` es «sin datos» y el JSON roto un 400. **Guardados vacíos que borraban:** `POST workspace/board-month` y `PUT workspace/productos` sin datos reemplazaban la configuración del mes y el catálogo; ahora 422. Prueba: `tests/errores-cobertura.py`.
+
 - **2.18.15 · Códigos de acceso sin tope de intentos (grave, arreglado).** `public_html/api/index.php` corre toda escritura dentro de una transacción y la deshace si la respuesta es un error. En `login/codigo`, `login/reenviar`, `clave/olvido` y `clave/restablecer` eso deshacía el `attempts+1` del código y los `rate()` por IP y correo, así que el tope de 5 intentos y los límites nunca contaban. Ahora esas rutas van fuera de la transacción (como `login`). Prueba: `tests/fixes-21815.py`.
 
 Errores vistos al instalar y probar en `tests.agoradigital.app` (13 y 14 de noviembre de 2026), con su causa y su estado. Se actualiza en cada versión.

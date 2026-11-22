@@ -126,6 +126,7 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
   - `kpiValores` pide `dia`, `ads` y `eficacia` con el mismo `period` y `date` que el Dashboard, así se comparten.
   - En el servidor (`api/index.php`): copia de 30 s de esas rutas en `servidor/storage/cache-vivo/`. La clave lleva ruta, datos, usuario, rol, `auth_version`, subcuenta y la «generación» de la subcuenta. Toda escritura con `X-Workspace-ID` cambia la generación (borra las copias). La respuesta servida desde la copia lleva `X-Agora-Copia: 1`.
 - Prueba: `tests/fixes-2190.py`.
+- **2.19.2 · Una sola puerta para los errores:** `$GLOBALS['agoraError']($status,$mensaje,$e)` en `api/index.php` pone el código y anota en la bitácora. La usan el `catch` general y **`respond()` del motor** (todo error del motor lleva `codigo` y `requestId`). El motor acepta `{}` como «sin datos» y responde 400 a un JSON roto. **Ruta nueva → agrégala a `tests/rutas-api.json`** y corre `tests/errores-cobertura.py` (recorre todas las rutas con datos vacíos: todo error con código conocido, ningún 5xx salvo `devices/test` y `workspace/sync`, y que un guardado vacío no borre nada). Un guardado que reemplaza una configuración entera (como Cifras del mes o Productos) **rechaza el cuerpo vacío** (422).
 
 ## Bandeja: quién envió cada mensaje (2.19.1)
 

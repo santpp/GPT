@@ -40,7 +40,8 @@ final class Personalizar {
   $t=(int)$this->auth->tenant;
   if($m==='GET')return $this->db->setting($t,'catalogo.productos',['rubros'=>[],'productos'=>[]])+['canEdit'=>in_array($this->auth->user['role'],['MASTER','SUPERADMIN','ADMIN'],true)];
   $this->auth->manage();
-  $rub=$b['rubros']??[];$prod=$b['productos']??[];
+  if(!array_key_exists('rubros',$b)||!array_key_exists('productos',$b))Http::fail('Faltan los rubros o los productos: no se cambió nada.',422); // 2.19.2: un guardado vacío borraba el catálogo
+  $rub=$b['rubros'];$prod=$b['productos'];
   if(!is_array($rub)||!array_is_list($rub)||count($rub)>100)Http::fail('Hasta 100 rubros.');
   if(!is_array($prod)||!array_is_list($prod)||count($prod)>1000)Http::fail('Hasta 1.000 productos.');
   $rubros=[];foreach($rub as $r){if(!is_array($r))Http::fail('Rubro inválido.');$id=Http::text($r,'id',40);if(!preg_match(self::ID,$id))Http::fail('Identificador de rubro inválido.');$rubros[$id]=['id'=>$id,'nombre'=>Http::text($r,'nombre',80),'descripcion'=>Http::text($r,'descripcion',240,false)];}

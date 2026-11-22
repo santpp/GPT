@@ -13,7 +13,7 @@
 <meta name="description" content="Agora Digital App · operación comercial, convenios y trazabilidad">
 <title>Agora Digital App</title>
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" href="/assets/favicon.ico?v=2.19.1" sizes="any">
+<link rel="icon" href="/assets/favicon.ico?v=2.19.2" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="48x48" href="/assets/icons/favicon-48.png">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
@@ -34,12 +34,12 @@
 /* El tema, antes de pintar, para que no parpadee. */
 (function(){var r=document.documentElement,g=function(k,d){try{return JSON.parse(localStorage.getItem('agora_'+k)||JSON.stringify(d))}catch(e){return d}};try{var t=g('tema','auto');var d=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);r.setAttribute('data-theme',d?'dark':'light');r.setAttribute('data-accent',g('acento','vino'))}catch(e){}if(/Mac|iPhone|iPad|iPod/.test(navigator.platform||navigator.userAgent))document.documentElement.classList.add('is-apple')})();
 </script>
-<link rel="stylesheet" href="/assets/sistema.css?v=2.19.1">
-<link rel="stylesheet" href="/assets/modulos.css?v=2.19.1">
-<link rel="stylesheet" href="/assets/marca.css?v=2.19.1">
-<link rel="stylesheet" href="/assets/diseno.css?v=2.19.1">
-<link rel="stylesheet" href="/assets/ecosistema.css?v=2.19.1">
-<link rel="stylesheet" href="/assets/agora-new.css?v=2.19.1">
+<link rel="stylesheet" href="/assets/sistema.css?v=2.19.2">
+<link rel="stylesheet" href="/assets/modulos.css?v=2.19.2">
+<link rel="stylesheet" href="/assets/marca.css?v=2.19.2">
+<link rel="stylesheet" href="/assets/diseno.css?v=2.19.2">
+<link rel="stylesheet" href="/assets/ecosistema.css?v=2.19.2">
+<link rel="stylesheet" href="/assets/agora-new.css?v=2.19.2">
 <style id="ag-entrada-css">
 /* 2.18.9 · Pantalla de entrada (ver el comentario junto al marcado) */
 #ag-entrada{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;gap:clamp(8px,1.4vw,18px);pointer-events:auto}
@@ -61,16 +61,16 @@
 </style>
 </head>
 <body>
-<!-- 2.18.8–2.19.1 · Entrada (pedido del usuario): al entrar o recargar, el símbolo de Ágora (sin el nombre, 2.19.1) aparece pieza por pieza mientras la app termina de cargar.
+<!-- 2.18.8–2.19.2 · Entrada (pedido del usuario): al entrar o recargar, el símbolo de Ágora (sin el nombre, 2.19.2) aparece pieza por pieza mientras la app termina de cargar.
      Al estar lista, cada pieza (aro y los dos rayos de la estrella) vuela a su misma pieza del logo que se ve en pantalla (arriba en la app, en la cabecera
      al entrar) y encaja ahí. Dos salidas: antes de iniciar sesión el fondo se desvanece; después (y al recargar) el fondo se recoge hacia el logo. -->
 <div id="ag-entrada" aria-hidden="true"><div class="age-fondo"></div><div class="age-mitad age-izq"><svg class="age-iso" viewBox="0 0 534 592"><path class="age-aro" style="--i:0" d="M267.09,0C128.79,0,16.67,111.74,16.67,249.59v92.72c0,137.84,112.12,249.59,250.42,249.59s250.42-111.74,250.42-249.59v-92.72c0-68.92-28.02-131.32-73.34-176.49C398.84,27.93,336.24,0,267.09,0ZM472.38,341.81c0,113.01-91.91,204.61-205.29,204.61S61.8,454.82,61.8,341.81v-91.73c0-112.99,91.91-204.61,205.29-204.61,56.69,0,108.01,22.91,145.17,59.94,37.14,37.02,60.12,88.18,60.12,144.67v91.73Z"/><polygon class="age-rayo" style="--i:1" points="107.44 363.83 212.07 363.83 138.08 437.58 170.34 469.73 244.33 395.99 244.33 500.28 289.96 500.28 289.96 395.99 363.95 469.73 396.21 437.58 322.22 363.83 426.85 363.83 426.85 318.36 107.44 318.36 107.44 363.83"/><polygon class="age-rayo" style="--i:2" points="396.21 153.66 363.95 121.5 289.96 195.24 289.96 90.96 244.33 90.96 244.33 195.24 170.34 121.5 138.08 153.66 212.07 227.4 107.44 227.4 107.44 272.87 426.85 272.87 426.85 227.4 322.22 227.4 396.21 153.66"/></svg></div><span class="age-linea"></span></div>
 <script>
-/* 2.18.8 · Entrada: se queda hasta que la pantalla terminó de cargar (sin esqueletos de carga, quieta y con la letra lista), al menos 0,9 s y como mucho 20 s (2.19.1; antes 7 s y en el servidor real se iba antes de los números).
+/* 2.18.8 · Entrada: se queda hasta que la pantalla terminó de cargar (sin esqueletos de carga, quieta y con la letra lista), al menos 0,9 s y como mucho 20 s (2.19.2; antes 7 s y en el servidor real se iba antes de los números).
    window.AgoraEntrada.mostrar() la vuelve a poner (al iniciar sesión). */
 (function(){
   var el=document.getElementById('ag-entrada'),plantilla=el?el.outerHTML:'',ini=Date.now(),t=0,fin=0,mov=Date.now(),obs=null;
-  /* 2.19.1 · la pantalla tiene que estar quieta (sin cambios en 0,4 s) además de sin esqueletos: así no se va antes de que se acomoden los números */
+  /* 2.19.2 · la pantalla tiene que estar quieta (sin cambios en 0,4 s) además de sin esqueletos: así no se va antes de que se acomoden los números */
   function quieta(){var a=document.querySelector('main#app');if(!a)return false;if(!obs&&window.MutationObserver){obs=new MutationObserver(function(){mov=Date.now()});obs.observe(a,{childList:true,subtree:true,characterData:true})}return Date.now()-mov>400}
   function lista(){if(document.querySelector('#lg .lg-panel'))return true; /* la pantalla para entrar ya está */
     var a=document.querySelector('main#app');if(!a||!a.children.length)return false;
@@ -116,16 +116,16 @@
 <div id="won-banner" class="won-banner" role="alert" hidden></div>
 <dialog id="action-dialog"><form method="dialog"><button class="dialog-close" aria-label="Cerrar">×</button></form><div id="dialog-content"></div></dialog>
 
-<script src="/assets/diagnostico.js?v=2.19.1"></script>
-<script src="/assets/config.js?v=2.19.1"></script>
-<script src="/assets/backend-client.js?v=2.19.1"></script>
-<script src="/assets/agora-modulos.js?v=2.19.1"></script>
-<script src="/assets/agora-app.js?v=2.19.1" defer></script>
-<script src="/assets/widgets.js?v=2.19.1" defer></script>
+<script src="/assets/diagnostico.js?v=2.19.2"></script>
+<script src="/assets/config.js?v=2.19.2"></script>
+<script src="/assets/backend-client.js?v=2.19.2"></script>
+<script src="/assets/agora-modulos.js?v=2.19.2"></script>
+<script src="/assets/agora-app.js?v=2.19.2" defer></script>
+<script src="/assets/widgets.js?v=2.19.2" defer></script>
 <script>
-/* 2.19.1 · Que la caché nunca deje una versión vieja: si el navegador abrió una página guardada de otra versión,
+/* 2.19.2 · Que la caché nunca deje una versión vieja: si el navegador abrió una página guardada de otra versión,
    se borran las copias guardadas y se recarga una sola vez con la nueva. */
-(function(){var V='2.19.1';try{fetch('/version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(d){
+(function(){var V='2.19.2';try{fetch('/version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(d){
   if(!d||!d.version||d.version===V)return;var k='agora.recarga.'+d.version;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){return}
   var borrar=window.caches?caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}):Promise.resolve();
   var sw=navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update().catch(function(){})}))}):Promise.resolve();

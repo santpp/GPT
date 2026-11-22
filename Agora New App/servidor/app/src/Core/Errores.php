@@ -75,15 +75,16 @@ final class Errores {
  public static function area(string $ruta):string{
   $r=strtolower(trim($ruta,'/'));
   $es=static fn(string ...$p):bool=>array_reduce($p,fn($c,$x)=>$c||$r===$x||str_starts_with($r,$x.'/')||str_starts_with($r,$x),false);
-  if($es('login','clave/','session','logout','yo'))return 'ACC';
-  if($es('agency/'))return 'AGE';
+  if($es('login','clave/','session','logout','yo','me'))return 'ACC';
+  if($es('agency/','admin/consumption','admin/access-channel','admin/integrations'))return 'AGE';
   if($es('workspace/fiscal','workspace/facturas','workspace/libro-ventas','workspace/cobros','workspace/tasas','facturas','cobros'))return 'FAC';
   if($es('workspace/metricas','workspace/formulas','workspace/variables','workspace/tableros','workspace/alertas','workspace/plantillas'))return 'WID';
-  if($es('workspace/ventas','ventas','workspace/ganadas'))return 'VEN';
-  if($es('workspace/usuarios','usuarios','perfil','workspace/perfil'))return 'USR';
-  if($es('contracts','sign','registro','workspace/contratos'))return 'CON';
-  if($es('ghl/','workspace/contactos','workspace/oportunidades','workspace/tareas','workspace/bandeja','workspace/conversaciones','workspace/redes','workspace/campanas','conversations','contacts','opportunities','inbox','tasks'))return 'CTA';
-  if($es('workspace/'))return 'GES';
+  if($es('workspace/ventas','ventas','workspace/ganadas','workspace/won'))return 'VEN';
+  if($es('workspace/usuarios','usuarios','perfil','workspace/perfil','workspace/permisos','workspace/enlaces'))return 'USR';
+  if($es('contracts','contratos','sign','registro','workspace/contratos'))return 'CON';
+  // 2.19.2: todas las rutas que hablan con la cuenta (las atiende el motor).
+  if($es('ghl/','workspace/contact','workspace/oportunidad','workspace/opportunit','workspace/tareas','workspace/bandeja','workspace/conversation','workspace/inbox','workspace/messages','workspace/send','workspace/assign','workspace/read','workspace/record','workspace/sync','workspace/tags','workspace/templates','workspace/activity','workspace/pipelines','workspace/embudos','workspace/redes','workspace/campanas','workspace/self','workspace/connections','conversations','contacts','opportunities','inbox','tasks'))return 'CTA';
+  if($es('workspace/','admin/'))return 'GES';
   return 'SIS';
  }
  /** Código y razón de un error. */

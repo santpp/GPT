@@ -6,6 +6,22 @@ ini_set('display_errors','0');header('Cache-Control: no-store');header('X-Conten
 header_remove('X-Powered-By');header('X-Frame-Options: DENY');header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'");header('Cross-Origin-Resource-Policy: same-origin');header('Cross-Origin-Opener-Policy: same-origin');header('X-Permitted-Cross-Domain-Policies: none');header('Permissions-Policy: camera=(), geolocation=(), payment=()');
 if((!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off')||($_SERVER['HTTP_X_FORWARDED_PROTO']??'')==='https')header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 $requestId=bin2hex(random_bytes(8));header('X-Request-ID: '.$requestId);
+/* 2.19.2 · Una sola puerta para los errores: pone el código del diccionario (AG-ÁREA-NNN) y los anota en la bitácora con su referencia.
+   La usan el manejo de errores de abajo y el motor de la cuenta (su respond()), así ningún error sale sin código. Nunca rompe la respuesta. */
+$GLOBALS['agoraError']=static function(int $status,string $message,?\Throwable $e=null)use(&$requestId):string{
+ $codigo='AG-SIS-500';
+ try{
+  $ruta=(string)($GLOBALS['path']??'');$codigo=\Agora\Core\Errores::codigo($ruta,$status,$message)['codigo'];
+  $api=$GLOBALS['api']??null;$db=$GLOBALS['db']??null;$quien=$api?($api->a->user??null):null;
+  if($db&&($status>=500||($quien&&$status!==401))&&empty($GLOBALS['motorCaptura'])){
+   $tec=$e&&$status>=500?mb_substr(preg_replace('/[A-Za-z0-9_\-]{32,}/','…',get_class($e).': '.$e->getMessage().' · '.basename($e->getFile()).':'.$e->getLine()),0,800):null;
+   $db->run('INSERT INTO agora_error_log(referencia,codigo,status,metodo,ruta,user_id,tenant_id,mensaje,tecnico,ip) VALUES(?,?,?,?,?,?,?,?,?,?)',
+    [$requestId,$codigo,$status,substr((string)($GLOBALS['method']??''),0,8),mb_substr($ruta,0,160),$quien?(int)$quien['id']:null,$api&&($api->a->tenant??null)?(int)$api->a->tenant:null,mb_substr($message,0,300),$tec,\Agora\Security\Auth::ipCliente()]);
+   if(random_int(1,100)===1)$db->run('DELETE FROM agora_error_log WHERE created_at<UTC_TIMESTAMP()-INTERVAL 30 DAY');
+  }
+ }catch(\Throwable){}
+ return $codigo;
+};
 try{
  /* 2.1.12 · Diagnóstico de arranque. Si algo del servidor falla, /api/status y /api/health dicen QUÉ falla
     (sin revelar claves), en lugar de mostrar solo la pantalla de mantenimiento. */
@@ -79,18 +95,7 @@ try{
  $status=$e instanceof \Agora\Core\HttpError?$e->getCode():500;$message=$status===500?'No se pudo completar la operación. Referencia: '.$requestId:$e->getMessage();
  if($e instanceof \PDOException&&$e->getCode()==='23000'){$status=409;$message='El registro ya existe o está relacionado con otros datos.';}
  if($status===500)error_log('Agora '.$requestId.' '.get_class($e).' '.$e->getMessage());
- // 2.19.0 · Diccionario de errores: cada error lleva su código (AG-ÁREA-NNN) y queda en la bitácora con su referencia
- // (los del servidor siempre; los demás si hay alguien con sesión, salvo «sesión vencida», que es normal). Nunca rompe la respuesta.
- $codigo='AG-SIS-500';
- try{
-  $codigo=\Agora\Core\Errores::codigo((string)($path??''),$status,$message)['codigo'];
-  $quien=isset($api)?($api->a->user??null):null;
-  if(isset($db)&&($status>=500||($quien&&$status!==401))){
-   $tec=$status>=500?mb_substr(preg_replace('/[A-Za-z0-9_\-]{32,}/','…',get_class($e).': '.$e->getMessage().' · '.basename($e->getFile()).':'.$e->getLine()),0,800):null;
-   $db->run('INSERT INTO agora_error_log(referencia,codigo,status,metodo,ruta,user_id,tenant_id,mensaje,tecnico,ip) VALUES(?,?,?,?,?,?,?,?,?,?)',
-    [$requestId,$codigo,$status,substr((string)($method??''),0,8),mb_substr((string)($path??''),0,160),$quien?(int)$quien['id']:null,isset($api)&&($api->a->tenant??null)?(int)$api->a->tenant:null,mb_substr($message,0,300),$tec,\Agora\Security\Auth::ipCliente()]);
-   if(random_int(1,100)===1)$db->run('DELETE FROM agora_error_log WHERE created_at<UTC_TIMESTAMP()-INTERVAL 30 DAY');
-  }
- }catch(\Throwable){}
+ // 2.19.0 · Diccionario de errores y bitácora (2.19.2: con la función común de arriba).
+ $codigo=($GLOBALS['agoraError'])($status,$message,$e);
  http_response_code($status);header('Content-Type: application/json; charset=utf-8');echo json_encode(['error'=>$message,'requestId'=>$requestId,'codigo'=>$codigo],JSON_UNESCAPED_UNICODE);
 }

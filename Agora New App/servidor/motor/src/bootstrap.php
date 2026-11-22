@@ -13,6 +13,10 @@ function respond(array $body, int $status = 200): never {
     // Agora New App 2.9.6: el ERP puede ajustar la respuesta a sus reglas (por ejemplo, quién edita las cifras del mes).
     $t=$GLOBALS['motorPuente']['transformar']??null;
     if($status<400&&is_callable($t)){try{$body=$t($body);}catch(Throwable $e){}}
+    // Agora New App 2.19.2: todo error del motor lleva su código del diccionario y su referencia, y queda en la bitácora del ERP.
+    if($status>=400&&isset($body['error'])&&!isset($body['codigo'])&&is_callable($GLOBALS['agoraError']??null)){
+        try{$body['codigo']=($GLOBALS['agoraError'])($status,(string)$body['error']);$body['requestId']??=$GLOBALS['requestId']??null;}catch(Throwable $e){}
+    }
     motorEspejo($body,$status);
     // La primera respuesta es la buena: si el motor atrapa la captura en un catch genérico y responde otra cosa, se repite la primera.
     if(!empty($GLOBALS['motorCaptura'])){$GLOBALS['motorCapturado']??=[$body,$status];throw new MotorCaptura($GLOBALS['motorCapturado'][0],$GLOBALS['motorCapturado'][1]);}
@@ -51,8 +55,11 @@ function respondThen(array $body, callable $after): never {
 function body(): array {
     $raw = file_get_contents('php://input', false, null, 0, 16385);
     if (strlen($raw)>16384) respond(['error'=>'Payload too large'],413);
-    $value = json_decode($raw, true, 32, JSON_THROW_ON_ERROR);
-    if (!is_array($value) || array_is_list($value)) throw new InvalidArgumentException('Expected an object');
+    // Agora New App 2.19.2: «{}» es un pedido sin datos (cada ruta dice qué falta) y unos datos mal formados son un 400 claro,
+    // no un error interno (lo encontró la auditoría de errores: 7 rutas respondían 500 con un cuerpo vacío).
+    if (trim($raw) === '' || trim($raw) === '{}') return [];
+    try { $value = json_decode($raw, true, 32, JSON_THROW_ON_ERROR); } catch (JsonException $e) { respond(['error'=>'Los datos enviados no son válidos.'],400); }
+    if (!is_array($value) || ($value !== [] && array_is_list($value))) respond(['error'=>'Los datos enviados no son válidos.'],400);
     return $value;
 }
 function query(string $sql, array $args = []): PDOStatement {
