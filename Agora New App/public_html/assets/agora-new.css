@@ -1081,3 +1081,18 @@ main#app .wg-av-v{font-variant-numeric:tabular-nums}
 .wg-dash > div{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 220px}.wg-dash small{color:var(--ink-3,#7a7a85)}
 main#app section.wg:not([hidden]){margin-top:14px}
 main#app .wg-h-min{margin:0 0 6px}
+
+/* 2.18.2 · Pedido del usuario: menos espacio en blanco en las tarjetas. El contenido empieza arriba; solo el resultado va centrado y más grande.
+   Todas las tarjetas de una caja miden lo mismo y todas las líneas tienen el mismo grosor (un poco más gruesas), con una línea que cierra la caja abajo. */
+main#app#app .cel{justify-content:flex-start!important;align-items:stretch!important;padding:14px 18px 16px!important}
+main#app#app .cel :is(.ag-resumen-v,.t-metric,.inicio-resumen-v,.t-hero){align-self:center!important;text-align:center!important;margin:10px 0 0!important;font-size:clamp(28px,2.6vw,36px)!important;line-height:1.08!important;letter-spacing:-.01em}
+main#app#app .cel :is(.ag-resumen-d,.micro > .f,.inicio-resumen-d){align-self:center!important;text-align:center!important}
+main#app#app .cel > :is(.sc,.wg-sem){align-self:center}
+main#app#app :is(.ag-resumen-grid,.g-hero,.grid,.gc-caja-g,.inicio-resumen-g):has(> .cel){position:relative}
+/* esqueletos de carga del mismo tamaño que una tarjeta ya cargada */
+main#app .micro:has(> .sk){min-height:112px;display:flex;flex-direction:column;gap:12px;padding:16px 18px}
+main#app .micro > .sk.big{height:34px;width:55%;align-self:center}
+main#app#app .cel::before{top:0!important;height:4px!important}
+main#app#app :is(.ag-resumen-grid,.g-hero,.grid,.gc-caja-g,.inicio-resumen-g):has(> .cel)::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--ag-2);z-index:1;pointer-events:none}
+main#app .per-b[hidden]{display:none!important}
+@media(max-width:600px){main#app#app .cel :is(.ag-resumen-v,.t-metric,.inicio-resumen-v,.t-hero){font-size:26px!important}main#app#app .cel{padding:12px 10px 14px!important}}

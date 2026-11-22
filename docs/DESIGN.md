@@ -456,3 +456,5 @@ Lo que se deja para otro momento.
 - Pruebas de pantalla: cada `tests/*-ui.py` simula la cuenta con `page.route('**/api/**', …)`; no llaman a la plataforma de origen.
 - Pruebas del servidor: `tests/*.php` contra una base MariaDB de pruebas, con la cuenta simulada (`GhlClient` con transporte falso). Crean y borran sus propios datos.
 - Los correos de prueba terminan en `@example.test`; los teléfonos son de ejemplo.
+
+- **Tarjetas (2.18.2):** contenido arriba (sin centrar en vertical); solo el resultado centrado, 28–36 px (26 px en teléfono). Línea superior de 4 px pegada al borde en todas las filas y línea de 4 px que cierra la caja abajo. Filtro del Dashboard: Ayer · Hoy · Otro periodo (selector de fechas).

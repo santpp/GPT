@@ -750,7 +750,8 @@
     let csrf2 = "", month = null, period = periodOf(sel).month, range = periodOf(sel);
     const today = ymd(/* @__PURE__ */ new Date());
     const CHEVRON = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
-    const QUICK = [["today", "Hoy"], ["yesterday", "Ayer"], ["week", "7 días"], ["d30", "30 días"], ["month", "Este mes"], ["prev", "Mes anterior"]];
+    // Agora New App 2.18.2 · pedido del usuario: el filtro del Dashboard dice «Ayer», «Hoy» y «Otro periodo» (abre el selector de fechas)
+    const QUICK = [["yesterday", "Ayer"], ["today", "Hoy"]];
     const nowLabel = () => {
       const r = periodOf(sel);
       if (sel.kind === "today") return `Hoy · ${dayLabel(r.from)}`;
@@ -838,14 +839,14 @@
       const bar = $("#period-bar");
       const before = bar.querySelector(".seg-thumb");
       const from = before && before.style.opacity === "1" ? { width: before.style.width, transform: before.style.transform } : null;
-      const other = ["monthpick", "custom"].includes(sel.kind);
+      const other = !["today", "yesterday"].includes(sel.kind);
       bar.innerHTML = `<div class="period">
       <!-- Agora New App 2.12.0: el mismo selector del Inicio (barra, punto verde, flecha y casita) -->
-      <nav class="per per-tb" role="radiogroup" aria-label="Periodo">${QUICK.map(([k, l]) => `<button type="button" role="radio" aria-checked="${sel.kind === k}" class="seg-b per-b${sel.kind === k ? " is-on" : ""}" data-period="${k}">${l}${sel.kind === k && ["today", "week", "d30", "month"].includes(k) ? '<i class="pt pt-curso" aria-hidden="true"></i>' : ""}</button>`).join("")}<button type="button" id="period-btn" class="per-b${other ? " is-on" : ""}" aria-haspopup="true" aria-expanded="${menuOpen}">${other ? esc3(sel.kind === "monthpick" ? cap(monthNameShort(periodOf(sel).month)) : periodOf(sel).label) : "Otro periodo"}${CHEVRON}</button><button type="button" class="per-b per-ic" data-period="today" title="Volver a hoy" aria-label="Volver a hoy"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg></button></nav>
+      <nav class="per per-tb" role="radiogroup" aria-label="Periodo">${QUICK.map(([k, l]) => `<button type="button" role="radio" aria-checked="${sel.kind === k}" class="seg-b per-b${sel.kind === k ? " is-on" : ""}" data-period="${k}">${l}${sel.kind === k && ["today", "week", "d30", "month"].includes(k) ? '<i class="pt pt-curso" aria-hidden="true"></i>' : ""}</button>`).join("")}<button type="button" id="period-btn" class="per-b${other ? " is-on" : ""}" aria-haspopup="true" aria-expanded="${menuOpen}">${other ? esc3(sel.kind === "monthpick" ? cap(monthNameShort(periodOf(sel).month)) : periodOf(sel).label) : "Otro periodo"}${CHEVRON}</button><button type="button" class="per-b per-ic" data-period="today" hidden title="Volver a hoy" aria-label="Volver a hoy"></button></nav>
       <div id="period-menu" class="pop" role="dialog" aria-label="Otro periodo"${menuOpen ? "" : " hidden"}>
-        <label class="fld">Otro mes<select id="period-month"><option value="">Elegir mes…</option>${monthOptions(sel.kind === "monthpick" ? sel.month : "")}</select></label>
         <div class="rng"><label class="fld">Desde<input type="date" id="period-from" value="${esc3(sel.kind === "custom" ? sel.from : "")}" max="${today}"></label><label class="fld">Hasta<input type="date" id="period-to" value="${esc3(sel.kind === "custom" ? sel.to : "")}" max="${today}"></label></div>
-        <button type="button" id="period-apply" class="btn btn-cta" disabled>Aplicar rango</button>
+        <button type="button" id="period-apply" class="btn btn-cta" disabled>Aplicar fechas</button>
+        <label class="fld">O un mes completo<select id="period-month"><option value="">Elegir mes…</option>${monthOptions(sel.kind === "monthpick" ? sel.month : "")}</select></label>
       </div></div>`;
       $("#period-btn").onclick = (e) => {
         e.stopPropagation();

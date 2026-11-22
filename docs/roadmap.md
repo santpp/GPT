@@ -298,6 +298,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - **2.12.15 (21 de noviembre)**: pendientes medios [9], [10], [11] y [13] resueltos; backend revisado para el despliegue.
 - **2.13.0 (21 de noviembre)**: Correo de Ágora por la subcuenta de la agencia (sin SMTP), código al entrar, equipos de confianza de 14 días (cookie, no IP) y «¿Olvidaste tu clave?» en pasos.
 - **2.13.1 (21 de noviembre)**: líneas de las cifras azules (rojas al pasar), «Editar» gris sobre blanco, y la clave de los dueños solo por terminal.
+- **2.18.2 (22 de noviembre)**: tarjetas con el contenido arriba y el resultado centrado y más grande, líneas de 4 px iguales con cierre abajo, y filtro del Dashboard con Ayer, Hoy y Otro periodo.
 - **2.18.1 (21 de noviembre)**: los widgets entran en la cuadrícula de tarjetas de cada módulo y se ordenan con ellas desde «Editar Dashboard», en los 23 módulos y submódulos.
 - **2.18.0 (21 de noviembre)**: widgets dentro de «Editar Dashboard» (fuera de Inicio), buscar objetivo, avisos de los widgets en Inicio, consolidado de la agencia, plantillas por rubro y selector del Correo de Ágora con conexiones sin probar.
 - **2.17.0 (21 de noviembre)**: eliminar subcuenta (solo Master) y eliminar o suspender usuarios de subcuenta, con confirmación por operación aritmética que el servidor exige.

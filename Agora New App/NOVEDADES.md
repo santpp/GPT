@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.2 · Tarjetas más compactas y filtro del Dashboard (22 nov):**
+- **Menos espacio en blanco:** en todas las tarjetas el contenido empieza arriba (antes se centraba en vertical). Solo el **resultado** va centrado, y **más grande** (28 a 36 px; 26 px en el teléfono). Títulos y enunciados siguen a la izquierda.
+- **Líneas iguales:** la línea de arriba de cada tarjeta mide 4 px en todas las filas (antes la primera fila quedaba recortada y se veía más fina) y cada caja **cierra con una línea abajo**.
+- **Esqueletos de carga** del mismo alto que una tarjeta cargada.
+- **Filtro de fechas del Dashboard:** «Ayer», «Hoy» y «Otro periodo». «Otro periodo» abre el selector de fechas (desde/hasta) y, debajo, un mes completo.
+- Prueba nueva: `tests/fixes-2182.py` (17).
+
 **Novedades 2.18.1 · Los widgets son parte del tablero, como en la cuenta (21 nov):**
 - Pedido del usuario: las cifras propias ya no van en un bloque aparte: **entran en la misma cuadrícula de tarjetas del módulo**, con la misma forma que sus vecinas (título, enunciado y cifra). Las tarjetas que ya había conservan sus títulos, enunciados y separaciones.
 - **Se ordenan como un todo desde «Editar Dashboard»**: la lista de ese editor trae las tarjetas del módulo y los widgets juntos; se suben, bajan, muestran u ocultan igual (cada persona su vista, o la del equipo).
