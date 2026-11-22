@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.12.6 · Celdas vivas (idea del usuario, en todos los módulos):
 1 Cada cifra lleva su línea fina gris; la línea roja con brillo aparece solo al pasar (2.12.9). Cifras centradas, sin íconos.
 2 Cada cifra tiene su botón «Editar» solo con la palabra (contorno vino) que al pasar se llena de vino con letra blanca

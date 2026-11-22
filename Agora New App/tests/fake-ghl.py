@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Cuenta simulada (solo desarrollo) para probar Agora New App sin la cuenta real.
 Uso: python3 tests/fake-ghl.py 8099  y arrancar la API con APP_ENV=development AGORA_GHL_FAKE=http://127.0.0.1:8099
 Responde con la misma forma que la API v2 en las rutas que usa el motor. Anota cada petición en fake-ghl.log."""

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.12.15 · Pendientes medios para el despliegue:
 [9]  El registro de actividad cuenta el detalle en palabras: sin JSON ni identificadores.
 [10] Abrir una venta cuya oportunidad no existe en la cuenta no deja el Tablero «en espera».

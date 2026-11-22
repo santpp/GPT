@@ -1,4 +1,4 @@
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """2.9.7–2.9.9 · Gráficos de ventas en Gestión Comercial: los mismos del Tablero, elegibles con «Editar gráficos».
 Con reporte mensual sale por defecto la tendencia del año (la cabecera del reporte ya trae el mes); se puede sumar «Ventas del mes».
 Van al final del módulo (2.9.9). Quien no ve cifras del equipo (ejecutivo) no los ve. Requiere la API local en :8090 con ASOCIM. Uso: python3 tests/graficos-gestion.py"""

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.11.0 · Facturación (servidor): factura simple sin datos fiscales; factura fiscal con datos fiscales, tasa BCV,
 correlativo sin saltos (también con emisiones al mismo tiempo), número de control de la imprenta, notas, anulación con motivo,
 inmutabilidad en la base, cadena de huellas, libro de ventas y permisos por rol (los vendedores facturan; anular es de administración).

@@ -1,4 +1,4 @@
-/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
+/* © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 // Copia de Ágora Mobile 1.10.14 (public/assets/consumption.js) para Agora New App. Cambio: sin la comprobación de rol de Mobile.
 // «Consumos»: lo que cada subcuenta gasta en la cuenta de origen este mes y su plan activo. Sólo la persona propietaria.
 // El token de agencia se escribe aquí, se guarda cifrado en el servidor y no vuelve nunca a esta pantalla.

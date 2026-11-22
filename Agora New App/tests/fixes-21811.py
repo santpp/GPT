@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.18.11 · Pedido del usuario: en el Dashboard, las ruedas «Sin leer por asesor», «Fuente de los leads»
 y «Leads por ejecutivo» se pueden ver como dona, barras o cifras, y al tocar un asesor o una fuente se ve quiénes son
 (solo administración; a los vendedores el servidor no les manda el detalle y la pantalla no lo abre).

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.18.10 · Pedido del usuario: el «Editar» de cada tarjeta edita SOLO esa tarjeta.
 Tarjetas del sistema: mostrar u ocultar y su lugar (Al principio, Subir, Bajar, Al final). Widgets: solo la configuración de ese widget.
 Y en el editor de widgets ya no se copia de otro módulo: se ve la lista de cifras predeterminadas.

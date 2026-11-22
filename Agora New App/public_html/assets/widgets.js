@@ -1,4 +1,4 @@
-/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
+/* © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 /* Agora New App 2.15.0–2.16.0 · Widgets del equipo: cifras y gráficos por módulo, editor de tableros, editor de fórmulas,
    detalle de cada cifra con descarga (2.16.0) y «quién ve» cada tablero (2.16.0). Los gráficos van al final del módulo.
    Vive aparte de agora-app.js (decisión del usuario); usa lo que la app expone en window.AgoraHost.

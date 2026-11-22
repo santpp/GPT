@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.18.0 · Lo que reportó el usuario:
 [1] «Correo de Ágora» no listaba la subcuenta: solo salían las conexiones ya probadas. Ahora salen también las guardadas sin probar
     y se prueban al guardar.

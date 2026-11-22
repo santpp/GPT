@@ -1,5 +1,5 @@
 <?php
-/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
+/* © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 declare(strict_types=1);
 ini_set('display_errors','0');header('Cache-Control: no-store');header('X-Content-Type-Options: nosniff');header('Referrer-Policy: no-referrer');
 // 2.12.14 · Cabeceras de seguridad propias de la API (por si el servidor no aplica las del .htaccess).
@@ -32,6 +32,23 @@ try{
  if(!in_array($method,['GET','POST','PUT','DELETE'],true))\Agora\Core\Http::fail('Método no permitido.',405);
  $body=$method==='GET'?[]:\Agora\Core\Http::body();
  if($method!=='GET')$api->a->assertCsrf();
+ // 2.19.0 · Cifras de la cuenta más rápidas: una copia de 30 s por persona, rol y subcuenta de las consultas pesadas del Dashboard.
+ // Al recargar o volver al módulo salen al instante. Cualquier cambio guardado en la subcuenta borra las copias (nunca se ve un dato
+ // viejo después de editar). Se guardan en servidor/storage/cache-vivo (fuera de la parte pública) y se limpian solas.
+ $vivoDir=dirname($bootstrap).'/storage/cache-vivo';
+ if($api->a->user&&$method!=='GET'){$tw=(int)($_SERVER['HTTP_X_WORKSPACE_ID']??0);if($tw>0&&is_dir($vivoDir))@file_put_contents("$vivoDir/gen-$tw",bin2hex(random_bytes(6)));}
+ if($api->a->user&&$method==='GET'&&in_array($path,['workspace/dashboard','workspace/board-month','workspace/dia','workspace/ads','workspace/eficacia','workspace/campanas','workspace/indicadores'],true)){
+  try{
+   $tc=(int)$api->a->workspace();
+   if($tc>0&&(is_dir($vivoDir)||@mkdir($vivoDir,0770,true))){
+    $gen=@file_get_contents("$vivoDir/gen-$tc")?:'0';$q=array_filter($_GET,fn($v,$k)=>$v!==''&&!($k==='connectionId'&&(int)$v===$tc),ARRAY_FILTER_USE_BOTH);ksort($q);$u=$api->a->user;
+    $vivoF=$vivoDir.'/'.hash('sha256',implode('|',[$path,http_build_query($q),$u['id'],$u['role'],$u['auth_version']??'',$tc,$gen])).'.json';
+    if(is_file($vivoF)&&time()-filemtime($vivoF)<30){header('Content-Type: application/json; charset=utf-8');header('X-Agora-Copia: 1');readfile($vivoF);exit;}
+    if(random_int(1,200)===1)foreach(glob("$vivoDir/*.json")?:[] as $viejo)if(time()-@filemtime($viejo)>300)@unlink($viejo);
+    ob_start(static function(string $buf)use($vivoF):string{if(http_response_code()===200&&$buf!==''&&strlen($buf)<3000000&&($buf[0]==='{'||$buf[0]==='[')){@file_put_contents($vivoF.'.tmp',$buf);@rename($vivoF.'.tmp',$vivoF);}return $buf;});
+   }
+  }catch(\Agora\Core\HttpError){}
+ }
  // Agora New App: lo que habla en vivo con la cuenta lo atiende el motor de Ágora Mobile (si la subcuenta está conectada).
  if(\Agora\Core\MotorMobile::consumos($path)){if($method!=='GET')$api->a->rate('writes:'.($api->a->user['id']??0),120,60);\Agora\Core\MotorMobile::atenderConsumos($db,$config,$api->a,$path,$method);}
  if($api->a->user&&\Agora\Core\MotorMobile::atiende($path,$method)){
@@ -62,5 +79,18 @@ try{
  $status=$e instanceof \Agora\Core\HttpError?$e->getCode():500;$message=$status===500?'No se pudo completar la operación. Referencia: '.$requestId:$e->getMessage();
  if($e instanceof \PDOException&&$e->getCode()==='23000'){$status=409;$message='El registro ya existe o está relacionado con otros datos.';}
  if($status===500)error_log('Agora '.$requestId.' '.get_class($e).' '.$e->getMessage());
- http_response_code($status);header('Content-Type: application/json; charset=utf-8');echo json_encode(['error'=>$message,'requestId'=>$requestId],JSON_UNESCAPED_UNICODE);
+ // 2.19.0 · Diccionario de errores: cada error lleva su código (AG-ÁREA-NNN) y queda en la bitácora con su referencia
+ // (los del servidor siempre; los demás si hay alguien con sesión, salvo «sesión vencida», que es normal). Nunca rompe la respuesta.
+ $codigo='AG-SIS-500';
+ try{
+  $codigo=\Agora\Core\Errores::codigo((string)($path??''),$status,$message)['codigo'];
+  $quien=isset($api)?($api->a->user??null):null;
+  if(isset($db)&&($status>=500||($quien&&$status!==401))){
+   $tec=$status>=500?mb_substr(preg_replace('/[A-Za-z0-9_\-]{32,}/','…',get_class($e).': '.$e->getMessage().' · '.basename($e->getFile()).':'.$e->getLine()),0,800):null;
+   $db->run('INSERT INTO agora_error_log(referencia,codigo,status,metodo,ruta,user_id,tenant_id,mensaje,tecnico,ip) VALUES(?,?,?,?,?,?,?,?,?,?)',
+    [$requestId,$codigo,$status,substr((string)($method??''),0,8),mb_substr((string)($path??''),0,160),$quien?(int)$quien['id']:null,isset($api)&&($api->a->tenant??null)?(int)$api->a->tenant:null,mb_substr($message,0,300),$tec,\Agora\Security\Auth::ipCliente()]);
+   if(random_int(1,100)===1)$db->run('DELETE FROM agora_error_log WHERE created_at<UTC_TIMESTAMP()-INTERVAL 30 DAY');
+  }
+ }catch(\Throwable){}
+ http_response_code($status);header('Content-Type: application/json; charset=utf-8');echo json_encode(['error'=>$message,'requestId'=>$requestId,'codigo'=>$codigo],JSON_UNESCAPED_UNICODE);
 }

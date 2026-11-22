@@ -1,4 +1,4 @@
-/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
+/* © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 /* Agora New App · arreglos propios sobre el ERP 2.1.19. Se carga el último.
    Fuente única: Author (la de la marca). Antes diseno.css volvía a poner la letra del sistema
    por encima de marca.css, y había una segunda fuente (Inter) que ya no se usa. */
@@ -1176,3 +1176,52 @@ main#app#app :is(.g-hero,.grid):has(> .grid > .micro) > .grid{display:contents}
 #view .acc-ipb, .acc-ipb { border: 0; background: none; padding: 0; min-height: 0; font: inherit; color: var(--ag-2); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-variant-numeric: tabular-nums; }
 .acc-mas { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
 .acc-ips { margin-bottom: 16px; }
+
+/* 2.19.0 · Reportar un problema, Agencia → Errores y reportes, y panel de depuración (?debug=1, solo dueños) */
+.rp textarea { width: 100%; resize: vertical; min-height: 96px; }
+.rp-l { font-size: 13px; color: var(--muted); margin: 14px 0 8px; }
+.rp-err, .er-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.rp-err li { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; padding: 8px 12px; border: 1px solid var(--line, #e3e1e6); border-radius: 12px; }
+.rp-err b { font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ag-1); }
+.rp-err span { font-size: 13px; overflow-wrap: anywhere; }
+.rp-err small { grid-column: 2; font-size: 12px; color: var(--muted); }
+.er-res { margin-bottom: 16px; }
+.er-top { font-size: 20px !important; overflow-wrap: anywhere; }
+.er-lista .er-cod { align-self: start; }
+.er-tabs { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line, #e3e1e6); border-radius: 999px; width: max-content; max-width: 100%; overflow-x: auto; margin: 0 0 16px; background: #fff; }
+#view .er-tab, .er-tab { border: 0; box-shadow: none; min-height: 0; background: transparent; font: inherit; font-size: 13.5px; padding: 7px 14px; border-radius: 999px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+#view .er-tab.on, .er-tab.on { background: var(--ag-2); color: #fff; }
+.er-rep { margin-bottom: 12px; }
+.er-rep-h { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.er-rep-h p { margin: 2px 0 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.er-desc { margin: 12px 0; font-size: 14.5px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.er-vacio { color: var(--muted); }
+.er-lista li { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 10px 12px; border: 1px solid var(--line, #e3e1e6); border-radius: 12px; }
+.er-lista li > div { min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; overflow-wrap: anywhere; }
+.er-lista small { font-size: 12.5px; color: var(--muted); }
+.er-cod { display: inline-block; font-size: 12.5px; font-weight: 650; font-variant-numeric: tabular-nums; color: var(--ag-1); background: color-mix(in srgb, var(--ag-1) 8%, #fff); border-radius: 8px; padding: 3px 8px; white-space: nowrap; }
+.er-razon { margin: 0; font-size: 13px; color: var(--ink, #1d1b22); }
+.er-razon span { color: var(--muted); }
+.er-ok { color: var(--ok, #1a7f4b); font-weight: 600; }
+.er-match { padding: 8px 10px; background: var(--fill-3, #f6f5f8); border-radius: 10px; }
+.er-tec summary { cursor: pointer; font-size: 12.5px; color: var(--ag-2); }
+.er-tec code { display: block; margin-top: 6px; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.er-lentas, .er-pie { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; overflow-wrap: anywhere; }
+.er-areas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.er-areas li { display: flex; gap: 10px; font-size: 13.5px; }
+.er-areas b { font-variant-numeric: tabular-nums; color: var(--ag-1); min-width: 34px; }
+@media (max-width: 600px) { .er-rep-h { flex-direction: column; } }
+#ag-debug { position: fixed; right: 12px; bottom: 12px; z-index: 2147482000; width: min(420px, calc(100vw - 24px)); max-height: 46vh; overflow: auto; background: rgba(20, 22, 34, .94); color: #e9eaf2; border-radius: 14px; padding: 10px 12px; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+#ag-debug header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+#ag-debug header span { flex: 1; color: #aab0c4; }
+#ag-debug header button { border: 0; background: transparent; color: #fff; font-size: 18px; line-height: 1; cursor: pointer; min-height: 0; padding: 0 4px; }
+#ag-debug ol { list-style: none; margin: 0; padding: 0; }
+#ag-debug li { display: grid; grid-template-columns: 64px 44px 1fr; gap: 6px; padding: 2px 0; border-top: 1px solid rgba(255,255,255,.06); }
+#ag-debug li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ag-debug li i { font-style: normal; color: #aab0c4; }
+#ag-debug li.agd-media b { color: #f5c46b; }
+#ag-debug li.agd-lenta b, #ag-debug li.agd-mal b, #ag-debug li.agd-mal i { color: #ff8a8a; }
+#ag-debug .agd-e { margin: 6px 0 0; color: #aab0c4; overflow-wrap: anywhere; }
+.agency-kpis.er-res { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) { .agency-kpis.er-res { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.er-est select { font: inherit; font-size: 13px; padding: 6px 10px; border: 1px solid var(--line, #e3e1e6); border-radius: 999px; background: #fff; }

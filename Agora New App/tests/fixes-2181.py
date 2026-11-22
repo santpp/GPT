@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.18.1 · Pedido del usuario: los widgets van dentro de los tableros, ordenables junto con las tarjetas, en todos
 los módulos y submódulos. Cada uno tiene un solo «Editar Dashboard» y desde ahí se llega a los widgets.
 Requiere la API local en :8090 y la cuenta simulada. Uso: python3 tests/fixes-2181.py"""

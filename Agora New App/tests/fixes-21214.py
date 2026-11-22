@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.12.14 · Fixes menores pendientes + cabeceras de seguridad para el despliegue.
 - Cabeceras: la API manda las suyas (sin marco, CSP cerrada, aislamiento); la página sale con su CSP (también en local) y
   ninguna pantalla rompe la política; el .htaccess declara HSTS, permisos del navegador y bloquea archivos de trabajo.

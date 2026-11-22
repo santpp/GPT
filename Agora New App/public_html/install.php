@@ -1,5 +1,5 @@
 <?php
-/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
+/* © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 declare(strict_types=1);
 // Agora New App: la instalación ya no se hace desde el navegador. La cuenta de dueño se crea solo por terminal.
 http_response_code(410);header('Content-Type: text/html; charset=utf-8');header('Cache-Control: no-store');

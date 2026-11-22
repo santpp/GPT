@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.10.3 · Costos se editan en Costos (informe del 19 nov: «No me deja editar. Tampoco los KPIs que debería medir»).
 Sin reporte mensual: «Cargar costos» por concepto (fijo, variable, publicidad fuera de la cuenta), las tarjetas miden con eso
 (costo total, fijos, margen), Configuración mensual muestra los totales sin pisarlos y el servidor valida lo que llega.

@@ -1,5 +1,5 @@
 <?php
-/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
+/* © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 declare(strict_types=1);
 if(PHP_SAPI!=='cli'){http_response_code(404);exit;}
 require dirname(__DIR__).'/bootstrap.php';

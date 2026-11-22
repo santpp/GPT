@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.12.13 · «¿Venta ganada?» como en Ventas (pedido del usuario, 21 nov):
 1 Desde la conversación y desde la ficha del contacto (Contactos) el mismo paso: elegir la oportunidad (o una nueva), sin pedir el valor aparte.
 2 Al marcarla ganada se abre el formulario de venta de Ventas (Cliente · Producto y cobro · Detalles · Resumen), también con «+ Nueva venta»

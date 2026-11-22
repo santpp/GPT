@@ -1,5 +1,5 @@
 <?php
-/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
+/* © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 // Solo desarrollo local: imita las reglas del .htaccess con el servidor de PHP.
 // php -S 127.0.0.1:8090 -t "Agora New App/public_html" "Agora New App/dev-router.php"
 $path=parse_url($_SERVER['REQUEST_URI'],PHP_URL_PATH);

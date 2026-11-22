@@ -1,7 +1,18 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.19.0 · Depuración, errores con razón y Dashboard más rápido (22 nov):**
+- **Diccionario de errores:** todo error lleva un código `AG-ÁREA-NNN` (por ejemplo `AG-ACC-401B`, «código equivocado») con su razón y qué hacer. Lista completa en Agencia → Errores y reportes → Diccionario.
+- **Bitácora:** los errores quedan guardados con su referencia (30 días). Los del servidor, con su detalle técnico (sin claves).
+- **«Reportar un problema»** en el menú de la cuenta, para todas las personas: su texto, la pantalla, la versión y los últimos errores que vio, con código y referencia.
+- **Agencia → Errores y reportes** (solo dueños): reportes del equipo (Nuevo, Revisado, Resuelto), errores, el más frecuente y **la coincidencia de cada error reportado con el guardado en el servidor por su referencia**.
+- **`?debug=1`** (solo dueños): panel con el tiempo de cada consulta y el último error. **`php servidor/bin/diagnostico.php`**: revisión completa por terminal en verde, amarillo y rojo, aunque la web no abra.
+- **Dashboard más rápido:** ya no pide dos y tres veces las mismas cifras de la cuenta (una sola consulta para todo lo que se ve), y el servidor guarda 30 s una copia por persona: al recargar o volver al Dashboard, los números salen al instante. Cualquier cambio guardado borra la copia.
+- **Supervisor** también abre el detalle de las ruedas del Dashboard (quiénes son).
+- **Copyright 2026-2027**, solo en el código.
+- Prueba: `tests/fixes-2190.py` (50).
+
 **Novedades 2.18.16 · Derechos de autor (22 nov):**
-- **`LICENSE.txt`** en el ERP y dentro del paquete: «Copyright © 2026 Santiago Rafael Pérez Pérez. Todos los derechos reservados», software propietario de Ágora Digital App. La fuente Author conserva su propia licencia.
+- **`LICENSE.txt`** en el ERP y dentro del paquete: «Copyright © 2026-2027 Santiago Rafael Pérez Pérez. Todos los derechos reservados», software propietario de Ágora Digital App. La fuente Author conserva su propia licencia.
 - **Cabecera de derechos en cada archivo de código propio** (PHP, JS, CSS, HTML y Python) y `<meta name="author">` y `<meta name="copyright">` en la página. Las migraciones SQL no se tocan (el servidor comprueba su huella), quedan cubiertas por `LICENSE.txt`. Solo el ERP (decisión del usuario).
 
 **Novedades 2.18.15 · Accesos con código para los dueños, y tope real de intentos (22 nov):**

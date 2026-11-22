@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.15.0 · Widgets del equipo en pantalla: editor de tableros y editor de fórmulas.
 Administración agrega una cifra y una fórmula (autocompletar, vista previa, error marcado), compara y pone semáforo;
 lo guardado lo ven igual ejecutivo y consulta, sin poder editar. Teléfono 390 sin desborde.

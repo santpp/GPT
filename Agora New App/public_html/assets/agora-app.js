@@ -1,4 +1,4 @@
-/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
+/* © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 "use strict";
 /* =====================================================================================
    Agora Digital App
@@ -259,6 +259,7 @@ function route() {
   if (p === '/agencia/consumos') return {view:'agencyConsumos'};
   if (p === '/agencia/consolidado') return {view:'agencyConsolidado'}; // 2.18.0
   if (p === '/agencia/accesos') return {view:'agencyAccesos'}; // 2.18.15
+  if (p === '/agencia/errores') return {view:'agencyErrores'}; // 2.19.0
   if (p === '/agencia/textos') return {view:'agencyTexts'};
   if (p === '/agencia/estudio-ia') return {view:'agencyStudio'};
   if (p === '/perfil') return {view:'perfil'};
@@ -328,7 +329,7 @@ function render(focus) {
   const root = document.documentElement;
   if (!ME || !AGORA_ME) { root.classList.add('is-auth'); return V.entrar.render(); }
   if (R.view === 'entrar') { go(homePath(), {replace: true}); return; }
-  if (esSuperAdmin() && AGENCY_CONTEXT && !['agencia','perfil','agencyControl','agencyAccount','agencyTeam','agencyTexts','agencyStudio','agencyActivity','agencyConsumos','agencyConsolidado','agencyAccesos'].includes(R.view)) { toast('Selecciona una subcuenta para abrir sus módulos.'); go('/agencia', {replace:true}); return; }
+  if (esSuperAdmin() && AGENCY_CONTEXT && !['agencia','perfil','agencyControl','agencyAccount','agencyTeam','agencyTexts','agencyStudio','agencyActivity','agencyConsumos','agencyConsolidado','agencyAccesos','agencyErrores'].includes(R.view)) { toast('Selecciona una subcuenta para abrir sus módulos.'); go('/agencia', {replace:true}); return; }
   if (R.view === 'agencia' && !esSuperAdmin()) { go(homePath(), {replace:true}); return; }
   if (R.view === 'agencia' && esSuperAdmin() && !AGENCY_CONTEXT) { resetAccountData(); AGENCY_CONTEXT = true; }
   root.classList.remove('is-auth'); $('#lg')?.remove();
@@ -339,7 +340,7 @@ function render(focus) {
     R = {view: 'ag_inbox', mod: 'bandeja'};
   }
   if (R.unknown) { toast('Esa dirección no existe. Te llevamos al inicio.'); go(homePath(), {replace:true}); return; }
-  if (['agencyControl','agencyAccount','agencyTeam','agencyTexts','agencyStudio','agencyActivity','agencyConsumos','agencyConsolidado','agencyAccesos'].includes(R.view) && !esSuperAdmin()) { topbar();paint(agencyRouteDenied());return; }
+  if (['agencyControl','agencyAccount','agencyTeam','agencyTexts','agencyStudio','agencyActivity','agencyConsumos','agencyConsolidado','agencyAccesos','agencyErrores'].includes(R.view) && !esSuperAdmin()) { topbar();paint(agencyRouteDenied());return; }
   topbar();
   const gen = ++GEN;
   const v = V[R.view];
@@ -357,6 +358,7 @@ function render(focus) {
   if (focus) scrollTo({top: 0});
 }
 function paint(html, enter) {
+  try { if (window.AgoraDiag) { window.AgoraDiag.puede = esSuperAdmin(); window.AgoraDiag.pintar(); } } catch {} // 2.19.0: el panel de ?debug=1 solo para dueños
   const app = $('#app');
   // Si lo que había era un módulo de Ágora, se suelta antes de reemplazarlo: así para
   // sus relojes, sus consultas en vivo y sus escuchas, como hacía en su propia cáscara.
@@ -1111,6 +1113,7 @@ function openAccount() {
       ${opcion(`data-ir="${href(MODS.conexiones.path)}"`, 'gear', 'Ajustes')}
       ${ME && !esSuperAdmin() ? opcion('data-clave', 'lock', 'Cambiar mi clave') : ''}
       ${opcion('data-keys', 'keyboard', 'Atajos del teclado', '?')}
+      ${ME ? opcion('data-reportar', 'warn', 'Reportar un problema') : ''}
     </div>
     ${ESPACIO ? `<div class="acct-est">
       <h4>Estado del espacio</h4>
@@ -1126,6 +1129,7 @@ function openAccount() {
   aparienciaMounted(el);
   el.querySelector('[data-agency-back]')?.addEventListener('click', volverAgencia);
   el.querySelector('[data-buscar]').onclick = () => { closePop(); openCmd(); };
+  el.querySelector('[data-reportar]')?.addEventListener('click', () => { closePop(); reportarProblema(); });
   el.querySelectorAll('[data-ir]').forEach(b => b.addEventListener('click', e => { closePop(); go(e.currentTarget.dataset.ir.replace(/^#/, '')); }));
   const bl = el.querySelector('[data-bloqueo]');
   if (bl) bl.onclick = async e => {
@@ -1601,7 +1605,7 @@ function launcherFrame(mode, content) {
   if (!agency) return `<div class="launch-layout launch-no-rail"><div class="launch-content">${content}</div></div>`;
   const name = ME?.nombre || AGORA_ME?.user?.name || 'Mi cuenta';
   const groupIcons = {general:'home',ingresos:'invoice',clientes:'users',gestion:'stocks',contratos:'receipt',administracion:'gear'};
-  return `<div class="launch-layout"><aside class="launch-rail" aria-label="Navegación de ${agency ? 'Agencia' : 'subcuenta'}"><div class="launch-brand launch-brand-logo" aria-label="Ágora Digital App">${LOGO}</div><p class="launch-rail-label">${agency ? 'Agencia' : esc(ws?.name() || 'Mi subcuenta')}</p><nav class="launch-primary"><a class="${R.view==='agencia'?'is-current':''}" href="${href(agency ? '/agencia' : '/centro')}" ${R.view==='agencia'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--brand)">${icon(agency ? 'users' : 'home')}</span>${agency ? 'Subcuentas' : 'Inicio de subcuenta'}</a>${!agency && esSuperAdmin() ? `<button type="button" data-agency-return>${icon('users')}Ir a subcuentas</button>` : ''}${agency ? '' : Object.entries(GRUPOS).map(([id,g]) => `<button type="button" data-launch-group="group-${id}">${icon(groupIcons[id])}${esc(g.name)}</button>`).join('')}</nav><div class="launch-system"><p class="launch-rail-label">${AG_GOB_NOMBRE}</p><a href="${href('/agencia/control')}" ${R.view==='agencyControl'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-vino)">${icon('pie')}</span>Resumen</a><a href="${href('/agencia/usuarios')}" ${R.view==='agencyTeam'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-azul)">${icon('team')}</span>Gestión de usuarios</a><a href="${href('/agencia/actividad')}" ${R.view==='agencyActivity'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-seguridad)">${icon('shield')}</span>Registro de actividad</a><a href="${href('/agencia/accesos')}" ${R.view==='agencyAccesos'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-seguridad)">${icon('lock')}</span>Accesos con código</a><a href="${href('/agencia/consumos')}" ${R.view==='agencyConsumos'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-oro)">${icon('wallet')}</span>Consumos</a><a href="${href('/agencia/consolidado')}" ${R.view==='agencyConsolidado'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-azul)">${icon('stocks')}</span>Consolidado</a>${!agency ? `<p class="launch-rail-label">Mi espacio</p><a href="${href('/ajustes')}">${icon('gear')}Ajustes</a><a href="${href('/ayuda')}">${icon('info')}Ayuda</a>` : ''}</div><a class="launch-person" href="${href('/perfil')}" ${R.view==='perfil'?'aria-current="page"':''}><span class="launch-avatar">${personalAvatar()}</span><span><b>${esc(name)}</b><small>${esSuperAdmin() ? (esMaster() ? 'Master · Dueño' : 'Superadmin de Agencia') : 'Mi perfil y cuenta'}</small></span>${icon('chevR')}</a></aside><div class="launch-content">${content}</div></div>`;
+  return `<div class="launch-layout"><aside class="launch-rail" aria-label="Navegación de ${agency ? 'Agencia' : 'subcuenta'}"><div class="launch-brand launch-brand-logo" aria-label="Ágora Digital App">${LOGO}</div><p class="launch-rail-label">${agency ? 'Agencia' : esc(ws?.name() || 'Mi subcuenta')}</p><nav class="launch-primary"><a class="${R.view==='agencia'?'is-current':''}" href="${href(agency ? '/agencia' : '/centro')}" ${R.view==='agencia'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--brand)">${icon(agency ? 'users' : 'home')}</span>${agency ? 'Subcuentas' : 'Inicio de subcuenta'}</a>${!agency && esSuperAdmin() ? `<button type="button" data-agency-return>${icon('users')}Ir a subcuentas</button>` : ''}${agency ? '' : Object.entries(GRUPOS).map(([id,g]) => `<button type="button" data-launch-group="group-${id}">${icon(groupIcons[id])}${esc(g.name)}</button>`).join('')}</nav><div class="launch-system"><p class="launch-rail-label">${AG_GOB_NOMBRE}</p><a href="${href('/agencia/control')}" ${R.view==='agencyControl'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-vino)">${icon('pie')}</span>Resumen</a><a href="${href('/agencia/usuarios')}" ${R.view==='agencyTeam'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-azul)">${icon('team')}</span>Gestión de usuarios</a><a href="${href('/agencia/actividad')}" ${R.view==='agencyActivity'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-seguridad)">${icon('shield')}</span>Registro de actividad</a><a href="${href('/agencia/accesos')}" ${R.view==='agencyAccesos'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-seguridad)">${icon('lock')}</span>Accesos con código</a><a href="${href('/agencia/errores')}" ${R.view==='agencyErrores'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-seguridad)">${icon('warn')}</span>Errores y reportes</a><a href="${href('/agencia/consumos')}" ${R.view==='agencyConsumos'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-oro)">${icon('wallet')}</span>Consumos</a><a href="${href('/agencia/consolidado')}" ${R.view==='agencyConsolidado'?'aria-current="page"':''}><span class="mdm-ic" style="--c:var(--mod-azul)">${icon('stocks')}</span>Consolidado</a>${!agency ? `<p class="launch-rail-label">Mi espacio</p><a href="${href('/ajustes')}">${icon('gear')}Ajustes</a><a href="${href('/ayuda')}">${icon('info')}Ayuda</a>` : ''}</div><a class="launch-person" href="${href('/perfil')}" ${R.view==='perfil'?'aria-current="page"':''}><span class="launch-avatar">${personalAvatar()}</span><span><b>${esc(name)}</b><small>${esSuperAdmin() ? (esMaster() ? 'Master · Dueño' : 'Superadmin de Agencia') : 'Mi perfil y cuenta'}</small></span>${icon('chevR')}</a></aside><div class="launch-content">${content}</div></div>`;
 }
 document.addEventListener('click', e => {
   const button = e.target.closest('[data-launch-group]');
@@ -2983,7 +2987,7 @@ async function guardarIdentidad(form) {
 window.AgoraUI = {
   donut, barras, lineaArea, usd, firmado, mesNombre, mesCorto,
   // 2.18.11: el detalle de las ruedas del Dashboard (quiénes y cuáles) solo para administración; el servidor tampoco lo manda a quien ve solo lo suyo.
-  verDetalle: () => !!ME && ['MASTER', 'SUPERADMIN', 'ADMIN'].includes(ME.rol),
+  verDetalle: () => !!ME && ['MASTER', 'SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(ME.rol), // 2.19.0: también Supervisor (pedido del usuario)
   irConversacion: id => { if (!id) return; closeModal(); if (ws) ws.pendingConversation = {id, explicit: true}; go('/bandeja'); },
   irContacto: id => { if (!id) return; closeModal(); if (ws) ws.pendingContact = id; go(MODS.contactos.path); },
   modal: (titulo, sub, cuerpo) => openModal(`${modalHead(esc(titulo), esc(sub))}<div class="dn-det">${cuerpo}</div>`, {wide: true}),
@@ -4207,7 +4211,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.18.16').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.19.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */
@@ -4266,6 +4270,99 @@ V.agencyAccesos = {
     const q = root.querySelector('[data-acc-q]');
     q?.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { ACC.q = q.value.trim(); ir(); }, 450); });
     root.querySelectorAll('[data-acc-ip]').forEach(b => b.onclick = () => { ACC.q = b.dataset.accIp; ir(); });
+  },
+};
+/* 2.19.0 · Reportar un problema (cualquier persona con sesión). Manda su texto, la pantalla, la versión y los últimos
+   errores que vio este navegador (código y referencia, de AgoraDiag). Nada de claves, tokens ni datos de clientes. */
+function reportarProblema() {
+  const D = window.AgoraDiag, extra = D ? D.paraReporte() : {errores: [], lentas: [], pantalla: location.pathname, dispositivo: ''};
+  const hora = iso => { const t = new Date(iso); return isNaN(t) ? '' : t.toLocaleTimeString('es-VE', {hour: 'numeric', minute: '2-digit'}); };
+  const lista = extra.errores.length ? `<p class="rp-l">Se adjuntan los últimos errores de esta pantalla:</p><ul class="rp-err">${extra.errores.slice(-6).reverse().map(e => `<li><b>${esc(e.codigo)}</b><span>${esc(e.mensaje || '')}</span><small>${esc(hora(e.hora))}${e.referencia ? ` · ref. ${esc(e.referencia)}` : ''}</small></li>`).join('')}</ul>`
+    : '<p class="rp-l">No se vio ningún error en esta pantalla. Cuéntanos qué pasó.</p>';
+  const s = openModal(modalHead('Reportar un problema', 'Lo recibe quien administra Ágora. Van la pantalla, la versión y los errores que viste; nunca tus claves ni datos de clientes.') + `<div class="rp">
+    <label class="fld">¿Qué pasó?<textarea name="descripcion" rows="4" maxlength="1000" placeholder="Por ejemplo: al guardar la venta salió un error y no se guardó."></textarea></label>
+    ${lista}<p class="fld-err" role="alert"></p>
+    <div class="form-ft"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="button" data-rp-ok>${icon('send')}Enviar reporte</button></div></div>`);
+  s.querySelector('[data-rp-ok]').onclick = async e => {
+    const b = e.currentTarget, err = s.querySelector('.fld-err'); busy(b, true, 'Enviando…');
+    try {
+      const r = await agoraApi('reportes', {method: 'POST', body: {descripcion: s.querySelector('[name=descripcion]').value, pantalla: extra.pantalla, version: APP_VERSION_ACTUAL(), dispositivo: extra.dispositivo, errores: extra.errores, lentas: extra.lentas}});
+      closeModal(); toast(`Reporte enviado (${r.referencia}). Gracias.`);
+    } catch (x) { busy(b, false); err.textContent = x.message; }
+  };
+}
+function APP_VERSION_ACTUAL() { const m = document.querySelector('script[src*="agora-app.js"]')?.getAttribute('src')?.match(/v=([\d.]+)/); return m ? m[1] : ''; }
+
+/* 2.19.0 · Agencia → Errores y reportes (solo dueños): los reportes del equipo con sus errores y, si coinciden por referencia,
+   el error del servidor que los causó; los errores del servidor; y el diccionario (cada código con su razón y qué hacer). */
+const ERR = {pest: 'reportes', dias: 7, q: '', estado: '', datos: null, dic: null};
+async function errCargar() {
+  const q = new URLSearchParams({dias: String(ERR.dias)}); if (ERR.q) q.set('q', ERR.q); if (ERR.estado) q.set('estado', ERR.estado);
+  ERR.datos = await agoraApi('agency/errores?' + q.toString());
+  if (ERR.pest === 'diccionario' && !ERR.dic) ERR.dic = await agoraApi('agency/errores/diccionario');
+}
+const ERR_EST = {nuevo: ['Nuevo', 'sc-warn'], revisado: ['Revisado', 'sc-gray'], resuelto: ['Resuelto', 'sc-ok']};
+V.agencyErrores = {
+  need: async () => { if (!window.__DEMO__) await errCargar(); },
+  render() {
+    if (!esSuperAdmin()) return agencyRouteDenied();
+    const d = ERR.datos || {resumen: {}, reportes: [], errores: []}, r = d.resumen || {};
+    const fecha = iso => { const t = new Date(iso); return isNaN(t) ? '—' : t.toLocaleString('es-VE', {day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit'}); };
+    const quien = x => `${esc(x.nombre || x.correo || 'Sin identificar')}${x.subcuenta ? ` · ${esc(x.subcuenta)}` : ''}`;
+    const cod = e => `<span class="er-cod" title="${esc(e.explicacion?.titulo || '')}">${esc(e.codigo)}</span>`;
+    const expl = x => x ? `<p class="er-razon"><b>${esc(x.titulo)}.</b> ${esc(x.razon)}${x.hacer ? ` <span>Qué hacer: ${esc(x.hacer)}</span>` : ''}</p>` : '';
+    const tec = l => l?.tecnico ? `<details class="er-tec"><summary>Detalle técnico</summary><code>${esc(l.tecnico)}</code></details>` : '';
+    const resumen = `<div class="agency-kpis er-res">
+      <div><small>Reportes nuevos</small><strong>${int(r.reportesNuevos || 0)}</strong><span class="src">Sin revisar</span></div>
+      <div><small>Errores</small><strong>${int(r.errores || 0)}</strong><span class="src">En el periodo</span></div>
+      <div><small>Errores del servidor</small><strong style="color:${r.graves ? 'var(--bad, #b42318)' : 'inherit'}">${int(r.graves || 0)}</strong><span class="src">Los que hay que revisar primero</span></div>
+      <div><small>El más frecuente</small><strong class="er-top">${esc(r.frecuentes?.[0]?.codigo || '—')}</strong><span class="src">${esc(r.frecuentes?.[0] ? `${r.frecuentes[0].titulo} · ${int(r.frecuentes[0].n)} veces` : 'Sin errores')}</span></div></div>`;
+    const tabs = `<div class="er-tabs" role="tablist">${[['reportes', 'Reportes del equipo'], ['servidor', 'Errores'], ['diccionario', 'Diccionario']].map(([k, t]) => `<button type="button" role="tab" class="er-tab ${ERR.pest === k ? 'on' : ''}" aria-selected="${ERR.pest === k}" data-er-pest="${k}">${t}</button>`).join('')}</div>`;
+    const filtros = ERR.pest === 'diccionario' ? '' : `<div class="acc-fil">
+      <label class="fld acc-f"><span>Periodo</span><select data-er-dias>${[[1, 'Últimas 24 horas'], [7, 'Últimos 7 días'], [30, 'Últimos 30 días'], [90, 'Últimos 90 días'], [180, 'Últimos 6 meses']].map(([v, t]) => `<option value="${v}" ${ERR.dias === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      ${ERR.pest === 'reportes' ? `<label class="fld acc-f"><span>Estado</span><select data-er-estado><option value="">Todos</option>${Object.entries(ERR_EST).map(([k, [t]]) => `<option value="${k}" ${ERR.estado === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>` : ''}
+      <label class="fld acc-f acc-q"><span>Buscar</span><input type="search" data-er-q value="${esc(ERR.q)}" placeholder="Código, referencia, persona, subcuenta o pantalla" maxlength="80"></label></div>`;
+    let cuerpo = '';
+    if (ERR.pest === 'reportes') {
+      cuerpo = (d.reportes || []).length ? (d.reportes || []).map(x => `<article class="panel er-rep">
+        <header class="er-rep-h"><div><b>${esc(x.referencia)}</b> · ${esc(fecha(x.fecha))}<p>${quien(x)}${x.pantalla ? ` · en <code>${esc(x.pantalla)}</code>` : ''}</p></div>
+          <label class="er-est"><select data-er-rep="${x.id}" aria-label="Estado del reporte">${Object.entries(ERR_EST).map(([k, [t]]) => `<option value="${k}" ${x.estado === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label></header>
+        ${x.descripcion ? `<p class="er-desc">${esc(x.descripcion)}</p>` : '<p class="er-desc er-vacio">Sin descripción.</p>'}
+        ${x.errores.length ? `<ul class="er-lista">${x.errores.map(e => `<li>${cod(e)}<div><span>${esc(e.mensaje || '')}</span>${expl(e.explicacion)}
+          ${e.referencia ? `<small>Referencia ${esc(e.referencia)} · ${e.servidor ? '<b class="er-ok">coincide con un error guardado en el servidor</b>' : 'sin error guardado en el servidor'}</small>` : ''}
+          ${e.servidor ? `<div class="er-match"><small>${esc(e.servidor.metodo)} <code>${esc(e.servidor.ruta)}</code> · ${esc(fecha(e.servidor.fecha))} · IP ${esc(e.servidor.ip || '—')}</small>${tec(e.servidor)}</div>` : ''}</div></li>`).join('')}</ul>` : ''}
+        ${x.lentas?.length ? `<p class="er-lentas">Consultas lentas: ${x.lentas.map(l => `<code>${esc(l.ruta)}</code> ${int(l.ms)} ms`).join(' · ')}</p>` : ''}
+        <p class="er-pie">Versión ${esc(x.version || '—')} · ${esc(x.dispositivo || '—')} · IP ${esc(x.ip || '—')}</p></article>`).join('') + (d.masReportes ? '<p class="acc-mas">Se muestran los 100 más recientes.</p>' : '')
+        : `<p class="empty empty-sobrio">No hay reportes en este periodo${ERR.q || ERR.estado ? ' con este filtro' : ''}.</p>`;
+    } else if (ERR.pest === 'servidor') {
+      const errs = d.errores || [];
+      cuerpo = errs.length ? `<section class="panel"><div class="tw acc-tw"><table><thead><tr><th>Fecha</th><th>Código</th><th>Qué pasó</th><th>Dónde</th><th>Persona</th><th>Referencia</th></tr></thead><tbody>${errs.map(e => `<tr>
+        <td data-l="Fecha">${esc(fecha(e.fecha))}</td><td data-l="Código">${cod(e)}<small class="acc-sub">${esc(e.explicacion?.titulo || '')}</small></td>
+        <td data-l="Qué pasó">${esc(e.mensaje)}${tec(e)}</td><td data-l="Dónde"><code>${esc(e.metodo)} ${esc(e.ruta)}</code></td>
+        <td data-l="Persona">${quien(e)}</td><td data-l="Referencia"><button type="button" class="acc-ipb" data-er-ref="${esc(e.referencia)}">${esc(e.referencia)}</button></td></tr>`).join('')}</tbody></table></div>${d.masErrores ? '<p class="acc-mas">Se muestran los 200 más recientes.</p>' : ''}</section>`
+        : `<p class="empty empty-sobrio">No hay errores en este periodo${ERR.q ? ' con este filtro' : ''}.</p>`;
+    } else {
+      const dic = ERR.dic || {areas: [], tipos: [], especificos: []};
+      const tabla = (t, filas) => `<section class="panel">${secH('info', t)}<div class="tw acc-tw"><table><thead><tr><th>Código</th><th>Qué es</th><th>Razón</th><th>Qué hacer</th></tr></thead><tbody>${filas.map(f => `<tr><td data-l="Código"><span class="er-cod">${esc(f.codigo)}</span></td><td data-l="Qué es">${esc(f.titulo)}</td><td data-l="Razón">${esc(f.razon)}</td><td data-l="Qué hacer">${esc(f.hacer)}</td></tr>`).join('')}</tbody></table></div></section>`;
+      cuerpo = `<section class="panel">${secH('info', 'Cómo se lee un código', 'AG-ÁREA-NNN: el área es la parte de Ágora donde pasó; NNN, el tipo de fallo; una letra al final indica un error concreto.')}
+        <ul class="er-areas">${dic.areas.map(a => `<li><b>${esc(a.area)}</b><span>${esc(a.nombre)}</span></li>`).join('')}</ul></section>
+        ${tabla('Errores concretos', dic.especificos)}${tabla('Tipos de fallo', dic.tipos)}`;
+    }
+    return launcherFrame('agencia', head(AG_GOB_NOMBRE, 'Errores y reportes', '') + resumen + tabs + filtros + cuerpo);
+  },
+  mounted(root) {
+    let t = 0;
+    const ir = async () => { const enQ = document.activeElement?.matches?.('[data-er-q]'); try { await errCargar(); } catch (x) { toast(x.message); } repaint();
+      if (enQ) { const n = document.querySelector('[data-er-q]'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } } };
+    root.querySelectorAll('[data-er-pest]').forEach(b => b.onclick = () => { ERR.pest = b.dataset.erPest; ir(); });
+    root.querySelector('[data-er-dias]')?.addEventListener('change', e => { ERR.dias = +e.target.value; ir(); });
+    root.querySelector('[data-er-estado]')?.addEventListener('change', e => { ERR.estado = e.target.value; ir(); });
+    const q = root.querySelector('[data-er-q]');
+    q?.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { ERR.q = q.value.trim(); ir(); }, 450); });
+    root.querySelectorAll('[data-er-ref]').forEach(b => b.onclick = () => { ERR.q = b.dataset.erRef; ERR.pest = 'reportes'; ir(); });
+    root.querySelectorAll('[data-er-rep]').forEach(sel => sel.onchange = async () => {
+      try { await agoraApi('agency/errores/reporte', {method: 'PUT', body: {id: +sel.dataset.erRep, estado: sel.value}}); toast('Reporte actualizado.'); await errCargar(); repaint(); } catch (x) { toast(x.message); }
+    });
   },
 };
 V.agencyActivity = {
@@ -9113,9 +9210,9 @@ async function kpiValores(kpis, force) {
       pide.has('dash') ? tr(agoraApi('workspace/dashboard' + dashZona('?'))) : null,
       pide.has('mes') ? tr(agoraApi('workspace/board-month?period=' + mesActualYM())) : null,
       pide.has('won') ? tr(agoraApi('workspace/won')) : null,
-      pide.has('dia') ? tr(agoraApi('workspace/dia')) : null,
-      pide.has('ads') ? tr(agoraApi('workspace/ads?period=' + mesActualYM())) : null,
-      pide.has('efic') ? tr(agoraApi('workspace/eficacia')) : null,
+      pide.has('dia') ? tr(agoraApi(`workspace/dia?period=${mesActualYM()}&date=${hoyYMD()}`)) : null, // 2.19.0: mismos datos que pide el Dashboard (se comparte la consulta)
+      pide.has('ads') ? tr(agoraApi(`workspace/ads?period=${mesActualYM()}&date=${hoyYMD()}`)) : null,
+      pide.has('efic') ? tr(agoraApi(`workspace/eficacia?period=${mesActualYM()}&date=${hoyYMD()}`)) : null,
       pide.has('tareas') ? tr(agoraApi('workspace/tareas')) : null,
       pide.has('contratos') && typeof loadContratos === 'function' ? tr(Promise.resolve().then(() => loadContratos())) : null,
       pide.has('emb') && (esAdmin() || esSuperAdmin()) ? tr(EMB ? Promise.resolve(EMB_ORIG) : agoraApi('workspace/embudos')) : null,
@@ -10606,6 +10703,7 @@ V.agencyControl = {
           ${herramienta('/agencia/actividad', 'shield', 'Registro de actividad', 'Todo lo que se ha hecho, con fecha, hora y responsable.')}
           ${herramienta('/agencia/consolidado', 'stocks', 'Consolidado', 'Las mismas cifras en todas tus subcuentas: ventas, cobros, metas y más.')}
           ${herramienta('/agencia/accesos', 'shield', 'Accesos con código', 'Quién pidió o usó un código para entrar, de qué subcuenta y desde qué IP.')}
+          ${herramienta('/agencia/errores', 'warn', 'Errores y reportes', 'Los problemas que reporta tu equipo y los errores del servidor, cada uno con su razón.')}
           <div class="ag-tool is-soon" aria-disabled="true"><span class="ag-tool-ic" aria-hidden="true">${icon('spark')}</span><span class="ag-tool-tx"><b>Estudio <em class="soon-chip">Próximamente</em></b><small>Textos del panel, importaciones y borradores con IA.</small></span></div>
         </div></section>`);
   },
@@ -10847,7 +10945,7 @@ Object.values(MODS).forEach(m => { if (m && GRUPOS[m.g] && m.g !== 'general') m.
   if (ME && AGORA_ME && !esSuperAdmin()) await bootEspacio();
   await loadUiTexts();
   const p = path();
-  if (ME && AGORA_ME && esSuperAdmin() && !['/', '/entrar', '/agencia', '/perfil','/agencia/control','/agencia/usuarios','/agencia/actividad','/agencia/consolidado','/agencia/accesos','/agencia/textos','/agencia/estudio-ia'].includes(p) && !/^\/agencia\/subcuenta\//.test(p) && !route().unknown && ws?.current()) {
+  if (ME && AGORA_ME && esSuperAdmin() && !['/', '/entrar', '/agencia', '/perfil','/agencia/control','/agencia/usuarios','/agencia/actividad','/agencia/consolidado','/agencia/accesos','/agencia/errores','/agencia/textos','/agencia/estudio-ia'].includes(p) && !/^\/agencia\/subcuenta\//.test(p) && !route().unknown && ws?.current()) {
     const activated = await cambiarSubcuenta(ws.current());
     if (activated) go(p, {replace:true});
     return;

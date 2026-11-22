@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.11.8 · Consumos: saber de qué subcuenta es cada gasto.
 1 Un cargo que trae el identificador de la subcuenta en cualquier dato (no solo en el campo de siempre) se suma a esa subcuenta.
 2 Los cargos sin subcuenta muestran «pistas»: los datos que se repiten (como el número de WhatsApp) y cuánto suma cada valor;

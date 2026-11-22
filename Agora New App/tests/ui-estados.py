@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App · cada estado que el programa de la bandeja activa (classList) debe tener estilo en alguna hoja.
 Evita botones que «no hacen nada» porque el programa y la hoja usan nombres distintos (pasó con la ficha del contacto).
 Uso: python3 tests/ui-estados.py   (no necesita servidor)"""

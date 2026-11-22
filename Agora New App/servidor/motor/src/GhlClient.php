@@ -1,5 +1,5 @@
 <?php
-/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
+/* © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 declare(strict_types=1);
 final class GhlApiException extends RuntimeException {
     public function __construct(public readonly int $status,public readonly int $retryAfter=0,public readonly string $detail='') {parent::__construct('GHL request failed: '.$status);}

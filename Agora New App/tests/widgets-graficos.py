@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.16.0 · Widgets fases 4, 5 y 6 en pantalla:
 gráficos (línea, barras, área, dona, tabla) al final del módulo con tooltip y las mismas cifras del widget;
 detalle de una cifra con su descarga; tablero solo para la administración; copiar de otro módulo; cifras del reporte.

@@ -1,5 +1,5 @@
 <?php
-/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
+/* © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 declare(strict_types=1);
 // Pestaña «Consumos»: sólo la persona propietaria. Se incluye desde router.php con $u, $path, $method y $appRoot ya definidos.
 require_once __DIR__.'/AgencyWallet.php';

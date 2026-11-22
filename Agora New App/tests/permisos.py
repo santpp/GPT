@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App · los permisos por rol funcionan en el servidor y la pantalla recibe los mismos.
 Necesita lo mismo que tests/motor-puente.py (API en :8090 con datos sintéticos y cuenta simulada).
 Uso: python3 tests/permisos.py CORREO_DUEÑA CLAVE_DUEÑA"""

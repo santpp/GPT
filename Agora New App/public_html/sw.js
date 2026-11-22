@@ -1,4 +1,4 @@
-/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
+/* © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 /* =====================================================================================
    Agora Digital App · trabajador de servicio
    -------------------------------------------------------------------------------------
@@ -6,8 +6,8 @@
    del armazón, que ahora son los de esta versión. Los avisos (push) y la apertura
    de la conversación al tocarlos siguen exactamente igual.
    ===================================================================================== */
-const CACHE="agora-digital-app-2.18.16-20261122";
-const SHELL=["/", "/manifest.webmanifest", "/assets/backend-client.js", "/assets/marca.css", "/assets/diseno.css", "/assets/ecosistema.css", "/assets/agora-new.css", "/assets/athena/athena-saludo.webp", "/assets/fonts/Author-Variable.woff2", "/assets/fonts/Author-VariableItalic.woff2", "/assets/sistema.css", "/assets/modulos.css", "/assets/config.js", "/assets/agora-modulos.js", "/assets/agora-app.js", "/assets/widgets.js", "/assets/agora-logo.png", "/assets/agora-mark.png", "/assets/favicon.ico", "/assets/icons/icon-192.png", "/assets/icons/icon-512.png", "/assets/icons/badge-96.png", "/assets/icons/apple-touch-icon.png"];
+const CACHE="agora-digital-app-2.19.0-20261122";
+const SHELL=["/", "/manifest.webmanifest", "/assets/backend-client.js", "/assets/marca.css", "/assets/diseno.css", "/assets/ecosistema.css", "/assets/agora-new.css", "/assets/athena/athena-saludo.webp", "/assets/fonts/Author-Variable.woff2", "/assets/fonts/Author-VariableItalic.woff2", "/assets/sistema.css", "/assets/modulos.css", "/assets/config.js", "/assets/agora-modulos.js", "/assets/agora-app.js", "/assets/widgets.js", "/assets/diagnostico.js", "/assets/agora-logo.png", "/assets/agora-mark.png", "/assets/favicon.ico", "/assets/icons/icon-192.png", "/assets/icons/icon-512.png", "/assets/icons/badge-96.png", "/assets/icons/apple-touch-icon.png"];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL.map(url=>new Request(url,{cache:'reload'})))).then(()=>self.skipWaiting())));
 self.addEventListener('message',e=>{
  if(e.data?.type==='ACTIVATE')self.skipWaiting();
@@ -55,7 +55,7 @@ self.addEventListener('notificationclick',event=>{
 });
 self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.method!=='GET'||u.origin!==self.location.origin||u.pathname.startsWith('/api/'))return;
  if(e.request.mode==='navigate'){e.respondWith(fetch(e.request,{cache:'no-store'}).catch(()=>caches.match(u.pathname).then(hit=>hit||caches.match('/'))));return}
- // 2.18.16: la página (navegación) se pide sin la caché del navegador.
+ // 2.19.0: la página (navegación) se pide sin la caché del navegador.
  // 2.3.1 · primero la red: así una versión nueva nunca queda tapada por archivos viejos guardados. Sin red, lo guardado.
  if(SHELL.includes(u.pathname))e.respondWith(fetch(e.request).then(r=>{if(r.ok){const c=r.clone();caches.open(CACHE).then(k=>k.put(u.pathname,c)).catch(()=>{})}return r}).catch(()=>caches.match(u.pathname)));
 });

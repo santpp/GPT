@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.18.13 · Pedido del usuario (video del 22 nov):
 1. La entrada se iba antes de que aparecieran los números (tope de 7 s y la cuenta real tarda más): ahora espera a que no haya esqueletos
    y la pantalla esté quieta, con tope de 20 s. Los esqueletos siguen en los cambios entre módulos.

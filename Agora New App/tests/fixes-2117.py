@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.11.7 · Correcciones del usuario (20 nov):
 1 «Leads de hoy» igual que en Mobile: el ERP pide el tablero de la cuenta con la zona horaria y el día de quien mira (antes, «hoy» en hora universal).
 2 El menú de la agencia (Subcuentas y Centro de mando) con el lenguaje del menú de las subcuentas: fondo claro, ícono en recuadro de color,

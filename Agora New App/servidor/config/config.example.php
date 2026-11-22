@@ -1,5 +1,5 @@
 <?php
-/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
+/* © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 // Agora New App · configuración. Cópialo como config.php (paso 6 de INSTALAR-CYBERPANEL.md). Nunca lo subas a un repositorio.
 return [
  'env' => 'production',

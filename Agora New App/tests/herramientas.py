@@ -1,4 +1,4 @@
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """2.9.5 · Las mismas herramientas en todas las vistas de Ventas y facturación: botón «Excel» arriba con el mismo menú,
 barra Columnas/Excel en la tabla, sin CSV sueltos ni búsquedas repetidas, y la descarga baja solo lo filtrado.
 Requiere la API local en :8090 con ASOCIM. Uso: python3 tests/herramientas.py"""

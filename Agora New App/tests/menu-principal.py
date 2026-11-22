@@ -1,4 +1,4 @@
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """2.9.4 · Menú principal: la franja «Ágora Digital App / Hola», «Ir a Dashboard», cifras iguales y etiquetas que llevan a cada herramienta.
 Requiere la API local en :8090 con la subcuenta ASOCIM. Uso: python3 tests/menu-principal.py"""
 import sys

@@ -1,4 +1,4 @@
-/* © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
+/* © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. */
 /* API de producción: CSRF y contexto por pestaña; nunca guarda credenciales en localStorage. */
 (() => {
  const original=window.fetch.bind(window);let csrf='',csrfPending=null,workspace=null;

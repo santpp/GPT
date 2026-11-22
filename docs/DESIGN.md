@@ -132,6 +132,13 @@ Lo de arriba es de Ágora Mobile. El ERP (`Agora New App/`) **no** pasa por `mak
   - En el Tablero comercial, que viene de Mobile, con `TB_ATAJOS` (por rótulo).
   - La navegación es una sola función: `tarjIr`.
 
+**Errores, reportes y depuración (ERP 2.19.0):**
+- **Todo error que ve una persona tiene un código** `AG-ÁREA-NNN[letra]` del diccionario (`servidor/app/src/Core/Errores.php`) con su razón y «qué hacer». En pantalla se sigue mostrando el mensaje en lenguaje normal; el código va en «Reportar un problema» y en Agencia.
+- **«Reportar un problema»** está en el menú de la cuenta (avatar), para todas las personas. Ventana: «¿Qué pasó?» y la lista de errores que se adjuntan (código en vino, mensaje, hora y referencia). Botón «Enviar reporte» con ícono de enviar. Confirmación con `toast` corto («Reporte enviado (R-12). Gracias.»).
+- **Agencia → «Errores y reportes»** (solo dueños, ícono `warn`, también en el menú lateral de Agencia y en el Panel de control): resumen en 4 cifras (`agency-kpis`, sin «Editar Dashboard»), pestañas en píldora («Reportes del equipo», «Errores», «Diccionario»), filtros como en «Accesos con código». Cada reporte es un panel con su estado (Nuevo, Revisado, Resuelto), su texto y sus errores; cada error muestra el código en una etiqueta vino suave (`.er-cod`), la razón en negrita y «Qué hacer»; si coincide con un error guardado en el servidor, lo dice en verde y abre el «Detalle técnico» plegado.
+- **Panel de depuración** (`?debug=1`, solo dueños; `?debug=0` o la × lo apagan): caja oscura flotante abajo a la derecha, letra monoespaciada de 12 px, con las últimas 12 consultas (tiempo en ámbar desde 1 s y en rojo desde 3 s o con error) y el último error. Es una herramienta, no parte de la interfaz: no sigue la escala tipográfica.
+- **Copyright:** solo en el código (cabeceras y `LICENSE.txt`), nunca en pantalla.
+
 ## 5. Forma, espacio y toque
 
 Valores con nombre (bloque «1.10.11 · Sistema de diseño» en `layout.css`):

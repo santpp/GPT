@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2026 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
+# © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt.
 """Agora New App 2.12.3 y 2.12.4 · Pedidos del usuario (20 nov, tarde):
 1 TODOS los módulos: cada grupo de cifras es UNA tarjeta blanca con las cifras separadas por líneas (sin tarjetas sueltas ni huecos).
 2 Sin «carnaval»: los íconos de los módulos y los gráficos usan solo vino y azul profundo (y sus tonos); nada de oro ni verde en el menú.
