@@ -27,6 +27,12 @@ with sync_playwright() as pw:
         cortas=[f for f,_,_,n in r if n<=2]
         ok(cortas and min(cortas)>=60,f'2.18.4: las cifras cortas llenan la tarjeta (≥60 px: {sorted(set(int(x) for x in cortas))[:3]})')
         ok('Los que tienes a tu nombre' not in pg.inner_text('main#app'),'2.18.5: ya no aparece «Los que tienes a tu nombre en la cuenta»')
+        t=pg.evaluate("[...document.querySelectorAll('main#app .cel')].map(c=>(c.querySelector('.t-label,h3,.ag-resumen-t')?.textContent||'').trim())")
+        ok('Leads de hoy' in t and any(x.startswith('Leads asignados a mí') for x in t),f'2.18.6: «Leads de hoy» y «Leads asignados a mí» son dos tarjetas {t[:3]}')
+        des=pg.evaluate("""(()=>{const out=[];document.querySelectorAll('main#app :is(.ag-resumen-grid,.g-hero,.grid,.gc-caja-g)').forEach(g=>{const cs=[...g.querySelectorAll('.cel')].filter(c=>c.offsetParent);const f={};cs.forEach(c=>{const r=c.getBoundingClientRect();(f[Math.round(r.top)]||=[]).push(Math.round(r.width))});Object.values(f).forEach(w=>{if(Math.max(...w)-Math.min(...w)>3)out.push(w)})});return out})()""")
+        ok(not des,f'2.18.6: en cada fila las tarjetas miden lo mismo (la última fila se reparte por igual) {des[:2]}')
+        choques=pg.evaluate("""(()=>{const out=[];document.querySelectorAll('main#app .cel').forEach(c=>{const b=c.querySelector(':scope > .cel-acc');if(!b||!c.offsetParent)return;const rb=b.getBoundingClientRect();c.querySelectorAll('.ag-resumen-s,.ag-resumen-t,h3,.t-label,.inicio-resumen-l').forEach(t=>{const g=document.createRange();g.selectNodeContents(t);[...g.getClientRects()].forEach(r=>{if(r.right>rb.left+1&&r.left<rb.right&&r.bottom>rb.top+1&&r.top<rb.bottom)out.push(t.textContent.trim().slice(0,30))})})});return [...new Set(out)]})()""")
+        ok(not choques,f'2.18.6: ningún título ni enunciado queda debajo del botón «Editar» {choques[:2]}')
         b=pg.evaluate("[...document.querySelectorAll('#period-bar .per-b')].filter(b=>!b.hidden&&b.offsetParent).map(b=>b.textContent.trim())")
         ok(b==['Ayer','Hoy','Otro periodo'],f'el filtro del Dashboard dice Ayer, Hoy y Otro periodo {b}')
         pg.click('#period-btn');pg.wait_for_timeout(400)

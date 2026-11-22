@@ -4200,7 +4200,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.18.5').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.18.6').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */
@@ -7249,7 +7249,7 @@ function tgTarjetas(main) {
 }
 /* 2.12.6 · Estilo de las cifras (idea del usuario): rótulo, una línea de descripción breve, la cifra y su nota; ícono de línea pequeño arriba a la derecha.
    Las cifras de las pantallas de Mobile (Tablero) y del reporte no traen descripción: se ponen aquí por su rótulo. */
-const CIFRA_DESC = {'Leads de hoy': 'Leads del día', 'Leads nuevos': 'Leads del período', 'Leads del período': 'Leads del período', 'Conversaciones': 'Conversaciones de la cuenta',
+const CIFRA_DESC = {'Leads de hoy': 'Leads del día', 'Leads asignados a mí': 'Leads del día asignados a ti', 'Leads asignados a mí en el periodo': 'Leads del periodo asignados a ti', 'Leads nuevos': 'Leads del período', 'Leads del período': 'Leads del período', 'Conversaciones': 'Conversaciones de la cuenta',
   'Sin leer': 'Conversaciones pendientes de lectura', 'Sin leer ahora': 'Pendientes de lectura ahora', 'Esperando respuesta': 'Conversaciones pendientes de respuesta',
   'Contactos': 'Contactos de la cuenta', 'Oportunidades abiertas': 'Oportunidades actualmente abiertas', 'Ganadas en la cuenta este mes': 'Oportunidades ganadas en el mes',
   'Mis ventas del mes': 'Tus ventas registradas', 'Ganancia real del mes': 'Después de costos fijos', 'Ganancia después de publicidad y comisiones': 'Ventas menos publicidad y comisiones',
@@ -7271,13 +7271,25 @@ function cajaRellenar(main) {
     if (!caja.offsetParent || caja.matches('[data-wg]')) return;
     const celdas = [...caja.querySelectorAll(':scope > .ag-resumen, :scope > .hero, :scope > .micro, :scope > .grid > .micro, :scope > .inicio-resumen-c')]
       .filter(c => c.style.display !== 'none' && c.offsetParent !== null);
-    celdas.forEach(c => c.style.removeProperty('grid-column')); caja.style.removeProperty('grid-template-columns');
+    celdas.forEach(c => c.style.removeProperty('grid-column')); caja.style.removeProperty('grid-template-columns'); caja.querySelectorAll(':scope > .grid').forEach(g => g.style.removeProperty('grid-template-columns'));
     const cols = getComputedStyle(caja).gridTemplateColumns.split(' ').filter(Boolean).length;
     if (celdas.length > 1 && celdas.length < cols) { caja.style.setProperty('grid-template-columns', `repeat(${celdas.length},minmax(0,1fr))`, 'important'); return; } // una sola fila: columnas iguales
     const ord = celdas.map((c, i) => ({c, o: Number(c.style.order || 0), i})).sort((a, b) => a.o - b.o || a.i - b.i).map(x => x.c);
     const W = caja.getBoundingClientRect().width, sueltas = ord.filter(c => c.getBoundingClientRect().width < W * 0.9); // la que ya ocupa toda la fila no cuenta
     const resto = cols > 1 ? sueltas.length % cols : 0; if (!resto) return;
     const ult = sueltas.slice(-resto), base = Math.floor(cols / resto), extra = cols % resto;
+    if (extra) {
+      // 2.18.7 · pedido del usuario: las de la última fila se reparten el ancho por igual (antes una quedaba más ancha).
+      // La caja pasa a cols×resto columnas: cada tarjeta conserva su ancho y las de la última fila miden cols columnas cada una.
+      const rejilla = c => { let p = c.parentElement; while (p && p !== caja && getComputedStyle(p).display === 'contents') p = p.parentElement; return p; };
+      const padre = rejilla(ult[0]), hijos = ord.filter(c => rejilla(c) === padre);
+      if (padre && ult.every(c => rejilla(c) === padre) && getComputedStyle(padre).display === 'grid') {
+        const colW = (padre.getBoundingClientRect().width) / cols, spans = hijos.map(c => Math.max(1, Math.round(c.getBoundingClientRect().width / colW)));
+        padre.style.setProperty('grid-template-columns', `repeat(${cols * resto},minmax(0,1fr))`, 'important');
+        hijos.forEach((c, k) => c.style.setProperty('grid-column', `span ${ult.includes(c) ? cols : Math.min(cols, spans[k]) * resto}`, 'important'));
+        return;
+      }
+    }
     ult.forEach((c, k) => c.style.setProperty('grid-column', `span ${base + (k < extra ? 1 : 0)}`, 'important'));
   });
 }

@@ -999,7 +999,9 @@
       const heroNote = leads ? leadsValue === null ? noData : nowLabel() : "En esta cuenta";
       const mineValue = leads ? leads.mine === null || leads.mine === void 0 ? null : number(leads.mine) : number(unread);
       const heroPair = leads ? `<div class="pair" ><span>Leads asignados a mí</span><b>${mineValue === null ? "—" : esc3(mineValue)}</b></div>${leads.linked && mineValue !== null ? "" : `<p class="f">${leads.linked ? esc3(noData) : typeof unlinked === "object" ? unlinked.html : esc3(unlinked)}</p>`}` : `<div class="pair"><span>Sin leer</span><b>${esc3(mineValue)}</b></div>`;
+      // Agora New App 2.18.6 · pedido del usuario: «Leads asignados a mí» es su propia tarjeta, igual de visible que «Leads de hoy»
       const tiles2 = [
+        ...leads ? [metric(sel.kind === "today" ? "Leads asignados a mí" : "Leads asignados a mí en el periodo", mineValue, leads.linked && mineValue !== null ? "" : leads.linked ? noData : typeof unlinked === "object" ? unlinked : unlinked)] : [],
         ...leads ? [metric("Conversaciones", number(data.conversations?.total ?? 0))] : [],
         ...leads ? [metric("Sin leer", number(unread))] : [],
         ...data.conversations?.waiting !== void 0 ? [metric("Esperando respuesta", number(data.conversations.waiting), { html: '<button type="button" class="lnk" data-go-waiting>Ver la lista</button>' })] : [],
@@ -1022,7 +1024,7 @@
       const heading = sel.kind === "today" ? "Tu día" : cap(nowLabel());
       $("#dashboard-body").innerHTML = `${sec2(esc3(heading), "Conversaciones, leads y oportunidades abiertas de la cuenta.")}
       <div class="grid g-hero">
-        <section class="hero"><div><p class="t-label">${esc3(heroLabel)}</p><p class="t-hero" style="margin-top:10px">${heroValue === null ? "—" : esc3(heroValue)}</p><p class="f">${esc3(heroNote)}</p></div><div class="goal">${heroPair}</div></section>
+        <section class="hero"><div><p class="t-label">${esc3(heroLabel)}</p><p class="t-hero" style="margin-top:10px">${heroValue === null ? "—" : esc3(heroValue)}</p><p class="f">${esc3(heroNote)}</p></div>${leads ? "" : `<div class="goal">${heroPair}</div>`}</section>
         ${metricGrid(tiles2)}
       </div>
       <section id="won-team" hidden></section>

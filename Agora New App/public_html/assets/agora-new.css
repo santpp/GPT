@@ -1103,3 +1103,6 @@ main#app#app .cel{container-type:inline-size}
 main#app#app .cel :is(.ag-resumen-v,.t-metric,.inicio-resumen-v,.t-hero){flex:1 1 auto!important;display:flex!important;align-items:center!important;justify-content:center!important;align-self:stretch!important;
   font-size:clamp(30px,calc(100cqi * .86 / (max(var(--wgn,4),3) * .54)),84px)!important;line-height:1!important;margin:8px 0!important;white-space:nowrap}
 @media(max-width:600px){main#app#app .cel :is(.ag-resumen-v,.t-metric,.inicio-resumen-v,.t-hero){font-size:clamp(24px,calc(100cqi * .86 / (max(var(--wgn,4),3) * .54)),56px)!important}}
+/* 2.18.6 · el enunciado también deja lugar al botón «Editar» (en «Sin leer» quedaba debajo del botón) */
+main#app#app .cel:has(> .cel-acc) :is(.ag-resumen-s,.ag-resumen-t,h3,.inicio-resumen-l,.t-label),main#app#app .cel:has(> .cel-acc) > div > :is(.ag-resumen-s,.t-label){padding-right:76px!important}
+@media(max-width:600px){main#app#app .cel:has(> .cel-acc) :is(.ag-resumen-s,.ag-resumen-t,h3,.inicio-resumen-l,.t-label),main#app#app .cel:has(> .cel-acc) > div > :is(.ag-resumen-s,.t-label){padding-right:0!important}}

@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.6 · Dos tarjetas de leads, filas parejas y «Editar» en su lugar (22 nov):**
+- Pedido del usuario: **«Leads de hoy» y «Leads asignados a mí» son dos tarjetas** del mismo tamaño, cada una con su número grande y su enunciado («Leads del día asignados a ti»). Se ordenan u ocultan por separado. Si el usuario no está enlazado con la cuenta, la tarjeta lo indica.
+- **Proporciones:** cuando la última fila tiene menos tarjetas, se reparten el ancho por igual (antes una quedaba el doble de ancha). Comprobado en 9 módulos, ordenador y teléfono.
+- **«Editar»:** títulos y enunciados dejan lugar al botón (en «Sin leer» el enunciado quedaba debajo).
+- `tests/fixes-2182.py` ampliada a 23.
+
 **Novedades 2.18.5 · Sin la nota de «Leads asignados a mí» (22 nov):**
 - Pedido del usuario: se quita «Los que tienes a tu nombre en la cuenta» del Dashboard. Si el usuario está enlazado con la cuenta, solo se ve «Leads asignados a mí» y la cifra; si no lo está, sigue la indicación para enlazarlo.
 
