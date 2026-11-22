@@ -127,6 +127,11 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
   - En el servidor (`api/index.php`): copia de 30 s de esas rutas en `servidor/storage/cache-vivo/`. La clave lleva ruta, datos, usuario, rol, `auth_version`, subcuenta y la «generación» de la subcuenta. Toda escritura con `X-Workspace-ID` cambia la generación (borra las copias). La respuesta servida desde la copia lleva `X-Agora-Copia: 1`.
 - Prueba: `tests/fixes-2190.py`.
 
+## Bandeja: quién envió cada mensaje (2.19.1)
+
+- `quienMarkup(m)` en `agora-modulos.js` pone en cada burbuja saliente `.msg-who`: iniciales de la persona (nombre de `autores` para lo enviado desde Ágora, de `equipo` con `m.userId` para lo enviado desde la cuenta, o `AgoraUI.yo()` para lo recién enviado) o el ícono de automatización (`ICONO_AUTO`, `.msg-auto`) si `m.source` es `workflow`, `campaign`, `bulk_actions` o `api`; si no hay nada, un ícono de persona genérico.
+- Servidor: tabla `message_authors` del motor (la crea `MotorMobile::instalar`); `live-inbox.php` la llena al enviar y devuelve `autores` y `equipo` con los mensajes. La cuenta no acepta indicar el usuario al enviar por integración (verificado en la documentación local). Prueba: `tests/fixes-2191.py`.
+
 ## Venta ganada (2.12.13)
 
 - Un solo flujo: «¿Venta ganada?» (Bandeja y ficha del contacto) → `window.agoraGanar` elige la oportunidad → al quedar ganada, `vgInterceptar`/`vgGanada` abre el formulario de venta (`vgAbrir`), el mismo de Ventas registradas. No se pide el valor aparte; el formulario lo guarda en la oportunidad. Las ganadas sin venta son «ventas por completar».

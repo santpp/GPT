@@ -15,7 +15,7 @@ use Agora\Services\GhlConnection;
  * Sin conexión guardada, el ERP sigue respondiendo con sus datos importados, como hasta ahora.
  */
 final class MotorMobile {
- public const VERSION='motor-1.10.14-dia';
+ public const VERSION='motor-1.10.14-dia-autores'; // 2.19.1: tabla message_authors
  /** Tenant único del motor: la agencia. Cada subcuenta del ERP es una conexión con id = id de la subcuenta. */
  public const AGENCIA=1;
  /** Rutas en vivo (GET o el método indicado). */
@@ -67,6 +67,8 @@ final class MotorMobile {
   \Installation::applyMigrations();
   // 2.6.1 · la foto diaria que da «frente a ayer» en Operación del día.
   \db()->exec("CREATE TABLE IF NOT EXISTS daily_metrics (connection_id BIGINT UNSIGNED NOT NULL,day DATE NOT NULL,kind VARCHAR(20) CHARACTER SET ascii NOT NULL,payload JSON NOT NULL,updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,PRIMARY KEY (connection_id,day,kind),FOREIGN KEY (connection_id) REFERENCES ghl_connections(id) ON DELETE CASCADE)");
+  // 2.19.1 · Quién envió desde Ágora cada mensaje (la cuenta lo anota como enviado por integración, sin usuario).
+  \db()->exec("CREATE TABLE IF NOT EXISTS message_authors (connection_id BIGINT UNSIGNED NOT NULL,message_id VARCHAR(100) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,author_name VARCHAR(120) NOT NULL,external_user_id VARCHAR(80) CHARACTER SET ascii NULL,erp_user_id BIGINT UNSIGNED NULL,created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(connection_id,message_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
   \query('INSERT IGNORE INTO tenants(id,name,location_id) VALUES(?,?,?)',[self::AGENCIA,'Agencia','agora-new-app']);
   $erp->run('INSERT INTO agora_schema(version,checksum) VALUES(?,?)',[self::VERSION,hash('sha256',self::VERSION)]);
  }
@@ -142,7 +144,7 @@ final class MotorMobile {
   };
   // 2.9.0 · espejo: cada respuesta de contactos u oportunidades queda guardada (sobrescribe por id de la cuenta).
   $espejo=new \Agora\Services\Espejo($erp,(int)$tenant);
-  $GLOBALS['motorPuente']=['connectionId'=>$tenant,'transformar'=>$transformar,'alActuar'=>$alActuar,'alResponder'=>static fn(array $body)=>$espejo->deRespuesta($p,$body),'membership'=>function(array $connection)use($erp,$user,$restringido,$escribe,$reasigna):array{
+  $GLOBALS['motorPuente']=['autor'=>['nombre'=>(string)($user['name']??''),'id'=>(int)$user['id']],'connectionId'=>$tenant,'transformar'=>$transformar,'alActuar'=>$alActuar,'alResponder'=>static fn(array $body)=>$espejo->deRespuesta($p,$body),'membership'=>function(array $connection)use($erp,$user,$restringido,$escribe,$reasigna):array{
    $full=\PermissionPolicy::capabilities(['identity_type'=>'native','role'=>'administrator']);
    // 2.4.0 · primero el enlace que eligió quien administra; si no hay, el del mismo correo.
    $enlace=(new \Agora\Services\UserLinks($erp))->forUser((int)$connection['id'],['id'=>$user['id'],'email'=>$user['email']]);

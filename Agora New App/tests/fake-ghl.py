@@ -15,7 +15,9 @@ CONTACTS={f'k{i}':{'id':f'k{i}','locationId':LOC,'contactName':n,'firstName':n.s
 CONVS=[{'id':f'c{i}','locationId':LOC,'contactId':k,'contactName':c['contactName'],'fullName':c['contactName'],'phone':c['phone'],'email':c['email'],'lastMessageType':'TYPE_WHATSAPP' if i%2==0 else 'TYPE_SMS',
         'lastMessageBody':['Hola, ¿tienen cupo el sábado?','Gracias, quedo atento','¿Cuánto cuesta el plan anual?','Buenas tardes'][i],'lastMessageDate':NOW-i*600000,'lastMessageDirection':'inbound','unreadCount':[2,0,1,0][i],
         'assignedTo':c['assignedTo'],'type':'TYPE_PHONE'} for i,(k,c) in enumerate(CONTACTS.items())]
-MSGS={cv['id']:[{'id':f"{cv['id']}-m{j}",'conversationId':cv['id'],'contactId':cv['contactId'],'locationId':LOC,'body':t,'direction':d,'dateAdded':f'2026-11-13T1{j}:00:00.000Z','messageType':cv['lastMessageType'],'status':'delivered','attachments':[]}
+MSGS={cv['id']:[{'id':f"{cv['id']}-m{j}",'conversationId':cv['id'],'contactId':cv['contactId'],'locationId':LOC,'body':t,'direction':d,'dateAdded':f'2026-11-13T1{j}:00:00.000Z','messageType':cv['lastMessageType'],'status':'delivered','attachments':[],
+      # 2.19.1: quién envió el saliente (en las pares, un usuario de la cuenta; en las impares, una automatización)
+      **({} if d!='outbound' else ({'userId':USERS[0]['id'],'source':'app'} if int(cv['id'][1:])%2==0 else {'source':'workflow'}))}
       for j,(t,d) in enumerate([('Hola, buenos días','inbound'),('¡Hola! ¿En qué te ayudo?','outbound'),(cv['lastMessageBody'],'inbound')])] for cv in CONVS}
 PIPES=[{'id':'p1','name':'Embudo de ventas','stages':[{'id':'s1','name':'Lead nuevo'},{'id':'s2','name':'Propuesta enviada'},{'id':'s3','name':'Negociación'}]}]
 OPPS=[{'id':f'o{i}','name':n,'contactId':k,'contact':{'id':k,'name':CONTACTS[k]['contactName'],'email':CONTACTS[k]['email'],'phone':CONTACTS[k]['phone']},'monetaryValue':v,'pipelineId':'p1','pipelineStageId':st,'status':s,'assignedTo':CONTACTS[k]['assignedTo'],'locationId':LOC,'updatedAt':'2026-11-12T10:00:00Z','lastStatusChangeAt':'2026-11-12T10:00:00Z','createdAt':'2026-11-01T10:00:00Z'}

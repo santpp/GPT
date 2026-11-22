@@ -7,7 +7,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.19.0'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.19.1'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -44,7 +44,7 @@ final class Api {
   if($p==='agency/team'&&in_array($m,['GET','POST','PUT']))return $m==='GET'?$this->u->listing(true):$this->u->save($b,true,$m==='PUT');
   if($p==='agency/activity'&&$m==='GET')return $this->ag->audit(true);
   if($p==='agency/accesos'&&$m==='GET')return $this->ag->accesos(); // 2.18.15: accesos con código (solo dueños)
-  // 2.19.0 · Bitácora de errores: cualquiera con sesión reporta; solo los dueños ven y marcan.
+  // 2.19.1 · Bitácora de errores: cualquiera con sesión reporta; solo los dueños ven y marcan.
   if($p==='reportes'&&$m==='POST')return (new Bitacora($this->db,$this->a))->reportar($b);
   if($p==='agency/errores'&&$m==='GET')return (new Bitacora($this->db,$this->a))->listar();
   if($p==='agency/errores/reporte'&&$m==='PUT')return (new Bitacora($this->db,$this->a))->estado($b);

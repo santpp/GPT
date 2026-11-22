@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.19.1 · Bandeja: quién envió cada mensaje (22 nov):**
+- Cada mensaje saliente lleva abajo a la izquierda **las iniciales de quien lo envió** (al pasar el cursor, su nombre), tanto si lo mandó desde Ágora como desde la cuenta.
+- Si lo envió **una automatización** (flujo, campaña, envío masivo o integración), lleva un **ícono nuevo de automatización** y, al pasar el cursor, qué fue.
+- La cuenta no anota quién envía desde Ágora, así que Ágora lo recuerda (tabla `message_authors` del motor). Los mensajes enviados desde Ágora **antes de esta versión** se verán con el ícono de automatización o integración.
+- Prueba: `tests/fixes-2191.py` (18).
+
 **Novedades 2.19.0 · Depuración, errores con razón y Dashboard más rápido (22 nov):**
 - **Diccionario de errores:** todo error lleva un código `AG-ÁREA-NNN` (por ejemplo `AG-ACC-401B`, «código equivocado») con su razón y qué hacer. Lista completa en Agencia → Errores y reportes → Diccionario.
 - **Bitácora:** los errores quedan guardados con su referencia (30 días). Los del servidor, con su detalle técnico (sin claves).

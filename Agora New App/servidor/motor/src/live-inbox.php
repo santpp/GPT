@@ -467,7 +467,11 @@ if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $met
         if(!($membership['capabilities']['sendMessages']??false))respond(['error'=>'Tu usuario tiene acceso de lectura, pero no permiso para responder.'],403);
         require_once __DIR__.'/MessageSender.php';
         $contact=$record;
-        try {respond((new MessageSender())->send($connection,$contact,body()));}
+        // Agora New App 2.19.1: se anota quién de Ágora envió el mensaje (la cuenta no guarda el usuario de un envío por integración).
+        try {$enviado=(new MessageSender())->send($connection,$contact,body());
+            $mid=$enviado['messageId']??null;$autor=$GLOBALS['motorPuente']['autor']??null;
+            if(is_string($mid)&&$mid!==''&&is_array($autor)&&$autor['nombre']!==''){try{query('INSERT IGNORE INTO message_authors(connection_id,message_id,author_name,external_user_id,erp_user_id) VALUES(?,?,?,?,?)',[$id,$mid,mb_substr($autor['nombre'],0,120),$membership['self_id']??null,$autor['id']]);}catch(Throwable $e){error_log('Agora autores: '.get_class($e));}}
+            respond($enviado);}
         catch(SendProblem $e){respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
     }
     try {$cursor=MessageHistory::cursor($_GET['lastMessageId']??null);}
@@ -478,6 +482,12 @@ if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $met
         // Las redes por las que escribió el contacto se recuerdan, y los canales posibles vuelven con el historial.
         require_once __DIR__.'/ConversationNetworks.php';
         ConversationNetworks::remember((int)$id,$conversation,$page['items']??[]);
+        // Agora New App 2.19.1: quién envió cada mensaje saliente. «autores»: los enviados desde Ágora; «equipo»: nombres de los
+        // usuarios de la cuenta, para los que la cuenta sí anota con su usuario. Solo nombres, nada más.
+        try{$ids=array_values(array_filter(array_map(fn($m)=>is_array($m)&&($m['direction']??'')==='outbound'?($m['id']??null):null,$page['items']??[]),'is_string'));
+            $page['autores']=[];if($ids){$ph=implode(',',array_fill(0,count($ids),'?'));foreach(query("SELECT message_id,author_name FROM message_authors WHERE connection_id=? AND message_id IN ($ph)",array_merge([$id],$ids))->fetchAll() as $a)$page['autores'][$a['message_id']]=$a['author_name'];}
+            $page['equipo']=[];foreach(query('SELECT external_user_id AS id,display_name AS name FROM external_users WHERE connection_id=? LIMIT 300',[$id])->fetchAll() as $eu)$page['equipo'][$eu['id']]=$eu['name'];
+        }catch(Throwable $e){$page['autores']=$page['autores']??[];$page['equipo']=$page['equipo']??[];}
         if(($membership['capabilities']['sendMessages']??false)===true){
             require_once __DIR__.'/MessageSender.php';
             $page['channels']=MessageSender::availableChannels($connection,$record);

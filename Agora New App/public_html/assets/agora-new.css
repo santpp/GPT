@@ -1225,3 +1225,8 @@ main#app#app :is(.g-hero,.grid):has(> .grid > .micro) > .grid{display:contents}
 .agency-kpis.er-res { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 900px) { .agency-kpis.er-res { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .er-est select { font: inherit; font-size: 13px; padding: 6px 10px; border: 1px solid var(--line, #e3e1e6); border-radius: 999px; background: #fff; }
+
+/* 2.19.1 · Bandeja: quién envió cada mensaje saliente (iniciales o ícono de automatización) */
+#view.ag .bubble .msg-who, .bubble .msg-who { float: left; display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 5px; margin: 4px 10px 0 0; border-radius: 999px; background: var(--ag-2); color: #fff; font-size: 10.5px; font-weight: 700; letter-spacing: .3px; line-height: 1; cursor: default; }
+#view.ag .bubble .msg-who.msg-auto, .bubble .msg-who.msg-auto { background: color-mix(in srgb, var(--ag-1) 12%, #fff); color: var(--ag-1); }
+#view.ag .bubble .msg-who.msg-persona, .bubble .msg-who.msg-persona { background: var(--fill-2, #ececf1); color: var(--muted); }

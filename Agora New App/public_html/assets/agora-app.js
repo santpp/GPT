@@ -2987,6 +2987,7 @@ async function guardarIdentidad(form) {
 window.AgoraUI = {
   donut, barras, lineaArea, usd, firmado, mesNombre, mesCorto,
   // 2.18.11: el detalle de las ruedas del Dashboard (quiénes y cuáles) solo para administración; el servidor tampoco lo manda a quien ve solo lo suyo.
+  yo: () => String(AGORA_ME?.user?.name || ME?.nombre || ''), // 2.19.1: iniciales de quien envía desde Ágora
   verDetalle: () => !!ME && ['MASTER', 'SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(ME.rol), // 2.19.0: también Supervisor (pedido del usuario)
   irConversacion: id => { if (!id) return; closeModal(); if (ws) ws.pendingConversation = {id, explicit: true}; go('/bandeja'); },
   irContacto: id => { if (!id) return; closeModal(); if (ws) ws.pendingContact = id; go(MODS.contactos.path); },
@@ -4211,7 +4212,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.19.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.19.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */

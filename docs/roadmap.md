@@ -306,6 +306,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - **2.18.15 (22 de noviembre)**: Agencia → «Accesos con código» (solo dueños: IP, persona, subcuenta, navegador y qué pasó; 6 meses). Arreglo grave: el tope de intentos del código y los límites por IP se deshacían con el error y no contaban.
 - **2.18.16 (22 de noviembre)**: derechos de autor a nombre de Santiago Rafael Pérez Pérez (Ágora Digital App): `LICENSE.txt`, cabecera en cada archivo propio y metadatos de la página. Solo ERP.
 - **2.19.0 (22 de noviembre)**: diccionario de errores con razón, bitácora, «Reportar un problema», Agencia → Errores y reportes, `?debug=1`, `bin/diagnostico.php`, Dashboard sin consultas repetidas y con copia de 30 s, Supervisor con detalle de ruedas, copyright 2026-2027 solo en código.
+- **2.19.1 (22 de noviembre)**: Bandeja: cada mensaje saliente muestra las iniciales de quien lo envió o el ícono de automatización.
 - **2.18.9 (22 de noviembre)**: la entrada ya no se divide: cada pieza del logo vuela a su pieza del logo visible (dos salidas: antes y después de iniciar sesión).
 - **2.18.8 (22 de noviembre)**: pantalla de entrada con el logo pieza por pieza al abrir, recargar e iniciar sesión.
 - **2.18.7 (22 de noviembre)**: tarjetas siempre 4 por fila (2 en el teléfono).

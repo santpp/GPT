@@ -1702,6 +1702,24 @@
     if (tone !== "bad") return { label, tone, reason: null, causes: [] };
     return { label, tone, reason: reasonOf(message), causes: message.status === "opt_out" ? [OPT_OUT] : CAUSES[message.messageType] || ["Revisa el número o la dirección del contacto y el estado del canal."] };
   }
+  // Agora New App 2.19.1 · Quién envió cada mensaje saliente: iniciales de la persona (desde Ágora o desde la cuenta)
+  // o el ícono de automatización (flujos, campañas, envíos masivos, integraciones). Pedido del usuario.
+  var QUIEN = { autores: /* @__PURE__ */ new Map(), equipo: {} };
+  var ICONO_AUTO = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><path d="M6.5 10v3a3.5 3.5 0 0 0 3.5 3.5h4"/><path d="M17.5 3l-2.2 3.6h3.4L16.5 10.2"/></svg>';
+  var ICONO_PERSONA = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></svg>';
+  function iniciales(nombre) {
+    const p = String(nombre || "").trim().split(/\s+/).filter(Boolean);
+    return ((p[0]?.[0] || "") + (p.length > 1 ? p[p.length - 1][0] : p[0]?.[1] || "")).toUpperCase() || "?";
+  }
+  function quienMarkup(m) {
+    if (m?.direction !== "outbound") return "";
+    const yo = m.autorLocal ? (window.AgoraUI?.yo?.() || "") : "";
+    const nombre = yo || QUIEN.autores.get(m.id) || (m.userId && QUIEN.equipo[m.userId]) || "";
+    if (nombre) return `<span class="msg-who" title="Enviado por ${esc6(nombre)}" aria-label="Enviado por ${esc6(nombre)}">${esc6(iniciales(nombre))}</span>`;
+    const auto = { workflow: "Enviado por una automatización", campaign: "Enviado por una campaña", bulk_actions: "Enviado en un envío masivo", api: "Enviado por una automatización o integración" }[m.source];
+    if (auto) return `<span class="msg-who msg-auto" title="${auto}" aria-label="${auto}">${ICONO_AUTO}</span>`;
+    return `<span class="msg-who msg-persona" title="Enviado por un usuario de la cuenta" aria-label="Enviado por un usuario de la cuenta">${ICONO_PERSONA}</span>`;
+  }
   function statusMarkup(message, time) {
     const info = statusInfo(message);
     if (message?.direction === "inbound" && info.tone !== "bad") info.label = "";
@@ -1859,7 +1877,7 @@
           const dm = { TYPE_INSTAGRAM_COMMENT: "IG", TYPE_FACEBOOK_COMMENT: "FB" }[m.messageType];
           const tag = commentTypes[m.messageType] ? `<span class="comment-tag">Comentario en una publicación de ${commentTypes[m.messageType]}</span>` : "";
           const dmButton = dm && m.direction !== "outbound" ? `<button type="button" class="reply-dm" data-dm="${dm}">Responder como DM</button>` : "";
-          return `<div class="bubble ${m.direction === "outbound" ? "out" : ""}${failed ? " failed" : ""}" data-mid="${esc7(m.id)}">${tag}${body}${dmButton}${files.length ? `<div class="live-attachments">${files.map(attachmentMarkup).join("")}</div>` : ""}${statusMarkup(m, date(m.dateAdded))}</div>`;
+          return `<div class="bubble ${m.direction === "outbound" ? "out" : ""}${failed ? " failed" : ""}" data-mid="${esc7(m.id)}">${tag}${body}${dmButton}${files.length ? `<div class="live-attachments">${files.map(attachmentMarkup).join("")}</div>` : ""}${quienMarkup(m)}${statusMarkup(m, date(m.dateAdded))}</div>`;
         }).join("") || '<p class="empty">No hay mensajes disponibles.</p>';
         bindAttachments(log);
         log.querySelectorAll("[data-dm]").forEach((button) => button.onclick = () => {
@@ -2206,7 +2224,7 @@
             draft.message = "";
             draft.notice = result.deliveryStatus === "failed" ? "El canal registró el mensaje como fallido. Revisa su configuración." : "Mensaje aceptado por el canal.";
             if (active() && version === chatGeneration) {
-              messages.set(result.messageId, { id: result.messageId, body: body.message, direction: "outbound", dateAdded: (/* @__PURE__ */ new Date()).toISOString(), status: result.deliveryStatus });
+              messages.set(result.messageId, { id: result.messageId, body: body.message, direction: "outbound", dateAdded: (/* @__PURE__ */ new Date()).toISOString(), status: result.deliveryStatus, autorLocal: true });
               renderMessages();
               scrollEnd($("#live-log"), true);
               c.lastMessageBody = body.message;
@@ -2502,6 +2520,8 @@
           }
           const log = $("#live-log"), height = log.scrollHeight, top = log.scrollTop, hadMessages = messages.size > 0;
           for (const m of r.items) messages.set(m.id, m);
+          if (r.autores && typeof r.autores === "object") for (const [k, v] of Object.entries(r.autores)) QUIEN.autores.set(k, v);
+          if (r.equipo && typeof r.equipo === "object") Object.assign(QUIEN.equipo, r.equipo);
           if (!refresh || !hadMessages) cursor = r.hasMore && r.lastMessageId && r.lastMessageId !== previous ? r.lastMessageId : null;
           chatNeedsRefresh = false;
           renderMessages();
@@ -2688,7 +2708,7 @@
           sessionStorage.removeItem(storageKey);
           if (version !== chatGeneration || !active()) return;
           const shown2 = $(".tpl-preview")?.innerText || t.body;
-          messages.set(result.messageId, { id: result.messageId, body: shown2, direction: "outbound", dateAdded: (/* @__PURE__ */ new Date()).toISOString(), status: result.deliveryStatus });
+          messages.set(result.messageId, { id: result.messageId, body: shown2, direction: "outbound", dateAdded: (/* @__PURE__ */ new Date()).toISOString(), status: result.deliveryStatus, autorLocal: true });
           renderMessages();
           scrollEnd($("#live-log"), true);
           templates.open = false;
