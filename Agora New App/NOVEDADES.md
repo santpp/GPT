@@ -1,5 +1,11 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.18.14 · Correos de Ágora con logo y código fácil de copiar (22 nov):**
+- **Plantilla nueva** de todos los correos de Ágora (código para entrar, cambio de clave, prueba del correo): logo de Ágora arriba, caja blanca con bordes redondeados, textos más grandes y legibles en el teléfono.
+- **Código listo para copiar:** el asunto empieza con el código («541244 es tu código de acceso a Ágora»), la vista previa del aviso y la primera frase también, y el código va solo en un bloque grande que se selecciona entero con un toque. Así Gmail y los avisos del teléfono lo reconocen y ofrecen «Copiar código» (ese botón lo pone el programa de correo, no se puede poner desde el correo).
+- El logo es un PNG público (`assets/correo/agora-logo-correo.png`): los programas de correo no muestran SVG. Si la instalación no tiene dirección https, se escribe «Ágora» en texto.
+- Prueba: `tests/fixes-21814.py` (11).
+
 **Novedades 2.18.13 · La entrada espera los números y la caché no deja versiones viejas (22 nov):**
 - **La entrada se queda hasta que están los números** (pedido del usuario, video del 22 nov): antes tenía un tope de 7 s y con la cuenta real (unos 9 s) se iba dejando los esqueletos. Ahora espera a que no haya esqueletos y la pantalla esté quieta; el tope sube a 20 s solo como seguro. Los esqueletos se quedan para los cambios entre módulos.
 - **Ya no se ven las tarjetas «viejas» que luego se acomodan:** el arreglo de las tarjetas (rótulo, «Editar», orden, filas) se hacía 250 ms después de que llegaban los datos; ahora se hace antes de pintar. Tampoco aparecen dos «Editar Dashboard» por un instante.

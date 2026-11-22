@@ -33,3 +33,5 @@ oportunidades, embudos, ventas ganadas, tablero y consumos de la agencia.
 - 2.18.6 (Agora New App): agora-modulos.js · «Leads asignados a mí» pasa a ser su propia tarjeta (metric) en el Dashboard; la tarjeta grande muestra solo «Leads de hoy».
 
 - **2.18.11 · `OperationsReport::operationDay()`:** la caché `dia-leads` guarda también `id` y `name` de cada contacto; para quien ve todo el equipo, `sinLeerPorAsesor`, `leadsPorFuente` y `leadsPorUsuario` traen `detalle` (hasta 50 por grupo). A quien solo ve lo suyo (`assignedDataOnly`) no se le manda.
+
+- **2.18.14 · `AccessChannel::template()`:** plantilla nueva de los correos: logo PNG (`public_html/assets/correo/agora-logo-correo.png`, dirección https pública que pasa `MotorMobile::correo()` desde `app_url`; sin https se escribe «Ágora» en texto), texto oculto de vista previa con el código, «Tu código de acceso es» justo antes del código y el código en un bloque que se selecciona entero con un toque. `sendMail()` recibe `$logo` opcional.

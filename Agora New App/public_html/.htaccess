@@ -33,6 +33,10 @@ Header always set Cross-Origin-Resource-Policy "same-origin"
 Header always set X-Permitted-Cross-Domain-Policies "none"
 Header always unset X-Powered-By
 Header unset X-Powered-By
+# 2.18.14 · El logo de los correos lo cargan los programas de correo desde fuera: no puede quedar limitado al propio sitio.
+<FilesMatch "^agora-logo-correo\.png$">
+Header always set Cross-Origin-Resource-Policy "cross-origin"
+</FilesMatch>
 <FilesMatch "^(index\.html|sw\.js|version\.json)$">
 Header set Cache-Control "no-cache"
 </FilesMatch>

@@ -104,6 +104,7 @@ Es el criterio que se usa en todos los módulos. Un módulo nuevo o modificado t
 - **Correo de Ágora:** sin SMTP. `MotorMobile::correo()` → `AccessChannel::sendMail()` envía por la subcuenta guardada en `agora_settings(0,'correo.canal')` (`connectionId`, `codigoAlEntrar`). La elige el dueño en Agencia (`agency/correo`, `agency/correo/probar`, solo Master). Cada destinatario queda como contacto interno con la etiqueta `agora-acceso-interno`.
 - **Entrar:** clave → si hay canal conectado y el navegador no es de confianza, código de 6 dígitos (`login/codigo`, `login/reenviar`). Códigos en `agora_access_codes` (solo HMAC con `app_key`, 10 min, 5 intentos, un uso). «Recuérdame» = sesión de 14 días + equipo de confianza (`agora_trusted_devices`, cookie `agora_device`, ligada a `auth_version`). Nunca por IP.
 - **¿Olvidaste tu clave?:** `clave/olvido` (respuesta igual exista o no el correo) y `clave/restablecer` (código de 15 min; sube `auth_version`, borra sesiones y equipos de confianza).
+- **Plantilla (2.18.14):** `AccessChannel::template()` con logo PNG (`assets/correo/agora-logo-correo.png`, solo con `app_url` https), texto oculto de vista previa y asunto que empiezan con el código, y el código en un bloque `user-select:all`. Nada de scripts ni botón propio de copiar (los programas de correo no los ejecutan). Prueba: `tests/fixes-21814.py`.
 - Si la subcuenta que envía se desconecta, se entra solo con la clave. Las pruebas dejan el canal apagado (`tests/acceso-correo.py`, `tests/acceso-ui.py`).
 
 ## Venta ganada (2.12.13)

@@ -73,8 +73,8 @@ final class AccessChannel {
      * Agora New App 2.13.0 · Correo general del ERP (código de acceso, cambio de clave y lo que venga):
      * siempre sale por la subcuenta que el dueño eligió en Agencia → Correo de Ágora, nunca por otra.
      */
-    public function sendMail(int $tenant,string $email,string $subject,string $title,string $intro,?string $code,string $foot,string $text):void {
-        $this->deliver($tenant,$email,$subject,self::template($title,$intro,$code,$foot),$text,true);
+    public function sendMail(int $tenant,string $email,string $subject,string $title,string $intro,?string $code,string $foot,string $text,?string $logo=null):void {
+        $this->deliver($tenant,$email,$subject,self::template($title,$intro,$code,$foot,$logo),$text,true);
     }
 
     private function deliver(int $tenant,string $email,string $subject,string $html,string $text,bool $onlyChannel=false):void {
@@ -177,19 +177,40 @@ final class AccessChannel {
         return $email;
     }
 
-    /** Ágora-branded Spanish template. It never names the underlying provider. */
-    private static function template(string $title,string $intro,?string $code,string $note):string {
+    /**
+     * Ágora-branded Spanish template. It never names the underlying provider.
+     * Agora New App 2.18.14 · Con el logo (PNG en una dirección pública: los programas de correo no muestran SVG ni imágenes incrustadas)
+     * y el código escrito como lo reconocen Gmail y los avisos del teléfono para ofrecer «Copiar código»: en el texto oculto de vista previa,
+     * en la primera frase y solo, en un bloque grande que se selecciona entero con un toque. Un correo no puede llevar un botón propio de copiar
+     * (los programas de correo no ejecutan nada), así que se deja todo listo para el botón del propio programa.
+     */
+    private static function template(string $title,string $intro,?string $code,string $note,?string $logo=null):string {
         $esc=static fn(string $value):string=>htmlspecialchars($value,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
-        $block=$code===null?'':'<p style="margin:0 0 24px;padding:18px 22px;background:#efefef;border-radius:8px;border:1px solid #e5e4e9;font:600 30px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:8px;color:#282e49;text-align:center">'.$esc($code).'</p>';
-        return '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>'.$esc($title).'</title></head>'
-            .'<body style="margin:0;padding:24px;background:#f7f7fa;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#282e49">'
-            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e5e4e9;border-radius:12px"><tr><td style="padding:32px">'
-            .'<p style="margin:0 0 4px;font:600 11px/1 system-ui;letter-spacing:2px;color:#ad103c">ÁGORA DIGITAL</p>'
-            .'<h1 style="margin:0 0 16px;font:600 22px/1.3 system-ui;color:#282e49">'.$esc($title).'</h1>'
-            .'<p style="margin:0 0 24px;font:14px/1.7 system-ui;color:#5b6170">'.$esc($intro).'</p>'
+        $f='font-family:Helvetica,Arial,system-ui,-apple-system,Segoe UI,sans-serif;';
+        $pre=$code===null?$intro:'Tu código de acceso es '.$code.'. '.$intro;
+        $marca=$logo!==null&&preg_match('#^https://[^\s"<>]+$#',$logo)
+            ?'<img src="'.$esc($logo).'" width="132" height="55" alt="Ágora" style="display:block;width:132px;height:auto;border:0;outline:none">'
+            :'<span style="'.$f.'font-size:22px;font-weight:700;color:#ad103c;letter-spacing:.5px">Ágora</span>';
+        $block=$code===null?'':
+            '<p style="margin:0 0 6px;'.$f.'font-size:13px;line-height:1.4;color:#5b6170">Tu código de acceso es</p>'
+            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 10px"><tr><td align="center" style="padding:20px 12px;background:#f4f2f6;border:1px solid #e5e4e9;border-radius:14px">'
+            .'<span style="'.$f.'font-size:38px;line-height:1;font-weight:700;letter-spacing:10px;color:#282e49;-webkit-user-select:all;user-select:all;white-space:nowrap">'.$esc($code).'</span>'
+            .'</td></tr></table>'
+            .'<p style="margin:0 0 24px;'.$f.'font-size:12px;line-height:1.5;color:#7d8590;text-align:center">Mantén pulsado el número para copiarlo.</p>';
+        return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>'.$esc($title).'</title></head>'
+            .'<body style="margin:0;padding:0;background:#f7f7fa">'
+            .'<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">'.$esc($pre).'</div>'
+            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f7fa"><tr><td align="center" style="padding:24px 12px">'
+            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border:1px solid #e5e4e9;border-radius:16px">'
+            .'<tr><td style="padding:28px 28px 0">'.$marca.'</td></tr>'
+            .'<tr><td style="padding:22px 28px 8px">'
+            .'<h1 style="margin:0 0 10px;'.$f.'font-size:22px;line-height:1.3;font-weight:700;color:#282e49">'.$esc($title).'</h1>'
+            .'<p style="margin:0 0 22px;'.$f.'font-size:15px;line-height:1.6;color:#5b6170">'.$esc($intro).'</p>'
             .$block
-            .'<p style="margin:0;font:12px/1.7 system-ui;color:#7d8580">'.$esc($note).'</p>'
-            .'</td></tr><tr><td style="padding:0 32px 28px"><p style="margin:0;font:11px/1.6 system-ui;color:#a1a6b2;border-top:1px solid #e5e4e9;padding-top:16px">Mensaje automático de Ágora. No respondas a este correo.</p></td></tr></table>'
+            .'<p style="margin:0 0 24px;'.$f.'font-size:13px;line-height:1.6;color:#7d8590">'.$esc($note).'</p>'
+            .'</td></tr>'
+            .'<tr><td style="padding:0 28px 24px"><p style="margin:0;padding-top:16px;border-top:1px solid #e5e4e9;'.$f.'font-size:11px;line-height:1.6;color:#a1a6b2">Mensaje automático de Ágora Digital. No respondas a este correo.</p></td></tr>'
+            .'</table></td></tr></table>'
             .'</body></html>';
     }
 }

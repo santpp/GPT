@@ -115,8 +115,9 @@ final class Auth {
   $this->db->run('INSERT INTO agora_access_codes(challenge_hash,user_id,purpose,code_hash,expires_at) VALUES(?,?,?,?,?) ON DUPLICATE KEY UPDATE code_hash=VALUES(code_hash),attempts=0,expires_at=VALUES(expires_at),sent_at=UTC_TIMESTAMP(),used_at=NULL',
    [hash('sha256',$desafio),$u['id'],$uso,$this->huella($desafio,$codigo),gmdate('Y-m-d H:i:s',time()+$segundos)]);
   $min=intdiv($segundos,60);
-  [$asunto,$titulo,$intro]=$uso==='reset'?['Cambia tu clave de Ágora','Cambia tu clave','Escribe este código en Ágora para elegir una clave nueva.']:['Tu código para entrar a Ágora','Tu código de acceso','Escribe este código en Ágora para terminar de entrar.'];
-  try{\Agora\Core\MotorMobile::correo($this->db,$this->config,$u['email'],$asunto,$titulo,$intro,$codigo,"Caduca en $min minutos y se usa una sola vez. Si no fuiste tú, ignora este correo y avisa a quien administra tu empresa.","$titulo: $codigo\n\nCaduca en $min minutos y se usa una sola vez.\n");}
+  // 2.18.14: el código va también en el asunto y al principio del texto, como lo reconocen Gmail y los avisos del teléfono para ofrecer «Copiar código».
+  [$asunto,$titulo,$intro]=$uso==='reset'?["$codigo es tu código para cambiar tu clave de Ágora",'Cambia tu clave','Escribe este código en Ágora para elegir una clave nueva.']:["$codigo es tu código de acceso a Ágora",'Termina de entrar a Ágora','Escribe este código en Ágora para terminar de entrar.'];
+  try{\Agora\Core\MotorMobile::correo($this->db,$this->config,$u['email'],$asunto,$titulo,$intro,$codigo,"Caduca en $min minutos y se usa una sola vez. Si no fuiste tú, ignora este correo y avisa a quien administra tu empresa.","Tu código de acceso es $codigo\n\n$intro Caduca en $min minutos y se usa una sola vez.\n");}
   catch(\Throwable $e){Http::fail('No pudimos enviar el código por correo. Inténtalo de nuevo en unos minutos o avisa a quien administra Ágora.',503);}
   return [$desafio];
  }
