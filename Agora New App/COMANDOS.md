@@ -101,6 +101,7 @@ unzip -o agora-new-app-X.Y.Z.zip
 chown -R $USR:$USR $SITIO/public_html $SITIO/servidor
 find $SITIO/servidor -type d -exec chmod 750 {} \;
 find $SITIO/servidor -type f -exec chmod 640 {} \;
+chmod 770 $SITIO/servidor/storage
 ```
 
 ### 2.4 Configuración
@@ -152,7 +153,7 @@ cd $SITIO && sha256sum -c agora-new-app-X.Y.Z.zip.sha256
 # 3. Extraer (no toca config.php ni storage/) y permisos
 unzip -o agora-new-app-X.Y.Z.zip
 chown -R $USR:$USR $SITIO/public_html $SITIO/servidor
-find $SITIO/servidor -type d -exec chmod 750 {} \; ; find $SITIO/servidor -type f -exec chmod 640 {} \;
+find $SITIO/servidor -type d -exec chmod 750 {} \; ; find $SITIO/servidor -type f -exec chmod 640 {} \; ; chmod 770 $SITIO/servidor/storage
 
 # 4. Migraciones y comprobación
 sudo -u $USR $PHP $SITIO/servidor/bin/migrate.php
