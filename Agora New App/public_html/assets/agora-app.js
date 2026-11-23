@@ -359,6 +359,7 @@ function render(focus) {
 }
 function paint(html, enter) {
   try { if (window.AgoraDiag) { window.AgoraDiag.puede = esSuperAdmin(); window.AgoraDiag.pintar(); } } catch {} // 2.19.0: el panel de ?debug=1 solo para dueños
+  if (ME) notifIniciar(); // 2.20.0: campana de notificaciones
   const app = $('#app');
   // Si lo que había era un módulo de Ágora, se suelta antes de reemplazarlo: así para
   // sus relojes, sus consultas en vivo y sus escuchas, como hacía en su propia cáscara.
@@ -736,10 +737,12 @@ V.detalle = {
     }[e] || ['gray', 'info', ''];
     let enlace = `<div class="state-line ${est[0]}">${icon(est[1])}<span>${esc(est[2])}</span></div>`;
     if (e === 'ENVIADO') {
+      const ue = d.ultimoEnvio; // 2.20.0
+      if (ue) enlace += `<p class="src">${ue.enviado ? `Enviado por correo a <b>${esc(ue.correo)}</b> el ${esc(new Date(ue.fecha).toLocaleString('es-VE', {day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit'}))}.` : `El último correo no salió: ${esc(ue.motivo || '')}`}</p>`;
       enlace += d.enlace
         ? `<div class="secret link mt"><small>Enlace para el cliente. Puedes copiarlo cuando quieras mientras siga vigente.</small><code>${esc(d.enlace)}</code><div class="row"><button class="btn btn-sm btn-tint" type="button" data-copy="${esc(d.enlace)}">${icon('split')}Copiar enlace</button></div></div>`
         : `<p class="src">${d.enlace_guardable ? 'No hay un enlace guardado para mostrar. Genera uno nuevo para compartirlo por otra vía; el anterior dejará de servir.' : 'El servidor no puede guardar el enlace (no puede escribir en la carpeta storage/): se verá solo al generarlo.'}</p>`;
-      enlace += `<div class="form-ft" style="justify-content:flex-start">${can('enviar') ? `<button class="btn btn-sm" type="button" data-act="enlace">${icon('refresh')}Generar enlace nuevo</button>` : ''}${can('revocar') ? `<button class="btn btn-sm btn-danger" type="button" data-act="revocar">Revocar enlace</button>` : ''}</div>`;
+      enlace += `<div class="form-ft" style="justify-content:flex-start">${can('enviar') ? `<button class="btn btn-sm" type="button" data-act="enlace">${icon('refresh')}Enviar un enlace nuevo</button>` : ''}${can('revocar') ? `<button class="btn btn-sm btn-danger" type="button" data-act="revocar">Revocar enlace</button>` : ''}</div>`;
     }
     const pdfBtns = [];
     if (e === 'BORRADOR') pdfBtns.push(`<a class="btn btn-sm btn-tint" href="/api/contratos/${d.uid}/pdf/previa?workspace=${encodeURIComponent(ws.current())}" target="_blank" rel="noopener">${icon('download')}Vista previa del PDF</a>`);
@@ -819,11 +822,12 @@ async function accion(act, d) {
   if (act === 'cliente') return corregirCliente(d);
   if (act === 'enviar') return confirmModal('Preparar enlace para el cliente', `Se congela la versión ${int(d.version)}, se genera el documento y <b>${esc(d.cliente.nombre)}</b> tiene este correo de contacto: <b>${esc(d.cliente.correo)}</b>. Revisa el cálculo y el convenio antes de enviar.`, 'Preparar convenio', async () => {
     const r = await api(`contratos/${uid}/enviar`, {method: 'POST'}); await refresh();
-    setTimeout(() => enlaceModal('Convenio enviado', r.enlace, r.vence, 'El cliente ya lo recibió por correo. Si prefieres, compártelo también por WhatsApp.'), 200);
+    // 2.20.0: el correo sale de verdad; si no se pudo, se dice por qué y queda el enlace para compartirlo.
+    setTimeout(() => enlaceModal(r.delivery === 'correo' ? 'Convenio enviado' : 'Convenio listo, sin correo', r.enlace, r.vence, r.delivery === 'correo' ? `Se envió a ${r.correo}${r.via === 'agora' ? ' (por el Correo de Ágora, porque esta subcuenta no está conectada)' : ''}. Si prefieres, compártelo también por WhatsApp.` : r.message), 200);
   });
-  if (act === 'enlace') return confirmModal('Generar enlace nuevo', 'El enlace anterior dejará de servir y el cliente tendrá que usar el nuevo.', 'Generar enlace', async () => {
+  if (act === 'enlace') return confirmModal('Enviar un enlace nuevo', 'Se envía por correo un enlace nuevo al cliente. El anterior dejará de servir.', 'Enviar enlace', async () => {
     const r = await api(`contratos/${uid}/enlace`, {method: 'POST'}); await refresh();
-    setTimeout(() => enlaceModal('Enlace nuevo', r.enlace, r.vence), 200);
+    setTimeout(() => enlaceModal('Enlace nuevo', r.enlace, r.vence, r.message), 200);
   });
   if (act === 'revocar') return confirmModal('Revocar enlace', 'El cliente no podrá firmar con el enlace actual. Para volver a enviarlo, edita el cálculo y crea una versión nueva.', 'Revocar enlace', async () => { await api(`contratos/${uid}/revocar`, {method: 'POST'}); await refresh(); toast('Enlace revocado.'); }, true);
   if (act === 'eliminar') return confirmModal('Eliminar borrador', 'Se borrará el borrador y su historial. No se puede deshacer.', 'Eliminar', async () => { await api(`contratos/${uid}`, {method: 'DELETE'}); delete DATA.detalle[uid]; DATA.contratos = null; toast('Borrador eliminado.'); go('/contratos'); }, true);
@@ -1488,6 +1492,7 @@ function rightCluster() {
   const bloqueada = ESPACIO?.bloqueado === true;
   return `
     <button class="tb-ic" id="b-hist" type="button" aria-haspopup="true" aria-expanded="false" title="Historial de lo que has visto">${icon('history')}</button>
+    ${ME ? `<button class="tb-ic tb-notif" id="b-notif" type="button" aria-haspopup="true" aria-expanded="false" title="Notificaciones" aria-label="Notificaciones${NOTIF.n ? `, ${NOTIF.n} sin leer` : ''}">${icon('bell')}<span class="notif-n" ${NOTIF.n ? '' : 'hidden'}>${NOTIF.n > 99 ? '99+' : NOTIF.n}</span></button>` : ''}
     <button class="tb-ath" id="b-ath" type="button" aria-haspopup="dialog" aria-expanded="false" title="Athena, tu agente">${athenaAvatar()}<span>Athena</span></button>
     ${atajo('centro', 'home', 'Inicio', 'Centro de operaciones')}
     <button class="tb-ic" id="b-theme" type="button" title="Cambiar tema (D)" aria-label="Cambiar tema">${icon(document.documentElement.dataset.theme === 'dark' ? 'sun' : 'moon')}</button>
@@ -1780,6 +1785,53 @@ function historialPop() {
   if (el) el.setAttribute('role', 'menu');
 }
 
+/* ---------- 2.20.0 · Notificaciones dentro de Ágora (campana de arriba) ----------
+   Consulta cada 20 s mientras la pestaña está a la vista y al volver a ella; lo nuevo sale también como aviso corto.
+   Los mensajes de clientes los prepara el cron después de cada pasada de la Bandeja; lo demás (convenio firmado, factura abierta,
+   reporte, accesos sospechosos) sale al momento. */
+var NOTIF = {n: 0, items: [], ultimo: 0, listo: false, timer: 0, enCurso: false};
+function notifBadge() {
+  const b = document.getElementById('b-notif'); if (!b) return;
+  const n = b.querySelector('.notif-n'); n.hidden = !NOTIF.n; n.textContent = NOTIF.n > 99 ? '99+' : String(NOTIF.n);
+  b.setAttribute('aria-label', `Notificaciones${NOTIF.n ? `, ${NOTIF.n} sin leer` : ''}`);
+}
+async function notifCargar() {
+  if (!ME || NOTIF.enCurso || document.visibilityState === 'hidden') return;
+  NOTIF.enCurso = true;
+  try {
+    const d = await agoraApi('notificaciones' + (NOTIF.listo ? `?desde=${NOTIF.ultimo}` : ''));
+    const nuevas = (d.items || []).filter(x => x.id > NOTIF.ultimo);
+    if (NOTIF.listo && nuevas.length) { const x = nuevas[0]; toast(nuevas.length > 1 ? `${x.titulo} (y ${nuevas.length - 1} más)` : x.titulo); }
+    NOTIF.items = [...nuevas, ...NOTIF.items.filter(x => !nuevas.some(y => y.id === x.id))].slice(0, 30);
+    NOTIF.ultimo = Math.max(NOTIF.ultimo, ...(d.items || []).map(x => x.id), 0); NOTIF.n = d.noLeidas || 0; NOTIF.listo = true;
+    notifBadge();
+  } catch {} finally { NOTIF.enCurso = false; }
+}
+function notifIniciar() {
+  if (NOTIF.timer) return;
+  NOTIF.timer = setInterval(notifCargar, 20000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') notifCargar(); });
+  notifCargar();
+}
+function notifIr(x) {
+  const m = /^\/bandeja\?c=([A-Za-z0-9_-]{1,80})$/.exec(x.enlace || '');
+  if (m) { if (ws) ws.pendingConversation = {id: m[1], explicit: true}; go('/bandeja'); return; }
+  if (x.enlace && x.enlace.startsWith('/')) go(x.enlace);
+}
+function notifPop() {
+  const hora = iso => { const t = new Date(iso), h = new Date(); return t.toDateString() === h.toDateString() ? t.toLocaleTimeString('es-VE', {hour: 'numeric', minute: '2-digit'}) : t.toLocaleDateString('es-VE', {day: 'numeric', month: 'short'}); };
+  const el = openPop($('#b-notif'), `<div class="ntf-h"><p class="mdm-gt">Notificaciones</p>${NOTIF.n ? '<button type="button" class="ntf-todas" data-ntf-todas>Marcar todas como leídas</button>' : ''}</div>
+    ${NOTIF.items.length ? `<div class="ntf-l">${NOTIF.items.map(x => `<button type="button" class="ntf-i ${x.leida ? '' : 'nueva'}" data-ntf="${x.id}"><b>${esc(x.titulo)}</b>${x.texto ? `<span>${esc(x.texto)}</span>` : ''}<small>${esc(hora(x.fecha))}</small></button>`).join('')}</div>`
+      : '<p class="empty" style="padding:22px 16px"><b>Sin notificaciones</b>Aquí aparecen los mensajes nuevos, los convenios firmados y lo que pase en tu espacio.</p>'}`, 'ctx ntf', {align: 'right'});
+  if (!el) return;
+  el.querySelector('[data-ntf-todas]')?.addEventListener('click', async () => { try { await agoraApi('notificaciones/leidas', {method: 'POST', body: {todas: true}}); NOTIF.items.forEach(x => x.leida = true); NOTIF.n = 0; notifBadge(); closePop(); } catch (x) { toast(x.message); } });
+  el.querySelectorAll('[data-ntf]').forEach(b => b.onclick = async () => {
+    const x = NOTIF.items.find(y => y.id === +b.dataset.ntf); closePop(); if (!x) return;
+    if (!x.leida) { x.leida = true; NOTIF.n = Math.max(0, NOTIF.n - 1); notifBadge(); agoraApi('notificaciones/leidas', {method: 'POST', body: {ids: [x.id]}}).catch(() => {}); }
+    notifIr(x);
+  });
+}
+
 /* ---------- Estado del espacio ---------- */
 
 /* =====================================================================================
@@ -1911,6 +1963,7 @@ document.addEventListener('click', e => {
   if (t?.closest?.('[data-agora-login]')) { closeAll(); toast('Usa el acceso unificado de Ágora.'); return; }
   if (t?.closest?.('#b-crumb')) { moduleMenu(); return; }
   if (t?.closest?.('#b-hist')) { historialPop(); return; }
+  if (t?.closest?.('#b-notif')) { notifPop(); return; } // 2.20.0
   if (t?.closest?.('#b-ath')) { closePop(); abrirAthena(); return; }
   if (t?.closest?.('[data-ath-go]')) { cerrarAthena(); return; }
   const mes = t?.closest?.('[data-mes]');
@@ -4212,7 +4265,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.19.2').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.20.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */
@@ -8109,6 +8162,7 @@ async function fcVer(uid) {
     if (pu.emitir) acts.push(`<button class="btn btn-cta" type="button" data-a="emitir">${icon('check')}Emitir</button>`, `<button class="btn" type="button" data-a="editar">${icon('edit')}Editar</button>`, `<button class="btn" type="button" data-a="borrar">Borrar borrador</button>`);
   } else {
     acts.push(`<button class="btn" type="button" data-a="imprimir">${icon('download')}Imprimir o guardar PDF</button>`);
+    if (d.estado !== 'BORRADOR' && pu.emitir) acts.push(`<button class="btn" type="button" data-a="correo">${icon('mail')}Enviar por correo</button>`); // 2.20.0
     if (d.estado === 'EMITIDA' && d.tipo === 'FAC') acts.push(`<button class="btn" type="button" data-a="copia">${icon('download')}Copia</button>`);
     if (d.control_pendiente && pu.emitir) acts.push(`<button class="btn btn-tint" type="button" data-a="control">${icon('edit')}Registrar número de control</button>`);
     if (d.estado === 'EMITIDA' && d.tipo === 'FAC' && pu.anular) acts.push(`<button class="btn" type="button" data-a="NC">Nota de crédito</button>`, `<button class="btn" type="button" data-a="ND">Nota de débito</button>`);
@@ -8130,9 +8184,34 @@ async function fcVer(uid) {
       if (a === 'emitir') { busy(b, true, 'Emitiendo…'); const e = await agoraApi('workspace/facturas/emitir', {method: 'POST', body: {uid: d.uid}}); await recargar(`${FC_TIPO[e.tipo]?.[0]} N.° ${e.numero_texto} emitida.`); return; }
       if (a === 'borrar') { if (!confirm('¿Borrar este borrador? No gasta número.')) return; await agoraApi('workspace/facturas/doc?uid=' + encodeURIComponent(d.uid), {method: 'DELETE'}); await recargar('Borrador borrado.', null); return; }
       if (a === 'control') { closeModal(true); fcControl(d); return; }
+      if (a === 'correo') { closeModal(true); fcCorreo(d); return; }
       if (a === 'anular' || a === 'NC' || a === 'ND') { closeModal(true); fcCorregir(d, a); return; }
     } catch (x) { busy(b, false); toast(x.message || 'No se pudo completar.'); }
   });
+}
+/* 2.20.0 · Enviar la factura por correo: el cliente recibe un enlace personal (60 días) para verla, imprimirla o guardarla en PDF.
+   Sale desde la propia subcuenta (si no está conectada, por el Correo de Ágora). Abajo, a quién se envió y si ya la abrió. */
+async function fcCorreo(d) {
+  const nom = `${FC_TIPO[d.tipo]?.[0] || 'Factura'} N.° ${d.numero_texto || ''}`;
+  const s = openModal(modalHead('Enviar por correo', esc(nom)) + `<form class="fc-correo">
+    <label class="fld">Correo del cliente<input name="correo" type="email" maxlength="190" required value="${esc(d.cliente?.correo || '')}" placeholder="cliente@correo.com"></label>
+    <p class="src">Le llega un enlace personal para ver la factura, imprimirla o guardarla en PDF. Vence en 60 días.</p>
+    <p class="fld-err" role="alert"></p><div class="fc-envios"></div>
+    <div class="form-ft"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="submit">${icon('send')}Enviar</button></div></form>`);
+  const f = s.querySelector('form'), err = s.querySelector('.fld-err'), box = s.querySelector('.fc-envios');
+  const fecha = iso => new Date(iso).toLocaleString('es-VE', {day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit'});
+  const envios = async () => { try { const r = await agoraApi('workspace/facturas/envios?uid=' + encodeURIComponent(d.uid)); box.innerHTML = r.items.length ? `<p class="pz-l">Envíos anteriores</p><ul class="fc-env-l">${r.items.map(x => `<li><b>${esc(x.correo)}</b><span>${esc(fecha(x.fecha))}</span><span class="sc ${x.visto ? 'sc-ok' : 'sc-gray'}">${x.visto ? `Abierta ${esc(fecha(x.visto))}` : 'Sin abrir'}</span></li>`).join('')}</ul>` : ''; } catch {} };
+  envios();
+  f.onsubmit = async e => {
+    e.preventDefault(); const b = f.querySelector('[type=submit]'); busy(b, true, 'Enviando…'); err.textContent = '';
+    try {
+      const r = await agoraApi('workspace/facturas/enviar', {method: 'POST', body: {uid: d.uid, correo: f.correo.value.trim()}});
+      busy(b, false);
+      if (r.enviado) { closeModal(); toast(`${nom} enviada a ${r.correo}.`); return; }
+      err.textContent = r.message;
+      box.insertAdjacentHTML('afterbegin', `<div class="secret link"><small>Enlace para el cliente</small><code>${esc(r.enlace)}</code><div class="row"><button class="btn btn-sm btn-tint" type="button" data-copy="${esc(r.enlace)}">${icon('split')}Copiar enlace</button></div></div>`);
+    } catch (x) { busy(b, false); err.textContent = x.message; }
+  };
 }
 async function fcImprimir(uid, copia) {
   let h; try { h = (await agoraApi(`workspace/facturas/ver?uid=${encodeURIComponent(uid)}${copia ? '&copia=1' : ''}`)).html; } catch (x) { toast(x.message || 'No se pudo preparar la impresión.'); return; }

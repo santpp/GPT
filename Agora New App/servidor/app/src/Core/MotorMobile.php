@@ -258,6 +258,27 @@ final class MotorMobile {
   catch(\AccessDeliveryProblem $e){throw new \RuntimeException($e->getMessage(),0,$e);}
   return true;
  }
+ /**
+  * 2.20.0 · Correo a un cliente (convenio para firmar, factura). Sale por la propia subcuenta si está conectada (el cliente recibe
+  * el correo de la empresa con la que trata); si no, por el Correo de Ágora. Nunca lanza: devuelve enviado, por dónde o el motivo.
+  */
+ public static function correoCliente(DB $erp,array $config,int $tenant,string $email,string $nombre,string $asunto,string $titulo,string $intro,array $boton,string $pie,string $texto):array{
+  $motivos=['access_channel_unverified'=>'La subcuenta que envía no está comprobada.','contact_unresolvable'=>'No se pudo preparar el contacto del cliente en la cuenta.',
+   'insufficient_permissions'=>'La conexión de la cuenta no tiene permiso para crear contactos o enviar correos.','email_channel_unavailable'=>'La cuenta no tiene el correo disponible para enviar en este momento.',
+   'delivery_rejected'=>'La cuenta rechazó el envío del correo.','delivery_paused'=>'La cuenta pidió esperar unos segundos antes de enviar otro correo.','member_without_email'=>'El correo del cliente no es válido.'];
+  try{
+   self::instalar($erp,$config);self::arrancar($config);
+   require_once dirname(__DIR__,3).'/motor/src/AccessChannel.php';
+   $c=\query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$tenant,self::AGENCIA])->fetch()?:null;$via='subcuenta';
+   if(!$c&&self::conectada($erp,$tenant)){self::sincronizar($erp,$config,$tenant);$c=\query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$tenant,self::AGENCIA])->fetch()?:null;}
+   if(!$c||$c['status']!=='connected'){$id=self::canalCorreo($erp);$c=$id?(\query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$id,self::AGENCIA])->fetch()?:null):null;$via='agora';}
+   if(!$c||$c['status']!=='connected')return ['enviado'=>false,'motivo'=>'Ni esta subcuenta ni el Correo de Ágora están conectados para enviar correos.'];
+   $base=rtrim((string)($config['app_url']??''),'/');$logo=str_starts_with($base,'https://')?$base.'/assets/correo/agora-logo-correo.png':null;
+   $mid=(new \AccessChannel())->enviarDocumento($c,$email,$nombre,$asunto,$titulo,$intro,$boton,$pie,$texto,$logo);
+   return ['enviado'=>true,'via'=>$via,'mensajeId'=>$mid];
+  }catch(\AccessDeliveryProblem $e){return ['enviado'=>false,'motivo'=>$motivos[$e->reason]??'No se pudo enviar el correo.'];}
+  catch(\Throwable $e){error_log('Agora correoCliente: '.get_class($e));return ['enviado'=>false,'motivo'=>'No se pudo enviar el correo.'];}
+ }
  private static function conexion(DB $erp,array $config,int $tenant):array{
   self::instalar($erp,$config);self::arrancar($config);
   $c=\query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$tenant,self::AGENCIA])->fetch();

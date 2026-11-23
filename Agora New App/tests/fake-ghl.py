@@ -143,6 +143,14 @@ class H(BaseHTTPRequestHandler):
         if p=='/__tasks':return self.out(200,{'tasks':TASKS})
         # 2.13.0 · Correo por la cuenta: buscar por correo, crear el contacto interno, etiquetarlo y un buzón de prueba (/__sent).
         if p=='/__sent':return self.out(200,{'sent':SENT})
+        # 2.20.0 · Pruebas: llega un mensaje nuevo del cliente a una conversación (para las notificaciones del cron).
+        if p=='/__entrante' and m=='POST':
+            cv=next((c for c in CONVS if c['id']==b.get('conversationId')),None)
+            if not cv:return self.out(404,{'message':'no'})
+            ahora=int(time.time()*1000);mid=f"{cv['id']}-in{ahora}"
+            MSGS[cv['id']].append({'id':mid,'conversationId':cv['id'],'contactId':cv['contactId'],'locationId':LOC,'body':b.get('body','Hola'),'direction':'inbound','dateAdded':time.strftime('%Y-%m-%dT%H:%M:%S.000Z',time.gmtime()),'messageType':cv['lastMessageType'],'status':'delivered','attachments':[]})
+            cv.update({'lastMessageBody':b.get('body','Hola'),'lastMessageDate':ahora,'lastMessageDirection':'inbound','unreadCount':cv['unreadCount']+1})
+            return self.out(200,{'ok':True,'id':mid})
         if p=='/contacts/search/duplicate':
             c=next((c for c in CONTACTS.values() if c.get('email') and c.get('email')==q.get('email')),None)
             return self.out(200,{'contact':c})

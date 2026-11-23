@@ -39,3 +39,5 @@ oportunidades, embudos, ventas ganadas, tablero y consumos de la agencia.
 - **2.19.1 · Quién envió cada mensaje:** tabla `message_authors` (la crea `MotorMobile::instalar`, versión `motor-1.10.14-dia-autores`). `live-inbox.php` la llena al enviar desde Ágora (`workspace/send`) con el nombre de la persona (de `motorPuente['autor']`) y, al leer `workspace/messages`, devuelve `autores` (id del mensaje → nombre) y `equipo` (usuario de la cuenta → nombre).
 
 - **2.19.2 · Errores con código:** `respond()` pasa todo error (≥ 400 con `error`) por `$GLOBALS['agoraError']` del ERP: agrega `codigo` (diccionario) y `requestId` y lo anota en la bitácora (no en modo captura). `body()` acepta `{}` como sin datos y responde 400 «Los datos enviados no son válidos.» a un JSON roto o una lista, en vez de lanzar una excepción (500).
+
+- **2.20.0 · Correo a clientes:** `AccessChannel::enviarDocumento()` (convenios y facturas): por la conexión indicada, busca o crea el contacto del cliente (etiqueta `agora-documentos`) y envía con la plantilla, ahora con botón opcional (`template(..., $boton)`). El ERP corre `Sweep::run('cron-erp')` desde `servidor/bin/cron.php`.

@@ -28,7 +28,17 @@ final class Contracts {
    if(!in_array($d['estado'],['BORRADOR','ENVIADO']))Http::fail('Estado incompatible para generar enlace.',409);
    $d['estado']='ENVIADO';$this->revoke($id);$token=bin2hex(random_bytes(32));$expires=gmdate('Y-m-d H:i:s',time()+7*86400);$doc=self::document($d);
    $this->db->run('INSERT INTO agora_signatures(token_hash,tenant_id,contract_uid,contract_version,document_hash,expires_at) VALUES(?,?,?,?,?,?)',[hash('sha256',$token),$this->auth->tenant,$id,$d['contractVersion'],hash('sha256',$doc),$expires]);$this->r->save('contract',$id,$d,$d['cliente']['nombre'].' '.$d['cliente']['correo'],$d['estado']);
-   return ['enlace'=>$this->auth->config['app_url'].'/firmar.html#'.$token,'vence'=>$expires,'delivery'=>'manual','message'=>'Comparte este enlace con el cliente. No se ha enviado correo.'];
+   // 2.20.0 · El enlace se envía por correo al cliente, desde la propia subcuenta (respaldo: Correo de Ágora). Si no sale, queda para compartirlo a mano.
+   $enlace=$this->auth->config['app_url'].'/firmar.html#'.$token;
+   $empresa=(string)($this->db->one('SELECT name FROM agora_tenants WHERE id=?',[$this->auth->tenant])['name']??'Tu asesor');$cli=$d['cliente'];$vence=date('d/m/Y',strtotime($expires.' UTC'));
+   $envio=\Agora\Core\MotorMobile::correoCliente($this->db,$this->auth->config,(int)$this->auth->tenant,(string)$cli['correo'],(string)$cli['nombre'],
+    "Tu convenio con $empresa para firmar","Tu convenio está listo",'Hola '.trim(explode(' ',(string)$cli['nombre'])[0]).". $empresa te envió el convenio para que lo revises y lo firmes en línea, desde el teléfono o la computadora.",
+    ['Revisar y firmar el convenio',$enlace],"El enlace es personal y vence el $vence. Si no esperabas este correo, ignóralo.","Hola. $empresa te envió el convenio para revisarlo y firmarlo: $enlace (vence el $vence).");
+   $d['ultimoEnvio']=['fecha'=>gmdate('c'),'correo'=>$cli['correo'],'enviado'=>$envio['enviado'],'via'=>$envio['via']??null,'motivo'=>$envio['motivo']??null];
+   $this->r->save('contract',$id,$d,$d['cliente']['nombre'].' '.$d['cliente']['correo'],$d['estado']);
+   $this->auth->audit($envio['enviado']?'convenio.correo':'convenio.correo_fallido','contrato',$id,['via'=>$envio['via']??null]);
+   return ['enlace'=>$enlace,'vence'=>$expires,'delivery'=>$envio['enviado']?'correo':'manual','correo'=>$cli['correo'],'via'=>$envio['via']??null,
+    'message'=>$envio['enviado']?'Se envió el enlace a '.$cli['correo'].'.':'No se pudo enviar el correo: '.($envio['motivo']??'').' Comparte el enlace por otra vía.'];
   }else Http::fail('Acción desconocida.',404);
   $this->r->save('contract',$id,$d,$d['cliente']['nombre'].' '.$d['cliente']['correo'],$d['estado']);return ['ok'=>true,'version'=>$d['contractVersion']];
  }
@@ -40,6 +50,6 @@ final class Contracts {
   $r=$this->db->one("SELECT * FROM agora_records WHERE tenant_id=? AND kind='contract' AND uid=?".($method==='POST'?' FOR UPDATE':''),[$s['tenant_id'],$s['contract_uid']]);$d=json_decode($r['data'],true);if($d['contractVersion']!=(int)$s['contract_version']||$d['estado']!=='ENVIADO')Http::fail('Versión no disponible.',409);
   if(!hash_equals($s['document_hash'],hash('sha256',self::document($d))))Http::fail('El documento cambió. Solicita un enlace nuevo.',409);
   if($method==='GET')return ['cliente'=>$d['cliente']['nombre'],'uid'=>$d['uid'],'calculo'=>$d['calculo'],'documentHash'=>$s['document_hash']];
-  if(($b['accept']??false)!==true)Http::fail('Debes aceptar el calendario.');$name=Http::text($b,'name',190);$d['signature']=['name'=>$name,'at'=>gmdate('c'),'documentHash'=>$s['document_hash'],'ip'=>$_SERVER['REMOTE_ADDR']??''];$d['estado']='FIRMADO';$this->db->run("UPDATE agora_records SET data=?,status='FIRMADO',version=version+1,updated_at=UTC_TIMESTAMP() WHERE seq=?",[DB::json($d),$r['seq']]);$this->db->run('UPDATE agora_signatures SET used_at=UTC_TIMESTAMP() WHERE token_hash=?',[$s['token_hash']]);$this->auth->tenant=(int)$s['tenant_id'];$this->auth->audit('firmo','contract',$d['uid'],['documentHash'=>$s['document_hash']]);return ['ok'=>true,'uid'=>$d['uid']];
+  if(($b['accept']??false)!==true)Http::fail('Debes aceptar el calendario.');$name=Http::text($b,'name',190);$d['signature']=['name'=>$name,'at'=>gmdate('c'),'documentHash'=>$s['document_hash'],'ip'=>$_SERVER['REMOTE_ADDR']??''];$d['estado']='FIRMADO';$this->db->run("UPDATE agora_records SET data=?,status='FIRMADO',version=version+1,updated_at=UTC_TIMESTAMP() WHERE seq=?",[DB::json($d),$r['seq']]);$this->db->run('UPDATE agora_signatures SET used_at=UTC_TIMESTAMP() WHERE token_hash=?',[$s['token_hash']]);$this->auth->tenant=(int)$s['tenant_id'];$this->auth->audit('firmo','contract',$d['uid'],['documentHash'=>$s['document_hash']]);\Agora\Services\Notificaciones::aRoles($this->db,(int)$s['tenant_id'],['ADMIN','SUPERVISOR'],'convenio.firmado','Convenio firmado: '.$d['cliente']['nombre'],'Lo firmó '.$name.'.','/contratos/'.$d['uid'],'firma:'.$d['uid'].':'.($d['contractVersion']??1));if(!empty($r['owner_id']))\Agora\Services\Notificaciones::crear($this->db,(int)$r['owner_id'],(int)$s['tenant_id'],'convenio.firmado','Convenio firmado: '.$d['cliente']['nombre'],'Lo firmó '.$name.'.','/contratos/'.$d['uid'],'firma:'.$d['uid'].':'.($d['contractVersion']??1));return ['ok'=>true,'uid'=>$d['uid']];
  }
 }

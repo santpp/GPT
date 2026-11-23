@@ -31,6 +31,20 @@ final class Facturacion {
   }));
  }
  private function t():int{return (int)$this->auth->tenant;}
+ /** 2.20.0 · La factura que ve el cliente con su enlace (sin sesión). Avisa a quien la envió la primera vez que se abre. */
+ public function publica(string $token):array{
+  if(!preg_match('/^[a-f0-9]{64}$/D',$token))Http::fail('El enlace no es válido.',404);
+  $l=$this->db->one('SELECT * FROM agora_doc_links WHERE token_hash=?',[hash('sha256',$token)]);
+  if(!$l||strtotime($l['expires_at'].' UTC')<time())Http::fail('El enlace no es válido o ya venció. Pide uno nuevo a quien te lo envió.',404);
+  $doc=$this->db->one('SELECT number_text,doc_type,status FROM agora_fiscal_documents WHERE org_id=? AND uid=?',[(int)$l['tenant_id'],$l['uid']]);
+  if(!$doc)Http::fail('El documento ya no está disponible.',404);
+  $html=$this->docs->representation((int)$l['tenant_id'],$l['uid'],false);
+  $primera=$l['visto_at']===null;
+  $this->db->run('UPDATE agora_doc_links SET vistas=vistas+1,visto_at=COALESCE(visto_at,UTC_TIMESTAMP()) WHERE id=?',[$l['id']]);
+  if($primera&&$l['created_by'])\Agora\Services\Notificaciones::crear($this->db,(int)$l['created_by'],(int)$l['tenant_id'],'factura.vista','El cliente abrió la factura '.$doc['number_text'],'La abrió '.$l['correo'].'.','/facturas','factura-vista:'.$l['id']);
+  $empresa=(string)($this->db->one('SELECT name FROM agora_tenants WHERE id=?',[(int)$l['tenant_id']])['name']??'');
+  return ['html'=>$html,'numero'=>$doc['number_text'],'estado'=>$doc['status'],'empresa'=>$empresa];
+ }
  /** @return list<string> monedas en que factura esta subcuenta (la primera es la de siempre) */
  private function monedas():array{
   if(!self::DIVISAS)return ['VES'];
@@ -160,6 +174,28 @@ final class Facturacion {
   if($p==='workspace/facturas/control'&&$m==='POST'){$this->auth->permit('facturas.emitir');$uid=$this->uid($b);$this->propio($uid);return $this->docs->assignControl($t,$uid,(string)($b['control']??''),isset($b['asignado'])&&$b['asignado']!==''?(string)$b['asignado']:null,$this->actor());}
   if($p==='workspace/facturas/anular'&&$m==='POST'){$this->auth->permit('facturas.anular');return $this->docs->annul($t,$this->uid($b),$this->motivo($b),$this->actor(),null);}
   if($p==='workspace/facturas/nota'&&$m==='POST'){$this->auth->permit('facturas.anular');$tipo=strtoupper((string)($b['tipo']??''));if(!in_array($tipo,['NC','ND'],true))Http::fail('Indica si es nota de crédito o de débito.');return $this->docs->note($t,$this->uid($b),$tipo,$b,$this->motivo($b),$this->actor(),null);}
+  // 2.20.0 · Enviar la factura por correo al cliente: enlace público personal (60 días) y correo desde la subcuenta (respaldo: Correo de Ágora).
+  if($p==='workspace/facturas/enviar'&&$m==='POST'){
+   $this->auth->permit('facturas.emitir');$uid=$this->uid($b);$this->propio($uid);
+   $doc=$this->db->one('SELECT uid,doc_type,status,number_text,client_name,client_email,total_cents,currency FROM agora_fiscal_documents WHERE org_id=? AND uid=?',[$t,$uid]);
+   if(!$doc)Http::fail('Documento no válido.',404);
+   if($doc['status']==='BORRADOR')Http::fail('Primero emite la factura: un borrador no se envía.',409);
+   $correo=trim((string)($b['correo']??''))!==''?Http::email(['correo'=>$b['correo']]):(string)($doc['client_email']??'');
+   if($correo===''||!filter_var($correo,FILTER_VALIDATE_EMAIL))Http::fail('Escribe el correo del cliente.',422);
+   $token=bin2hex(random_bytes(32));
+   $this->db->run('INSERT INTO agora_doc_links(token_hash,tenant_id,tipo,uid,correo,created_by,expires_at) VALUES(?,?,?,?,?,?,?)',[hash('sha256',$token),$t,'factura',$uid,$correo,(int)$this->auth->requireUser()['id'],gmdate('Y-m-d H:i:s',time()+60*86400)]);
+   $enlace=rtrim((string)($this->config['app_url']??''),'/').'/factura.html#'.$token;
+   $empresa=(string)($this->db->one('SELECT name FROM agora_tenants WHERE id=?',[$t])['name']??'');
+   $tipo=['FAC'=>'factura','NC'=>'nota de crédito','ND'=>'nota de débito','SIM'=>'factura'][$doc['doc_type']]??'factura';$num=(string)$doc['number_text'];
+   $nombre=trim(explode(' ',(string)$doc['client_name'])[0]);
+   $envio=\Agora\Core\MotorMobile::correoCliente($this->db,$this->config,$t,$correo,(string)$doc['client_name'],
+    ucfirst($tipo)." $num de $empresa",'Tu '.$tipo.' está lista',($nombre!==''?"Hola $nombre. ":'Hola. ')."$empresa te envió la $tipo N.º $num. Puedes verla, imprimirla o guardarla en PDF.",
+    ['Ver la '.$tipo,$enlace],'El enlace es personal y vence en 60 días.',"$empresa te envió la $tipo N.º $num: $enlace");
+   $this->auth->audit($envio['enviado']?'factura.correo':'factura.correo_fallido','facturacion',$uid,['detalle'=>($envio['enviado']?'envió':'no pudo enviar')." la $tipo $num a $correo"]);
+   return ['enviado'=>$envio['enviado'],'correo'=>$correo,'via'=>$envio['via']??null,'enlace'=>$enlace,'message'=>$envio['enviado']?"Se envió a $correo.":'No se pudo enviar el correo: '.($envio['motivo']??'').' Puedes copiar el enlace y compartirlo.'];
+  }
+  if($p==='workspace/facturas/envios'&&$m==='GET'){$uid=$this->uid($b);$this->propio($uid);
+   return ['items'=>array_map(fn($r)=>['correo'=>$r['correo'],'fecha'=>gmdate('c',strtotime($r['created_at'].' UTC')),'visto'=>$r['visto_at']?gmdate('c',strtotime($r['visto_at'].' UTC')):null,'vistas'=>(int)$r['vistas']],$this->db->all("SELECT * FROM agora_doc_links WHERE tenant_id=? AND tipo='factura' AND uid=? ORDER BY id DESC LIMIT 20",[$t,$uid]))];}
   if($p==='workspace/facturas/ver'&&$m==='GET'){$uid=$this->uid($b);$this->propio($uid);return ['html'=>$this->docs->representation($t,$uid,($_GET['copia']??'')==='1')];}
   // ---------- Libro de ventas
   if($p==='workspace/libro-ventas'&&$m==='GET'){

@@ -117,6 +117,9 @@ final class Auth {
    $this->db->run('INSERT INTO agora_access_log(evento,uso,user_id,correo,tenant_id,ip,navegador) VALUES(?,?,?,?,?,?,?)',
     [$evento,$uso,$u?(int)$u['id']:null,mb_substr($u['email']??$correo,0,190),$u&&$u['local_tenant_id']?(int)$u['local_tenant_id']:null,self::ipCliente(),$ua]);
    if(random_int(1,50)===1)$this->db->run('DELETE FROM agora_access_log WHERE created_at<UTC_TIMESTAMP()-INTERVAL 183 DAY');
+   // 2.20.0 · Aviso a los dueños: 5 o más códigos equivocados desde la misma IP en 15 minutos (una vez por hora y por IP).
+   if(in_array($evento,['incorrecto','invalido'],true)&&($ip=self::ipCliente())!==''&&(int)($this->db->one("SELECT COUNT(*) n FROM agora_access_log WHERE ip=? AND evento IN ('incorrecto','invalido') AND created_at>=UTC_TIMESTAMP()-INTERVAL 15 MINUTE",[$ip])['n']??0)>=5)
+    \Agora\Services\Notificaciones::aDuenos($this->db,'acceso.sospechoso','Muchos códigos equivocados desde '.$ip,'Revisa «Accesos con código».','/agencia/accesos','acc-ip:'.$ip.':'.gmdate('YmdH'));
   }catch(\Throwable){}
  }
  private function huella(string $desafio,string $codigo):string{return hash_hmac('sha256',$desafio.'|'.$codigo,(string)$this->config['app_key']);}

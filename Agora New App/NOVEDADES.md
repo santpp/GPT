@@ -1,5 +1,13 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.20.0 · Deploy: correos de convenios y facturas, notificaciones y un solo cron (23 nov):**
+- **Convenios por correo:** al preparar el convenio, el cliente recibe el enlace por correo con el botón «Revisar y firmar el convenio», desde la propia subcuenta (si no está conectada, por el Correo de Ágora). Si no sale, la pantalla dice por qué y deja el enlace para compartirlo. El convenio recuerda a quién y cuándo se envió. Antes solo se generaba el enlace (y la pantalla decía por error que se había enviado).
+- **Facturas por correo:** «Enviar por correo» en cada factura emitida. El cliente recibe un enlace personal (60 días) a una página propia para verla, imprimirla o guardarla en PDF sin entrar a Ágora. En la misma ventana se ven los envíos anteriores y si el cliente ya la abrió.
+- **Notificaciones dentro de Ágora (campana de arriba):** mensajes nuevos de clientes (a quien tiene la conversación; si nadie, a administración y supervisión), convenio firmado, factura abierta por el cliente, reportes de problemas y muchos códigos equivocados desde una IP (a los dueños). Llegan con un aviso corto; tocar una lleva a su lugar (un mensaje abre la conversación). Se consulta cada 20 s mientras la pestaña está a la vista. No van al teléfono (eso sigue en pausa).
+- **Un solo cron (`servidor/bin/cron.php`, cada minuto):** tareas del sistema y tasa BCV, la misma revisión de la Bandeja que usa Ágora Mobile (cada 10 s durante el minuto) y las notificaciones de mensajes. El diagnóstico por terminal dice cuándo corrió.
+- **Guía de despliegue** en `INSTALAR-CYBERPANEL.md` (lista de 7 pasos, cron de una línea, firma por enlace y facturas por correo).
+- Prueba: `tests/fixes-2200.py` (34).
+
 **Novedades 2.19.2 · Auditoría de errores: todo error con su código (22 nov):**
 - **Auditoría de las 155 rutas** con los cuatro métodos y datos vacíos, como administración, ejecutivo, dueña y sin sesión (954 llamadas, 876 errores): **todos traen su código y todos los códigos (50) están en el diccionario**.
 - **Lo que faltaba:** el motor de la cuenta (Bandeja, contactos, oportunidades, tareas, envíos, Consumos) respondía sus errores por su cuenta, sin código y sin bitácora (183 respuestas posibles). Ahora pasan por la misma puerta (`$GLOBALS['agoraError']` en `api/index.php`) y llevan código, referencia y registro.

@@ -7,7 +7,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.19.2'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.20.0'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -17,6 +17,7 @@ final class Api {
   if($m==='POST'&&$p==='clave/olvido')return $this->a->olvido($b);
   if($m==='POST'&&$p==='clave/restablecer')return $this->a->restablecer($b);
   if($p==='sign'&&in_array($m,['GET','POST']))return $this->c->publicSign($m,$b);
+  if($p==='factura-publica'&&$m==='GET'){$this->a->rate('factura-publica:'.Auth::ipCliente(),60,600);return (new Facturacion($this->db,$this->a,$this->config))->publica((string)($_GET['t']??''));} // 2.20.0
   $this->a->requireUser();
   if($m==='POST'&&$p==='logout')return $this->a->logout();
   if($m==='GET'&&$p==='yo')return ['usuario'=>$this->a->publicUser($this->a->user)];
@@ -44,7 +45,18 @@ final class Api {
   if($p==='agency/team'&&in_array($m,['GET','POST','PUT']))return $m==='GET'?$this->u->listing(true):$this->u->save($b,true,$m==='PUT');
   if($p==='agency/activity'&&$m==='GET')return $this->ag->audit(true);
   if($p==='agency/accesos'&&$m==='GET')return $this->ag->accesos(); // 2.18.15: accesos con código (solo dueños)
-  // 2.19.2 · Bitácora de errores: cualquiera con sesión reporta; solo los dueños ven y marcan.
+  // 2.20.0 · Notificaciones de cada persona (la campana de arriba). GET ?desde=id trae las nuevas; POST notificaciones/leidas las marca.
+  if($p==='notificaciones'&&$m==='GET'){$u=$this->a->requireUser();$desde=max(0,(int)($_GET['desde']??0));
+   $rows=$this->db->all('SELECT id,tipo,titulo,texto,enlace,tenant_id,created_at,leida_at FROM agora_notifications WHERE user_id=? AND id>? ORDER BY id DESC LIMIT 30',[$u['id'],$desde]);
+   $n=(int)($this->db->one('SELECT COUNT(*) n FROM agora_notifications WHERE user_id=? AND leida_at IS NULL',[$u['id']])['n']??0);
+   return ['items'=>array_map(fn($r)=>['id'=>(int)$r['id'],'tipo'=>$r['tipo'],'titulo'=>$r['titulo'],'texto'=>$r['texto'],'enlace'=>$r['enlace'],'subcuenta'=>$r['tenant_id']?(int)$r['tenant_id']:null,'fecha'=>gmdate('c',strtotime($r['created_at'].' UTC')),'leida'=>$r['leida_at']!==null],$rows),'noLeidas'=>$n];}
+  if($p==='notificaciones/leidas'&&$m==='POST'){$u=$this->a->requireUser();
+   $ids=array_values(array_filter(array_map('intval',is_array($b['ids']??null)?array_slice($b['ids'],0,200):[]),fn($x)=>$x>0));
+   if(($b['todas']??false)===true)$this->db->run('UPDATE agora_notifications SET leida_at=UTC_TIMESTAMP() WHERE user_id=? AND leida_at IS NULL',[$u['id']]);
+   elseif($ids){$ph=implode(',',array_fill(0,count($ids),'?'));$this->db->run("UPDATE agora_notifications SET leida_at=UTC_TIMESTAMP() WHERE user_id=? AND leida_at IS NULL AND id IN ($ph)",array_merge([$u['id']],$ids));}
+   else Http::fail('Indica qué notificaciones marcar como leídas.',422);
+   return ['ok'=>true];}
+  // 2.19.0 · Bitácora de errores: cualquiera con sesión reporta; solo los dueños ven y marcan.
   if($p==='reportes'&&$m==='POST')return (new Bitacora($this->db,$this->a))->reportar($b);
   if($p==='agency/errores'&&$m==='GET')return (new Bitacora($this->db,$this->a))->listar();
   if($p==='agency/errores/reporte'&&$m==='PUT')return (new Bitacora($this->db,$this->a))->estado($b);
@@ -172,7 +184,7 @@ final class Api {
   if(preg_match('~^workspace/opportunity/(new|edit|status)$~D',$p,$match)&&$m==='POST')return $this->w->opportunity($b,$match[1]);
   if($p==='workspace/won'&&$m==='GET')return $this->metrics->won();
   if($p==='workspace/dashboard'&&$m==='GET')return $this->metrics->dashboard();
-  if($p==='workspace/board-month'){if($m==='GET')return $this->metrics->month();if($m==='POST'){$this->a->manage();if(!array_diff(array_keys($b),['period','requestId']))Http::fail('No llegaron cifras para guardar: no se cambió nada.',422); /* 2.19.2: un guardado vacío borraba las metas y costos del mes */ $period=Http::period($_GET['period']??$b['period']??gmdate('Y-m'));if(strlen(DB::json($b))>10000)Http::fail('Configuración demasiado grande.');$b=self::costosMes($b);$this->db->saveSetting($this->a->tenant,'board.'.$period,$b);$this->a->audit('metas.actualizadas','ajuste',$period);return ['saved'=>true];}}
+  if($p==='workspace/board-month'){if($m==='GET')return $this->metrics->month();if($m==='POST'){$this->a->manage();if(!array_diff(array_keys($b),['period','requestId']))Http::fail('No llegaron cifras para guardar: no se cambió nada.',422); /* 2.20.0: un guardado vacío borraba las metas y costos del mes */ $period=Http::period($_GET['period']??$b['period']??gmdate('Y-m'));if(strlen(DB::json($b))>10000)Http::fail('Configuración demasiado grande.');$b=self::costosMes($b);$this->db->saveSetting($this->a->tenant,'board.'.$period,$b);$this->a->audit('metas.actualizadas','ajuste',$period);return ['saved'=>true];}}
   if($p==='workspace/resumen'&&$m==='GET')return ['mrr'=>null,'mrrAnterior'=>null,'clientesActivos'=>null,'recaudado'=>null,'arr'=>null,'caja'=>null,'churn'=>null,'churnPct'=>null,'egresos'=>null,'inversion'=>null,'serie'=>[],'espacios'=>[$this->ag->branding('GET',[])],'superadmins'=>[],'porVencer'=>[]];
   if($p==='workspace/ads'&&$m==='GET')return ['estado'=>'not_connected'];
   if($p==='workspace/dia'&&$m==='GET'){$d=$this->metrics->dashboard();return ['conversacionesDia'=>null,'atendidas'=>null,'sinLeer'=>$d['conversations']['unread'],'sinLeerPorAsesor'=>[],'slaIncumplido'=>null,'slaPromedio'=>'Sin medición','slaPromedioSeg'=>null,'slaMetaTexto'=>'Sin configurar','peorRespuesta'=>'Sin medición','leads'=>null,'leadsPorFuente'=>[],'leadsPorUsuario'=>[]];}

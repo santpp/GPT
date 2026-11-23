@@ -64,6 +64,11 @@ else{$s=$uno('SELECT status FROM agora_ghl_connections WHERE tenant_id=?',[(int)
 $fx=$uno("SELECT MAX(day) d FROM agora_fiscal_fx WHERE source='BCV'");
 if($fx&&$fx['d']){$dias=(int)floor((time()-strtotime($fx['d'].' UTC'))/86400);$linea($dias<=3?'ok':'aviso','Tasa BCV','última del '.$fx['d'].($dias>3?" (hace $dias días: revisa servidor/bin/worker.php)":''));}else $linea('aviso','Tasa BCV','sin tasas automáticas guardadas');
 
+$seccion('Cron');
+$cr=$uno("SELECT data FROM agora_settings WHERE tenant_id=0 AND setting_key='cron.ultimo'");$cd=$cr?json_decode((string)$cr['data'],true):null;
+if(!is_array($cd))$linea('mal','Cron','nunca ha corrido · agrega en CyberPanel: * * * * * php '.dirname(__DIR__).'/bin/cron.php');
+else{$hace=time()-strtotime((string)$cd['at']);$linea($hace<=180?'ok':($hace<=900?'aviso':'mal'),'Última corrida',$hace<=180?"hace {$hace} s":'hace '.intdiv($hace,60).' min · revisa la línea del cron en CyberPanel');
+ if(!empty($cd['errores']))$linea('aviso','  Problemas del cron',implode('; ',array_slice($cd['errores'],0,3)));}
 $seccion('Últimas 24 horas');
 $e=$uno('SELECT COUNT(*) n,SUM(status>=500) g FROM agora_error_log WHERE created_at>=UTC_TIMESTAMP()-INTERVAL 1 DAY');
 if($e===null)$linea('aviso','Errores','la bitácora todavía no existe (se crea al abrir la web)');

@@ -182,18 +182,26 @@ X-Frame-Options SAMEORIGIN
 END_extraHeaders
 ```
 
-## Paso 10 · Tarea programada (cron)
+## Paso 10 · Tarea programada (cron) · una sola línea
 
-Envía los mensajes en cola, limpia sesiones vencidas y, una vez al día, vuelve a leer el equipo de cada cuenta conectada (para que las personas nuevas aparezcan en Usuarios y roles). CyberPanel → Websites → Manage → **Cron Jobs** → añade:
+Desde la 2.20.0 hay **un solo cron**: `servidor/bin/cron.php`. Cada minuto hace todo lo que el sistema necesita en segundo plano:
+
+- **Tareas del sistema** (lo que antes hacía `worker.php`): mensajes en cola, limpieza de sesiones vencidas y la **tasa BCV del día** (la pide a `ve.dolarapi.com` y, si falla, a `www.bcv.org.ve`; reintenta cada hora).
+- **La Bandeja en vivo** (la misma revisión que usa Ágora Mobile): trae los mensajes nuevos de cada subcuenta conectada y repasa cada 10 segundos durante el minuto, así un mensaje se nota en segundos. Una vez al día vuelve a leer el equipo de cada cuenta.
+- **Las notificaciones** de mensajes nuevos: le llegan a quien tiene asignada la conversación (o a administración y supervisión, si nadie la tiene), en la campana de arriba.
+
+CyberPanel → Websites → Manage → **Cron Jobs** → añade (con el usuario del sitio):
 
 - **Frecuencia:** cada minuto (`* * * * *`).
 - **Comando:**
 
   ```
-  /usr/local/lsws/lsphp83/bin/php /home/TU-DOMINIO/servidor/bin/worker.php --max-jobs=50 >/dev/null 2>&1
+  /usr/local/lsws/lsphp83/bin/php /home/TU-DOMINIO/servidor/bin/cron.php >/dev/null 2>&1
   ```
 
-Desde la 2.11.0 esta misma tarea trae también la **tasa BCV del día** para la facturación. La pide a `ve.dolarapi.com` y, si falla, a `www.bcv.org.ve`; lo reintenta cada hora hasta tenerla. El servidor debe poder salir a esas dos direcciones. Si no llega, en Facturación → Tasas del día se escribe a mano.
+Si ya tenías la línea de `worker.php`, **reemplázala** por esta (no las dejes las dos; no se dañaría nada, pero sobra).
+
+Para comprobarlo a mano: `php servidor/bin/cron.php --once` dice qué hizo, y `php servidor/bin/diagnostico.php` muestra en la sección **Cron** hace cuánto corrió por última vez (en rojo si nunca corrió o lleva más de 15 minutos sin correr).
 
 ### Facturación fiscal: protección de lo emitido
 
@@ -274,6 +282,16 @@ Con la subcuenta conectada, **Nueva tarea** pide el contacto y la tarea queda es
 
 ---
 
+## Lista para desplegar (2.20.0)
+
+1. Respaldo de la base y de los archivos (CyberPanel → Backup), y aparte `servidor/config/config.php` y `servidor/storage/motor-vault.key`.
+2. Sube el ZIP y reemplaza `public_html/` y `servidor/` (conserva `config.php` y `storage/`). Repite el **paso 5** (permisos).
+3. En `config.php`: `'env'=>'production'`, `app_url` con `https://` exacto y, si vas a usar convenios por enlace, `'signing_enabled'=>true`.
+4. Cron: **una sola línea** con `cron.php` (paso 10).
+5. Agencia → **Correo de Ágora**: elige la subcuenta que envía y pruébala (respaldo de los correos a clientes y de los códigos de acceso).
+6. Corre `php servidor/bin/diagnostico.php`: nada en rojo. Lo amarillo, revísalo.
+7. Abre la app, entra y mira la campana, un convenio de prueba enviado a tu propio correo y una factura enviada a tu correo.
+
 ## Actualizar a una versión nueva
 
 1. Haz un **respaldo**: CyberPanel → Backup (sitio y base de datos).
@@ -298,9 +316,13 @@ Con la subcuenta conectada, **Nueva tarea** pide el contacto y la tarea queda es
 
 ## Convenios y firma por enlace
 
-La creación, cálculo en centavos, edición de borrador, PDF, revocación y protección del documento firmado están implementados. Para habilitar la aceptación por enlace, revisa primero el texto de `Contracts::document()` y activa `signing_enabled`.
+La creación, cálculo en centavos, edición de borrador, PDF, revocación y protección del documento firmado están implementados. Para habilitar la aceptación por enlace, revisa primero el texto de `Contracts::document()` y pon `'signing_enabled'=>true` en `servidor/config/config.php`.
 
-El enlace caduca en siete días, se almacena con hash y solo admite una aceptación. Generar otro revoca el anterior. Se comparte manualmente; no se envía correo automático. Esta aceptación registra nombre declarado, fecha e IP y no verifica identidad mediante un proveedor de firma certificada. No presentarla como firma certificada ni como facturación fiscal.
+Desde la 2.20.0, al preparar el convenio **el enlace se envía por correo al cliente**, desde la propia subcuenta (si no está conectada, por el Correo de Ágora). El correo trae el botón «Revisar y firmar el convenio». Si no se pudo enviar, la pantalla dice por qué y deja el enlace para compartirlo por WhatsApp. El enlace caduca en siete días, se guarda solo su huella y admite una sola aceptación; enviar uno nuevo revoca el anterior. La aceptación registra nombre declarado, fecha e IP y no verifica identidad. Al firmar, administración y supervisión reciben un aviso en la campana.
+
+## Facturas por correo (2.20.0)
+
+En Facturas, una factura emitida trae **«Enviar por correo»**: el cliente recibe un enlace personal (vence en 60 días) a `https://TU-DOMINIO/factura.html` para verla, imprimirla o guardarla en PDF, sin entrar a Ágora. Se guarda solo la huella del enlace. La primera vez que el cliente la abre, quien la envió recibe un aviso. Para que el logo salga en los correos, `app_url` debe empezar con `https://`.
 
 ---
 

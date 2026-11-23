@@ -78,6 +78,41 @@ final class AccessChannel {
         $this->deliver($tenant,$email,$subject,self::template($title,$intro,$code,$foot,$logo),$text,true);
     }
 
+    /**
+     * Agora New App 2.20.0 · Correo a un cliente (convenio para firmar, factura): sale por la subcuenta indicada, a su propio contacto
+     * (se busca por correo y, si no existe, se crea con su nombre y la etiqueta agora-documentos). No usa la ficha interna de acceso.
+     * Devuelve el identificador del mensaje. Los errores son AccessDeliveryProblem, como los códigos.
+     */
+    public const DOC_TAG='agora-documentos';
+    public function enviarDocumento(array $connection,string $email,string $nombre,string $subject,string $title,string $intro,array $boton,string $note,string $text,?string $logo=null):string {
+        $email=self::email($email);
+        if($connection['status']!=='connected')throw new AccessDeliveryProblem('access_channel_unverified');
+        $html=self::template($title,$intro,null,$note,$logo,$boton);$mid='';
+        try {
+            $this->gateway->execute($connection,function(GhlClient $client)use($connection,$email,$nombre,$subject,$html,$text,&$mid):array {
+                $contact=null;
+                try {$found=$client->duplicateContact($connection['location_id'],$email);$contact=self::contactId($found['contact']??null,$connection);}
+                catch(GhlApiException $e){if(in_array($e->status,[401,403],true))throw new AccessDeliveryProblem('insufficient_permissions');if($e->status!==404&&$e->status!==400)throw $e;}
+                if($contact===null){
+                    $p=preg_split('/\s+/',trim($nombre))?:[];$first=$p?array_shift($p):'';
+                    try {$created=$client->upsertContact(['locationId'=>$connection['location_id'],'email'=>$email,'firstName'=>mb_substr($first,0,60),'lastName'=>mb_substr(implode(' ',$p),0,60),'source'=>'Ágora · documentos']);}
+                    catch(GhlApiException $e){if(in_array($e->status,[401,403],true))throw new AccessDeliveryProblem('insufficient_permissions');throw new AccessDeliveryProblem('contact_unresolvable');}
+                    $contact=self::contactId($created['contact']??null,$connection);
+                    if($contact===null)throw new AccessDeliveryProblem('contact_unresolvable');
+                    try{$client->addContactTags($contact,[self::DOC_TAG]);}catch(Throwable $e){}
+                }
+                try {$r=$client->sendMessage(['type'=>'Email','contactId'=>$contact,'subject'=>$subject,'html'=>$html,'message'=>$text]);}
+                catch(GhlApiException $e){if(in_array($e->status,[401,403],true))throw new AccessDeliveryProblem('insufficient_permissions');if(in_array($e->status,[400,422],true))throw new AccessDeliveryProblem('email_channel_unavailable');throw new AccessDeliveryProblem('delivery_rejected',$e->status===429?max(30,$e->retryAfter):0);}
+                if(!is_string($r['messageId']??null))throw new AccessDeliveryProblem('delivery_rejected');
+                $mid=$r['messageId'];return [];
+            },false);
+        } catch(GhlCooldown $e) {throw new AccessDeliveryProblem('delivery_paused',$e->retryAfter);}
+        catch(AccessDeliveryProblem $e) {throw $e;}
+        catch(GhlApiException $e) {throw new AccessDeliveryProblem(in_array($e->status,[401,403],true)?'insufficient_permissions':'delivery_rejected');}
+        catch(Throwable $e) {throw new AccessDeliveryProblem('delivery_rejected');}
+        return $mid;
+    }
+
     private function deliver(int $tenant,string $email,string $subject,string $html,string $text,bool $onlyChannel=false):void {
         $email=self::email($email);
         // El código sale desde la subcuenta a la que pertenece la persona; la cuenta elegida como canal queda de respaldo.
@@ -185,7 +220,7 @@ final class AccessChannel {
      * en la primera frase y solo, en un bloque grande que se selecciona entero con un toque. Un correo no puede llevar un botón propio de copiar
      * (los programas de correo no ejecutan nada), así que se deja todo listo para el botón del propio programa.
      */
-    private static function template(string $title,string $intro,?string $code,string $note,?string $logo=null):string {
+    private static function template(string $title,string $intro,?string $code,string $note,?string $logo=null,?array $boton=null):string {
         $esc=static fn(string $value):string=>htmlspecialchars($value,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
         $f='font-family:Helvetica,Arial,system-ui,-apple-system,Segoe UI,sans-serif;';
         $pre=$code===null?$intro:'Tu código de acceso es '.$code.'. '.$intro;
@@ -208,6 +243,9 @@ final class AccessChannel {
             .'<h1 style="margin:0 0 10px;'.$f.'font-size:22px;line-height:1.3;font-weight:700;color:#282e49">'.$esc($title).'</h1>'
             .'<p style="margin:0 0 22px;'.$f.'font-size:15px;line-height:1.6;color:#5b6170">'.$esc($intro).'</p>'
             .$block
+            .($boton&&preg_match('#^https?://[^\s"<>]+$#',(string)($boton[1]??''))
+              ?'<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px"><tr><td style="border-radius:999px;background:#ad103c"><a href="'.$esc($boton[1]).'" style="display:inline-block;padding:13px 26px;'.$f.'font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:999px">'.$esc((string)$boton[0]).'</a></td></tr></table>'
+               .'<p style="margin:0 0 22px;'.$f.'font-size:12px;line-height:1.5;color:#7d8590;word-break:break-all">Si el botón no abre, copia este enlace: '.$esc($boton[1]).'</p>':'')
             .'<p style="margin:0 0 24px;'.$f.'font-size:13px;line-height:1.6;color:#7d8590">'.$esc($note).'</p>'
             .'</td></tr>'
             .'<tr><td style="padding:0 28px 24px"><p style="margin:0;padding-top:16px;border-top:1px solid #e5e4e9;'.$f.'font-size:11px;line-height:1.6;color:#a1a6b2">Mensaje automático de Ágora Digital. No respondas a este correo.</p></td></tr>'

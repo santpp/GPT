@@ -27,6 +27,7 @@ final class Bitacora {
   $this->db->run('INSERT INTO agora_error_reports(user_id,tenant_id,descripcion,pantalla,version_app,dispositivo,errores,lentas,ip) VALUES(?,?,?,?,?,?,?,?,?)',
    [$u['id'],$this->auth->tenant?:($u['local_tenant_id']?(int)$u['local_tenant_id']:null),$desc,$txt($b['pantalla']??'',160),$txt($b['version']??'',20),$txt($b['dispositivo']??'',160),DB::json($errores),DB::json($lentas),Auth::ipCliente()]);
   $id=(int)$this->db->pdo->lastInsertId();
+  \Agora\Services\Notificaciones::aDuenos($this->db,'reporte','Reporte de un problema (R-'.$id.')',($u['name']??'Alguien').': '.($desc!==''?mb_substr($desc,0,120):'sin descripción'),'/agencia/errores','reporte:'.$id); // 2.20.0
   if(random_int(1,50)===1)$this->db->run("DELETE FROM agora_error_reports WHERE created_at<UTC_TIMESTAMP()-INTERVAL 180 DAY AND estado='resuelto'");
   return ['ok'=>true,'id'=>$id,'referencia'=>'R-'.$id];
  }
