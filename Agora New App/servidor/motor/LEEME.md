@@ -43,3 +43,5 @@ oportunidades, embudos, ventas ganadas, tablero y consumos de la agencia.
 - **2.20.0 · Correo a clientes:** `AccessChannel::enviarDocumento()` (convenios y facturas): por la conexión indicada, busca o crea el contacto del cliente (etiqueta `agora-documentos`) y envía con la plantilla, ahora con botón opcional (`template(..., $boton)`). El ERP corre `Sweep::run('cron-erp')` desde `servidor/bin/cron.php`.
 
 - **2.22.0 · Personas en la cuenta:** `GhlClient::location()`, `createUser()` y `updateUser()` (permiso `users.write`); `AccessChannel::sendMail()` acepta un botón opcional (`[texto, url]`) para la invitación. Las usa `app/src/Services/UsuariosCuenta.php` con `GhlGateway::execute(..., soft: true)`.
+
+- **2.24.0 · Ficha del contacto:** `agora-modulos.js` (Agora New App): cabecera de la ficha de la Bandeja con avatar y nombre (`.lp-quien`, sin «Contexto del contacto»), «Correo» en vez de «Email», «Embudo» en vez de «Pipeline», campos vacíos «Sin campos con valor» en Contactos. El estilo, en `agora-new.css`.

@@ -7,7 +7,7 @@ use Agora\Core\{DB,Http};use Agora\Security\Auth;
  * 2.1.17 · Gestión unificada de usuarios para MASTER y SUPERADMIN (agency/usuarios).
  *  GET  agency/usuarios            Todos los usuarios a su alcance: agencia + subcuentas (MASTER: todas; SUPERADMIN: las asignadas).
  *  PUT  agency/usuarios            Edita nombre, correo, rol (campo rolNuevo), estado y subcuentas de cualquier usuario a su alcance.
- *  POST agency/usuarios/clave      Restablece la contraseña (una nueva escrita o una temporal generada que se muestra una sola vez).
+ *  POST agency/usuarios/clave      Manda el enlace para crear una clave nueva (o reenvía la invitación). Ágora no pone ni genera claves (2.24.0).
  * Reglas: nadie edita al MASTER salvo el MASTER; nadie asigna el rol MASTER; solo el MASTER cruza la frontera
  * agencia ↔ subcuenta (crear o quitar un Superadmin); nadie se desactiva ni se cambia el rol a sí mismo.
  */
@@ -38,7 +38,7 @@ final class UsuariosAgencia {
  private function publico(array $u,array $nombres):array{
   $ids=$u['role']==='SUPERADMIN'?$this->asignadas((int)$u['id']):($u['local_tenant_id']?[(int)$u['local_tenant_id']]:[]);
   $agencia=in_array($u['role'],['MASTER','SUPERADMIN'],true);
-  return ['id'=>(int)$u['id'],'nombre'=>$u['name'],'correo'=>$u['email'],'rol'=>$u['role'],'activo'=>(bool)$u['active'],'ambito'=>$agencia?'agencia':'subcuenta',
+  return ['id'=>(int)$u['id'],'nombre'=>$u['name'],'correo'=>$u['email'],'rol'=>$u['role'],'activo'=>(bool)$u['active'],'invitacion'=>(bool)($u['invitacion']??false),'ambito'=>$agencia?'agencia':'subcuenta',
    'subcuentaId'=>$agencia?null:(int)$u['local_tenant_id'],'subcuenta'=>$agencia?null:($nombres[(int)$u['local_tenant_id']]??''),'tenants'=>$ids,'ultimoAcceso'=>$u['last_login_at']??null,
    'yo'=>(int)$u['id']===(int)$this->auth->user['id'],'editable'=>$this->editable($u)===null,'protegido'=>$this->editable($u)];
  }
@@ -47,7 +47,7 @@ final class UsuariosAgencia {
   if(!$this->esMaster()){$al=$this->alcance();$slots=$al?implode(',',array_fill(0,count($al),'?')):'NULL';$where="(role IN ('MASTER','SUPERADMIN') OR local_tenant_id IN ($slots))";$args=$al;}
   $q=Http::text($_GET,'q',120,false);if($q!==''){$where.=' AND (name LIKE ? OR email LIKE ?)';$args[]='%'.$q.'%';$args[]='%'.$q.'%';}
   $total=(int)$this->db->one("SELECT COUNT(*) n FROM agora_users WHERE $where",$args)['n'];
-  $rows=$this->db->all("SELECT id,name,email,role,active,local_tenant_id,last_login_at FROM agora_users WHERE $where ORDER BY CASE role WHEN 'MASTER' THEN 0 WHEN 'SUPERADMIN' THEN 1 ELSE 2 END,name LIMIT 1000",$args);
+  $rows=$this->db->all("SELECT id,name,email,role,active,local_tenant_id,last_login_at,password_hash='!invitacion' invitacion FROM agora_users WHERE $where ORDER BY CASE role WHEN 'MASTER' THEN 0 WHEN 'SUPERADMIN' THEN 1 ELSE 2 END,name LIMIT 1000",$args);
   $cuentas=[];foreach($this->auth->tenants() as $t)$cuentas[(int)$t['id']]=$t['subaccount'];
   if(!$this->esMaster())foreach($this->db->all('SELECT id,subaccount FROM agora_tenants LIMIT 1000') as $t)$cuentas[(int)$t['id']]??=$t['subaccount'];
   $mias=$this->alcance();
@@ -103,13 +103,14 @@ final class UsuariosAgencia {
   if($e=$this->editable($u))Http::fail($e,403);
   if(in_array($u['role'],['MASTER','SUPERADMIN'],true))Http::fail('La clave de una cuenta de dueño se cambia solo desde la terminal del servidor: php servidor/bin/cambiar-clave.php correo',403); // 2.13.1
   if((int)$u['id']===(int)$this->auth->user['id'])Http::fail('Para tu propia contraseña usa Mi perfil.',403);
-  $temporal=null;
-  if(($b['generar']??false)===true){$abc='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';$temporal='';for($i=0;$i<14;$i++)$temporal.=$abc[random_int(0,strlen($abc)-1)];$clave=$temporal;}
-  else $clave=Http::password($b['clave']??'');
-  $this->db->run('UPDATE agora_users SET password_hash=?,auth_version=auth_version+1 WHERE id=?',[password_hash($clave,PASSWORD_DEFAULT),$id]);
-  $this->db->run('DELETE FROM agora_sessions WHERE user_id=?',[$id]);
-  $this->auditar('usuario.clave_restablecida',$u,$u['local_tenant_id']?(int)$u['local_tenant_id']:null,['modo'=>$temporal?'temporal':'manual','correo'=>$u['email']]);
-  return ['ok'=>true,'temporal'=>$temporal];
+  // 2.24.0 · Ágora no pone ni genera claves (decisión del usuario): se le manda el enlace para que cree una con un código.
+  // Si aún no creó la suya (invitación pendiente), se reenvía la invitación. Su clave actual sigue sirviendo hasta que cree la nueva.
+  if(!(int)$u['active'])Http::fail('Esta persona está suspendida. Reactívala primero.',409);
+  $this->auth->rate('invitacion:'.$u['id'],5,3600);
+  $tipo=($u['password_hash']??'')==='!invitacion'?'invitacion':'clave';
+  $r=\Agora\Services\Invitaciones::enviar($this->db,$this->auth->config,$u,$tipo);
+  if($r['enviada'])$this->auditar($tipo==='clave'?'usuario.enlace_clave':'usuario.invitacion',$u,$u['local_tenant_id']?(int)$u['local_tenant_id']:null,['correo'=>$u['email']]);
+  return ['ok'=>true,'tipo'=>$tipo,'invitacion'=>$r];
  }
  /** Se audita en la agencia y, si el usuario es de una subcuenta, también en la auditoría de esa subcuenta. */
  private function auditar(string $accion,array $u,?int $tenant,array $detalle):void{

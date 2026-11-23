@@ -7,7 +7,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.23.1'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.24.0'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -71,7 +71,7 @@ final class Api {
    \Agora\Security\Desafio::comprobar($key,'borrar-usuario',(string)$u['id'],(int)$this->a->user['id'],$b['token']??null,$b['respuesta']??null);
    (new \Agora\Services\Borrado($this->db))->usuario($id,(int)$u['id']);$this->a->audit('usuario.borrado','usuario',(string)$u['id'],['detalle'=>'Se borró a '.$u['name'].' ('.$u['email'].')']);return ['ok'=>true,'id'=>(int)$u['id'],'cuenta'=>$cuenta];
   }
-  if($p==='agency/users'){$this->a->agency();$id=Http::integer($b['accountId']??$_GET['accountId']??0,1,PHP_INT_MAX);$this->a->authorizeTenant($id,true);$this->a->tenant=$id;if($m==='GET')return $this->u->listing(false);if($m==='POST')return $this->u->save($b,false);if($m==='DELETE')return $this->u->revoke(Http::integer($b['userId']??$_GET['userId']??0,1,PHP_INT_MAX));}
+  if($p==='agency/users'){$this->a->agency();$id=Http::integer($b['accountId']??$_GET['accountId']??0,1,PHP_INT_MAX);$this->a->authorizeTenant($id,true);$this->a->tenant=$id;if($m==='GET')return $this->u->listing(false);if($m==='POST')return $this->invitarPersona($b);/* 2.24.0: desde Agencia también por invitación, sin clave */if($m==='DELETE')return $this->u->revoke(Http::integer($b['userId']??$_GET['userId']??0,1,PHP_INT_MAX));}
   if($p==='agency/studio'){$this->a->agency();$id=Http::integer($b['tenantId']??$_GET['tenantId']??$_SERVER['HTTP_X_WORKSPACE_ID']??0,1,PHP_INT_MAX);$this->a->authorizeTenant($id);$this->a->tenant=$id;if($m==='GET')return ['configured'=>false,'items'=>$this->r->page('draft')['items'],'audit'=>[]];if($m==='POST'){$prompt=Http::text($b,'prompt',8000);$uid=bin2hex(random_bytes(12));$d=['id'=>$uid,'prompt'=>$prompt,'state'=>'draft','created_at'=>gmdate('c')];$this->r->save('draft',$uid,$d,'Solicitud IA','draft');return ['ok'=>true,'item'=>$d,'executed'=>false];}}
   // Every tenant endpoint must carry a per-tab workspace identifier, including reads.
   if(preg_match('~^contratos/[a-f0-9]{24}/pdf/(previa|enviado|firmado)$~D',$p)&&$m==='GET'&&!isset($_SERVER['HTTP_X_WORKSPACE_ID']))$_SERVER['HTTP_X_WORKSPACE_ID']=(string)($_GET['workspace']??'');
@@ -136,25 +136,15 @@ final class Api {
   }
   // 2.22.0 · Invitar a una persona (pedido del usuario): se crea sin clave, le llega una invitación por correo y crea su clave al entrar
   // la primera vez con un código. Si la subcuenta está conectada y se pide, también se crea en la cuenta con los permisos de su rol.
-  if($p==='workspace/usuarios/invitar'&&$m==='POST'){
-   $this->a->manage();$t=(int)$this->a->tenant;
-   $rol=(string)($b['rol']??'EJECUTIVO');if(!in_array($rol,['ADMIN','SUPERVISOR','EJECUTIVO','REMITENTE','USUARIO','CONSULTA','VISOR'],true))Http::fail('Rol no asignable.',403);
-   $nombre=Http::text($b,'nombre',120);$correo=mb_strtolower(Http::email($b));
-   if($this->db->one('SELECT id FROM agora_users WHERE email=?',[$correo]))Http::fail('Ya hay una persona con ese correo en Ágora.',409);
-   $externo=trim((string)($b['enlace']??''));if($externo!==''&&!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$externo))Http::fail('Usuario de la cuenta inválido.');
-   $this->db->run('INSERT INTO agora_users(name,email,role,active,password_hash,local_tenant_id) VALUES(?,?,?,1,?,?)',[$nombre,$correo,$rol,self::INVITACION,$t]);
-   $id=(int)$this->db->pdo->lastInsertId();$u=$this->db->one('SELECT * FROM agora_users WHERE id=?',[$id]);
-   $this->a->audit('usuario.invitado','usuario',(string)$id,['rol'=>$rol]);
-   $cuenta=null;
-   if(($b['enCuenta']??false)===true)$cuenta=(new \Agora\Services\UsuariosCuenta($this->db,$this->config))->crear($t,$u,$externo!==''?$externo:null);
-   elseif($externo!=='')(new \Agora\Services\UserLinks($this->db))->set($t,$id,$externo);
-   if($cuenta&&$cuenta['ok'])$this->a->audit('usuario.cuenta','usuario',(string)$id,['accion'=>$cuenta['accion']]);
-   return ['ok'=>true,'id'=>$id,'invitacion'=>$this->invitar($u),'cuenta'=>$cuenta];
-  }
+  if($p==='workspace/usuarios/invitar'&&$m==='POST'){$this->a->manage();return $this->invitarPersona($b);}
   if($p==='workspace/usuarios/invitacion'&&$m==='POST'){
    $this->a->manage();$u=$this->db->one('SELECT * FROM agora_users WHERE id=? AND local_tenant_id=?',[Http::integer($b['id']??0,1,PHP_INT_MAX),(int)$this->a->tenant]);
-   if(!$u)Http::fail('Usuario no encontrado en esta subcuenta.',404);if($u['password_hash']!==self::INVITACION)Http::fail('Esta persona ya creó su clave.',409);
-   $this->a->rate('invitacion:'.$u['id'],5,3600);return ['ok'=>true,'invitacion'=>$this->invitar($u)];
+   if(!$u)Http::fail('Usuario no encontrado en esta subcuenta.',404);
+   if(in_array($u['role'],['MASTER','SUPERADMIN'],true))Http::fail('La clave de una cuenta de dueño se cambia solo desde la terminal del servidor.',403);
+   if(!(int)$u['active'])Http::fail('Esta persona está suspendida. Reactívala primero.',409);
+   // 2.24.0 · Sin clave todavía: se reenvía la invitación. Con clave: se le manda el enlace para crear una nueva (no se le genera ninguna).
+   $this->a->rate('invitacion:'.$u['id'],5,3600);$tipo=$u['password_hash']===self::INVITACION?'invitacion':'clave';
+   return ['ok'=>true,'tipo'=>$tipo,'invitacion'=>$this->invitar($u,$tipo)];
   }
   if($p==='workspace/usuarios/cuenta'&&$m==='POST'){
    $this->a->manage();$t=(int)$this->a->tenant;$u=$this->db->one('SELECT * FROM agora_users WHERE id=? AND local_tenant_id=?',[Http::integer($b['id']??0,1,PHP_INT_MAX),$t]);
@@ -271,15 +261,26 @@ final class Api {
  /** 2.22.0 · Marca de «invitación pendiente» en password_hash: ningún password_verify la acepta; la persona crea su clave con un código. */
  public const INVITACION='!invitacion';
  /** Manda (o reenvía) la invitación por el Correo de Ágora. Nunca lanza: dice si salió o por qué no. */
- private function invitar(array $u):array{
-  $url=rtrim((string)($this->config['app_url']??''),'/').'/entrar?invitacion='.rawurlencode((string)$u['email']);
-  $empresa=(string)($this->db->one('SELECT name FROM agora_tenants WHERE id=?',[(int)$u['local_tenant_id']])['name']??'tu empresa');
-  try{$ok=\Agora\Core\MotorMobile::correo($this->db,$this->config,(string)$u['email'],'Te invitaron a Ágora · '.$empresa,'Te damos la bienvenida a Ágora',
-    'Te invitaron al espacio de trabajo de '.$empresa.'. Toca el botón, escribe tu correo y te enviamos un código para crear tu clave.',null,
-    'Si no esperabas esta invitación, ignora este correo.',"Te invitaron a Ágora ($empresa). Crea tu clave aquí: $url\n",['Crear mi clave',$url]);}
-  catch(\Throwable){return ['enviada'=>false,'mensaje'=>'No se pudo enviar la invitación ahora. Inténtalo con «Reenviar invitación».'];}
-  if(!$ok)return ['enviada'=>false,'mensaje'=>'Falta configurar el Correo de Ágora (lo hace el dueño en Agencia). Mientras tanto, dale una clave temporal desde «Opciones».'];
-  $this->a->audit('usuario.invitacion','usuario',(string)$u['id']);return ['enviada'=>true,'mensaje'=>'Invitación enviada a '.$u['email'].'.'];
+ /** 2.22.0 · Invitar a una persona a la subcuenta activa ($this->a->tenant): sin clave, con invitación por correo y, si se pide, en la cuenta. */
+ private function invitarPersona(array $b):array{
+   $t=(int)$this->a->tenant;
+   $rol=(string)($b['rol']??'EJECUTIVO');if(!in_array($rol,['ADMIN','SUPERVISOR','EJECUTIVO','REMITENTE','USUARIO','CONSULTA','VISOR'],true))Http::fail('Rol no asignable.',403);
+   $nombre=Http::text($b,'nombre',120);$correo=mb_strtolower(Http::email($b));
+   if($this->db->one('SELECT id FROM agora_users WHERE email=?',[$correo]))Http::fail('Ya hay una persona con ese correo en Ágora.',409);
+   $externo=trim((string)($b['enlace']??''));if($externo!==''&&!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$externo))Http::fail('Usuario de la cuenta inválido.');
+   $this->db->run('INSERT INTO agora_users(name,email,role,active,password_hash,local_tenant_id) VALUES(?,?,?,1,?,?)',[$nombre,$correo,$rol,self::INVITACION,$t]);
+   $id=(int)$this->db->pdo->lastInsertId();$u=$this->db->one('SELECT * FROM agora_users WHERE id=?',[$id]);
+   $this->a->audit('usuario.invitado','usuario',(string)$id,['rol'=>$rol]);
+   $cuenta=null;
+   if(($b['enCuenta']??false)===true)$cuenta=(new \Agora\Services\UsuariosCuenta($this->db,$this->config))->crear($t,$u,$externo!==''?$externo:null);
+   elseif($externo!=='')(new \Agora\Services\UserLinks($this->db))->set($t,$id,$externo);
+   if($cuenta&&$cuenta['ok'])$this->a->audit('usuario.cuenta','usuario',(string)$id,['accion'=>$cuenta['accion']]);
+   return ['ok'=>true,'id'=>$id,'invitacion'=>$this->invitar($u),'cuenta'=>$cuenta];
+ }
+ /** Manda (o reenvía) la invitación o el enlace para una clave nueva (Services/Invitaciones). Nunca lanza. */
+ private function invitar(array $u,string $tipo='invitacion'):array{
+  $r=\Agora\Services\Invitaciones::enviar($this->db,$this->config,$u,$tipo);
+  if($r['enviada'])$this->a->audit($tipo==='clave'?'usuario.enlace_clave':'usuario.invitacion','usuario',(string)$u['id']);return $r;
  }
  private function usuarioBorrable(int $id):array{
   $u=$this->db->one('SELECT id,name,email,role FROM agora_users WHERE id=? AND local_tenant_id=?',[$id,(int)$this->a->tenant]);

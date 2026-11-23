@@ -2514,7 +2514,7 @@ async function agenciaModal() {
   const accounts = response.items || [];
   const rows = accounts.map(a => `<tr><td><b>${esc(a.nombre || a.name || '')}</b><small style="display:block">${esc(a.subcuenta || a.name || '')}</small></td><td>${esc(a.estado || 'activa')}</td><td><button type="button" class="btn btn-sm" data-agency-edit="${esc(a.id)}">Editar</button> <button type="button" class="btn btn-sm" data-agency-users="${esc(a.id)}">Usuarios</button></td></tr>`).join('');
   const s = openModal(modalHead('Cuenta de agencia', 'Administración global de clientes y subcuentas. Solo usuarios SuperAdmin de la agencia.') +
-   `<div class="form"><div class="form-ft" style="justify-content:flex-start"><button class="btn btn-cta" type="button" id="agency-new">${icon('plus')}Crear subcuenta</button><button class="btn" type="button" id="agency-new-user">${icon('user')}Crear usuario</button></div>
+   `<div class="form"><div class="form-ft" style="justify-content:flex-start"><button class="btn btn-cta" type="button" id="agency-new">${icon('plus')}Crear subcuenta</button><button class="btn" type="button" id="agency-new-user">${icon('user')}Invitar persona</button></div>
    <div class="tw full"><table class="matriz"><thead><tr><th>Empresa / Subcuenta</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${rows || '<tr><td colspan="3">Todavía no hay subcuentas.</td></tr>'}</tbody></table></div>
    <p class="src">La gestión de agencia requiere permisos verificados por el servidor y aislamiento entre clientes.</p><div class="form-ft"><button class="btn" type="button" data-close>Cerrar</button></div></div>`);
   s.querySelector('#agency-new').onclick = () => agenciaCuentaEditar(null);
@@ -2896,7 +2896,7 @@ async function agenciaUsuarios(id, accounts) {
     const r = await agoraApi('agency/users?accountId=' + encodeURIComponent(id));
     const items = (r.items || []).map(u => ({...u, activo: u.activo ?? u.estado !== 'inactivo'}));
     const cuenta = accounts.find(a => String(a.id) === String(id));
-    const s = openModal(modalHead('Usuarios de ' + esc(cuenta?.subcuenta || cuenta?.name || 'la subcuenta'), 'Miembros vinculados a esta cuenta') + `<div class="form"><div class="tw full"><table class="matriz"><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th><span class="sr-only">Acción</span></th></tr></thead><tbody>${items.map(u => `<tr><td><b>${esc(u.nombre)}</b></td><td>${esc(u.correo)}</td><td><span class="sc sc-info">${esc(u.rol)}</span></td><td><span class="sc ${u.activo ? 'sc-success' : 'sc-danger'}">${u.activo ? 'Activo' : 'Suspendido'}</span></td><td class="acc-usr-acc">${u.activo ? `<button type="button" class="btn btn-sm" data-revoke-user="${esc(u.id)}">${icon('pause')}Suspender</button>` : ''}<button type="button" class="btn btn-sm btn-danger" data-borrar-user="${esc(u.id)}">Eliminar</button></td></tr>`).join('') || '<tr><td colspan="5">Sin usuarios asignados</td></tr>'}</tbody></table></div><div class="form-ft"><button type="button" class="btn" data-close>Cerrar</button><button type="button" class="btn btn-cta" id="agency-add-member">Agregar usuario</button></div></div>`, {wide: true});
+    const s = openModal(modalHead('Usuarios de ' + esc(cuenta?.subcuenta || cuenta?.name || 'la subcuenta'), 'Miembros vinculados a esta cuenta') + `<div class="form"><div class="tw full"><table class="matriz"><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th><span class="sr-only">Acción</span></th></tr></thead><tbody>${items.map(u => `<tr><td><b>${esc(u.nombre)}</b></td><td>${esc(u.correo)}</td><td><span class="sc sc-info">${esc(u.rol)}</span></td><td><span class="sc ${u.activo ? 'sc-success' : 'sc-danger'}">${u.activo ? 'Activo' : 'Suspendido'}</span></td><td class="acc-usr-acc">${u.activo ? `<button type="button" class="btn btn-sm" data-revoke-user="${esc(u.id)}">${icon('pause')}Suspender</button>` : ''}<button type="button" class="btn btn-sm btn-danger" data-borrar-user="${esc(u.id)}">Eliminar</button></td></tr>`).join('') || '<tr><td colspan="5">Sin usuarios asignados</td></tr>'}</tbody></table></div><div class="form-ft"><button type="button" class="btn" data-close>Cerrar</button><button type="button" class="btn btn-cta" id="agency-add-member">Invitar persona</button></div></div>`, {wide: true});
     s.querySelector('#agency-add-member').onclick = () => agenciaUsuarioNuevo(accounts, id);
     s.querySelectorAll('[data-revoke-user]').forEach(b => b.onclick = () => {
       const u = items.find(x => String(x.id) === b.dataset.revokeUser);
@@ -2908,10 +2908,27 @@ async function agenciaUsuarios(id, accounts) {
     });
   } catch (x) { toast(x.message); }
 }
-function agenciaUsuarioNuevo(accounts,selected='') {
+/* 2.24.0 · Desde Agencia también se invita (sin clave): la persona crea la suya con el correo y un código. */
+function agenciaUsuarioNuevo(accounts, selected = '') {
   if (!esSuperAdmin()) return;
-  const s=openModal(modalHead('Crear usuario desde Agencia','El usuario se asigna únicamente a la subcuenta seleccionada')+`<form class="form"><label class="fld">Contraseña inicial<input type="password" name="clave" required minlength="12" autocomplete="new-password"></label><label class="fld">Subcuenta<select name="accountId" required>${accounts.map(a=>`<option value="${esc(a.id)}" ${String(selected)===String(a.id)?'selected':''}>${esc(a.subcuenta||a.name||a.nombre)}</option>`).join('')}</select></label><label class="fld">Nombre<input name="nombre" required></label><label class="fld">Correo<input name="correo" type="email" required></label><label class="fld">Rol<select name="rol"><option value="ADMIN">Administración</option><option value="SUPERVISOR">Supervisión</option><option value="EJECUTIVO">Ejecutivo</option><option value="CONSULTA">Consulta</option></select></label><p class="fld-err" role="alert"></p><div class="form-ft"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="submit">Crear usuario</button></div></form>`);
-  s.querySelector('form').onsubmit=async e=>{e.preventDefault();const f=e.currentTarget;const payload=Object.fromEntries(new FormData(f));try{await agoraApi('agency/users',{method:'POST',body:payload});closeModal();await cargarAgencia();go('/agencia');toast('Usuario registrado en la subcuenta.');}catch(x){f.querySelector('.fld-err').textContent=x.message;}};
+  const roles = Object.keys(ROLES_SISTEMA).filter(r => r !== 'SUPERADMIN');
+  const s = openModal(modalHead('Invitar persona', 'Le llega una invitación por correo y crea su clave la primera vez que entra, con un código.') + `<form class="form" novalidate>
+    <label class="fld">Subcuenta<select name="accountId" required>${accounts.map(a => `<option value="${esc(a.id)}" ${String(selected) === String(a.id) ? 'selected' : ''}>${esc(a.subcuenta || a.name || a.nombre)}</option>`).join('')}</select></label>
+    <label class="fld">Nombre y apellido<input name="nombre" required maxlength="120"></label>
+    <label class="fld">Correo<input name="correo" type="email" required></label>
+    <label class="fld">Rol<select name="rol">${roles.map(r => `<option value="${r}" ${r === 'EJECUTIVO' ? 'selected' : ''}>${esc(ROLES_SISTEMA[r].l)}</option>`).join('')}</select></label>
+    <label class="fld-chk"><input type="checkbox" name="enCuenta" checked> <span><b>Crearla también en la cuenta</b> con los permisos de su rol, si la subcuenta está conectada. Si su correo ya está en la cuenta, solo se enlaza.</span></label>
+    <p class="fld-err" role="alert"></p><div class="form-ft"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="submit">Invitar persona</button></div></form>`);
+  s.querySelector('form').onsubmit = async e => {
+    e.preventDefault(); const f = e.currentTarget, err = f.querySelector('.fld-err'), fd = Object.fromEntries(new FormData(f));
+    if (!String(fd.nombre || '').trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(fd.correo || '').trim())) { err.textContent = 'Escribe el nombre y un correo válido.'; return; }
+    if (fd.enCuenta && String(fd.nombre).trim().split(/\s+/).length < 2) { err.textContent = 'Para crearla en la cuenta escribe nombre y apellido.'; return; }
+    const b = f.querySelector('[type=submit]'); busy(b, true, 'Invitando…');
+    try {
+      const r = await agoraApi('agency/users', {method: 'POST', body: {accountId: fd.accountId, nombre: fd.nombre.trim(), correo: fd.correo.trim(), rol: fd.rol, enCuenta: !!fd.enCuenta}});
+      closeModal(); await cargarAgencia(); if (R.view === 'agencyTeam') { try { USR = await agoraApi('agency/usuarios'); } catch {} } repaint(); invitadoModal(fd, r);
+    } catch (x) { busy(b, false); err.textContent = x.message; }
+  };
 }
 function usuarioNombreModal(u) {
   if (!esAdmin() && !esSuperAdmin()) return;
@@ -2997,18 +3014,12 @@ function invitadoModal(fd, r) {
     ${fila(!!inv.enviada, inv.mensaje || 'Invitación enviada.')}
     ${c ? fila(!!c.ok, c.mensaje || '') : ''}</ul>
     <p class="src">Su estado será «Invitación pendiente» hasta que cree su clave. Desde «Opciones» puedes reenviar la invitación${c && !c.ok ? ' o volver a «Crear en la cuenta»' : ''}.</p>
-    <div class="form-ft">${inv.enviada ? '' : '<button class="btn" type="button" data-clave-temp>Darle una clave temporal</button>'}<button class="btn btn-cta" type="button" data-close>Listo</button></div></div>`);
-  s.querySelector('[data-clave-temp]')?.addEventListener('click', () => { const u = (DATOS.usuarios || []).find(x => x.id === r.id); closeModal(); if (u) usuarioClaveTemporal(u); });
-}
-function usuarioClaveTemporal(u) {
-  const clave = claveAzar();
-  confirmModal('Darle una clave temporal', `${esc(u.nombre)} podrá entrar con esta clave y cambiarla desde su perfil. Compártela por un canal seguro.<br><code class="clave-temp">${esc(clave)}</code>`, 'Guardar clave',
-    async () => { await agoraApi('workspace/usuarios/clave', {method: 'POST', body: {id: u.id, clave}}); await cargarUsuarios(true); repaint(); toast('Clave guardada. Compártela por un canal seguro.'); });
+    <div class="form-ft"><button class="btn btn-cta" type="button" data-close>Listo</button></div></div>`);
 }
 function usuarioMenu(id, ancla) {
   const u = (DATOS.usuarios || []).find(x => String(x.id) === String(id));
   if (!u) return;
-  const el = openPop(ancla, `${u.invitacion ? `<button type="button" data-u="invitar">${icon('mail')}Reenviar invitación</button><button type="button" data-u="clave">${icon('lock')}Darle una clave temporal</button>` : ''}${conectada() && !u.enlace ? `<button type="button" data-u="cuenta">${icon('plus')}Crear en la cuenta</button>` : ''}<button type="button" data-u="nombre">${icon('edit')}Cambiar nombre</button><button type="button" data-u="rol">${icon('shield')}Cambiar rol</button><button type="button" data-u="permisos">${icon('check')}Permisos individuales</button>${conectada() ? `<button type="button" data-u="enlace">${icon('sync')}Enlazar con la cuenta</button>` : ''}${u.estado === 'inactivo' ? `<button type="button" data-u="on">${icon('check')}Reactivar</button>` : `<button type="button" data-u="off">${icon('pause')}Suspender</button>`}${String(u.id) !== String(ME?.id ?? AGORA_ME?.id) ? `<button type="button" class="is-danger" data-u="borrar">${icon('warn')}Eliminar</button>` : ''}`, 'ctx', {align: 'right'});
+  const el = openPop(ancla, `${u.invitacion ? `<button type="button" data-u="invitar">${icon('mail')}Reenviar invitación</button>` : u.estado !== 'inactivo' && !u.yo ? `<button type="button" data-u="invitar">${icon('mail')}Enviar enlace para crear una clave nueva</button>` : ''}${conectada() && !u.enlace ? `<button type="button" data-u="cuenta">${icon('plus')}Crear en la cuenta</button>` : ''}<button type="button" data-u="nombre">${icon('edit')}Cambiar nombre</button><button type="button" data-u="rol">${icon('shield')}Cambiar rol</button><button type="button" data-u="permisos">${icon('check')}Permisos individuales</button>${conectada() ? `<button type="button" data-u="enlace">${icon('sync')}Enlazar con la cuenta</button>` : ''}${u.estado === 'inactivo' ? `<button type="button" data-u="on">${icon('check')}Reactivar</button>` : `<button type="button" data-u="off">${icon('pause')}Suspender</button>`}${String(u.id) !== String(ME?.id ?? AGORA_ME?.id) ? `<button type="button" class="is-danger" data-u="borrar">${icon('warn')}Eliminar</button>` : ''}`, 'ctx', {align: 'right'});
   if (!el) return;
   el.setAttribute('role', 'menu');
   el.onclick = async e => {
@@ -3017,8 +3028,7 @@ function usuarioMenu(id, ancla) {
     if (a === 'rol') return usuarioModal(u);
     if (a === 'permisos') return permisosUsuarioModal(u);
     if (a === 'enlace') return usuarioEnlaceModal(u);
-    if (a === 'invitar') { try { const r = await agoraApi('workspace/usuarios/invitacion', {method: 'POST', body: {id: u.id}}); toast(r.invitacion?.mensaje || 'Invitación enviada.'); } catch (x) { toast(x.message); } return; }
-    if (a === 'clave') return usuarioClaveTemporal(u);
+    if (a === 'invitar') { try { const r = await agoraApi('workspace/usuarios/invitacion', {method: 'POST', body: {id: u.id}}); toast(r.invitacion?.mensaje || 'Enviado.'); } catch (x) { toast(x.message); } return; }
     if (a === 'cuenta') { try { const r = await agoraApi('workspace/usuarios/cuenta', {method: 'POST', body: {id: u.id}}); await cargarUsuarios(true); repaint(); toast(r.mensaje || 'Creada en la cuenta.'); } catch (x) { toast(x.message); } return; }
     if (a === 'borrar') return usuarioBorrar(u, {alTerminar: async () => { await cargarUsuarios(true); repaint(); }});
     const estado = a === 'off' ? 'inactivo' : 'activo';
@@ -4255,7 +4265,7 @@ V.agencyTeam={
     const agencyRoles = ['MASTER', 'SUPERADMIN'];
     const rows = GOV.team ? GOV.team.filter(u => agencyRoles.includes(String(u.rol || '').toUpperCase())) : null;
     const table=rows?`<div class="tw"><table><thead><tr><th>Persona de Agencia</th><th>Rol de Agencia</th><th>Subcuentas asignadas</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${rows.map(u=>`<tr><td><b>${esc(u.nombre)}</b><br><small>${esc(u.correo)}</small></td><td><span class="sc ${u.rol==='MASTER'?'sc-brand':'sc-info'}">${esc(u.rol==='MASTER'?'Master · Dueño':'Superadmin de Agencia')}</span></td><td>${u.rol==='MASTER'?'Todas las subcuentas':(u.tenants||[]).map(id=>esc(AGORA_CONN.find(c=>Number(c.id)===Number(id))?.name||String(id))).join('<br>')||'<span class="src">Sin subcuentas</span>'}</td><td><span class="sc ${u.activo?'sc-success':'sc-danger'}">${u.activo?'Activo':'Inactivo'}</span></td><td>${u.rol==='MASTER'||(!esMaster()&&u.rol==='SUPERADMIN')?'<span class="src">Perfil protegido</span>':`<button type="button" class="btn btn-sm" data-team-edit="${esc(u.id)}">Editar acceso</button>${esMaster()&&u.activo?` <button type="button" class="btn btn-sm btn-danger" data-team-revoke="${esc(u.id)}">${icon('lock')}Revocar</button>`:''}`}</td></tr>`).join('')}</tbody></table></div>`:loading();
-    return launcherFrame('agencia',head(AG_GOB_NOMBRE,'Gestión de usuarios','Aquí manejas al equipo que administra la agencia (Master y Superadmin). Las personas de cada empresa se manejan dentro de su subcuenta.',`<button class="btn btn-cta" type="button" data-team-new>${icon('plus')}Agregar usuario de agencia</button>`)+`<section class="panel pf-sec">${secH('team','Equipo de la agencia',rows?`${rows.length} ${rows.length===1?'persona':'personas'} con rol Master o Superadmin. Edita su rol o las subcuentas a las que entran.`:'Cargando el equipo…')}${table}</section>`);
+    return launcherFrame('agencia',head(AG_GOB_NOMBRE,'Gestión de usuarios','Aquí manejas al equipo que administra la agencia (Master y Superadmin). Las personas de cada empresa se manejan dentro de su subcuenta.')+`<section class="panel pf-sec">${secH('team','Equipo de la agencia',rows?`${rows.length} ${rows.length===1?'persona':'personas'} con rol Master o Superadmin. Edita su rol o las subcuentas a las que entran.`:'Cargando el equipo…')}${table}</section>`);
   },
   mounted(root){root.querySelector('[data-team-new]')?.addEventListener('click',()=>agencyTeamForm());root.querySelectorAll('[data-team-edit]').forEach(b=>b.onclick=()=>agencyTeamForm(GOV.team.find(u=>String(u.id)===b.dataset.teamEdit)));root.querySelectorAll('[data-team-revoke]').forEach(b=>b.onclick=()=>{const u=GOV.team?.find(x=>String(x.id)===b.dataset.teamRevoke);if(u)agenciaRevocarEquipo(u);});}
 };
@@ -4295,7 +4305,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.23.1').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.24.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */
@@ -9699,7 +9709,7 @@ function usrFilas() {
   return rows.map(u => `<tr class="${u.activo ? '' : 'is-off'}"><td><b>${esc(u.nombre)}</b>${u.yo ? ' <span class="sc sc-gray">Tú</span>' : ''}<br><small>${esc(u.correo)}</small></td>
     <td><span class="sc ${u.rol === 'MASTER' ? 'sc-brand' : u.ambito === 'agencia' ? 'sc-info' : 'sc-gray'}">${esc(usrRol(u.rol))}</span></td>
     <td>${u.ambito === 'agencia' ? (u.rol === 'MASTER' ? 'Agencia · todas las subcuentas' : `Agencia · ${(u.tenants || []).length} ${(u.tenants || []).length === 1 ? 'subcuenta' : 'subcuentas'}<br><small>${esc((u.tenants || []).map(usrSub).join(', ') || 'Sin subcuentas')}</small>`) : esc(u.subcuenta || usrSub(u.subcuentaId))}</td>
-    <td><span class="sc ${u.activo ? 'sc-ok' : 'sc-warn'}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>
+    <td><span class="sc ${!u.activo ? 'sc-warn' : u.invitacion ? 'sc-gray' : 'sc-ok'}">${!u.activo ? 'Inactivo' : u.invitacion ? 'Invitación pendiente' : 'Activo'}</span></td>
     <td><small>${u.ultimoAcceso ? esc(String(u.ultimoAcceso).slice(0, 16).replace('T', ' ')) : 'Nunca'}</small></td>
     <td class="usr-acc">${u.editable ? `<button type="button" class="btn btn-sm" data-usr-editar="${esc(u.id)}">${icon('edit')}Editar</button>` : `<span class="src" title="${esc(u.protegido || '')}">${icon('lock')}Protegido</span>`}</td></tr>`).join('');
 }
@@ -9708,7 +9718,7 @@ V.agencyTeam = {
   render() {
     if (!esSuperAdmin()) return agencyRouteDenied();
     const it = USR?.items || [], subs = USR?.subcuentas || [];
-    const acts = `${esMaster() ? `<button class="btn" type="button" data-team-new>${icon('plus')}Usuario de agencia</button>` : ''}<button class="btn btn-cta" type="button" data-usr-nuevo ${subs.length ? '' : 'disabled'}>${icon('plus')}Usuario de subcuenta</button>`;
+    const acts = `<button class="btn btn-cta" type="button" data-usr-nuevo ${subs.length ? '' : 'disabled'}>${icon('plus')}Invitar persona</button>`;
     const roles = [...new Set(it.map(u => u.rol))];
     const cuerpo = USR ? `<div class="ag-resumen-grid usr-res">
         ${[['team', 'Personas', it.length, 'A tu alcance'], ['shield', 'Agencia', it.filter(u => u.ambito === 'agencia').length, 'Master y Superadmin'], ['users', 'En subcuentas', it.filter(u => u.ambito === 'subcuenta').length, `${subs.length} ${subs.length === 1 ? 'subcuenta' : 'subcuentas'}`], ['lock', 'Inactivos', it.filter(u => !u.activo).length, 'Sin acceso']].map(([ic, t, v, d]) => `<div class="ag-resumen"><span class="ag-resumen-ic" aria-hidden="true">${icon(ic)}</span><span class="ag-resumen-t">${t}</span><strong class="ag-resumen-v">${int(v)}</strong><span class="ag-resumen-d">${d}</span></div>`).join('')}</div>
@@ -9751,7 +9761,7 @@ function usrEditar(u) {
         ${esMasterU ? '<p class="bx-help">El Master entra a todas las subcuentas y no cambia de rol.</p>' : ''}
       </fieldset>
       <fieldset class="bx bx-wide"><legend>${icon('lock')}Contraseña</legend>
-        ${['MASTER','SUPERADMIN'].includes(u.rol) ? '<p class="bx-help">La clave de un dueño se cambia solo desde la terminal del servidor.</p>' : u.yo ? '<p class="bx-help">Tu propia contraseña se cambia en Mi perfil.</p>' : `<div class="usr-clave"><button type="button" class="btn btn-sm" data-usr-generar>${icon('refresh')}Generar contraseña temporal</button><span>o</span><label class="fld grow"><span class="sr-only">Nueva contraseña</span><input name="clave" type="password" minlength="8" maxlength="72" autocomplete="new-password" placeholder="Escribe una nueva"></label><button type="button" class="btn btn-sm" data-usr-clave>Guardar contraseña</button></div><p class="usr-temporal" data-usr-temporal hidden></p><p class="bx-help">Al cambiarla se cierran sus sesiones abiertas.</p>`}
+        ${['MASTER','SUPERADMIN'].includes(u.rol) ? '<p class="bx-help">La clave de un dueño se cambia solo desde la terminal del servidor.</p>' : u.yo ? '<p class="bx-help">Tu propia contraseña se cambia en Mi perfil.</p>' : `<div class="usr-clave"><button type="button" class="btn btn-sm" data-usr-enlace>${icon('mail')}${u.invitacion ? 'Reenviar invitación' : 'Enviar enlace para crear una clave nueva'}</button></div><p class="usr-temporal" data-usr-temporal hidden></p><p class="bx-help">Ágora no pone ni genera claves: la persona crea la suya con un código por correo. ${u.invitacion ? 'Todavía no creó su clave.' : 'Su clave actual sigue sirviendo hasta que cree la nueva.'}</p>`}
       </fieldset>
     </div>
     <p class="fld-err" role="alert"></p>
@@ -9759,18 +9769,11 @@ function usrEditar(u) {
   const f = s.querySelector('form'), err = f.querySelector('.fld-err');
   const ver = () => { const ag = ['MASTER', 'SUPERADMIN'].includes(f.rol.value); f.querySelector('.usr-local').hidden = ag; f.querySelector('.usr-ag').hidden = !ag || f.rol.value === 'MASTER'; };
   f.rol.onchange = ver; ver();
-  const clave = async body => {
-    const b = body.generar ? f.querySelector('[data-usr-generar]') : f.querySelector('[data-usr-clave]'); busy(b, true, 'Guardando…'); err.textContent = '';
-    try {
-      const d = await agoraApi('agency/usuarios/clave', {method: 'POST', body: {id: u.id, ...body}});
-      const out = f.querySelector('[data-usr-temporal]'); out.hidden = false;
-      out.innerHTML = d.temporal ? `Contraseña temporal: <code>${esc(d.temporal)}</code> <button type="button" class="btn btn-sm" data-copiar>Copiar</button><small>Compártela por un canal seguro. Solo se muestra esta vez.</small>` : 'Contraseña actualizada.';
-      out.querySelector('[data-copiar]')?.addEventListener('click', () => { navigator.clipboard?.writeText(d.temporal).then(() => toast('Copiada.'), () => {}); });
-      if (f.clave) f.clave.value = '';
-    } catch (x) { err.textContent = x.message; } finally { busy(b, false); }
-  };
-  f.querySelector('[data-usr-generar]')?.addEventListener('click', () => clave({generar: true}));
-  f.querySelector('[data-usr-clave]')?.addEventListener('click', () => { const v = f.clave.value; if (v.length < 8) { err.textContent = 'La contraseña debe tener al menos 8 caracteres.'; return; } clave({clave: v}); });
+  f.querySelector('[data-usr-enlace]')?.addEventListener('click', async e => {
+    const b = e.currentTarget; busy(b, true, 'Enviando…'); err.textContent = '';
+    try { const d = await agoraApi('agency/usuarios/clave', {method: 'POST', body: {id: u.id}}); const out = f.querySelector('[data-usr-temporal]'); out.hidden = false; out.textContent = d.invitacion?.mensaje || 'Enviado.'; if (!d.invitacion?.enviada) out.classList.add('is-bad'); }
+    catch (x) { err.textContent = x.message; } finally { busy(b, false); }
+  });
   f.onsubmit = async e => {
     e.preventDefault(); err.textContent = '';
     const nombre = f.nombre.value.trim(), correo = f.correo.value.trim().toLowerCase(), rol = f.rol.value, ag = ['MASTER', 'SUPERADMIN'].includes(rol);

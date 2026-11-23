@@ -42,7 +42,7 @@ Chuleta con los comandos más comunes para **instalar**, **dar soporte** y **des
 | Ver las cuentas de dueño (sin claves) | `$PHP $SITIO/servidor/bin/crear-dueno.php --listar` |
 | Crear una cuenta de dueño (la primera es la Master) | ⚠️ `$PHP $SITIO/servidor/bin/crear-dueno.php` |
 
-La clave de un dueño **solo** se cambia por terminal, nunca desde la web. Las demás personas usan «¿Olvidaste tu clave?» o «Darle una clave temporal» en Usuarios y roles.
+La clave de un dueño **solo** se cambia por terminal, nunca desde la web. Ágora nunca pone ni genera claves: las demás personas usan «¿Olvidaste tu clave?», o quien administra les manda desde Usuarios y roles «Enviar enlace para crear una clave nueva».
 
 ### Consultas rápidas a la base de datos (solo leen)
 

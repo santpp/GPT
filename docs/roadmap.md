@@ -313,6 +313,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - **2.22.0 (23 de noviembre)**: «Invitar persona» con invitación por correo y clave creada con código; alta en la cuenta con los permisos de su rol y enlace automático; cambio de rol, suspensión y baja ajustan la cuenta (sin borrarla); `COMANDOS.md`.
 - **2.23.0 (23 de noviembre)**: «Enviar reporte» junto a cada mensaje de error con una falla registrada; con un toque manda el reporte con código, referencia, pantalla y versión.
 - **2.23.1 (23 de noviembre)**: base y tablas en utf8mb4 aunque CyberPanel cree la base en latin1 (migración 016, conversión columna por columna).
+- **2.24.0 (23 de noviembre)**: sin botón de usuarios de agencia (solo terminal); Ágora no pone ni genera claves (invitación y enlace para clave nueva, también desde Agencia); ficha del contacto con el diseño del ERP.
 - **2.18.9 (22 de noviembre)**: la entrada ya no se divide: cada pieza del logo vuela a su pieza del logo visible (dos salidas: antes y después de iniciar sesión).
 - **2.18.8 (22 de noviembre)**: pantalla de entrada con el logo pieza por pieza al abrir, recargar e iniciar sesión.
 - **2.18.7 (22 de noviembre)**: tarjetas siempre 4 por fila (2 en el teléfono).

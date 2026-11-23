@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.24.0 · Sin claves puestas por nadie; ficha del contacto con el diseño del ERP (23 nov):**
+- **Sin botón para crear usuarios de agencia.** Los dueños (Master y Superadmin) se crean solo por terminal (`crear-dueno.php`).
+- **Ágora nunca pone ni genera claves.** Desde Agencia también se **invita** (Gestión de usuarios y Subcuentas → «Invitar persona»): le llega el correo y crea su clave con un código. Donde antes se generaba una «contraseña temporal», ahora se manda **«Enviar enlace para crear una clave nueva»**: la persona crea la suya con un código y su clave actual sigue sirviendo hasta entonces. Se quitó «Darle una clave temporal». Las claves de los dueños, solo por terminal.
+- Agencia → Gestión de usuarios marca «Invitación pendiente».
+- **Ficha del contacto** (Contactos y Bandeja) con el lenguaje del ERP: títulos en tipo oración (sin mayúsculas espaciadas), cabecera con avatar, nombre y un dato, botones en píldoras que no se parten, «Correo» y «Embudo» en vez de «Email» y «Pipeline», sin el rótulo repetido «Contexto del contacto» ni «Sin valores todavía». En la Bandeja, «Asignar» y «Editar» van en su propia línea para que el nombre no se corte; en el teléfono la ficha ya no se sale de la pantalla.
+- Prueba: `tests/fixes-2240.py` (38).
+
 **Novedades 2.23.1 · Base de datos en utf8mb4 aunque CyberPanel la cree en latin1 (23 nov):**
 - En mi.agoradigital.app el diagnóstico salía en rojo: «Tablas en utf8mb4: 6 sin utf8mb4». CyberPanel crea la base en latin1 y algunas tablas de las primeras migraciones no decían su juego de caracteres. En latin1 no se guardan emojis ni «→» (por ejemplo en los mensajes de la Bandeja).
 - La migración **016** pone la base en utf8mb4 (lo que se cree después, también las tablas del motor de la Bandeja, nace así) y convierte las tablas columna por columna, respetando las columnas ASCII del motor, los valores por defecto y los datos. Se aplica sola al actualizar (o con `migrate.php`).

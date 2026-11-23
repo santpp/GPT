@@ -1300,3 +1300,59 @@ code.clave-temp { display: inline-block; margin-top: 10px; padding: 8px 12px; bo
 #toast:has(.rp-auto) { pointer-events: auto; }
 #toast .rp-auto { margin-left: 10px; }
 .panel .empty .rp-auto { margin: 8px 0 0 8px; }
+/* 2.24.0 · Ficha del contacto (Contactos y Bandeja) con el lenguaje del ERP: títulos en tipo oración (nada de mayúsculas
+   espaciadas), cabecera con avatar, nombre y un dato; acciones en píldoras en su propia línea; filas de datos limpias; etiquetas
+   y oportunidad en cajas de radio 16. Solo estilo: los datos y botones son los mismos. */
+#view.ag #contact-record .section-label, #view.ag .live-contact-panel .section-label { margin: 24px 0 8px; color: var(--ink); font: 600 15px/1.3 var(--font-display, var(--font-text)); letter-spacing: 0; text-transform: none; }
+#view.ag #contact-record .record-columns > div > .section-label:first-child { margin-top: 4px; }
+#view.ag #contact-record .live-profile-details > div, #view.ag #contact-record .live-profile-fields > div,
+#view.ag .live-contact-panel .live-profile-details > div, #view.ag .live-contact-panel .live-profile-fields > div { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; gap: 14px; }
+#view.ag #contact-record .live-profile-details span, #view.ag #contact-record .live-profile-fields span,
+#view.ag .live-contact-panel .live-profile-details span, #view.ag .live-contact-panel .live-profile-fields span { color: var(--muted); font-size: 13.5px; }
+#view.ag #contact-record .folder-title, #view.ag .live-contact-panel .folder-title { margin: 14px 0 2px; color: var(--muted); font-size: 12.5px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+#view.ag #contact-record .tag, #view.ag .live-contact-panel .tag { padding: 4px 11px; border-radius: 999px; background: var(--fill-2, var(--fill)); color: var(--ink-2, var(--ink)); font-size: 12.5px; font-weight: 600; }
+/* Contactos: cabecera con avatar y nombre; las acciones bajan a su propia línea y no se parten */
+#view.ag #contact-record .record-header { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 14px; padding-bottom: 18px; margin-bottom: 6px; border-bottom: 1px solid var(--line); }
+#view.ag #contact-record .record-header .mobile-back { grid-row: 1; }
+#view.ag #contact-record .record-header h2 { font-size: 20px; }
+#view.ag #contact-record .record-header p { margin: 2px 0 0; font-size: 13px; }
+#view.ag #contact-record .record-actions { grid-column: 1 / -1; margin-top: 12px; }
+#view.ag #contact-record .record-actions button { min-height: 36px; padding: 7px 16px; border-radius: 999px; font: 600 13.5px/1 var(--font-text); white-space: nowrap; border: 0; cursor: pointer; }
+#view.ag #contact-record .record-actions .primary { background: var(--ag-1, var(--brand)); color: #fff; }
+#view.ag #contact-record .record-actions .secondary { background: var(--fill-2, #f0f0f3); color: var(--ink); }
+#view.ag #contact-record .record-actions #record-win { background: var(--ok-bg, #e7f6ec); color: var(--ok, #18794e); }
+#view.ag #contact-record .record-actions .secondary:hover, #view.ag #contact-record .record-actions .secondary:focus-visible { background: var(--ag-1, var(--brand)); color: #fff; }
+#view.ag #contact-record .record-actions #record-win:hover, #view.ag #contact-record .record-actions #record-win:focus-visible { background: var(--ok, #18794e); color: #fff; }
+#view.ag #contact-record .record-columns { gap: 8px 32px; }
+#view.ag #contact-record .record-flag { margin: 12px 0 0; padding: 8px 12px; border-radius: 12px; background: var(--bad-bg, #fdecee); color: var(--bad, #b42318); font-size: 13.5px; font-weight: 600; }
+/* Bandeja: cabecera de la ficha con avatar y nombre; controles en píldoras y cerrar redondo */
+#view.ag .live-contact-panel .live-profile-header { align-items: center; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+#view.ag .live-contact-panel .lp-quien { display: flex; align-items: center; gap: 12px; min-width: 0; }
+#view.ag .live-contact-panel .lp-quien .avatar { width: 44px; height: 44px; flex: none; font-size: 14px; }
+#view.ag .live-contact-panel .lp-quien > div { min-width: 0; }
+#view.ag .live-contact-panel .lp-quien h2 { margin: 0; font: 600 17px/1.25 var(--font-display, var(--font-text)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#view.ag .live-contact-panel .lp-quien p { margin: 2px 0 0; color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#view.ag .live-contact-panel .live-profile-controls button { min-height: 34px; padding: 6px 14px; border-radius: 999px; background: var(--fill-2, #f0f0f3); color: var(--ink); font: 600 13px/1 var(--font-text); border: 0; cursor: pointer; }
+#view.ag .live-contact-panel .live-profile-controls button:hover, #view.ag .live-contact-panel .live-profile-controls button:focus-visible { background: var(--ag-1, var(--brand)); color: #fff; }
+#view.ag .live-contact-panel #live-profile-close { width: 34px; padding: 0; font-size: 18px; }
+#view.ag .live-contact-panel .live-profile-actions { margin: 12px 0 0; }
+#view.ag .live-contact-panel .lp-mail { display: inline-flex; align-items: center; min-height: 32px; padding: 5px 14px; border-radius: 999px; border: 1px solid var(--line-2, var(--line)); color: var(--ink); font-size: 13px; font-weight: 600; text-decoration: none; }
+#view.ag .live-contact-panel .lp-mail:hover { background: var(--ag-1, var(--brand)); border-color: var(--ag-1, var(--brand)); color: #fff; }
+#view.ag .live-contact-panel .live-profile-opportunities > *, #view.ag #contact-record .live-profile-opportunities > * { border-radius: 16px; }
+@media (max-width: 760px) {
+  #view.ag #contact-record .record-header { grid-template-columns: auto auto 1fr; }
+  #view.ag #contact-record .record-actions { gap: 6px; }
+  #view.ag #contact-record .record-actions button { flex: 1 1 auto; }
+}
+/* 2.24.0 · Cabecera de la ficha en la Bandeja: arriba el nombre y cerrar; «Asignar» y «Editar» en la línea de abajo (así el nombre no se corta). */
+#view.ag .live-contact-panel .live-profile-header { flex-wrap: wrap; row-gap: 12px; }
+#view.ag .live-contact-panel .live-profile-header .live-profile-controls { display: contents; }
+#view.ag .live-contact-panel .live-profile-header .lp-quien { order: 1; flex: 1 1 0; }
+#view.ag .live-contact-panel .live-profile-header #live-profile-close { order: 2; flex: none; }
+#view.ag .live-contact-panel .live-profile-header::after { content: ''; order: 3; flex-basis: 100%; height: 0; }
+#view.ag .live-contact-panel .live-profile-header .live-profile-controls > button:not(#live-profile-close) { order: 4; }
+#view.ag .live-contact-panel { max-width: 100%; box-sizing: border-box; }
+#view.ag .live-contact-panel .live-profile-details strong, #view.ag .live-contact-panel .live-profile-fields strong { min-width: 0; }
+#view.ag .live-contact-panel .live-profile-header { justify-content: flex-start; column-gap: 8px; }
+#view.ag .live-contact-panel .live-profile-header .lp-quien { margin-right: 4px; }
+#view.ag .live-contact-panel .live-profile-header #live-profile-close { margin-left: auto; }

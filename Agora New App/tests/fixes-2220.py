@@ -101,7 +101,7 @@ try:
                 pg.close()
             limpiar();st,d=intento('lucas.inv1@agora.test',CLAVE);ok(st==200 and d.get('usuario'),'con la clave creada entra')
             st,l=adm.call('workspace/usuarios');ok(next(x for x in l['items'] if x['correo']=='lucas.inv1@agora.test')['invitacion'] is False,'deja de estar «Invitación pendiente»')
-            ok(adm.call('workspace/usuarios/invitacion','POST',{'id':lid})[0]==409,'ya no se puede reenviar la invitación')
+            st,x=adm.call('workspace/usuarios/invitacion','POST',{'id':lid});ok(st==200 and x.get('tipo')=='clave','con su clave creada, ya no es invitación: se le manda el enlace para crear una clave nueva (2.24.0)')
             # ---------- pantalla de Usuarios y roles ----------
             for w,h in ((1280,800),(390,844)):
                 pg=entrar(br,'admin.asocim@agora.test',w,h);pg.goto(B+'/usuarios');pg.wait_for_selector('#ag-entrada',state='detached',timeout=25000);pg.wait_for_selector('[data-usuario-nuevo]',timeout=15000)
