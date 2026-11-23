@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.23.0 · «Enviar reporte» en el mensaje de error (23 nov):**
+- Cuando una falla muestra su mensaje de error (en un formulario, en «No se pudo cargar», en un aviso flotante o en las pantallas de la Bandeja, Contactos, Oportunidades y Dashboard), al lado aparece **«Enviar reporte»**. Con un toque se manda el reporte, sin escribir nada: va el mensaje, la pantalla, la versión, el dispositivo y los últimos errores con su código y referencia (lo mismo que «Reportar un problema»). El botón cambia a «Reporte enviado · R-…».
+- Solo sale si detrás hay una falla registrada con código en los últimos 30 s. No sale en los avisos de la propia pantalla (por ejemplo «Escribe el nombre»), en la entrada (sin sesión) ni por una sesión vencida.
+- El aviso flotante con el botón se queda 8 s en vez de 3.
+- «Reportar un problema» del menú de la cuenta sigue igual, para contar algo con tus palabras.
+- Prueba: `tests/fixes-2230.py` (21).
+
 **Novedades 2.22.0 · Invitar personas y crearlas en la cuenta con su rol (23 nov):**
 - **«Invitar persona»** (Usuarios y roles) reemplaza a «Agregar persona»: ya no se inventa una clave temporal. A la persona le llega un correo con **«Crear mi clave»**; el enlace abre «Crea tu clave» con su correo puesto, recibe un código de 6 dígitos y elige su clave. Hasta entonces sale como **«Invitación pendiente»**. En Opciones: **Reenviar invitación** y **Darle una clave temporal** (por si el Correo de Ágora no está configurado).
 - **«Crearla también en la cuenta»** (marcada por defecto si la subcuenta está conectada): Ágora la crea en la cuenta con el rol y los permisos de su rol de Ágora y la deja **enlazada**. Si su correo ya está en la cuenta, no se duplica: se enlaza y se le ajustan los permisos. Reparto aprobado: Administración = administrador con todo; Supervisión = ve todo, sin ajustes ni pagos; Ejecutivo = solo lo asignado (conversaciones, contactos, oportunidades, citas y llamadas); Consulta = solo lo asignado, contactos y oportunidades, sin conversaciones (la cuenta no tiene «solo mirar»).

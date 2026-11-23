@@ -1291,3 +1291,12 @@ main#app#app :is(.g-hero,.grid):has(> .grid > .micro) > .grid{display:contents}
 .inv-res .inv-l { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45; }
 .inv-res .inv-l .lt { margin-top: 3px; }
 code.clave-temp { display: inline-block; margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: var(--fill-2, #f2f2f5); font-size: 15px; letter-spacing: .04em; user-select: all; }
+/* 2.23.0 · «Enviar reporte» junto a un mensaje de error (rpPoner en agora-app.js). Discreto: enlace con ícono, en el color del texto. */
+.rp-auto { display: inline-flex; align-items: center; gap: 5px; margin: 0 0 0 8px; padding: 3px 10px; min-height: 28px; border-radius: 999px; border: 1px solid currentColor; background: transparent; color: inherit; font: inherit; font-size: 12.5px; font-weight: 600; line-height: 1.2; cursor: pointer; vertical-align: middle; white-space: nowrap; }
+.rp-auto .ui-icon, .rp-auto svg { width: 14px; height: 14px; }
+.rp-auto:hover, .rp-auto:focus-visible { background: var(--ag-1, #ad103c); border-color: var(--ag-1, #ad103c); color: #fff; outline: none; }
+.rp-auto:disabled { opacity: .6; cursor: default; }
+.rp-ok { display: inline-block; margin-left: 8px; font-size: 12.5px; font-weight: 600; opacity: .85; white-space: nowrap; }
+#toast:has(.rp-auto) { pointer-events: auto; }
+#toast .rp-auto { margin-left: 10px; }
+.panel .empty .rp-auto { margin: 8px 0 0 8px; }

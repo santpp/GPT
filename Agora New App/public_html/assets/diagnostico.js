@@ -31,6 +31,7 @@
     D.errores.push({hora: new Date().toISOString(), codigo: e.codigo, referencia: e.referencia || '', mensaje: corto(e.mensaje, 300), ruta: corto(e.ruta || location.pathname, 160), status: e.status || 0});
     if (D.errores.length > 20) D.errores.shift();
     pintar();
+    try { window.dispatchEvent(new Event('agora:error')); } catch {} // 2.23.0: la pantalla pone «Enviar reporte» junto al mensaje
   };
   const rutaDe = url => { try { const u = new URL(url, location.href); return u.origin === location.origin && u.pathname.startsWith('/api/') ? u.pathname.slice(5) : null; } catch { return null; } };
   const original = window.fetch;

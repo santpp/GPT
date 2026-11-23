@@ -4295,7 +4295,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.22.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.23.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */
@@ -4375,6 +4375,59 @@ function reportarProblema() {
     } catch (x) { busy(b, false); err.textContent = x.message; }
   };
 }
+/* 2.23.0 · «Enviar reporte» en el propio mensaje de error (pedido del usuario). Si un mensaje que aparece en pantalla corresponde a una
+   falla registrada por diagnostico.js en los últimos 30 s (con su código), se le pone al lado un botón que manda el reporte de una vez,
+   con lo mismo que «Reportar un problema» (pantalla, versión, últimos errores con código y referencia, consultas lentas), sin pedir texto.
+   No sale en la entrada (sin sesión), en un 401, en avisos que escribe la pantalla sin falla detrás (validaciones) ni dentro de la propia
+   ventana de reporte. Mira las cajas de error conocidas y cualquier texto corto que acabe de cambiar (también en las pantallas de la Bandeja). */
+const RP_FRASES = [/No se pudo mostrar esta información/, /No se pudo completar/, /Sin conexión/];
+const RP_ENVIADOS = new Map();
+const rpNorm = t => String(t || '').replace(/\s+/g, ' ').trim().toLowerCase();
+function rpError(txt) {
+  const D = window.AgoraDiag; if (!D || !txt) return null;
+  const t = rpNorm(txt), ahora = Date.now();
+  const rec = D.errores.filter(e => ahora - Date.parse(e.hora) < 30000 && e.status !== 401 && !/^\/?entrar/.test(e.ruta || ''));
+  for (let i = rec.length - 1; i >= 0; i--) { const m = rpNorm(rec[i].mensaje); if (m.length >= 6 && m !== 'respuesta sin detalle' && (t.includes(m) || (t.length >= 12 && m.includes(t)))) return rec[i]; }
+  if (rec.length && RP_FRASES.some(r => r.test(txt))) return rec[rec.length - 1];
+  return null;
+}
+function rpTexto(el) { let t = ''; el.childNodes.forEach(n => { if (!(n.nodeType === 1 && n.matches('[data-rp-auto], .rp-ok'))) t += n.textContent; }); return t.trim(); }
+function rpPoner(el) {
+  if (!ME || !el.isConnected || el.querySelector('[data-rp-auto], .rp-ok') || el.closest('.rp, #lg, [data-rp-no]')) return;
+  const txt = rpTexto(el); if (!txt || txt.length > 400) return;
+  const e = rpError(txt); if (!e) return;
+  const clave = e.referencia || e.codigo + '|' + e.hora, ya = RP_ENVIADOS.get(clave);
+  el.insertAdjacentHTML('beforeend', ya ? ` <span class="rp-ok">Reporte enviado · ${esc(ya)}</span>` : ` <button type="button" class="rp-auto" data-rp-auto data-rp-clave="${esc(clave)}">${icon('send')}Enviar reporte</button>`);
+  if (el.id === 'toast') { clearTimeout(toastT); el.classList.add('on'); toastT = setTimeout(() => el.classList.remove('on'), 8000); }
+}
+async function rpEnviar(b) {
+  const el = b.parentElement, D = window.AgoraDiag, extra = D ? D.paraReporte() : {errores: [], lentas: [], pantalla: location.pathname, dispositivo: ''};
+  b.disabled = true; b.lastChild.textContent = 'Enviando…';
+  try {
+    const r = await agoraApi('reportes', {method: 'POST', body: {descripcion: `Enviado desde el mensaje de error: «${rpTexto(el).slice(0, 400)}»`, pantalla: extra.pantalla, version: APP_VERSION_ACTUAL(), dispositivo: extra.dispositivo, errores: extra.errores, lentas: extra.lentas}});
+    RP_ENVIADOS.set(b.dataset.rpClave, r.referencia);
+    document.querySelectorAll(`[data-rp-auto][data-rp-clave="${CSS.escape(b.dataset.rpClave)}"]`).forEach(x => x.outerHTML = `<span class="rp-ok">Reporte enviado · ${esc(r.referencia)}</span>`);
+  } catch (x) { b.disabled = false; b.lastChild.textContent = 'No se pudo enviar. Reintentar'; }
+}
+function rpVigilar() {
+  if (rpVigilar.ya) return; rpVigilar.ya = true;
+  document.addEventListener('click', e => { const b = e.target.closest('[data-rp-auto]'); if (b) { e.preventDefault(); e.stopPropagation(); rpEnviar(b); } }, true);
+  let pend = new Set(), cola = 0; const recientes = new Map(); // textos que cambiaron hace menos de 3 s: se miran otra vez si el error llega después
+  const revisar = () => {
+    cola = 0; if (!ME || !window.AgoraDiag?.errores.length) { pend.clear(); return; }
+    document.querySelectorAll('.fld-err, [role=alert], .panel .empty, [id$=feedback], #toast').forEach(rpPoner);
+    const ahora = Date.now(); pend.forEach(el => recientes.set(el, ahora));
+    recientes.forEach((t, el) => { if (ahora - t > 3000 || !el.isConnected) { recientes.delete(el); return; } if (el.nodeType === 1 && el.children.length <= 3 && !el.matches('main, body, #app, #layer, nav, ul, ol, table, tbody, tr, select, option, button, a, input, textarea')) rpPoner(el); });
+    pend.clear();
+  };
+  // El error se registra a veces un instante después de que la pantalla escribió el mensaje: al registrarse, se vuelve a mirar.
+  addEventListener('agora:error', () => { if (!cola) cola = requestAnimationFrame(revisar); });
+  new MutationObserver(ms => {
+    for (const m of ms) { const t = m.type === 'characterData' ? m.target.parentElement : m.target; if (t && !t.closest('[data-rp-auto], .rp-ok')) pend.add(t); }
+    if (!cola) cola = requestAnimationFrame(revisar);
+  }).observe(document.body, {childList: true, subtree: true, characterData: true});
+}
+rpVigilar();
 function APP_VERSION_ACTUAL() { const m = document.querySelector('script[src*="agora-app.js"]')?.getAttribute('src')?.match(/v=([\d.]+)/); return m ? m[1] : ''; }
 
 /* 2.19.0 · Agencia → Errores y reportes (solo dueños): los reportes del equipo con sus errores y, si coinciden por referencia,
