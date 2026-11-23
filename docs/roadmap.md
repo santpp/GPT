@@ -310,6 +310,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - **2.19.2 (22 de noviembre)**: auditoría de errores de las 155 rutas: todo error con código del diccionario (también los del motor de la cuenta), 7 errores internos arreglados y 2 guardados vacíos que borraban datos frenados.
 - **2.20.0 (23 de noviembre)**: convenios y facturas por correo (desde la subcuenta, con enlace), notificaciones dentro de Ágora (campana), un solo cron con la revisión de la Bandeja de Mobile, guía de despliegue.
 - **2.21.0 (23 de noviembre)**: Bandeja con «Lead perdido» (con confirmación) y «Asignar» solo en la ficha; tutoriales de bienvenida en los módulos de atención y comerciales; manual «Agora Digital App - ERP»; guía para pasar a mi.agoradigital.app con la base de tests.
+- **2.22.0 (23 de noviembre)**: «Invitar persona» con invitación por correo y clave creada con código; alta en la cuenta con los permisos de su rol y enlace automático; cambio de rol, suspensión y baja ajustan la cuenta (sin borrarla); `COMANDOS.md`.
 - **2.18.9 (22 de noviembre)**: la entrada ya no se divide: cada pieza del logo vuela a su pieza del logo visible (dos salidas: antes y después de iniciar sesión).
 - **2.18.8 (22 de noviembre)**: pantalla de entrada con el logo pieza por pieza al abrir, recargar e iniciar sesión.
 - **2.18.7 (22 de noviembre)**: tarjetas siempre 4 por fila (2 en el teléfono).

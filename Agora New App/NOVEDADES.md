@@ -1,5 +1,15 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.22.0 · Invitar personas y crearlas en la cuenta con su rol (23 nov):**
+- **«Invitar persona»** (Usuarios y roles) reemplaza a «Agregar persona»: ya no se inventa una clave temporal. A la persona le llega un correo con **«Crear mi clave»**; el enlace abre «Crea tu clave» con su correo puesto, recibe un código de 6 dígitos y elige su clave. Hasta entonces sale como **«Invitación pendiente»**. En Opciones: **Reenviar invitación** y **Darle una clave temporal** (por si el Correo de Ágora no está configurado).
+- **«Crearla también en la cuenta»** (marcada por defecto si la subcuenta está conectada): Ágora la crea en la cuenta con el rol y los permisos de su rol de Ágora y la deja **enlazada**. Si su correo ya está en la cuenta, no se duplica: se enlaza y se le ajustan los permisos. Reparto aprobado: Administración = administrador con todo; Supervisión = ve todo, sin ajustes ni pagos; Ejecutivo = solo lo asignado (conversaciones, contactos, oportunidades, citas y llamadas); Consulta = solo lo asignado, contactos y oportunidades, sin conversaciones (la cuenta no tiene «solo mirar»).
+- **Cambiar el rol** ajusta sus permisos en la cuenta. **Suspender o eliminar** le **quita los permisos en la cuenta sin borrarla** (decisión del usuario, «opción B»: reversible y sin conversaciones huérfanas); reactivar se los devuelve. «Crear en la cuenta» en Opciones para quien no está enlazado.
+- La clave de la cuenta la genera Ágora al azar y no se guarda ni se muestra.
+- Si la cuenta no acepta algo (falta el permiso de escribir usuarios, falta el apellido, pide esperar), en Ágora queda hecho y una ventana explica qué no se hizo en la cuenta.
+- La integración de cada subcuenta necesita el permiso **`users.write`** (guía actualizada).
+- **`COMANDOS.md`:** comandos de terminal para instalar desde cero, actualizar, respaldar, dar soporte y desarrollar.
+- Prueba: `tests/fixes-2220.py` (44).
+
 **Novedades 2.21.0 · Bandeja: «Lead perdido»; tutoriales de bienvenida; manual del ERP; listo para desplegar (23 nov):**
 - **«Lead perdido»** en la cabecera de la conversación, al lado de «¿Venta ganada?». Siempre pide confirmación: eliges la oportunidad abierta del contacto (o registras una nueva como perdida, con su embudo), escribes el motivo si quieres y «Dar por perdido». La oportunidad queda **perdida en la cuenta** y el motivo como nota del contacto («Lead perdido: …»). Cancelar no cambia nada.
 - **«Asignar» sale de la cabecera** y queda **solo en la ficha del contacto** (junto a «Editar»), con la misma ventana para elegir a la persona.

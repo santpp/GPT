@@ -44,7 +44,7 @@ class H(BaseHTTPRequestHandler):
         u=urlparse(self.path);p=u.path;q={k:v[0] for k,v in parse_qs(u.query).items()};b=self.body() if m in('POST','PUT','DELETE') else {}
         log(m,self.path,self.headers.get('Version'),json.dumps(b)[:200] if b else '')
         if not (self.headers.get('Authorization') or '').startswith('Bearer pit-'):return self.out(401,{'message':'Invalid JWT'})
-        if p==f'/locations/{LOC}':return self.out(200,{'location':{'id':LOC,'name':'ASOCIM Admisiones'}})
+        if p==f'/locations/{LOC}':return self.out(200,{'location':{'id':LOC,'name':'ASOCIM Admisiones','companyId':'comp-asocim'}})
         if re.match(r'^/saas/companies/[\w-]+/wallet-transactions$',p) and m=='POST':
             tx=[{'locationId':LOC,'locationName':'ASOCIM Admisiones','amount':-1.25,'type':'SMS','description':'SMS salientes','settlementTime':'2026-11-10T10:00:00Z'},
                 {'locationId':LOC,'locationName':'ASOCIM Admisiones','amount':-3.40,'type':'WhatsApp','description':'Conversaciones de WhatsApp','settlementTime':'2026-11-11T10:00:00Z'},
@@ -56,6 +56,21 @@ class H(BaseHTTPRequestHandler):
         if p.startswith('/locations/'+LOC+'/tags'):return self.out(200,{'tags':[{'name':'cliente'}]})
         if p.startswith('/locations/'+LOC+'/customFields') or p.startswith('/custom-fields'):return self.out(200,{'customFields':[],'fields':[]})
         if p.startswith('/locations/'):return self.out(404,{'message':'Location not found'})
+        # 2.22.0 · alta y cambio de personas (CreateUserDto / UpdateUserDto)
+        if p=='/users/' and m=='POST':
+            falta=[k for k in ('companyId','firstName','lastName','email','password','type','role','locationIds') if not b.get(k)]
+            if falta:return self.out(422,{'message':['falta '+', '.join(falta)]})
+            if any(x['email'].lower()==b['email'].lower() for x in USERS):return self.out(400,{'message':'The email address is already in use'})
+            nu={'id':'u-n'+__import__('uuid').uuid4().hex[:10],'name':b['firstName']+' '+b['lastName'],'firstName':b['firstName'],'lastName':b['lastName'],'email':b['email'],'roles':{'type':b['type'],'role':b['role'],'locationIds':b['locationIds']},'permissions':b.get('permissions',{}),'_companyId':b['companyId'],'_lang':b.get('platformLanguage')}
+            USERS.append(nu);return self.out(201,{k:v for k,v in nu.items() if not k.startswith('_')})
+        mu=re.match(r'^/users/([\w-]+)$',p)
+        if mu and m=='PUT':
+            x=next((x for x in USERS if x['id']==mu.group(1)),None)
+            if not x:return self.out(400,{'message':'User not found'})
+            if 'permissions' in b:x['permissions']=b['permissions']
+            if 'role' in b:x['roles']={**x.get('roles',{}),'role':b['role'],'type':b.get('type','account')}
+            return self.out(200,x)
+        if p=='/__usuarios':return self.out(200,{'users':USERS})
         if p=='/users/':return self.out(200,{'users':USERS})
         if p=='/conversations/search':
             items=[c for c in CONVS if 'assignedTo' not in q or c['assignedTo']==q['assignedTo']]

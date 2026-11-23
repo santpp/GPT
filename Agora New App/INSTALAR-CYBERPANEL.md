@@ -227,7 +227,7 @@ Comprueba también que `https://TU-DOMINIO/servidor/config/config.php` **no** ab
 2. En **«Conexión con la cuenta»**:
    - **Location ID:** en la subcuenta de la cuenta → Settings → Business Profile (arriba, «Location ID»).
    - **Token de la integración privada:** en la subcuenta → Settings → **Private Integrations** → **Create new integration**. Ponle un nombre (por ejemplo «Ágora») y marca estos permisos:
-     - `locations.readonly`, `users.readonly`
+     - `locations.readonly`, `users.readonly` y **`users.write`** (desde 2.22.0: para crear a las personas en la cuenta con su rol al invitarlas)
      - `contacts.readonly`, `contacts.write`, `locations/tags.readonly`, `locations/customFields.readonly`
      - `conversations.readonly`, `conversations.write`, `conversations/message.readonly`, `conversations/message.write`
      - `opportunities.readonly`, `opportunities.write`
@@ -253,7 +253,11 @@ El token de agencia se guarda cifrado y nadie puede volver a verlo; guardar, pro
 
 ### Crear los usuarios de cada subcuenta y enlazarlos con la cuenta
 
-1. Entra a la subcuenta → **Administración** → **Usuarios y roles** → **Agregar persona**. Roles: Administración, Supervisión, Ejecutivo y Consulta. Cada persona ve solo los módulos que su rol permite.
+1. Entra a la subcuenta → **Administración** → **Usuarios y roles** → **Invitar persona**: nombre y apellido, correo y rol (Administración, Supervisión, Ejecutivo o Consulta). Cada persona ve solo los módulos que su rol permite.
+   - Le llega un correo con **«Crear mi clave»**: escribe su correo, recibe un código de 6 dígitos y crea su clave. Hasta entonces sale como **«Invitación pendiente»** (Opciones → Reenviar invitación). Necesita el **Correo de Ágora** configurado; si no, Opciones → **Darle una clave temporal**.
+   - Con **«Crearla también en la cuenta»** (2.22.0, necesita `users.write`), Ágora la crea en la cuenta con los permisos de su rol y la deja enlazada. Si su correo ya estaba en la cuenta, solo la enlaza y le ajusta los permisos. Reparto: Administración = administrador con todo; Supervisión = ve todo, sin ajustes ni pagos; Ejecutivo = solo lo asignado (conversaciones, contactos, oportunidades y citas); Consulta = solo lo asignado, contactos y oportunidades, sin conversaciones.
+   - Cambiar el rol ajusta sus permisos en la cuenta. **Suspender o eliminar** en Ágora le **quita los permisos en la cuenta, pero no la borra** (sus conversaciones no quedan huérfanas); reactivar se los devuelve.
+   - La clave de la cuenta la genera Ágora al azar y no se guarda: si la persona necesita entrar a la cuenta, usa «olvidé mi clave» allí.
 2. Si la subcuenta está conectada, la columna **«Usuario en la cuenta»** dice con quién está enlazada cada persona:
    - **Enlazado con …** «por tener el mismo correo»: Ágora lo dedujo solo.
    - **Sin enlazar:** nadie en la cuenta tiene ese correo. Pulsa **Opciones → Enlazar con la cuenta** y elige a la persona.

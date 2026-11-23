@@ -248,13 +248,13 @@ final class MotorMobile {
   return null;
  }
  public static function canalCorreo(DB $erp):?int{$c=$erp->setting(0,'correo.canal',null);$id=is_array($c)?(int)($c['connectionId']??0):0;return $id>0?$id:null;}
- public static function correo(DB $erp,array $config,string $email,string $asunto,string $titulo,string $intro,?string $codigo,string $pie,string $texto):bool{
+ public static function correo(DB $erp,array $config,string $email,string $asunto,string $titulo,string $intro,?string $codigo,string $pie,string $texto,?array $boton=null):bool{
   $id=self::canalCorreo($erp);if(!$id)return false;
   self::conexion($erp,$config,$id);
   require_once dirname(__DIR__,3).'/motor/src/AccessChannel.php';
   \AccessChannel::select(self::AGENCIA,$id);
   $base=rtrim((string)($config['app_url']??''),'/');$logo=str_starts_with($base,'https://')?$base.'/assets/correo/agora-logo-correo.png':null; // 2.18.14: logo del correo (solo con dirección https pública)
-  try{(new \AccessChannel())->sendMail(self::AGENCIA,$email,$asunto,$titulo,$intro,$codigo,$pie,$texto,$logo);}
+  try{(new \AccessChannel())->sendMail(self::AGENCIA,$email,$asunto,$titulo,$intro,$codigo,$pie,$texto,$logo,$boton);}
   catch(\AccessDeliveryProblem $e){throw new \RuntimeException($e->getMessage(),0,$e);}
   return true;
  }

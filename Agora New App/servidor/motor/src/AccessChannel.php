@@ -74,8 +74,9 @@ final class AccessChannel {
      * Agora New App 2.13.0 · Correo general del ERP (código de acceso, cambio de clave y lo que venga):
      * siempre sale por la subcuenta que el dueño eligió en Agencia → Correo de Ágora, nunca por otra.
      */
-    public function sendMail(int $tenant,string $email,string $subject,string $title,string $intro,?string $code,string $foot,string $text,?string $logo=null):void {
-        $this->deliver($tenant,$email,$subject,self::template($title,$intro,$code,$foot,$logo),$text,true);
+    public function sendMail(int $tenant,string $email,string $subject,string $title,string $intro,?string $code,string $foot,string $text,?string $logo=null,?array $boton=null):void {
+        // Agora New App 2.22.0: $boton opcional ([texto, url]) para la invitación a Ágora.
+        $this->deliver($tenant,$email,$subject,self::template($title,$intro,$code,$foot,$logo,$boton),$text,true);
     }
 
     /**

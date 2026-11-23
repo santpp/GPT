@@ -28,6 +28,10 @@ final class GhlClient {
     public function locationTags(string $location):array{return $this->get('/locations/'.rawurlencode($location).'/tags','2021-07-28');}
     public function contactFields(string $location):array{return $this->get('/locations/'.rawurlencode($location).'/customFields','2021-07-28');}
     public function locationUsers(string $location):array {return $this->get('/users/?'.http_build_query(['locationId'=>$location]),'2021-07-28');}
+    // Agora New App 2.22.0 · Alta de personas desde Ágora con su rol y permisos en la cuenta (permiso users.write).
+    public function location(string $id):array {return $this->get('/locations/'.rawurlencode($id),'2021-07-28');}
+    public function createUser(array $payload):array {return $this->get('/users/','2021-07-28',$payload);}
+    public function updateUser(string $id,array $payload):array {return $this->put('/users/'.rawurlencode($id),'2021-07-28',$payload);}
     /** Plantillas de WhatsApp aprobadas para un número (GET /locations/{id}/templates, type=whatsapp). */
     public function whatsappTemplates(string $location,string $numberId,int $skip=0):array {
         return $this->get('/locations/'.rawurlencode($location).'/templates?'.http_build_query(['type'=>'whatsapp','originId'=>$numberId,'deleted'=>'false','skip'=>(string)$skip,'limit'=>'100']),'2021-07-28');

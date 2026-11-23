@@ -7,7 +7,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.21.0'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.22.0'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -69,7 +69,7 @@ final class Api {
    $this->a->agency();$id=Http::integer($b['accountId']??0,1,PHP_INT_MAX);$this->a->authorizeTenant($id,true);$this->a->tenant=$id;$u=$this->usuarioBorrable(Http::integer($b['userId']??0,1,PHP_INT_MAX));$key=(string)$this->a->config['app_key'];
    if(str_ends_with($p,'desafio'))return \Agora\Security\Desafio::crear($key,'borrar-usuario',(string)$u['id'],(int)$this->a->user['id'])+['nombre'=>$u['name']];
    \Agora\Security\Desafio::comprobar($key,'borrar-usuario',(string)$u['id'],(int)$this->a->user['id'],$b['token']??null,$b['respuesta']??null);
-   (new \Agora\Services\Borrado($this->db))->usuario($id,(int)$u['id']);$this->a->audit('usuario.borrado','usuario',(string)$u['id'],['detalle'=>'Se borró a '.$u['name'].' ('.$u['email'].')']);return ['ok'=>true,'id'=>(int)$u['id']];
+   (new \Agora\Services\Borrado($this->db))->usuario($id,(int)$u['id']);$this->a->audit('usuario.borrado','usuario',(string)$u['id'],['detalle'=>'Se borró a '.$u['name'].' ('.$u['email'].')']);return ['ok'=>true,'id'=>(int)$u['id'],'cuenta'=>$cuenta];
   }
   if($p==='agency/users'){$this->a->agency();$id=Http::integer($b['accountId']??$_GET['accountId']??0,1,PHP_INT_MAX);$this->a->authorizeTenant($id,true);$this->a->tenant=$id;if($m==='GET')return $this->u->listing(false);if($m==='POST')return $this->u->save($b,false);if($m==='DELETE')return $this->u->revoke(Http::integer($b['userId']??$_GET['userId']??0,1,PHP_INT_MAX));}
   if($p==='agency/studio'){$this->a->agency();$id=Http::integer($b['tenantId']??$_GET['tenantId']??$_SERVER['HTTP_X_WORKSPACE_ID']??0,1,PHP_INT_MAX);$this->a->authorizeTenant($id);$this->a->tenant=$id;if($m==='GET')return ['configured'=>false,'items'=>$this->r->page('draft')['items'],'audit'=>[]];if($m==='POST'){$prompt=Http::text($b,'prompt',8000);$uid=bin2hex(random_bytes(12));$d=['id'=>$uid,'prompt'=>$prompt,'state'=>'draft','created_at'=>gmdate('c')];$this->r->save('draft',$uid,$d,'Solicitud IA','draft');return ['ok'=>true,'item'=>$d,'executed'=>false];}}
@@ -134,16 +134,50 @@ final class Api {
    $e=(new \Agora\Services\UserLinks($this->db))->set((int)$this->a->tenant,$id,$ext);
    $this->a->audit('usuario.enlace','usuario',(string)$id,['conUsuarioDeLaCuenta'=>$ext!=='']);return ['ok'=>true,'enlace'=>$e];
   }
+  // 2.22.0 · Invitar a una persona (pedido del usuario): se crea sin clave, le llega una invitación por correo y crea su clave al entrar
+  // la primera vez con un código. Si la subcuenta está conectada y se pide, también se crea en la cuenta con los permisos de su rol.
+  if($p==='workspace/usuarios/invitar'&&$m==='POST'){
+   $this->a->manage();$t=(int)$this->a->tenant;
+   $rol=(string)($b['rol']??'EJECUTIVO');if(!in_array($rol,['ADMIN','SUPERVISOR','EJECUTIVO','REMITENTE','USUARIO','CONSULTA','VISOR'],true))Http::fail('Rol no asignable.',403);
+   $nombre=Http::text($b,'nombre',120);$correo=mb_strtolower(Http::email($b));
+   if($this->db->one('SELECT id FROM agora_users WHERE email=?',[$correo]))Http::fail('Ya hay una persona con ese correo en Ágora.',409);
+   $externo=trim((string)($b['enlace']??''));if($externo!==''&&!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$externo))Http::fail('Usuario de la cuenta inválido.');
+   $this->db->run('INSERT INTO agora_users(name,email,role,active,password_hash,local_tenant_id) VALUES(?,?,?,1,?,?)',[$nombre,$correo,$rol,self::INVITACION,$t]);
+   $id=(int)$this->db->pdo->lastInsertId();$u=$this->db->one('SELECT * FROM agora_users WHERE id=?',[$id]);
+   $this->a->audit('usuario.invitado','usuario',(string)$id,['rol'=>$rol]);
+   $cuenta=null;
+   if(($b['enCuenta']??false)===true)$cuenta=(new \Agora\Services\UsuariosCuenta($this->db,$this->config))->crear($t,$u,$externo!==''?$externo:null);
+   elseif($externo!=='')(new \Agora\Services\UserLinks($this->db))->set($t,$id,$externo);
+   if($cuenta&&$cuenta['ok'])$this->a->audit('usuario.cuenta','usuario',(string)$id,['accion'=>$cuenta['accion']]);
+   return ['ok'=>true,'id'=>$id,'invitacion'=>$this->invitar($u),'cuenta'=>$cuenta];
+  }
+  if($p==='workspace/usuarios/invitacion'&&$m==='POST'){
+   $this->a->manage();$u=$this->db->one('SELECT * FROM agora_users WHERE id=? AND local_tenant_id=?',[Http::integer($b['id']??0,1,PHP_INT_MAX),(int)$this->a->tenant]);
+   if(!$u)Http::fail('Usuario no encontrado en esta subcuenta.',404);if($u['password_hash']!==self::INVITACION)Http::fail('Esta persona ya creó su clave.',409);
+   $this->a->rate('invitacion:'.$u['id'],5,3600);return ['ok'=>true,'invitacion'=>$this->invitar($u)];
+  }
+  if($p==='workspace/usuarios/cuenta'&&$m==='POST'){
+   $this->a->manage();$t=(int)$this->a->tenant;$u=$this->db->one('SELECT * FROM agora_users WHERE id=? AND local_tenant_id=?',[Http::integer($b['id']??0,1,PHP_INT_MAX),$t]);
+   if(!$u)Http::fail('Usuario no encontrado en esta subcuenta.',404);
+   if(!\Agora\Core\MotorMobile::conectada($this->db,$t))Http::fail('Esta subcuenta todavía no está conectada con su cuenta.',409);
+   $r=(new \Agora\Services\UsuariosCuenta($this->db,$this->config))->crear($t,$u);
+   if(!$r['ok'])Http::fail($r['mensaje'],422);
+   $this->a->audit('usuario.cuenta','usuario',(string)$u['id'],['accion'=>$r['accion']]);return $r;
+  }
   // 2.17.0 · Borrar un usuario de la subcuenta: con la operación aritmética firmada. Suspender es «estado: inactivo».
   if($p==='workspace/usuarios/borrar/desafio'&&$m==='POST'){$this->a->manage();$u=$this->usuarioBorrable(Http::integer($b['id']??0,1,PHP_INT_MAX));return \Agora\Security\Desafio::crear((string)$this->a->config['app_key'],'borrar-usuario',(string)$u['id'],(int)$this->a->user['id'])+['nombre'=>$u['name']];}
   if($p==='workspace/usuarios'&&$m==='DELETE'){
    $this->a->manage();$u=$this->usuarioBorrable(Http::integer($b['id']??0,1,PHP_INT_MAX));
    \Agora\Security\Desafio::comprobar((string)$this->a->config['app_key'],'borrar-usuario',(string)$u['id'],(int)$this->a->user['id'],$b['token']??null,$b['respuesta']??null);
+   $full=$this->db->one('SELECT * FROM agora_users WHERE id=?',[$u['id']]);$cuenta=(new \Agora\Services\UsuariosCuenta($this->db,$this->config))->ajustar((int)$this->a->tenant,$full,false,'Quitarle los permisos'); // 2.22.0 · opción B: en la cuenta queda creada, sin permisos
    (new \Agora\Services\Borrado($this->db))->usuario((int)$this->a->tenant,(int)$u['id']);
-   $this->a->audit('usuario.borrado','usuario',(string)$u['id'],['detalle'=>'Se borró a '.$u['name'].' ('.$u['email'].')']);return ['ok'=>true,'id'=>(int)$u['id']];
+   $this->a->audit('usuario.borrado','usuario',(string)$u['id'],['detalle'=>'Se borró a '.$u['name'].' ('.$u['email'].')']);return ['ok'=>true,'id'=>(int)$u['id'],'cuenta'=>$cuenta];
   }
   if(in_array($p,['workspace/usuarios','usuarios'])&&in_array($m,['GET','POST']))return $m==='GET'?$this->u->listing(false):$this->u->save($b,false);
-  if(preg_match('~^(workspace/usuarios/(rol|estado|nombre|clave)|usuarios/(rol|clave|activar|desactivar))$~D',$p)&&$m==='POST'){if(str_ends_with($p,'activar'))$b['activo']=!str_ends_with($p,'desactivar');return $this->u->save($b,false,true);}
+  if(preg_match('~^(workspace/usuarios/(rol|estado|nombre|clave)|usuarios/(rol|clave|activar|desactivar))$~D',$p)&&$m==='POST'){if(str_ends_with($p,'activar'))$b['activo']=!str_ends_with($p,'desactivar');$r=$this->u->save($b,false,true);
+   // 2.22.0 · Cambió el rol o el estado: se ajustan sus permisos en la cuenta (suspendida = sin permisos, opción B; reactivada = los de su rol).
+   if(isset($b['rol'])||isset($b['estado'])||isset($b['activo'])){$u=$this->db->one('SELECT * FROM agora_users WHERE id=?',[(int)$r['id']]);if($u)$r['cuenta']=(new \Agora\Services\UsuariosCuenta($this->db,$this->config))->ajustar((int)$this->a->tenant,$u,null);}
+   return $r;}
   // 2.1.19 · tablas editables: columnas, filas agregadas a mano y carga masiva de cada tabla
   if(preg_match('~^workspace/tablas(/|$)~',$p))return (new Tablas($this->db,$this->a))->route($p,$m,$b);
   // 2.1.17 · campos personalizados y migración masiva
@@ -234,6 +268,19 @@ final class Api {
   return $b;
  }
  /** 2.17.0 · Quién se puede borrar: alguien de esta subcuenta, que no sea uno mismo; la Administración no borra a otra Administración. */
+ /** 2.22.0 · Marca de «invitación pendiente» en password_hash: ningún password_verify la acepta; la persona crea su clave con un código. */
+ public const INVITACION='!invitacion';
+ /** Manda (o reenvía) la invitación por el Correo de Ágora. Nunca lanza: dice si salió o por qué no. */
+ private function invitar(array $u):array{
+  $url=rtrim((string)($this->config['app_url']??''),'/').'/entrar?invitacion='.rawurlencode((string)$u['email']);
+  $empresa=(string)($this->db->one('SELECT name FROM agora_tenants WHERE id=?',[(int)$u['local_tenant_id']])['name']??'tu empresa');
+  try{$ok=\Agora\Core\MotorMobile::correo($this->db,$this->config,(string)$u['email'],'Te invitaron a Ágora · '.$empresa,'Te damos la bienvenida a Ágora',
+    'Te invitaron al espacio de trabajo de '.$empresa.'. Toca el botón, escribe tu correo y te enviamos un código para crear tu clave.',null,
+    'Si no esperabas esta invitación, ignora este correo.',"Te invitaron a Ágora ($empresa). Crea tu clave aquí: $url\n",['Crear mi clave',$url]);}
+  catch(\Throwable){return ['enviada'=>false,'mensaje'=>'No se pudo enviar la invitación ahora. Inténtalo con «Reenviar invitación».'];}
+  if(!$ok)return ['enviada'=>false,'mensaje'=>'Falta configurar el Correo de Ágora (lo hace el dueño en Agencia). Mientras tanto, dale una clave temporal desde «Opciones».'];
+  $this->a->audit('usuario.invitacion','usuario',(string)$u['id']);return ['enviada'=>true,'mensaje'=>'Invitación enviada a '.$u['email'].'.'];
+ }
  private function usuarioBorrable(int $id):array{
   $u=$this->db->one('SELECT id,name,email,role FROM agora_users WHERE id=? AND local_tenant_id=?',[$id,(int)$this->a->tenant]);
   if(!$u)Http::fail('Usuario no encontrado en esta subcuenta.',404);

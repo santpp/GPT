@@ -1015,8 +1015,9 @@ V.entrar = {
         try { await listo(await api('login/codigo', {method: 'POST', body: {desafio: d.desafio, codigo: inp.value, recordar}})); }
         catch (x) { busy(bt, false); err.textContent = x.message; inp.select(); } };
     }
-    function pasoOlvido(correo = '') {
-      paso('¿Olvidaste tu clave?', `<p class="lg-help">Escribe tu correo. Si tienes cuenta, te enviamos un código para elegir una clave nueva.</p>
+    // 2.22.0 · inv = vino del enlace de una invitación: mismos pasos (código por correo y clave nueva), con otras palabras.
+    function pasoOlvido(correo = '', inv = false) {
+      paso(inv ? 'Crea tu clave' : '¿Olvidaste tu clave?', `<p class="lg-help">${inv ? 'Te invitaron a Ágora. Confirma tu correo y te enviamos un código para crear tu clave.' : 'Escribe tu correo. Si tienes cuenta, te enviamos un código para elegir una clave nueva.'}</p>
         <form novalidate class="lg-step"><div class="lg-fields"><label class="lg-f"><span class="sr-only">Correo</span><input name="correo" type="email" placeholder="Correo" autocomplete="username" value="${esc(correo)}" required></label></div><p class="fld-err" role="alert"></p>
         <button class="btn btn-cta lg-go" type="submit"><span>Enviar código</span><span class="lg-go-ic" aria-hidden="true">${icon('arrowR')}</span></button></form>
         <div class="lg-step-acts"><button class="lg-link" type="button" data-volver>Volver a iniciar sesión</button></div>`);
@@ -1025,25 +1026,25 @@ V.entrar = {
       f.onsubmit = async e => { e.preventDefault(); const c = f.correo.value.trim(), bt = f.querySelector('.lg-go');
         if (!/^\S+@\S+\.\S+$/.test(c)) { err.textContent = 'Escribe tu correo completo.'; return; }
         busy(bt, true, 'Enviando…'); err.textContent = '';
-        try { const r = await api('clave/olvido', {method: 'POST', body: {correo: c}}); if (r.disponible === false) { busy(bt, false); err.textContent = 'Pide a quien administra tu empresa que restablezca tu clave desde Usuarios y roles.'; return; } pasoNueva(c); }
+        try { const r = await api('clave/olvido', {method: 'POST', body: {correo: c}}); if (r.disponible === false) { busy(bt, false); err.textContent = inv ? 'Ahora no se pueden enviar códigos. Pide a quien administra tu empresa una clave temporal.' : 'Pide a quien administra tu empresa que restablezca tu clave desde Usuarios y roles.'; return; } pasoNueva(c, inv); }
         catch (x) { busy(bt, false); err.textContent = x.message; } };
     }
-    function pasoNueva(correo) {
-      paso('Elige tu clave nueva', `<p class="lg-help">Si <b>${esc(correo)}</b> tiene cuenta, te llegó un código de 6 dígitos. Caduca en 15 minutos.</p>
+    function pasoNueva(correo, inv = false) {
+      paso(inv ? 'Crea tu clave' : 'Elige tu clave nueva', `<p class="lg-help">Si <b>${esc(correo)}</b> tiene cuenta, te llegó un código de 6 dígitos. Caduca en 15 minutos.</p>
         <form novalidate class="lg-step"><div class="lg-fields">${codigoInput}
           <label class="lg-f"><span class="sr-only">Clave nueva</span><input name="clave" type="password" placeholder="Clave nueva (mínimo 12 caracteres)" autocomplete="new-password" minlength="12" required></label>
           <label class="lg-f"><span class="sr-only">Repite la clave</span><input name="clave2" type="password" placeholder="Repite la clave nueva" autocomplete="new-password" required></label></div><p class="fld-err" role="alert"></p>
-        <button class="btn btn-cta lg-go" type="submit"><span>Cambiar clave</span><span class="lg-go-ic" aria-hidden="true">${icon('arrowR')}</span></button></form>
+        <button class="btn btn-cta lg-go" type="submit"><span>${inv ? 'Crear clave' : 'Cambiar clave'}</span><span class="lg-go-ic" aria-hidden="true">${icon('arrowR')}</span></button></form>
         <div class="lg-step-acts"><button class="lg-link" type="button" data-otro>Pedir otro código</button><button class="lg-link" type="button" data-volver>Volver a iniciar sesión</button></div>`);
       const f = card.querySelector('.lg-paso form'), err = f.querySelector('.fld-err');
-      card.querySelector('[data-volver]').onclick = () => volver(); card.querySelector('[data-otro]').onclick = () => pasoOlvido(correo); f.codigo.focus();
+      card.querySelector('[data-volver]').onclick = () => volver(); card.querySelector('[data-otro]').onclick = () => pasoOlvido(correo, inv); f.codigo.focus();
       f.codigo.oninput = () => { f.codigo.value = f.codigo.value.replace(/\D/g, '').slice(0, 6); };
       f.onsubmit = async e => { e.preventDefault(); const bt = f.querySelector('.lg-go');
         if (!/^\d{6}$/.test(f.codigo.value)) { err.textContent = 'Escribe los 6 dígitos del código.'; return; }
         if (f.clave.value.length < 12) { err.textContent = 'La clave nueva debe tener al menos 12 caracteres.'; return; }
         if (f.clave.value !== f.clave2.value) { err.textContent = 'Las dos claves no coinciden.'; return; }
         busy(bt, true, 'Guardando…'); err.textContent = '';
-        try { await api('clave/restablecer', {method: 'POST', body: {correo, codigo: f.codigo.value, clave: f.clave.value}}); volver('Listo. Entra con tu clave nueva.'); const m = card.querySelector('#lg-mail'); if (m) m.value = correo; card.querySelector('#lg-pw')?.focus(); }
+        try { await api('clave/restablecer', {method: 'POST', body: {correo, codigo: f.codigo.value, clave: f.clave.value}}); volver(inv ? 'Listo. Ya puedes entrar con tu clave.' : 'Listo. Entra con tu clave nueva.'); const m = card.querySelector('#lg-mail'); if (m) m.value = correo; card.querySelector('#lg-pw')?.focus(); }
         catch (x) { busy(bt, false); err.textContent = x.message; } };
     }
     s.querySelector('.lg-forgot').onclick = () => pasoOlvido(s.querySelector('#lg-mail')?.value.trim() || '');
@@ -1057,6 +1058,7 @@ V.entrar = {
       catch (x) { busy(b, false); err.textContent = x.message; shake(); pw.select(); }
     };
     s.querySelector(document.activeElement?.id === 'lg-pw' ? '#lg-pw' : '#lg-mail')?.focus();
+    { const inv = new URLSearchParams(location.search).get('invitacion'); if (inv && /^\S+@\S+\.\S+$/.test(inv)) { try { history.replaceState(history.state, '', location.pathname); } catch {} pasoOlvido(inv, true); } }
     modoPruebas().then(m => {
       if (!m || window.__DEMO__ || card.querySelector('.lg-pruebas')) return;
       card.insertAdjacentHTML('beforeend', `<p class="lg-help lg-demo lg-pruebas"><b>Ambiente de pruebas:</b> usuario <b>${esc(m.usuario || 'admin')}</b> · clave <b>${esc(m.clave || '')}</b><br><small>Datos sintéticos. Los demás usuarios (por ejemplo admin.asocim) usan la misma clave.</small></p>`);
@@ -2432,7 +2434,7 @@ V.usuarios = {
   render() {
     const st = state.usuarios;
     const lede = 'Quién entra al sistema, con qué rol y qué puede hacer. La identidad de la empresa se administra desde Ajustes.';
-    const acts = `${esSuperAdmin() ? `<button class="btn" type="button" data-agencia-panel>${icon('briefcase')}Cuenta de agencia</button>` : ''}${esAdmin() && conectada() ? `<button class="btn" type="button" data-equipo-actualizar title="Vuelve a leer las personas de la cuenta conectada">${icon('refresh')}Actualizar equipo</button>` : ''}${esAdmin() ? `<button class="btn btn-cta" type="button" data-usuario-nuevo>${icon('plus')}Agregar persona</button>` : ''}`;
+    const acts = `${esSuperAdmin() ? `<button class="btn" type="button" data-agencia-panel>${icon('briefcase')}Cuenta de agencia</button>` : ''}${esAdmin() && conectada() ? `<button class="btn" type="button" data-equipo-actualizar title="Vuelve a leer las personas de la cuenta conectada">${icon('refresh')}Actualizar equipo</button>` : ''}${esAdmin() ? `<button class="btn btn-cta" type="button" data-usuario-nuevo>${icon('plus')}Invitar persona</button>` : ''}`;
     const cabeza = head('Acceso', 'Usuarios y roles', lede, acts);
     if (this.error) return cabeza + failed(this.error);
     if (!DATOS.usuarios) return cabeza + loading();
@@ -2446,7 +2448,7 @@ V.usuarios = {
       {k: 'rol', l: 'Rol', f: v => `<span class="rol-chip" style="--c:${ROLES_SISTEMA[v]?.c || 'var(--muted)'}">${esc(ROLES_SISTEMA[v]?.l || v)}</span>`},
       ...(conectada() ? [{k: 'enlace', l: 'Usuario en la cuenta', f: v => v ? `<span class="who-cell"><span class="lt lt-ok"><i aria-hidden="true"></i>Enlazado con ${esc(v.nombre)}</span>${v.auto ? '<small>Por tener el mismo correo</small>' : ''}</span>` : '<span class="lt lt-warn"><i aria-hidden="true"></i>Sin enlazar</span>'}] : []),
       {k: 'ultimoAcceso', l: 'Último acceso', f: v => v ? `<span title="${esc(fstamp(v))}">${esc(when(v))}</span>` : '<span class="muted">Nunca</span>'},
-      {k: 'estado', l: 'Estado', f: v => v === 'inactivo' ? '<span class="lt lt-bad"><i aria-hidden="true"></i>Suspendida</span>' : '<span class="lt lt-ok"><i aria-hidden="true"></i>Activa</span>'},
+      {k: 'estado', l: 'Estado', f: (v, r) => v === 'inactivo' ? '<span class="lt lt-bad"><i aria-hidden="true"></i>Suspendida</span>' : r.invitacion ? '<span class="lt lt-warn"><i aria-hidden="true"></i>Invitación pendiente</span>' : '<span class="lt lt-ok"><i aria-hidden="true"></i>Activa</span>'},
       {k: 'id', l: '', cls: 'act', f: (v, r) => esAdmin() ? `<button class="btn btn-sm" type="button" data-usuario="${esc(v)}" aria-haspopup="true">${icon('more')}<span>Opciones</span></button>` : ''},
     ];
 
@@ -2950,15 +2952,15 @@ async function usuarioEnlaceModal(u) {
 }
 function usuarioModal(previo) {
   const roles = Object.keys(ROLES_SISTEMA).filter(r => r !== 'SUPERADMIN');
-  const s = openModal(modalHead(previo ? 'Cambiar rol' : 'Agregar persona', previo ? esc(previo.nombre) : 'Entra con su correo y la clave temporal que le compartas.')
+  const s = openModal(modalHead(previo ? 'Cambiar rol' : 'Invitar persona', previo ? esc(previo.nombre) : 'Le llega una invitación por correo y crea su clave la primera vez que entra, con un código.')
     + `<form class="form" novalidate>
       ${previo || !equipoLibre().length ? '' : `<label class="fld">Traer del equipo de la cuenta <small>(opcional)</small><select name="enlace"><option value="">Persona nueva, sin enlazar</option>${equipoOpciones(equipoLibre(), '')}</select><span class="fld-hint">Rellena su nombre y correo, y la deja enlazada.</span></label>`}
       ${previo ? '' : `<label class="fld">Nombre completo<input name="nombre" autofocus></label><label class="fld">Correo<input name="correo" type="email"></label>
-      <label class="fld">Clave temporal (mínimo 12 caracteres)<span class="pw-in"><input name="clave" value="${claveAzar()}" autocomplete="off"><button class="pw-eye" type="button" data-regen>Otra</button></span></label>`}
+      ${conectada() ? `<label class="fld-chk"><input type="checkbox" name="enCuenta" checked> <span><b>Crearla también en la cuenta</b> con los permisos de su rol y dejarla enlazada. Si su correo ya está en la cuenta, solo se enlaza y se le ajustan los permisos.</span></label>` : ''}`}
       <div class="seg-fld">Rol${seg('rol-sys', roles.map(r => [r, ROLES_SISTEMA[r].l]), previo?.rol || 'EJECUTIVO', 'Rol')}</div>
       <ul class="role-help">${roles.map(r => `<li><span class="rol-punto" style="--c:${ROLES_SISTEMA[r].c}"></span><span><b class="strong">${esc(ROLES_SISTEMA[r].l)}:</b> ${esc(ROLES_SISTEMA[r].d)}</span></li>`).join('')}</ul>
       <p class="fld-err" role="alert"></p>
-      <div class="form-ft"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="submit">${previo ? 'Guardar rol' : 'Agregar persona'}</button></div></form>`);
+      <div class="form-ft"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="submit">${previo ? 'Guardar rol' : 'Invitar persona'}</button></div></form>`);
   const f = s.querySelector('form');
   s.querySelector('[data-regen]')?.addEventListener('click', () => { f.clave.value = claveAzar(); });
   f.enlace?.addEventListener('change', () => { const t = (EQUIPO_CUENTA?.items || []).find(x => x.id === f.enlace.value); if (t) { f.nombre.value = t.nombre; f.correo.value = t.correo; } });
@@ -2969,22 +2971,44 @@ function usuarioModal(previo) {
     fd.rol = f.querySelector('[data-seg="rol-sys"] .is-on')?.dataset.v || 'EJECUTIVO';
     if (!previo) {
       if (!String(fd.nombre || '').trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(fd.correo || '').trim())) { err.textContent = 'Escribe el nombre y un correo válido.'; return; }
-      if (String(fd.clave || '').length < 12) { err.textContent = 'La clave temporal debe tener al menos 12 caracteres.'; return; }
+      if (fd.enCuenta && String(fd.nombre).trim().split(/\s+/).length < 2) { err.textContent = 'Para crearla en la cuenta escribe nombre y apellido.'; return; }
     }
     const b = f.querySelector('[type=submit]'); busy(b, true, 'Guardando…');
     try {
-      if (previo) await agoraApi('workspace/usuarios/rol', {method: 'POST', body: {id: previo.id, rol: fd.rol}});
-      else await agoraApi('workspace/usuarios', {method: 'POST', body: fd});
+      let r;
+      if (previo) r = await agoraApi('workspace/usuarios/rol', {method: 'POST', body: {id: previo.id, rol: fd.rol}});
+      else r = await agoraApi('workspace/usuarios/invitar', {method: 'POST', body: {nombre: fd.nombre, correo: fd.correo, rol: fd.rol, enlace: fd.enlace || '', enCuenta: !!fd.enCuenta}});
       closeModal(); await cargarUsuarios(true); repaint();
-      if (previo) toast('Rol actualizado.');
-      else openModal(modalHead('Persona agregada', `Comparte la clave con ${esc(fd.nombre)} por un canal seguro. Puede cambiarla desde su perfil.`) + `<div class="secret"><code>${esc(fd.clave)}</code><button class="btn btn-sm btn-cta" type="button" data-copy="${esc(fd.clave)}">Copiar</button></div><p class="src">Correo para entrar: ${esc(fd.correo)}</p><div class="form-ft"><button class="btn" type="button" data-close>Listo</button></div>`);
+      if (previo) { cuentaAviso(r?.cuenta, 'Rol actualizado.'); return; }
+      return invitadoModal(fd, r);
     } catch (x) { busy(b, false); err.textContent = x.message; }
   };
+}
+/* 2.22.0 · Invitaciones y la cuenta. cuentaAviso: la acción en Ágora salió bien; dice además qué pasó en la cuenta. */
+function cuentaAviso(c, base) {
+  if (!c) { toast(base); return; }
+  if (c.ok) { toast(`${base} ${c.mensaje || ''}`.trim()); return; }
+  openModal(modalHead(base, 'En Ágora quedó hecho. En la cuenta, no:') + `<div class="form"><p class="dialog-copy">${esc(c.mensaje || 'La cuenta no respondió.')}</p><div class="form-ft"><button class="btn btn-cta" type="button" data-close>Entendido</button></div></div>`);
+}
+function invitadoModal(fd, r) {
+  const inv = r?.invitacion || {}, c = r?.cuenta;
+  const fila = (ok, txt) => `<li class="inv-l ${ok ? 'ok' : 'no'}"><span class="lt ${ok ? 'lt-ok' : 'lt-warn'}"><i aria-hidden="true"></i></span><span>${esc(txt)}</span></li>`;
+  const s = openModal(modalHead('Persona invitada', esc(fd.nombre) + ' · ' + esc(fd.correo)) + `<div class="form"><ul class="inv-res">
+    ${fila(!!inv.enviada, inv.mensaje || 'Invitación enviada.')}
+    ${c ? fila(!!c.ok, c.mensaje || '') : ''}</ul>
+    <p class="src">Su estado será «Invitación pendiente» hasta que cree su clave. Desde «Opciones» puedes reenviar la invitación${c && !c.ok ? ' o volver a «Crear en la cuenta»' : ''}.</p>
+    <div class="form-ft">${inv.enviada ? '' : '<button class="btn" type="button" data-clave-temp>Darle una clave temporal</button>'}<button class="btn btn-cta" type="button" data-close>Listo</button></div></div>`);
+  s.querySelector('[data-clave-temp]')?.addEventListener('click', () => { const u = (DATOS.usuarios || []).find(x => x.id === r.id); closeModal(); if (u) usuarioClaveTemporal(u); });
+}
+function usuarioClaveTemporal(u) {
+  const clave = claveAzar();
+  confirmModal('Darle una clave temporal', `${esc(u.nombre)} podrá entrar con esta clave y cambiarla desde su perfil. Compártela por un canal seguro.<br><code class="clave-temp">${esc(clave)}</code>`, 'Guardar clave',
+    async () => { await agoraApi('workspace/usuarios/clave', {method: 'POST', body: {id: u.id, clave}}); await cargarUsuarios(true); repaint(); toast('Clave guardada. Compártela por un canal seguro.'); });
 }
 function usuarioMenu(id, ancla) {
   const u = (DATOS.usuarios || []).find(x => String(x.id) === String(id));
   if (!u) return;
-  const el = openPop(ancla, `<button type="button" data-u="nombre">${icon('edit')}Cambiar nombre</button><button type="button" data-u="rol">${icon('shield')}Cambiar rol</button><button type="button" data-u="permisos">${icon('check')}Permisos individuales</button>${conectada() ? `<button type="button" data-u="enlace">${icon('sync')}Enlazar con la cuenta</button>` : ''}${u.estado === 'inactivo' ? `<button type="button" data-u="on">${icon('check')}Reactivar</button>` : `<button type="button" data-u="off">${icon('pause')}Suspender</button>`}${String(u.id) !== String(ME?.id ?? AGORA_ME?.id) ? `<button type="button" class="is-danger" data-u="borrar">${icon('warn')}Eliminar</button>` : ''}`, 'ctx', {align: 'right'});
+  const el = openPop(ancla, `${u.invitacion ? `<button type="button" data-u="invitar">${icon('mail')}Reenviar invitación</button><button type="button" data-u="clave">${icon('lock')}Darle una clave temporal</button>` : ''}${conectada() && !u.enlace ? `<button type="button" data-u="cuenta">${icon('plus')}Crear en la cuenta</button>` : ''}<button type="button" data-u="nombre">${icon('edit')}Cambiar nombre</button><button type="button" data-u="rol">${icon('shield')}Cambiar rol</button><button type="button" data-u="permisos">${icon('check')}Permisos individuales</button>${conectada() ? `<button type="button" data-u="enlace">${icon('sync')}Enlazar con la cuenta</button>` : ''}${u.estado === 'inactivo' ? `<button type="button" data-u="on">${icon('check')}Reactivar</button>` : `<button type="button" data-u="off">${icon('pause')}Suspender</button>`}${String(u.id) !== String(ME?.id ?? AGORA_ME?.id) ? `<button type="button" class="is-danger" data-u="borrar">${icon('warn')}Eliminar</button>` : ''}`, 'ctx', {align: 'right'});
   if (!el) return;
   el.setAttribute('role', 'menu');
   el.onclick = async e => {
@@ -2993,12 +3017,15 @@ function usuarioMenu(id, ancla) {
     if (a === 'rol') return usuarioModal(u);
     if (a === 'permisos') return permisosUsuarioModal(u);
     if (a === 'enlace') return usuarioEnlaceModal(u);
+    if (a === 'invitar') { try { const r = await agoraApi('workspace/usuarios/invitacion', {method: 'POST', body: {id: u.id}}); toast(r.invitacion?.mensaje || 'Invitación enviada.'); } catch (x) { toast(x.message); } return; }
+    if (a === 'clave') return usuarioClaveTemporal(u);
+    if (a === 'cuenta') { try { const r = await agoraApi('workspace/usuarios/cuenta', {method: 'POST', body: {id: u.id}}); await cargarUsuarios(true); repaint(); toast(r.mensaje || 'Creada en la cuenta.'); } catch (x) { toast(x.message); } return; }
     if (a === 'borrar') return usuarioBorrar(u, {alTerminar: async () => { await cargarUsuarios(true); repaint(); }});
     const estado = a === 'off' ? 'inactivo' : 'activo';
     confirmModal(a === 'off' ? 'Suspender persona' : 'Reactivar persona',
       a === 'off' ? `${esc(u.nombre)} dejará de entrar al sistema y se cierran sus sesiones. Sus datos se conservan y puedes reactivarla cuando quieras.` : `${esc(u.nombre)} podrá entrar otra vez.`,
       a === 'off' ? 'Suspender' : 'Reactivar',
-      async () => { await agoraApi('workspace/usuarios/estado', {method: 'POST', body: {id: u.id, estado}}); await cargarUsuarios(true); repaint(); toast(a === 'off' ? 'Persona suspendida.' : 'Persona reactivada.'); },
+      async () => { const r = await agoraApi('workspace/usuarios/estado', {method: 'POST', body: {id: u.id, estado}}); await cargarUsuarios(true); repaint(); cuentaAviso(r?.cuenta, a === 'off' ? 'Persona suspendida.' : 'Persona reactivada.'); },
       a === 'off');
   };
 }
@@ -4268,7 +4295,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.21.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.22.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */
@@ -5097,11 +5124,11 @@ function usuarioBorrar(u, {cuentaId, alTerminar} = {}) {
   confirmarOperacion({
     titulo: 'Eliminar usuario', boton: 'Eliminar usuario',
     aviso: `Vas a borrar a <b>${esc(u.nombre)}</b> (${esc(u.correo || '')}). <b>No se puede deshacer.</b> Si solo quieres que deje de entrar, usa «Suspender».`,
-    consecuencias: ['Se cierran sus sesiones y pierde el acceso.', 'Sus ventas, contratos y registros se conservan, sin responsable.', 'Queda anotado en la auditoría de la subcuenta.'],
+    consecuencias: ['Se cierran sus sesiones y pierde el acceso.', 'Sus ventas, contratos y registros se conservan, sin responsable.', ...(!desdeAgencia && u.enlace ? ['En la cuenta sigue creada, pero sin permisos (sus conversaciones no quedan huérfanas).'] : []), 'Queda anotado en la auditoría de la subcuenta.'],
     pedir: () => desdeAgencia ? agoraApi('agency/users/borrar/desafio', {method: 'POST', body: {accountId: cuentaId, userId: u.id}}) : agoraApi('workspace/usuarios/borrar/desafio', {method: 'POST', body: {id: u.id}}),
     hacer: async (token, respuesta) => {
       if (desdeAgencia) await agoraApi('agency/users/borrar', {method: 'POST', body: {accountId: cuentaId, userId: u.id, token, respuesta}});
-      else await agoraApi('workspace/usuarios', {method: 'DELETE', body: {id: u.id, token, respuesta}});
+      else { const r = await agoraApi('workspace/usuarios', {method: 'DELETE', body: {id: u.id, token, respuesta}}); if (r?.cuenta) { cuentaAviso(r.cuenta, `Se eliminó a ${u.nombre}.`); await alTerminar?.(); return; } }
       toast(`Se eliminó a ${u.nombre}.`); await alTerminar?.();
     },
   });

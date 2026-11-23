@@ -41,3 +41,5 @@ oportunidades, embudos, ventas ganadas, tablero y consumos de la agencia.
 - **2.19.2 · Errores con código:** `respond()` pasa todo error (≥ 400 con `error`) por `$GLOBALS['agoraError']` del ERP: agrega `codigo` (diccionario) y `requestId` y lo anota en la bitácora (no en modo captura). `body()` acepta `{}` como sin datos y responde 400 «Los datos enviados no son válidos.» a un JSON roto o una lista, en vez de lanzar una excepción (500).
 
 - **2.20.0 · Correo a clientes:** `AccessChannel::enviarDocumento()` (convenios y facturas): por la conexión indicada, busca o crea el contacto del cliente (etiqueta `agora-documentos`) y envía con la plantilla, ahora con botón opcional (`template(..., $boton)`). El ERP corre `Sweep::run('cron-erp')` desde `servidor/bin/cron.php`.
+
+- **2.22.0 · Personas en la cuenta:** `GhlClient::location()`, `createUser()` y `updateUser()` (permiso `users.write`); `AccessChannel::sendMail()` acepta un botón opcional (`[texto, url]`) para la invitación. Las usa `app/src/Services/UsuariosCuenta.php` con `GhlGateway::execute(..., soft: true)`.
