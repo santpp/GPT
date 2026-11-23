@@ -22,7 +22,7 @@ Se carga junto con el `CLAUDE.md` de la raíz (reglas generales, Git, entregas, 
 | API | `public_html/api/index.php` → `servidor/app/src/Controllers/Api.php` (y los demás controladores) |
 | Cuenta en vivo | `servidor/app/src/Core/MotorMobile.php` (puente al motor) |
 | Permisos | `servidor/app/src/Security/Auth.php::POLICY`. En pantalla usa `moduleAllowed(k)`, nunca `MODS[k].ok()` directo |
-| Base de datos | Tablas `agora_*`; migraciones idempotentes en `servidor/app/database/migrations/` (el arranque aplica la más nueva). Tablas nuevas con `DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci` |
+| Base de datos | Tablas `agora_*`; migraciones idempotentes en `servidor/app/database/migrations/` (el arranque aplica la más nueva). Tablas nuevas con `DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`. CyberPanel crea la base en latin1: la migración 016 llama a `Installer::utf8mb4()` (base en utf8mb4 y conversión columna por columna, respeta las ASCII; prueba `tests/fixes-2231.py`) |
 | Rutas nuevas | `public_html/.htaccess` y `dev-router.php` |
 | Dueños y claves | Solo por terminal: `servidor/bin/crear-dueno.php`, `servidor/bin/cambiar-clave.php correo` / `--desbloquear`. **La clave de un dueño (Master/Superadmin) nunca se cambia desde la web** (ni perfil, ni «¿Olvidaste tu clave?», ni Usuarios): decisión del usuario, 2.13.1 |
 

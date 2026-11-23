@@ -1,5 +1,10 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.23.1 · Base de datos en utf8mb4 aunque CyberPanel la cree en latin1 (23 nov):**
+- En mi.agoradigital.app el diagnóstico salía en rojo: «Tablas en utf8mb4: 6 sin utf8mb4». CyberPanel crea la base en latin1 y algunas tablas de las primeras migraciones no decían su juego de caracteres. En latin1 no se guardan emojis ni «→» (por ejemplo en los mensajes de la Bandeja).
+- La migración **016** pone la base en utf8mb4 (lo que se cree después, también las tablas del motor de la Bandeja, nace así) y convierte las tablas columna por columna, respetando las columnas ASCII del motor, los valores por defecto y los datos. Se aplica sola al actualizar (o con `migrate.php`).
+- Prueba: `tests/fixes-2231.py` (10, con una base creada en latin1).
+
 **Novedades 2.23.0 · «Enviar reporte» en el mensaje de error (23 nov):**
 - Cuando una falla muestra su mensaje de error (en un formulario, en «No se pudo cargar», en un aviso flotante o en las pantallas de la Bandeja, Contactos, Oportunidades y Dashboard), al lado aparece **«Enviar reporte»**. Con un toque se manda el reporte, sin escribir nada: va el mensaje, la pantalla, la versión, el dispositivo y los últimos errores con su código y referencia (lo mismo que «Reportar un problema»). El botón cambia a «Reporte enviado · R-…».
 - Solo sale si detrás hay una falla registrada con código en los últimos 30 s. No sale en los avisos de la propia pantalla (por ejemplo «Escribe el nombre»), en la entrada (sin sesión) ni por una sesión vencida.
