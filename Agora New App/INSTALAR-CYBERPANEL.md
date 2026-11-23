@@ -282,7 +282,7 @@ Con la subcuenta conectada, **Nueva tarea** pide el contacto y la tarea queda es
 
 ---
 
-## Lista para desplegar (2.20.0)
+## Lista para desplegar (2.20.0 y 2.21.0)
 
 1. Respaldo de la base y de los archivos (CyberPanel → Backup), y aparte `servidor/config/config.php` y `servidor/storage/motor-vault.key`.
 2. Sube el ZIP y reemplaza `public_html/` y `servidor/` (conserva `config.php` y `storage/`). Repite el **paso 5** (permisos).
@@ -291,6 +291,44 @@ Con la subcuenta conectada, **Nueva tarea** pide el contacto y la tarea queda es
 5. Agencia → **Correo de Ágora**: elige la subcuenta que envía y pruébala (respaldo de los correos a clientes y de los códigos de acceso).
 6. Corre `php servidor/bin/diagnostico.php`: nada en rojo. Lo amarillo, revísalo.
 7. Abre la app, entra y mira la campana, un convenio de prueba enviado a tu propio correo y una factura enviada a tu correo.
+
+## Pasar a mi.agoradigital.app usando la base de datos de tests (2.21.0)
+
+Sirve para estrenar el dominio definitivo **sin perder nada** de lo que ya está en tests (subcuentas, tokens, usuarios, ventas, convenios, facturas). Lo importante: **la base de datos sola no basta**. Los tokens de las cuentas están cifrados con `vault_key` y con `servidor/storage/motor-vault.key`; si cambian, los tokens guardados no se pueden abrir.
+
+**Opción A · el mismo sitio con otro nombre (la más simple).** Si en CyberPanel solo cambias el dominio del sitio de tests a mi.agoradigital.app (mismos archivos, misma base):
+
+1. Respaldo primero (CyberPanel → Backup: sitio y base de datos).
+2. Emite el SSL del dominio nuevo (CyberPanel → SSL → Manage SSL → mi.agoradigital.app). El DNS de `mi` debe apuntar ya al servidor.
+3. En `servidor/config/config.php` cambia **solo** `app_url` a `'https://mi.agoradigital.app'` (sin barra al final). **No toques** `app_key`, `vault_key` ni `db`.
+4. Si la carpeta del sitio cambió (CyberPanel usa `/home/DOMINIO/`), corrige la ruta en la **línea del cron** (paso 10) y repite el **paso 5** (permisos).
+5. Sube el ZIP 2.21.0 como una actualización normal (sección «Actualizar a una versión nueva»).
+6. Corre `php servidor/bin/diagnostico.php`: la línea «Dirección (app_url)» debe decir `https://mi.agoradigital.app` y nada en rojo.
+
+**Opción B · un sitio nuevo con la base de tests.** Si creas mi.agoradigital.app como sitio aparte:
+
+1. Crea el sitio con SSL (paso 1), extensiones (paso 2) y sube el ZIP (pasos 4 y 5).
+2. Base de datos: puedes **apuntar a la misma base** de tests (mismos datos en `db`) o **copiarla** a una base nueva:
+   ```bash
+   mysqldump -u USUARIO_TESTS -p BASE_TESTS > /root/agora-tests.sql
+   mysql -u USUARIO_MI -p BASE_MI < /root/agora-tests.sql
+   ```
+   (Si al importar sale un error de `DEFINER`, quita esas partes: `sed -E 's/DEFINER=`[^`]+`@`[^`]+`//g' -i /root/agora-tests.sql`).
+3. Copia del sitio de tests **`servidor/config/config.php`** y **`servidor/storage/motor-vault.key`** (y, si quieres conservar las copias rápidas, todo `servidor/storage/`). Mismo dueño y permisos del sitio nuevo (paso 5).
+4. En el `config.php` copiado cambia `app_url` a `'https://mi.agoradigital.app'` y, si copiaste la base, los datos de `db`. **`app_key` y `vault_key` se quedan iguales.**
+5. Cron: la línea del paso 10 con la ruta del sitio nuevo. **Quita el cron del sitio de tests** si los dos usan la misma base (si no, los dos traerían los mensajes a la vez; no se rompe nada, pero es trabajo doble).
+6. `php servidor/bin/diagnostico.php` y entra.
+
+**Lo que cambia para las personas (en las dos opciones):**
+- Todos tienen que **volver a entrar** una vez: las sesiones y «Recuérdame en este equipo» van atados al dominio. Si alguien había guardado una llave de acceso (huella) en tests, tendrá que crearla de nuevo.
+- Los **enlaces ya enviados** a clientes (firma de convenios y facturas) llevan la dirección de tests. Para que sigan sirviendo, deja tests redirigiendo a mi: en CyberPanel → tests.agoradigital.app → Rewrite Rules:
+  ```
+  RewriteEngine On
+  RewriteRule ^(.*)$ https://mi.agoradigital.app/$1 [R=301,L]
+  ```
+  Los enlaces llevan su código después de `#`, que el navegador conserva al redirigir. Los enlaces nuevos ya salen con mi.agoradigital.app.
+- **Avisos de la cuenta (webhooks):** este ERP no los usa; los mensajes llegan por el cron. No hay nada que cambiar en la cuenta.
+- Revisa en Agencia → **Correo de Ágora** que la subcuenta que envía sigue conectada y manda un correo de prueba: el logo de los correos sale de `app_url`.
 
 ## Actualizar a una versión nueva
 

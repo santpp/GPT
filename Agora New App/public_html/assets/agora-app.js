@@ -372,6 +372,7 @@ function paint(html, enter) {
   placeThumbs(document);
   // Agora New App: sobre «cargando», «error» o «sin acceso» no se ejecuta el código del módulo (antes, Ajustes se quedaba cargando).
   if (!app.querySelector('[data-placeholder]')) V[R.view]?.mounted?.(app);
+  try { if (ME && window.AgoraTutorial) { if (window.AgoraTutorial.activo()) window.AgoraTutorial.cerrar(); window.AgoraTutorial.alPintar(R.mod, ME.id); } } catch {} // 2.21.0: tutorial la primera vez en cada módulo
   // 2.4.0 · quien solo ve «lo asignado» y no está enlazado con la cuenta no verá nada: se le dice por qué.
   if (['bandeja', 'contactos', 'oportunidades', 'comercial'].includes(R.mod) && sinEnlace()) {
     // 2.12.14 · M3: el aviso de enlace basta; se esconde el «No tienes permiso…» que la pantalla repetía debajo.
@@ -1117,6 +1118,7 @@ function openAccount() {
       ${opcion(`data-ir="${href(MODS.conexiones.path)}"`, 'gear', 'Ajustes')}
       ${ME && !esSuperAdmin() ? opcion('data-clave', 'lock', 'Cambiar mi clave') : ''}
       ${opcion('data-keys', 'keyboard', 'Atajos del teclado', '?')}
+      ${ME && window.AgoraTutorial?.hay(R.mod) ? opcion('data-tutorial', 'info', 'Ver el tutorial de esta pantalla') : ''}
       ${ME ? opcion('data-reportar', 'warn', 'Reportar un problema') : ''}
     </div>
     ${ESPACIO ? `<div class="acct-est">
@@ -1134,6 +1136,7 @@ function openAccount() {
   el.querySelector('[data-agency-back]')?.addEventListener('click', volverAgencia);
   el.querySelector('[data-buscar]').onclick = () => { closePop(); openCmd(); };
   el.querySelector('[data-reportar]')?.addEventListener('click', () => { closePop(); reportarProblema(); });
+  el.querySelector('[data-tutorial]')?.addEventListener('click', () => { closePop(); window.AgoraTutorial?.iniciar(R.mod, ME?.id); }); // 2.21.0
   el.querySelectorAll('[data-ir]').forEach(b => b.addEventListener('click', e => { closePop(); go(e.currentTarget.dataset.ir.replace(/^#/, '')); }));
   const bl = el.querySelector('[data-bloqueo]');
   if (bl) bl.onclick = async e => {
@@ -4265,7 +4268,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.20.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.21.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */
@@ -7076,6 +7079,46 @@ window.agoraGanar = async function ({connection, conversationId, contactId, nomb
       closeModal();
       window.dispatchEvent(new Event('agora:opportunity-edited'));
       if (!vgPuede() || r?.opportunity?.ventaId) toast('Oportunidad marcada como ganada.');
+      try { alTerminar?.(); } catch { /* la pantalla se refresca sola */ }
+    } catch (x) { busy(boton, false); err.textContent = x.message; }
+  };
+};
+/* 2.21.0 · «Lead perdido» (Bandeja, junto a «¿Venta ganada?»). Ventana de confirmación: se elige la oportunidad del contacto
+   (o se crea una si no hay abiertas), se puede escribir el motivo (queda como observación del contacto) y la oportunidad queda
+   como perdida en la cuenta. Se puede recuperar después desde Oportunidades. */
+window.agoraPerder = async function ({connection, conversationId, contactId, nombre = '', alTerminar} = {}) {
+  const q = x => encodeURIComponent(x || '');
+  const s = openModal(modalHead('¿Dar el lead por perdido?', esc(nombre || 'Este contacto')) + `<div class="vgw"><p class="dialog-copy">Cargando las oportunidades de este contacto…</p></div>`);
+  const caja = s.querySelector('.vgw');
+  let found, pipes;
+  try {
+    [found, pipes] = await Promise.all([agoraApi(`workspace/opportunities?connectionId=${q(connection)}&conversationId=${q(conversationId)}`), agoraApi(`workspace/pipelines?connectionId=${q(connection)}`)]);
+  } catch (e) { caja.innerHTML = `<p class="fld-err" role="alert">${esc(e.message)}</p><div class="form-ft"><button class="btn" type="button" data-close>Cerrar</button></div>`; return; }
+  const lista = x => Array.isArray(x) ? x : (x?.items || []);
+  const abiertas = lista(found.items).filter(o => !['won', 'lost', 'abandoned'].includes(o.status)), embudos = lista(pipes.pipelines);
+  const elegida = found.active && abiertas.some(o => o.id === found.active.id) ? found.active.id : abiertas[0]?.id || 'new';
+  caja.innerHTML = `<form class="bx-form vgw-form lost-form" novalidate>
+    <p class="dialog-copy">La oportunidad queda como <b>perdida</b> en la cuenta y sale de los leads en curso. Puedes recuperarla después desde Oportunidades.</p>
+    <label class="fld"><span>Oportunidad</span><select name="op">${abiertas.map(o => `<option value="${esc(o.id)}" ${o.id === elegida ? 'selected' : ''}>${esc(o.name || 'Oportunidad sin nombre')}${o.stageName ? ' · ' + esc(o.stageName) : ''}</option>`).join('')}<option value="new" ${elegida === 'new' ? 'selected' : ''}>${abiertas.length ? 'Otra: registrar una nueva como perdida' : 'No tiene oportunidades abiertas: registrar una como perdida'}</option></select></label>
+    ${embudos.length > 1 ? `<label class="fld lost-embudo" ${elegida === 'new' ? '' : 'hidden'}><span>Embudo</span><select name="embudo">${embudos.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select></label>` : ''}
+    <label class="fld"><span>Motivo (opcional)</span><textarea name="motivo" rows="3" maxlength="500" placeholder="Por ejemplo: eligió otra opción, no tiene presupuesto, no respondió."></textarea></label>
+    <p class="fld-err" role="alert"></p>
+    <div class="form-ft"><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-danger" type="submit">Dar por perdido</button></div></form>`;
+  const form = caja.querySelector('form'), err = form.querySelector('.fld-err');
+  form.op.onchange = () => { const e = form.querySelector('.lost-embudo'); if (e) e.hidden = form.op.value !== 'new'; };
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const op = form.op.value;
+    if (op === 'new' && !embudos.length) { err.textContent = 'Esta cuenta no tiene embudos donde registrar el lead.'; return; }
+    const rid = () => (crypto.randomUUID?.() || String(Date.now()) + Math.random()).replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
+    const ruta = op === 'new' ? `workspace/opportunity/new?connectionId=${q(connection)}&contactId=${q(contactId)}` : `workspace/opportunity/edit?connectionId=${q(connection)}&opportunityId=${q(op)}`;
+    const cuerpo = op === 'new' ? {name: 'Lead · ' + (nombre || 'contacto'), pipelineId: form.embudo?.value || embudos[0].id, status: 'lost'} : {status: 'lost'};
+    const boton = form.querySelector('[type=submit]'); busy(boton, true, 'Guardando…'); err.textContent = '';
+    try {
+      await agoraApi(ruta, {method: 'POST', body: {...cuerpo, requestId: rid()}});
+      const motivo = form.motivo.value.trim();
+      if (motivo && conversationId) { try { await agoraApi(`workspace/activity/note?connectionId=${q(connection)}&conversationId=${q(conversationId)}`, {method: 'POST', body: {body: 'Lead perdido: ' + motivo, requestId: rid()}}); } catch { /* el lead ya quedó perdido; la nota es un extra */ } }
+      closeModal(); window.dispatchEvent(new Event('agora:opportunity-edited')); toast('Lead marcado como perdido.');
       try { alTerminar?.(); } catch { /* la pantalla se refresca sola */ }
     } catch (x) { busy(boton, false); err.textContent = x.message; }
   };

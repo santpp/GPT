@@ -1,5 +1,14 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.21.0 · Bandeja: «Lead perdido»; tutoriales de bienvenida; manual del ERP; listo para desplegar (23 nov):**
+- **«Lead perdido»** en la cabecera de la conversación, al lado de «¿Venta ganada?». Siempre pide confirmación: eliges la oportunidad abierta del contacto (o registras una nueva como perdida, con su embudo), escribes el motivo si quieres y «Dar por perdido». La oportunidad queda **perdida en la cuenta** y el motivo como nota del contacto («Lead perdido: …»). Cancelar no cambia nada.
+- **«Asignar» sale de la cabecera** y queda **solo en la ficha del contacto** (junto a «Editar»), con la misma ventana para elegir a la persona.
+- La cabecera ya no se monta sobre el nombre: si el panel es angosto, los botones pasan a etiqueta corta y luego a solo ícono (se mide el panel, no la ventana).
+- **Tutoriales de bienvenida** (nuevo `assets/tutorial.js`) en Bandeja, Contactos, Oportunidades, Tareas, Dashboard, Gestión Comercial y Ventas: oscurecen la pantalla, iluminan cada parte y la explican («Paso X de N», Atrás, Siguiente, Saltar, teclas ← → y Esc). Salen solos la primera vez de cada persona en cada módulo y equipo; se repiten desde el menú de la cuenta con **«Ver el tutorial de esta pantalla»**. Si una parte no está (por permisos o porque no hay datos), el paso se salta. En el teléfono la tarjeta va abajo.
+- **Manual «Agora Digital App - ERP»** desde cero, con el formato del manual de Mobile y capturas reales con datos de prueba (`tools/make-manual.py` → `manual-erp.pdf`, se entrega aparte).
+- **Despliegue en mi.agoradigital.app** y uso de la base de datos de tests: nueva sección en `INSTALAR-CYBERPANEL.md`.
+- Prueba: `tests/fixes-2210.py`.
+
 **Novedades 2.20.0 · Deploy: correos de convenios y facturas, notificaciones y un solo cron (23 nov):**
 - **Convenios por correo:** al preparar el convenio, el cliente recibe el enlace por correo con el botón «Revisar y firmar el convenio», desde la propia subcuenta (si no está conectada, por el Correo de Ágora). Si no sale, la pantalla dice por qué y deja el enlace para compartirlo. El convenio recuerda a quién y cuándo se envió. Antes solo se generaba el enlace (y la pantalla decía por error que se había enviado).
 - **Facturas por correo:** «Enviar por correo» en cada factura emitida. El cliente recibe un enlace personal (60 días) a una página propia para verla, imprimirla o guardarla en PDF sin entrar a Ágora. En la misma ventana se ven los envíos anteriores y si el cliente ya la abrió.

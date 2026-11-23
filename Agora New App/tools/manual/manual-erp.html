@@ -1,0 +1,292 @@
+<!doctype html>
+<!-- © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agora Digital App - ERP · Manual de uso</title>
+<style>
+@font-face{font-family:Author;src:url(../../public_html/assets/fonts/Author-Variable.woff2) format('woff2');font-weight:300 800}
+:root{--ink:#14161f;--muted:#5d6273;--line:#e3e4ea;--bg:#f6f6f8;--brand:#AD103C}
+@page{size:A4;margin:16mm 16mm 18mm}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;background:#fff;color:var(--ink);font-family:Author,system-ui,sans-serif}
+.manual{line-height:1.6;font-size:10.6pt;max-width:820px;margin:0 auto}
+.manual h1{font-size:25pt;letter-spacing:-.02em;margin:0 0 6px;font-weight:600}
+.manual h2{font-size:16pt;letter-spacing:-.015em;margin:22pt 0 8px;font-weight:600;break-after:avoid}
+.manual h3{font-size:11.5pt;margin:14pt 0 4px;font-weight:600;break-after:avoid}
+.manual p{margin:0 0 9px}
+.manual ul,.manual ol{margin:0 0 11px;padding-left:20px}.manual li{margin:3px 0}
+.manual a{color:var(--brand);text-decoration:none}
+.manual b{font-weight:600}
+.manual figure{margin:12px 0 16px;display:grid;justify-items:center;gap:6px;break-inside:avoid}
+.manual figure img{width:100%;height:auto;border:1px solid var(--line);border-radius:12px}
+.manual figure.tel img{width:62mm;border-radius:16px}
+.manual figure.dos{grid-template-columns:1fr 1fr;align-items:start;gap:10px}
+.manual figure.dos figcaption{grid-column:1/-1}
+.manual figcaption{color:var(--muted);font-size:8.8pt;text-align:center}
+.manual .manual-cover{padding:8px 0 20px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.manual .manual-cover img{width:120px;margin-bottom:22px}
+.manual .manual-meta{color:var(--muted);font-size:10pt;margin:0}
+.manual .manual-index{columns:2;column-gap:28px;padding-left:20px;margin-top:6px}
+.manual .manual-index li{break-inside:avoid}
+.manual .tip{margin:10px 0 12px;padding:10px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-size:9.6pt;break-inside:avoid}
+.manual .tip.ojo{border-color:#f1c9d3;background:#fdf3f6}
+.manual table{width:100%;border-collapse:collapse;font-size:9.2pt;margin:6px 0 14px;break-inside:avoid}
+.manual th,.manual td{border-bottom:1px solid var(--line);padding:6px 6px;text-align:left;vertical-align:top}
+.manual th{font-weight:600;background:var(--bg)}
+.manual td.c,.manual th.c{text-align:center}
+.manual dl{margin:0 0 12px}.manual dt{font-weight:600;margin-top:9px}.manual dd{margin:2px 0 0;color:var(--muted)}
+.manual .salto{break-before:page}
+.manual kbd{font-family:inherit;font-size:.9em;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:#fff}
+</style>
+</head>
+<body>
+<article class="manual">
+<header class="manual-cover">
+  <img src="../../public_html/assets/agora-logo.png" alt="Ágora">
+  <h1>Agora Digital App - ERP</h1>
+  <p class="manual-meta">Manual de uso · versión {{VERSION}} · {{FECHA}}</p>
+</header>
+
+<h3>Qué encontrarás aquí</h3>
+<ol class="manual-index">
+  <li><a href="#empezar">Para empezar</a></li>
+  <li><a href="#entrar">Entrar con tu clave y el código</a></li>
+  <li><a href="#inicio">El inicio, el menú y la barra de arriba</a></li>
+  <li><a href="#tutoriales">Tutoriales y ayuda</a></li>
+  <li><a href="#dashboard">Dashboard</a></li>
+  <li><a href="#bandeja">Bandeja de conversaciones</a></li>
+  <li><a href="#contactos">Contactos</a></li>
+  <li><a href="#oportunidades">Oportunidades</a></li>
+  <li><a href="#tareas">Tareas</a></li>
+  <li><a href="#gestion">Gestión Comercial</a></li>
+  <li><a href="#ventas">Ventas, productos y catálogo</a></li>
+  <li><a href="#facturacion">Facturación</a></li>
+  <li><a href="#resultados">Gestión y resultados</a></li>
+  <li><a href="#contratos">Contratos y convenios</a></li>
+  <li><a href="#editar">Editar cifras, Dashboard y widgets</a></li>
+  <li><a href="#notificaciones">Notificaciones</a></li>
+  <li><a href="#administracion">Administración</a></li>
+  <li><a href="#roles">Roles y permisos</a></li>
+  <li><a href="#problemas">Si algo falla</a></li>
+  <li><a href="#preguntas">Preguntas frecuentes</a></li>
+</ol>
+
+<h2 id="empezar">1. Para empezar</h2>
+<p>Ágora es el espacio de trabajo comercial de tu empresa. Reúne en un solo lugar lo que antes estaba repartido: las <b>conversaciones</b> con tus clientes por WhatsApp, SMS, correo y redes; los <b>contactos</b> y sus <b>oportunidades</b>; las <b>ventas</b>, los <b>cobros</b> y las <b>facturas</b>; los <b>convenios</b> de pago con firma en línea; y el <b>reporte del mes</b> con metas y tendencias.</p>
+<p>Trabaja sobre <b>la cuenta</b> de tu empresa: lo que respondes, editas, mueves o asignas en Ágora queda guardado en la cuenta al momento, y lo que tu equipo hace en la cuenta aparece en Ágora. No hay que copiar nada dos veces.</p>
+<p>Funciona en el navegador del ordenador y del teléfono. En el ordenador el menú está a la izquierda; en el teléfono se abre con el botón de menú de arriba.</p>
+<div class="tip"><b>Lo que ves depende de tu rol.</b> Administración ve todo; Supervisión ve al equipo; quien es Ejecutivo ve lo suyo; Consulta solo mira. Si un módulo de este manual no te aparece, tu rol no lo incluye (ver <a href="#roles">Roles y permisos</a>).</div>
+
+<h2 id="entrar">2. Entrar con tu clave y el código</h2>
+<ol>
+  <li>Abre la dirección de Ágora de tu empresa y escribe tu <b>correo</b> y tu <b>clave</b>.</li>
+  <li>Si tu espacio lo pide, Ágora te envía por correo un <b>código de 6 dígitos</b>. En el teléfono el correo trae un botón para copiarlo. Escríbelo y entras.</li>
+  <li>Si marcas <b>«Recuérdame en este equipo (14 días)»</b>, no tendrás que volver a entrar en ese equipo durante dos semanas. No lo marques en un equipo compartido.</li>
+</ol>
+<p>¿Olvidaste la clave? En la pantalla de entrada toca <b>«¿Olvidaste tu clave?»</b>: te llega un enlace para crear una nueva. Para cambiarla estando dentro, abre el menú de tu cuenta (tu foto o iniciales, arriba a la derecha) y elige <b>Cambiar mi clave</b>.</p>
+<div class="tip ojo"><b>El código es solo tuyo.</b> Nadie de Ágora te lo va a pedir por teléfono ni por mensaje. Si recibes un código que no pediste, avisa a quien administra tu espacio: los intentos fallidos quedan registrados con la hora y la dirección desde donde se hicieron.</div>
+<figure><img src="img/01-entrar.png" alt=""><figcaption>La pantalla de entrada.</figcaption></figure>
+
+<h2 id="inicio">3. El inicio, el menú y la barra de arriba</h2>
+<p>Al entrar llegas al <b>Inicio</b>: todos los módulos de tu espacio, agrupados por proceso. El menú de la izquierda tiene los mismos grupos:</p>
+<table>
+  <tr><th>Grupo</th><th>Qué hay dentro</th></tr>
+  <tr><td><b>Ventas</b></td><td>Gestión Comercial, Dashboard, Ventas, Productos y servicios (con el Catálogo).</td></tr>
+  <tr><td><b>Facturación</b></td><td>Cobros, Facturas, Libro de ventas, Datos fiscales y Tasas del día.</td></tr>
+  <tr><td><b>Clientes y atención</b></td><td>Bandeja de conversaciones, Contactos, Oportunidades y Tareas.</td></tr>
+  <tr><td><b>Gestión y resultados</b></td><td>Equipo, Embudo y publicidad, Redes y anuncios, Costos, Tendencias y Calidad de datos.</td></tr>
+  <tr><td><b>Contratos</b></td><td>Contratos (convenios), Con convenio y Registro.</td></tr>
+  <tr><td><b>Administración</b></td><td>Auditoría, Configuración mensual, Usuarios y roles, Personalizar, Migración de datos, Ajustes y Ayuda.</td></tr>
+</table>
+<figure><img src="img/02-inicio.png" alt=""><figcaption>El Inicio con los módulos de tu espacio.</figcaption></figure>
+<p>En la barra de arriba tienes, de izquierda a derecha:</p>
+<ul>
+  <li><b>Dónde estás</b>: el módulo abierto. Tócalo para volver al grupo.</li>
+  <li><b>Historial</b> (reloj): los módulos que abriste hace poco.</li>
+  <li><b>Notificaciones</b> (campana): mensajes nuevos, convenios firmados y avisos importantes (ver <a href="#notificaciones">Notificaciones</a>).</li>
+  <li><b>Athena</b>: la asistente de Ágora.</li>
+  <li><b>Inicio</b> y el <b>modo oscuro</b> (luna o sol).</li>
+  <li><b>Tu cuenta</b> (tus iniciales): perfil, buscar, ajustes, cambiar clave, atajos, ver el tutorial de la pantalla, reportar un problema y cerrar sesión.</li>
+</ul>
+<div class="tip"><b>Ir rápido a cualquier parte.</b> Pulsa <kbd>Ctrl</kbd> <kbd>K</kbd> (<kbd>⌘</kbd> <kbd>K</kbd> en Mac) y escribe el nombre de un módulo o de una persona. Con <kbd>?</kbd> ves todos los atajos del teclado.</div>
+<p><b>El periodo.</b> Los módulos con cifras del mes (Gestión Comercial, Ventas, Cobros, Equipo, Costos…) tienen arriba un selector de mes. El Dashboard tiene el suyo: <b>Ayer</b>, <b>Hoy</b> u <b>Otro periodo</b>.</p>
+
+<h2 id="tutoriales">4. Tutoriales y ayuda</h2>
+<p>La primera vez que entras a la Bandeja, Contactos, Oportunidades, Tareas, el Dashboard, Gestión Comercial o Ventas, Ágora te muestra un <b>recorrido corto</b>: oscurece la pantalla, ilumina una parte y te explica para qué sirve. Avanzas con <b>Siguiente</b>, vuelves con <b>Atrás</b> o lo cierras con <b>Saltar</b> (o la tecla <kbd>Esc</kbd>).</p>
+<p>No vuelve a salir solo. Para repetirlo, abre el menú de tu cuenta y elige <b>Ver el tutorial de esta pantalla</b>.</p>
+<figure><img src="img/03-tutorial.png" alt=""><figcaption>El tutorial de la Bandeja señala cada parte de la pantalla.</figcaption></figure>
+<p>El módulo <b>Ayuda</b> (en Administración) tiene la guía de uso dentro de la app.</p>
+
+<h2 id="dashboard" class="salto">5. Dashboard</h2>
+<p>El Dashboard dice <b>cómo va tu cuenta hoy</b>. Se actualiza solo mientras lo tienes abierto.</p>
+<ul>
+  <li><b>Tu día</b>: leads de hoy, leads asignados a ti, conversaciones, sin leer, esperando respuesta, contactos y oportunidades abiertas.</li>
+  <li><b>Ventas ganadas sin monto</b>: las ventas del mes a las que les falta el monto, con un botón para completarlas.</li>
+  <li><b>Operación del día</b>: tiempo de respuesta promedio, lo que está sin leer ahora, la primera respuesta más lenta y las conversaciones atendidas.</li>
+  <li><b>Repartos</b>: sin leer por asesor, leads por fuente y otros, en <b>Dona</b>, <b>Barras</b> o <b>Cifras</b>. Administración y Supervisión pueden tocar un nombre o una fuente para ver el detalle.</li>
+  <li>Más abajo, la <b>publicidad</b> y la <b>rentabilidad</b>, si tu espacio las tiene.</li>
+</ul>
+<p>Si una cifra tiene una flecha, al tocarla te lleva a la lista que la forma: por ejemplo, «Sin leer» abre la Bandeja ya filtrada.</p>
+<figure><img src="img/04-dashboard.png" alt=""><figcaption>El Dashboard con el periodo arriba y las cifras del día.</figcaption></figure>
+
+<h2 id="bandeja">6. Bandeja de conversaciones</h2>
+<p>Aquí llegan juntos los mensajes de todos los canales: WhatsApp, SMS, correo, Instagram y Facebook. Ves solo las conversaciones que te tocan según tu rol.</p>
+<h3>Encontrar una conversación</h3>
+<ul>
+  <li><b>Buscar</b> por nombre, teléfono, correo o algo que haya escrito el cliente.</li>
+  <li><b>Todas</b>, <b>No leídas</b> (lo que nadie abrió) y <b>Sin respuesta</b> (el cliente escribió último y espera).</li>
+  <li><b>Canales</b>: solo WhatsApp, solo SMS, solo redes…</li>
+  <li><b>Mostrar</b>: cuántas conversaciones cargar.</li>
+</ul>
+<h3>Dentro de la conversación</h3>
+<p>Arriba están las acciones de la venta:</p>
+<dl>
+  <dt>¿Venta ganada?</dt><dd>Cuando el cliente compra. Eliges la oportunidad y se abre el formulario de la venta, el mismo de Ventas: monto, forma de cobro y cuotas.</dd>
+  <dt>Lead perdido</dt><dd>Cuando el cliente no va a comprar. Siempre pide confirmación: eliges la oportunidad (o registras una nueva como perdida), escribes el motivo si quieres y tocas <b>Dar por perdido</b>. La oportunidad queda perdida en la cuenta y el motivo como nota del contacto. Se puede recuperar después desde Oportunidades.</dd>
+  <dt>Recordar</dt><dd>Un recordatorio de seguimiento para escribirle más tarde.</dd>
+  <dt>Ficha</dt><dd>Los datos del contacto al lado de la conversación.</dd>
+</dl>
+<figure><img src="img/05-bandeja.png" alt=""><figcaption>Una conversación abierta con «¿Venta ganada?», «Lead perdido», «Recordar» y la ficha.</figcaption></figure>
+<figure class="tel"><img src="img/06-perdido.png" alt=""><figcaption>«Lead perdido» siempre pide confirmar.</figcaption></figure>
+<h3>Responder</h3>
+<p>Escribe abajo y elige el canal antes de enviar. Cada mensaje que sale muestra <b>quién lo envió</b>: las iniciales de la persona o un ícono de <b>automatización</b> si salió de un flujo, una campaña o un envío masivo.</p>
+<h3>La ficha y la asignación</h3>
+<p>En la ficha ves teléfono, correo, responsable, etiquetas, campos, oportunidad activa, observaciones y tareas. Desde la ficha puedes <b>Editar</b> el contacto y, si tu rol lo permite, <b>Asignar</b> la conversación a otra persona del equipo.</p>
+<div class="tip"><b>Asignar está en la ficha.</b> Desde la versión 2.21.0 el botón «Asignar» ya no está en la cabecera de la conversación: abre la <b>Ficha</b> y tócalo ahí.</div>
+
+<h2 id="contactos" class="salto">7. Contactos</h2>
+<p>Las fichas de todas las personas de la cuenta. Busca por nombre, correo o teléfono, o filtra por fecha de entrada: <b>Entraron hoy</b>, <b>7 días</b> o <b>30 días</b>. Al tocar una persona se abre su ficha al lado (en el teléfono, en pantalla completa).</p>
+<p>Desde la ficha puedes escribirle, editar sus datos y etiquetas, ver su conversación, sus oportunidades y tareas, dejar observaciones y marcar <b>¿Venta ganada?</b>. Con <b>Nuevo contacto</b> creas una ficha; también puedes cargar varias desde Excel.</p>
+<figure><img src="img/07-contactos.png" alt=""><figcaption>Contactos con la ficha abierta.</figcaption></figure>
+
+<h2 id="oportunidades">8. Oportunidades</h2>
+<p>Cada posible venta, en su etapa del embudo. Tiene dos vistas:</p>
+<ul>
+  <li><b>Embudos</b>: un tablero con una columna por etapa, con cuántas oportunidades hay y cuánto suman. Elige el embudo, una etapa o busca por nombre. Cada tarjeta tiene botones para abrir la conversación, la ficha del contacto o <b>moverla a otra etapa</b>.</li>
+  <li><b>Ganadas</b>: las ventas ganadas del mes. El número rojo dice cuántas no tienen monto todavía; complétalas aquí para que las cifras del mes salgan bien.</li>
+</ul>
+<figure><img src="img/08-oportunidades.png" alt=""><figcaption>El tablero de un embudo.</figcaption></figure>
+
+<h2 id="tareas">9. Tareas</h2>
+<p>Lo que cada persona tiene que hacer: llamar, enviar una propuesta, hacer seguimiento. Las tareas se guardan en la cuenta y le aparecen a su responsable.</p>
+<ul>
+  <li>Las cifras de arriba filtran: <b>Para hoy</b>, <b>Vencidas</b>, <b>Abiertas</b> y <b>Hechas</b>.</li>
+  <li>Filtra por responsable o busca por texto. <b>Quitar filtros</b> vuelve a la lista completa.</li>
+  <li><b>Nueva tarea</b> pide título, fecha, responsable y, si quieres, el contacto.</li>
+  <li><b>Marcar hecha</b> la cierra. <b>Descargar</b> la baja a Excel con los filtros puestos.</li>
+</ul>
+<figure><img src="img/09-tareas.png" alt=""><figcaption>Tareas con sus filtros.</figcaption></figure>
+
+<h2 id="gestion" class="salto">10. Gestión Comercial</h2>
+<p>El <b>reporte del mes</b>: ventas, cobros, metas, estudiantes o clientes nuevos y la tendencia del año, con la identidad de tu empresa. Elige el mes arriba.</p>
+<ul>
+  <li><b>Descargar informe</b>: el reporte completo, listo para compartir.</li>
+  <li><b>Editar Dashboard</b>: qué cifras ver y en qué orden.</li>
+  <li>Al final del módulo están los <b>gráficos</b>; con <b>Editar gráficos</b> eliges cuáles ver.</li>
+</ul>
+<figure><img src="img/10-gestion.png" alt=""><figcaption>Gestión Comercial.</figcaption></figure>
+<p>Las cifras salen de las ventas registradas en Ágora y, si tu espacio lo usa, del <b>reporte mensual importado</b>. Las metas y los umbrales se ponen en <b>Configuración mensual</b>.</p>
+
+<h2 id="ventas">11. Ventas, productos y catálogo</h2>
+<p><b>Ventas</b> tiene dos vistas:</p>
+<ul>
+  <li><b>Ventas registradas</b>: las que se cargan en Ágora, por ejemplo desde «¿Venta ganada?» o con <b>Agregar manual</b>. Cada una con su plan de cobro (pago único o cuotas).</li>
+  <li><b>Reporte del mes</b>: las ventas del reporte importado, hoja por asesora.</li>
+</ul>
+<p>Arriba, el resumen: cuántas ventas, cuánto suman, cuánto falta por cobrar y cuántas tienen número de factura. En la tabla puedes ordenar y filtrar por columna, elegir <b>Columnas</b> y <b>Descargar</b> a Excel. Las ventas cuentan desde el 1 de enero de 2026.</p>
+<figure><img src="img/11-ventas.png" alt=""><figcaption>Ventas del mes.</figcaption></figure>
+<p><b>Productos y servicios</b> es la lista de lo que vendes, con precio y si lleva IVA. El <b>Catálogo</b> está dentro: programas, mensualidad, duración y lo inscrito en cada uno.</p>
+
+<h2 id="facturacion" class="salto">12. Facturación</h2>
+<dl>
+  <dt>Cobros</dt><dd>Lo que toca cobrar en el mes, lo pagado y lo vencido, cuota por cuota. Registra un pago y el saldo se actualiza.</dd>
+  <dt>Facturas</dt><dd>Factura <b>fiscal</b> o <b>simple</b>, en dólares, euros o bolívares con la tasa del día y su vencimiento. Se crean desde aquí o desde una venta o un cobro. Con <b>Enviar por correo</b> el cliente recibe un enlace seguro para ver su factura (sirve 60 días). Anular una factura es solo de Administración y Supervisión.</dd>
+  <dt>Libro de ventas</dt><dd>Las facturas del mes, listas para la declaración. Se descarga en Excel.</dd>
+  <dt>Datos fiscales</dt><dd>Razón social, RIF, dirección y numeración de tu empresa, que salen en cada factura.</dd>
+  <dt>Tasas del día</dt><dd>La tasa BCV se trae sola cada día; también se ven las de euro y USDT.</dd>
+</dl>
+<figure><img src="img/12-facturas.png" alt=""><figcaption>Facturas del mes.</figcaption></figure>
+<div class="tip"><b>Facturado no es cobrado.</b> Una factura emitida no marca el pago: el cobro se registra en Cobros.</div>
+
+<h2 id="resultados">13. Gestión y resultados</h2>
+<dl>
+  <dt>Equipo</dt><dd>Ventas, cobranza y comisiones de cada asesora en el mes.</dd>
+  <dt>Embudo y publicidad</dt><dd>Campañas, contactos por canal y ocupación de cupos.</dd>
+  <dt>Redes y anuncios</dt><dd>Las publicaciones de tus redes y las cifras de los anuncios, sin salir de Ágora.</dd>
+  <dt>Costos</dt><dd>Gastos fijos, variables y la inversión prevista del mes.</dd>
+  <dt>Tendencias</dt><dd>Cómo se mueve el negocio mes a mes y año a año.</dd>
+  <dt>Calidad de datos</dt><dd>Lo que conviene corregir antes de cerrar números: ventas sin monto, sin asesora, sin factura…</dd>
+</dl>
+
+<h2 id="contratos" class="salto">14. Contratos y convenios</h2>
+<p><b>Contratos</b> reúne los convenios de pago: estado, firma y documentos. Al abrir uno ves las acciones que permite su estado y tu rol.</p>
+<ol>
+  <li>Crea el convenio con <b>Nuevo convenio</b> (te lleva al generador de contratos).</li>
+  <li>Toca <b>Enviar</b>: el cliente recibe por correo, desde la cuenta de tu empresa, un enlace para leer y <b>firmar en línea</b>.</li>
+  <li>Cuando firma, el convenio cambia de estado y Administración, Supervisión y quien lo creó reciben una notificación.</li>
+</ol>
+<p><b>Con convenio</b> lista las personas que tienen un convenio y permite buscarlas. <b>Registro</b> muestra todo lo que pasó con los convenios, con su hora.</p>
+<figure><img src="img/13-contratos.png" alt=""><figcaption>Contratos.</figcaption></figure>
+
+<h2 id="editar">15. Editar cifras, Dashboard y widgets</h2>
+<p>En todos los módulos se edita igual:</p>
+<ul>
+  <li><b>Editar Dashboard</b>, en la cabecera del módulo, elige qué cifras ver y en qué orden. Administración puede guardarlo para todo el equipo.</li>
+  <li>Cada tarjeta tiene su <b>Editar</b>: cambia el nombre, la forma (cifra, dona, barras) o la esconde.</li>
+  <li>Las cifras del reporte importado se corrigen volviendo a importar; las que se ponen a mano (metas, costos, inversión) están en <b>Configuración mensual</b>.</li>
+  <li>Administración puede crear <b>widgets</b> propios con fórmulas sobre los datos del espacio.</li>
+</ul>
+
+<h2 id="notificaciones">16. Notificaciones</h2>
+<p>La <b>campana</b> de arriba avisa, dentro de Ágora, de lo que te importa: un mensaje nuevo en una conversación tuya, un convenio firmado, un reporte de problema (a quien administra) o intentos de entrada sospechosos (a los dueños). El número rojo dice cuántas no has leído. Toca una para ir directo a lo que avisa; <b>Marcar todas como leídas</b> las limpia.</p>
+<p>Los avisos llegan solos cada pocos segundos mientras tienes Ágora abierta. No llegan al teléfono si Ágora está cerrada.</p>
+<figure><img src="img/14-notificaciones.png" alt=""><figcaption>La campana de notificaciones.</figcaption></figure>
+
+<h2 id="administracion" class="salto">17. Administración</h2>
+<dl>
+  <dt>Usuarios y roles</dt><dd>Quién entra, con qué rol, y con qué persona de la cuenta está <b>enlazado</b> (así ve «lo suyo»). También el logo y los colores del espacio.</dd>
+  <dt>Configuración mensual</dt><dd>Metas, umbrales y costos manuales de cada mes.</dd>
+  <dt>Personalizar</dt><dd>Campos propios para ventas y contactos, y los rubros y productos.</dd>
+  <dt>Migración de datos</dt><dd>Cargar datos de otro sistema desde Excel.</dd>
+  <dt>Auditoría</dt><dd>Quién tocó qué, cuándo y desde dónde. Se exporta por periodo.</dd>
+  <dt>Ajustes</dt><dd>La conexión con la cuenta, el equipo importado y los avisos.</dd>
+</dl>
+
+<h2 id="roles">18. Roles y permisos</h2>
+<table>
+  <tr><th>Puede…</th><th class="c">Administración</th><th class="c">Supervisión</th><th class="c">Ejecutivo</th><th class="c">Consulta</th></tr>
+  <tr><td>Ver conversaciones, contactos y oportunidades</td><td class="c">Todas</td><td class="c">Todas</td><td class="c">Las suyas</td><td class="c">Las suyas</td></tr>
+  <tr><td>Responder, editar, mover, ganar o perder</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">No</td></tr>
+  <tr><td>Asignar conversaciones a otra persona</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">No</td><td class="c">No</td></tr>
+  <tr><td>Cifras de todo el equipo y detalle de los repartos</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">No</td><td class="c">No</td></tr>
+  <tr><td>Emitir facturas y enviar convenios</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">No</td></tr>
+  <tr><td>Anular facturas y ver el libro de ventas</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">No</td><td class="c">No</td></tr>
+  <tr><td>Auditoría y registro de convenios</td><td class="c">Sí</td><td class="c">Sí</td><td class="c">No</td><td class="c">No</td></tr>
+  <tr><td>Usuarios, ajustes y conexión con la cuenta</td><td class="c">Sí</td><td class="c">No</td><td class="c">No</td><td class="c">No</td></tr>
+</table>
+<p>Ágora comprueba los permisos en el servidor en cada acción: aunque alguien escriba una dirección a mano, no ve ni cambia lo que su rol no permite.</p>
+
+<h2 id="problemas" class="salto">19. Si algo falla</h2>
+<ul>
+  <li><b>Una pantalla no carga</b>: toca <b>Reintentar</b> o vuelve al Inicio. Revisa tu conexión a internet.</li>
+  <li><b>Un mensaje de error</b> trae un <b>código</b> como <b>AG-CTA-422</b>. La primera parte dice dónde pasó (CTA es la cuenta, VEN ventas, FAC facturación…) y el número qué tipo de problema fue. Anótalo.</li>
+  <li><b>Reportar un problema</b>: en el menú de tu cuenta. Escribe qué pasó; Ágora agrega sola la pantalla, la versión y los últimos errores. Nunca envía claves ni datos de clientes. Lo recibe quien administra Ágora, que puede ver a qué error del servidor corresponde.</li>
+  <li><b>Si el error es de la cuenta</b> (código <b>AG-CTA</b>): la conexión con la cuenta de tu empresa tardó o se cortó. Espera un momento y repite; si sigue, avisa a Administración (en Ajustes se ve el estado de la conexión).</li>
+</ul>
+
+<h2 id="preguntas">20. Preguntas frecuentes</h2>
+<dl>
+  <dt>¿Lo que hago en Ágora se ve en la cuenta?</dt><dd>Sí. Respuestas, cambios de ficha, etiquetas, tareas, oportunidades movidas, ganadas o perdidas se guardan en la cuenta al momento.</dd>
+  <dt>No veo una conversación que esperaba.</dt><dd>Si tu rol ve «lo suyo», esa conversación no está asignada a ti. Pide a Supervisión que te la asigne.</dd>
+  <dt>Me equivoqué y marqué un lead como perdido.</dt><dd>Ve a Oportunidades, busca la oportunidad y cámbiala de estado o de etapa.</dd>
+  <dt>¿Por qué una venta no aparece en Gestión Comercial?</dt><dd>Revisa que tenga monto y fecha desde el 1/1/2026. Calidad de datos te dice cuáles faltan.</dd>
+  <dt>¿Cómo vuelvo a ver un tutorial?</dt><dd>Menú de tu cuenta → <b>Ver el tutorial de esta pantalla</b>.</dd>
+  <dt>¿El cliente necesita una cuenta para firmar o ver su factura?</dt><dd>No. Recibe un enlace por correo que solo sirve para su documento.</dd>
+  <dt>¿Puedo usar Ágora en el teléfono?</dt><dd>Sí, desde el navegador. Para el trabajo diario de conversaciones también está Ágora Mobile.</dd>
+</dl>
+<p class="manual-meta" style="margin-top:22px">Agora Digital App - ERP · Ágora Digital · {{FECHA}}</p>
+</article>
+</body>
+</html>

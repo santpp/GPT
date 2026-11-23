@@ -1252,3 +1252,35 @@ main#app#app :is(.g-hero,.grid):has(> .grid > .micro) > .grid{display:contents}
 .ntf-i.nueva::before { content: ""; position: absolute; left: 9px; top: 15px; width: 7px; height: 7px; border-radius: 50%; background: var(--ag-1); }
 .ntf-i:not(.nueva) b { font-weight: 500; color: var(--muted); }
 .pop.ntf .ntf-i { padding: 9px 12px 9px 24px !important; display: grid !important; grid-template-columns: minmax(0, 1fr) !important; justify-items: start; align-items: start; gap: 2px; white-space: normal; height: auto; min-height: 0; }
+
+/* 2.21.0 · Bandeja: «Lead perdido» junto a «¿Venta ganada?» (Asignar pasó a la ficha del contacto) */
+#view.ag .live-chat-header .lost-button { background: var(--bad-bg, #fdecee); color: var(--bad, #b42318); font-weight: 600; padding: 6px 13px; }
+#view.ag .live-chat-header .lost-button:hover, #view.ag .live-chat-header .lost-button:focus-visible { background: var(--bad, #b42318); color: #fff; }
+@media (max-width: 700px) { #view.ag .live-chat-header .lost-button { flex: none; padding: 6px 10px; } #view.ag .live-chat-header .lost-button .won-short, #view.ag .live-chat-header .lost-button .won-long { display: none !important; } }
+.lost-form textarea { width: 100%; resize: vertical; }
+/* 2.21.0 · Tutorial de bienvenida (tutorial.js): oscurece la pantalla, deja ver solo la parte explicada y una tarjeta con Atrás/Siguiente. */
+#ag-tour { position: fixed; inset: 0; z-index: 9000; pointer-events: auto; }
+#ag-tour .tour-hueco { position: fixed; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(15, 18, 30, .58); outline: 2px solid var(--brand, #4b3fd6); outline-offset: 2px; transition: left .25s var(--ease-out, ease), top .25s var(--ease-out, ease), width .25s var(--ease-out, ease), height .25s var(--ease-out, ease); pointer-events: none; }
+#ag-tour .tour-card { position: fixed; width: min(360px, calc(100vw - 32px)); background: var(--surface, #fff); color: var(--ink, #14161f); border: 1px solid var(--line, #e4e4ec); border-radius: 16px; box-shadow: 0 18px 50px rgba(0, 0, 0, .22); padding: 16px 18px 14px; font-family: var(--font-text, inherit); outline: none; }
+#ag-tour .tour-n { margin: 0 0 4px; font-size: 12px; color: var(--muted, #6b6f80); font-weight: 600; letter-spacing: .02em; }
+#ag-tour h3 { margin: 0 0 6px; font-family: var(--font-display, inherit); font-size: 17px; line-height: 1.3; }
+#ag-tour .tour-x { margin: 0 0 14px; font-size: 14px; line-height: 1.5; color: var(--ink-2, #3a3d4a); }
+#ag-tour .tour-acc { display: flex; align-items: center; gap: 8px; }
+#ag-tour .tour-acc span { flex: 1; }
+#ag-tour .tour-acc button { font: inherit; font-size: 14px; border-radius: 10px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--line, #e4e4ec); background: transparent; color: var(--ink, #14161f); min-height: 40px; }
+#ag-tour .tour-acc .tour-saltar { border-color: transparent; color: var(--muted, #6b6f80); padding-left: 4px; }
+#ag-tour .tour-acc .tour-sig { background: var(--brand, #4b3fd6); border-color: var(--brand, #4b3fd6); color: #fff; font-weight: 600; }
+#ag-tour .tour-acc button:focus-visible { outline: 2px solid var(--brand, #4b3fd6); outline-offset: 2px; }
+@media (max-width: 639px) { #ag-tour .tour-card, #ag-tour .tour-card.tour-centro { left: 16px !important; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); top: auto !important; width: auto; transform: none !important; } }
+@media (prefers-reduced-motion: reduce) { #ag-tour .tour-hueco { transition: none; } }
+/* 2.21.0 · Cabecera de la conversación con «¿Venta ganada?» y «Lead perdido»: el nombre se corta con «…» y, si el panel es angosto,
+   «Recordar» y «Ficha» quedan en ícono, luego «Ganada» y «Perdido» en etiqueta corta y al final solo ícono (mide el panel, no la ventana). La ficha deja Asignar, Editar y cerrar en una línea. */
+#view.ag .live-chat-header { container-type: inline-size; }
+#view.ag .live-chat-header h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#view.ag .live-chat-header > div { flex: 1 1 90px; }
+#view.ag .live-chat-header > button { flex: none; }
+@container (max-width: 820px) { #view.ag .live-chat-header .rec-text, #view.ag .live-chat-header .assign-text { display: none; } }
+@container (max-width: 640px) { #view.ag .live-chat-header .won-long { display: none !important; } #view.ag .live-chat-header .won-short { display: inline !important; } }
+@container (max-width: 560px) { #view.ag .live-chat-header .won-short, #view.ag .live-chat-header .won-long { display: none !important; } }
+#view.ag .live-profile-header .live-profile-controls { flex-wrap: nowrap; flex: none; align-items: center; }
+#view.ag .live-profile-header > div:first-child { min-width: 0; }

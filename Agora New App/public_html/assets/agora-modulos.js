@@ -2287,7 +2287,7 @@
         list();
         layout.classList.add("chat-open");
         layout.classList.remove("contact-open");
-        $("#live-messages").innerHTML = `<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">${UI_ICONS.back}</button><span class="avatar">${esc7(initials(c))}</span><div><h2>${esc7(name(c))}</h2><p>${channelChip(c.lastMessageType)}</p></div>${canWin() ? '<button id="live-won" class="won-button" title="¿Venta ganada?" aria-label="¿Venta ganada?"><span aria-hidden="true">✓</span><span class="won-long">¿Venta ganada?</span><span class="won-short">¿Ganada?</span><span class="sr-only">¿Venta ganada?</span></button>' : ""}<button id="live-recordar" class="rec-button" title="Recordatorio de seguimiento" aria-label="Recordatorio de seguimiento"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.5 1.5M9 2.5h6"/></svg></span><span class="rec-text">Recordar</span></button><button id="live-assign" class="assign-button" hidden title="Asignar la conversación" aria-label="Asignar la conversación"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20c.7-3.6 3.2-5.5 6.5-5.5s5.8 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg></span><span class="assign-text">Asignar</span></button><button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">${UI_ICONS.expand}</button><button id="live-contact-toggle" class="assign-button" aria-label="Ficha del contacto: editar y agregar observaciones" title="Ficha del contacto: editar y agregar observaciones"><span aria-hidden="true">${UI_ICONS.contact}</span><span class="assign-text">Ficha</span></button></header><div id="live-rec" class="live-rec" role="status" hidden></div><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
+        $("#live-messages").innerHTML = `<header class="live-chat-header"><button id="live-back" aria-label="Volver a conversaciones">${UI_ICONS.back}</button><span class="avatar">${esc7(initials(c))}</span><div><h2>${esc7(name(c))}</h2><p>${channelChip(c.lastMessageType)}</p></div>${canWin() ? '<button id="live-won" class="won-button" title="¿Venta ganada?" aria-label="¿Venta ganada?"><span aria-hidden="true">✓</span><span class="won-long">¿Venta ganada?</span><span class="won-short">¿Ganada?</span><span class="sr-only">¿Venta ganada?</span></button><button id="live-lost" class="lost-button" title="Lead perdido" aria-label="Lead perdido"><span aria-hidden="true">✕</span><span class="won-long">Lead perdido</span><span class="won-short">Perdido</span></button>' : ""}<button id="live-recordar" class="rec-button" title="Recordatorio de seguimiento" aria-label="Recordatorio de seguimiento"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.5 1.5M9 2.5h6"/></svg></span><span class="rec-text">Recordar</span></button><button id="live-focus" aria-label="Ampliar la conversación" title="Ampliar la conversación">${UI_ICONS.expand}</button><button id="live-contact-toggle" class="assign-button" aria-label="Ficha del contacto: editar y agregar observaciones" title="Ficha del contacto: editar y agregar observaciones"><span aria-hidden="true">${UI_ICONS.contact}</span><span class="assign-text">Ficha</span></button></header><div id="live-rec" class="live-rec" role="status" hidden></div><div class="live-history-actions"><button id="live-older" hidden>Cargar mensajes anteriores</button><p id="live-chat-status" role="status"></p><button id="live-retry" hidden>Reintentar</button></div><div id="live-log" class="messages live-message-log" aria-label="Historial de mensajes"></div>${composer(c)}`;
         {
           const log = $("#live-log");
           let stick = true, lastHeight = log.clientHeight;
@@ -2312,6 +2312,9 @@
         const recordar = $("#live-recordar");
         if (recordar) recordar.onclick = () => recordatorioDialog(c);
         pintarRecordatorio(c);
+        // Agora New App 2.21.0: «Lead perdido» junto a «¿Venta ganada?» (asignar pasó a la ficha del contacto).
+        const lost = $("#live-lost");
+        if (lost) lost.onclick = () => window.agoraPerder && window.agoraPerder({ connection: select.value, conversationId: c.id, contactId: c.contactId, nombre: name(c) });
         const won = $("#live-won");
         if (won) won.onclick = () => winDialog(c);
         if (Number(c.unreadCount) > 0 && me?.csrf) {
@@ -2773,11 +2776,8 @@
           };
           const data = await request2(`workspace/contact?connectionId=${encodeURIComponent(select.value)}&conversationId=${encodeURIComponent(c.id)}`);
           if (!active() || version !== chatGeneration) return;
-          const assign = $("#live-assign");
-          if (assign && data.canAssign === true && asList6(data.assignees).length) {
-            assign.hidden = false;
-            assign.onclick = () => assignDialog(c, data.assignees, data.contact?.assignedTo || c.assignedTo || "");
-          }
+          // Agora New App 2.21.0: «Asignar» vive ahora solo en la ficha del contacto (ver bind()).
+          const puedeAsignar = data.canAssign === true && asList6(data.assignees).length > 0;
           if (Array.isArray(data.channels) && data.channels.length) {
             chatChannels = data.channels;
             const draft = drafts.get(select.value + ":" + c.id);
@@ -2792,6 +2792,11 @@
           };
           const bind = () => {
             $("#live-profile-close").onclick = () => layout.classList.remove("contact-open");
+            const ctrl = panel2.querySelector(".live-profile-controls");
+            if (ctrl && puedeAsignar && !ctrl.querySelector("#live-assign")) {
+              ctrl.insertAdjacentHTML("afterbegin", '<button id="live-assign" type="button" title="Asignar la conversación">Asignar</button>');
+              ctrl.querySelector("#live-assign").onclick = () => assignDialog(c, data.assignees, data.contact?.assignedTo || c.assignedTo || "");
+            }
             const edit2 = $("#live-edit-contact");
             if (edit2) edit2.onclick = () => {
               editing = true;
