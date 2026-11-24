@@ -33,8 +33,10 @@ final class GhlClient {
     public function createUser(array $payload):array {return $this->get('/users/','2021-07-28',$payload);}
     public function updateUser(string $id,array $payload):array {return $this->put('/users/'.rawurlencode($id),'2021-07-28',$payload);}
     /** Plantillas de WhatsApp aprobadas para un número (GET /locations/{id}/templates, type=whatsapp). */
-    public function whatsappTemplates(string $location,string $numberId,int $skip=0):array {
-        return $this->get('/locations/'.rawurlencode($location).'/templates?'.http_build_query(['type'=>'whatsapp','originId'=>$numberId,'deleted'=>'false','skip'=>(string)$skip,'limit'=>'100']),'2021-07-28');
+    // Agora New App 2.26.0: originId es el identificador de la subcuenta (Location ID), no el número de WhatsApp (documentación de
+    // locations/templates: originId obligatorio, su ejemplo es el mismo Location ID). $type vacío = todas (SMS, correo y WhatsApp).
+    public function whatsappTemplates(string $location,string $origin,int $skip=0,string $type='whatsapp'):array {
+        return $this->get('/locations/'.rawurlencode($location).'/templates?'.http_build_query(array_filter(['type'=>$type,'originId'=>$origin,'deleted'=>'false','skip'=>(string)$skip,'limit'=>'100'],fn($v)=>$v!=='')),'2021-07-28');
     }
     /** Abre una conversación con un contacto que aún no tenía (POST /conversations/). */
     public function createConversation(string $location,string $contact):array {return $this->get('/conversations/','2021-04-15',['locationId'=>$location,'contactId'=>$contact]);}

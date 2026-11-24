@@ -112,8 +112,7 @@ final class MessageSender {
     private function templatePayload(array $connection,string $contact,string $channel,array $input):array {
         require_once __DIR__.'/WhatsappTemplates.php';
         if($channel!=='WhatsApp')throw new SendProblem('template_channel',422,'Las plantillas son sólo para WhatsApp.');
-        $from=$connection['whatsapp_number_id']??null;
-        if(!is_string($from)||$from==='')throw new SendProblem('number_missing',409,'Falta el identificador del número de WhatsApp de esta cuenta. El administrador lo añade en Conexiones.');
+        $from=(string)($connection['whatsapp_number_id']??''); // Agora New App 2.26.0: opcional (para elegir el número que envía)
         $profile=query('SELECT payload FROM contact_profile_cache WHERE connection_id=? AND contact_id=?',[$connection['id'],$contact])->fetchColumn();
         $profile=is_string($profile)?json_decode($profile,true):null;
         $to=WhatsappTemplates::phone(is_array($profile)?($profile['phone']??null):null);

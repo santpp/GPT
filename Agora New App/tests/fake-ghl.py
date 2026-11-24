@@ -3,7 +3,7 @@
 """Cuenta simulada (solo desarrollo) para probar Agora New App sin la cuenta real.
 Uso: python3 tests/fake-ghl.py 8099  y arrancar la API con APP_ENV=development AGORA_GHL_FAKE=http://127.0.0.1:8099
 Responde con la misma forma que la API v2 en las rutas que usa el motor. Anota cada petición en fake-ghl.log."""
-import json,sys,time,re
+import os,json,sys,time,re
 from http.server import BaseHTTPRequestHandler,HTTPServer
 from urllib.parse import urlparse,parse_qs
 LOC='LOCasocim000000001'
@@ -55,10 +55,13 @@ class H(BaseHTTPRequestHandler):
             return self.out(201,{'transactions':tx if b.get('skip',0)==0 else [],'total':len(tx)})
         if p.startswith('/locations/'+LOC+'/tags'):return self.out(200,{'tags':[{'name':'cliente'}]})
         # 2.25.0 · plantillas de WhatsApp: con originId '1234567890' (o la cuenta '9876543210') hay dos aprobadas y una rechazada
+        # 2.26.0 · como dice la documentación: originId obligatorio y es el Location ID; sin «type», todas (aquí, una de SMS)
+        if p==f'/locations/{LOC}/templates' and q.get('originId')!=LOC:return self.out(422,{'message':['originId must be the location id']})
+        if p==f'/locations/{LOC}/templates' and not q.get('type'):return self.out(200,{'templates':[{'id':'sms-tpl-1','name':'aviso_sms','type':'sms'}]+([] if os.environ.get('FAKE_SIN_WA') else []),'totalCount':1})
         if p==f'/locations/{LOC}/templates' and q.get('type')=='whatsapp':
-            if q.get('originId') not in('1234567890','9876543210'):return self.out(200,{'templates':[],'totalCount':0})
+            if os.environ.get('FAKE_SIN_WA') or getattr(H,'sin_wa',False):return self.out(200,{'templates':[],'totalCount':0})
             return self.out(200,{'templates':[
-             {'name':'bienvenida','status':'APPROVED','language':'es','category':'MARKETING','components':[{'type':'BODY','text':'Hola {{1}}, gracias por escribirnos.'}]},
+             {'id':'wa-tpl-bienvenida','name':'bienvenida','status':'APPROVED','language':'es','category':'MARKETING','components':[{'type':'BODY','text':'Hola {{1}}, gracias por escribirnos.'}]},
              {'name':'seguimiento_cita','status':'APPROVED','language':'es','category':'UTILITY','components':[{'type':'BODY','text':'Te recordamos tu cita del {{1}}.'}]},
              {'name':'promo_vieja','status':'REJECTED','language':'es','category':'MARKETING','components':[{'type':'BODY','text':'Promo'}]}],'totalCount':3})
         if p.startswith('/locations/'+LOC+'/customFields') or p.startswith('/custom-fields'):return self.out(200,{'customFields':[],'fields':[]})
@@ -78,6 +81,7 @@ class H(BaseHTTPRequestHandler):
             if 'role' in b:x['roles']={**x.get('roles',{}),'role':b['role'],'type':b.get('type','account')}
             return self.out(200,x)
         if p=='/__usuarios':return self.out(200,{'users':USERS})
+        if p=='/__sin_wa' and m=='POST':H.sin_wa=bool(b.get('on'));return self.out(200,{'sin_wa':H.sin_wa})
         if p=='/users/':return self.out(200,{'users':USERS})
         if p=='/conversations/search':
             items=[c for c in CONVS if 'assignedTo' not in q or c['assignedTo']==q['assignedTo']]

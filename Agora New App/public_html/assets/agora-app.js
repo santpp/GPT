@@ -2691,10 +2691,9 @@ function agenciaCuentaEditar(a) {
       </fieldset>
       ${a?.conexion?.origen === 'subcuenta' ? `<fieldset class="bx bx-wide" id="bx-whatsapp">
         <legend>${icon('chat')}Plantillas de WhatsApp</legend>
-        <p class="bx-help">Pasadas 24 horas desde el último mensaje del cliente, WhatsApp solo deja escribir con una plantilla aprobada. Con estos datos la Bandeja las ofrece, y aquí compruebas que la conexión las lee.</p>
+        <p class="bx-help">Pasadas 24 horas desde el último mensaje del cliente, WhatsApp solo deja escribir con una plantilla aprobada. «Comprobar plantillas» las pide a la cuenta de esta subcuenta: así verificas la conexión, y la Bandeja las ofrece.</p>
         <div class="bx-row con-row">
-          <label class="fld"><span class="fld-l">Identificador del número</span><input data-wa-numero inputmode="numeric" maxlength="30" autocomplete="off" spellcheck="false" placeholder="Solo cifras"><span class="fld-hint">En la configuración de WhatsApp de la cuenta («Phone number ID»).</span></label>
-          <label class="fld"><span class="fld-l">Cuenta de WhatsApp Business <small>(opcional)</small></span><input data-wa-cuenta inputmode="numeric" maxlength="30" autocomplete="off" spellcheck="false" placeholder="Solo si con el número no llegan"><span class="fld-hint">«WhatsApp Business Account ID».</span></label>
+          <label class="fld"><span class="fld-l">Número que envía <small>(opcional)</small></span><input data-wa-numero inputmode="numeric" maxlength="30" autocomplete="off" spellcheck="false" placeholder="Solo cifras"><span class="fld-hint">Solo si la subcuenta tiene más de un número de WhatsApp: el identificador del número («Phone number ID»). Para ver las plantillas no hace falta.</span></label>
         </div>
         <div class="con-acts"><button class="btn btn-sm" type="button" data-wa-guardar>Guardar</button><button class="btn btn-sm" type="button" data-wa-comprobar>${icon('refresh')}Comprobar plantillas</button></div>
         <div class="wa-res" data-wa-res role="status"></div>
@@ -2940,19 +2939,19 @@ async function agenciaUsuarios(id, accounts) {
 const WA_FUERA = {status_rejected: 'rechazadas', status_pending: 'en revisión', status_paused: 'en pausa', status_disabled: 'desactivadas', name: 'sin nombre válido', language: 'sin idioma', unknown: 'sin datos'};
 function waResumen(r) {
   const d = r?.diagnostico, lista = r?.plantillas;
-  if (!d && !lista) return r?.numberId ? '<p class="bx-help">Aún no se ha comprobado. Toca «Comprobar plantillas».</p>' : '<p class="bx-help">Sin número guardado: la Bandeja no puede ofrecer plantillas.</p>';
+  if (!d && !lista) return '<p class="bx-help">Aún no se ha comprobado. Toca «Comprobar plantillas».</p>';
   const fuera = Object.entries(d?.dropped || {}).map(([k, v]) => `${v} ${WA_FUERA[k] || k.replace(/^status_/, '')}`).join(', ');
   const ok = (d?.shown ?? lista?.length ?? 0) > 0;
   const nombres = lista ? lista.map(t => `${t.nombre} (${t.idioma})`) : (d?.names || []);
-  return `<p class="wa-l ${ok ? 'ok' : 'no'}"><span class="lt ${ok ? 'lt-ok' : 'lt-warn'}"><i aria-hidden="true"></i></span><span>${d?.received === 0 ? 'La cuenta no devolvió ninguna plantilla con ese identificador. Revisa el número o prueba con la cuenta de WhatsApp Business.' : `La cuenta devolvió <b>${int(d?.received ?? nombres.length)}</b>; se pueden usar <b>${int(d?.shown ?? nombres.length)}</b>${fuera ? ` (fuera: ${esc(fuera)})` : ''}.`}</span></p>${nombres.length ? `<div class="wa-chips">${nombres.slice(0, 30).map(x => `<span class="sc sc-gray">${esc(x)}</span>`).join('')}</div>` : ''}${d?.at ? `<p class="bx-help">Comprobado: ${esc(fstamp(d.at))}</p>` : ''}`;
+  return `<p class="wa-l ${ok ? 'ok' : 'no'}"><span class="lt ${ok ? 'lt-ok' : 'lt-warn'}"><i aria-hidden="true"></i></span><span>${d?.received === 0 ? (d?.otras > 0 ? `La conexión funciona (la cuenta devolvió ${int(d.otras)} plantillas de SMS o correo), pero ninguna de WhatsApp. Revisa en la cuenta que el WhatsApp esté conectado en esta subcuenta y que haya plantillas aprobadas.` : d?.otras === 0 ? 'La cuenta no devolvió ninguna plantilla, ni de WhatsApp ni de SMS o correo. Revisa que el token sea de esta subcuenta y que tenga el permiso de plantillas.' : 'La cuenta no devolvió ninguna plantilla de WhatsApp. Revisa en la cuenta que haya plantillas aprobadas.') : `La cuenta devolvió <b>${int(d?.received ?? nombres.length)}</b>; se pueden usar <b>${int(d?.shown ?? nombres.length)}</b>${fuera ? ` (fuera: ${esc(fuera)})` : ''}.`}</span></p>${nombres.length ? `<div class="wa-chips">${nombres.slice(0, 30).map(x => `<span class="sc sc-gray">${esc(x)}</span>`).join('')}</div>` : ''}${d?.at ? `<p class="bx-help">Comprobado: ${esc(fstamp(d.at))}</p>` : ''}`;
 }
 async function waSubcuenta(f, id) {
-  const caja = f.querySelector('#bx-whatsapp'), res = caja.querySelector('[data-wa-res]'), num = caja.querySelector('[data-wa-numero]'), cta = caja.querySelector('[data-wa-cuenta]');
-  try { const r = await agoraApi('agency/accounts/whatsapp?accountId=' + encodeURIComponent(id)); num.value = r.numberId || ''; cta.value = r.accountId || ''; res.innerHTML = waResumen(r); }
+  const caja = f.querySelector('#bx-whatsapp'), res = caja.querySelector('[data-wa-res]'), num = caja.querySelector('[data-wa-numero]');
+  try { const r = await agoraApi('agency/accounts/whatsapp?accountId=' + encodeURIComponent(id)); num.value = r.numberId || ''; res.innerHTML = waResumen(r); }
   catch (x) { res.innerHTML = `<p class="fld-err">${esc(x.message)}</p>`; }
   caja.querySelector('[data-wa-guardar]').onclick = async e => {
     const b = e.currentTarget; busy(b, true, 'Guardando…');
-    try { const r = await agoraApi('agency/accounts/whatsapp', {method: 'PUT', body: {accountId: id, numberId: num.value.trim() || null, wabaId: cta.value.trim() || null}}); res.innerHTML = waResumen(r); toast(r.numberId ? 'Número de WhatsApp guardado.' : 'Se quitó el número de WhatsApp.'); }
+    try { const r = await agoraApi('agency/accounts/whatsapp', {method: 'PUT', body: {accountId: id, numberId: num.value.trim() || null}}); res.innerHTML = waResumen(r); toast(r.numberId ? 'Número de WhatsApp guardado.' : 'Sin número: se envía con el de la cuenta.'); }
     catch (x) { res.innerHTML = `<p class="fld-err">${esc(x.message)}</p>`; } finally { busy(b, false); }
   };
   caja.querySelector('[data-wa-comprobar]').onclick = async e => {
@@ -4357,7 +4356,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.25.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.26.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */

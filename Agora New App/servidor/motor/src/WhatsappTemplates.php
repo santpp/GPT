@@ -42,13 +42,10 @@ final class WhatsappTemplates {
 
     /** Las plantillas listas para usar, de la caché si es reciente. */
     public function list(array $connection,bool $fresh=false):array {
-        $number=$connection['whatsapp_number_id']??null;
-        if(!is_string($number)||$number==='')throw new TemplateProblem('number_missing',409,'Falta el identificador del número de WhatsApp de esta cuenta. El administrador lo añade en Conexiones.');
-        // Las plantillas pertenecen a la cuenta de WhatsApp Business; si el
-        // administrador la indicó, se piden con ella; si no, con el número.
-        $account=$connection['whatsapp_account_id']??null;
-        $origin=is_string($account)&&$account!==''?$account:$number;
-        $key='wa-templates:'.$origin;
+        // Agora New App 2.26.0: se piden con el identificador de la subcuenta (originId = Location ID, según la documentación).
+        // Antes se usaba el número de WhatsApp y la cuenta no devolvía nada. El número ya no hace falta para ver la lista.
+        $origin=(string)$connection['location_id'];
+        $key='wa-templates:loc:'.$origin;
         $row=query('SELECT payload,UNIX_TIMESTAMP(fetched_at) AS fetched FROM directory_cache WHERE connection_id=? AND cache_key=?',[$connection['id'],$key])->fetch();
         if($row&&!$fresh&&(int)$row['fetched']>time()-self::TTL)return json_decode($row['payload'],true);
         $raw=[];$top=[];
@@ -69,8 +66,11 @@ final class WhatsappTemplates {
         query('INSERT INTO directory_cache(connection_id,cache_key,payload) VALUES(?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload),fetched_at=CURRENT_TIMESTAMP',[$connection['id'],$key,json_encode($templates,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE)]);
         // Lo que devolvió la cuenta, sin contenido: cuántas, cuáles se quedaron
         // fuera y por qué, y los nombres de los campos, para el administrador.
+        // Agora New App 2.26.0: si no llegó ninguna de WhatsApp, se piden todas (sin filtro) para saber si la conexión lee plantillas.
+        $otras=null;
+        if(!$raw){try{$todo=$this->gateway->execute($connection,fn(GhlClient $client)=>$client->whatsappTemplates($connection['location_id'],$origin,0,''),false);$otras=count(self::items($todo));}catch(Throwable){$otras=null;}}
         $sample=$raw[0]??[];
-        self::remember((int)$connection['id'],['at'=>gmdate('c'),'origin'=>$origin===$number?'number':'account','received'=>count($raw),'shown'=>count($templates),
+        self::remember((int)$connection['id'],['at'=>gmdate('c'),'origin'=>'location','otras'=>$otras,'received'=>count($raw),'shown'=>count($templates),
             'dropped'=>$dropped,'names'=>array_slice(array_map(fn($x)=>$x['name'].' ('.$x['language'].')',$templates),0,30),
             'fields'=>['top'=>$top,'item'=>array_slice(array_map('strval',array_keys($sample)),0,30),'template'=>is_array($sample['template']??null)?array_slice(array_map('strval',array_keys($sample['template'])),0,30):[]]]);
         return $templates;
@@ -180,12 +180,14 @@ final class WhatsappTemplates {
         $message=($template['header']!==null?$render($template['header'],$header)."\n\n":'').$render($template['body'],$body).($template['footer']?"\n\n".$template['footer']:'');
         if(trim($message)==='')$message='Plantilla: '.$template['name'];
         return [
-            'type'=>'WhatsApp','contactId'=>$contact,'message'=>$message,
+            // Agora New App 2.26.0: templateId es el campo documentado para enviar una plantilla (conversations/messages).
+            'type'=>'WhatsApp','contactId'=>$contact,'message'=>$message]+(preg_match('/^[A-Za-z0-9_-]{6,80}$/D',(string)$template['id'])?['templateId'=>$template['id']]:[])+[
             'whatsapp'=>[
                 'type'=>'template',
                 'template'=>array_filter(['name'=>$template['name'],'lang'=>$template['language'],'category'=>$template['category']],fn($v)=>$v!==null),
                 'placeholders'=>['header'=>array_values($header),'body'=>array_values($body),'buttons'=>[]],
-                'fromNumberId'=>$from,'toNumber'=>$to,
+                'toNumber'=>$to,
+            ]+($from!==''?['fromNumberId'=>$from]:[])+[
             ],
         ];
     }

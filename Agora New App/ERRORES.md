@@ -1,5 +1,9 @@
 # Agora New App · lista de errores
 
+- **2.26.0 · «Activar protección» de facturación respondía 500 (arreglado).** `workspace/fiscal/proteccion` crea disparadores (DDL) dentro de la transacción de `api/index.php`; MySQL/MariaDB confirma solo y al cerrarla daba «There is no active transaction» (500), aunque la protección quedaba instalada. Encontrado por `errores-cobertura.py` cuando faltaba un disparador. La ruta va fuera de la transacción. Prueba: `tests/fixes-2260.py`.
+
+- **2.26.0 · Plantillas de WhatsApp: la cuenta no devolvía ninguna (arreglado).** `GhlClient::whatsappTemplates()` mandaba `originId` = identificador del número (o de la cuenta de WhatsApp Business); la documentación de `GET /locations/{id}/templates` pide `originId` = Location ID. Visto por el usuario con la cuenta real (2.25.0). Ahora `originId` = Location ID, el número es opcional y el envío lleva `templateId`. Prueba: `tests/fixes-2260.py`.
+
 - **2.23.1 · Tablas en latin1 en una instalación nueva (arreglado).** CyberPanel crea la base con latin1 por defecto y `agora_schema` (Installer), `agora_assignments`, `agora_sessions`, `agora_rate_limits`, `agora_signatures` y `agora_idempotency` (migraciones 001 a 003) no declaraban su juego de caracteres. Visto en el diagnóstico de mi.agoradigital.app. Migración 016 + `Installer::utf8mb4()`. Prueba: `tests/fixes-2231.py`.
 
 - **2.19.2 · 500 con datos vacíos en el motor (arreglado).** `motor/src/bootstrap.php::body()` lanzaba una excepción con `{}` o JSON roto: crear, editar y cambiar estado de oportunidad, contacto de conversación, reglas y ajustes de Consumos respondían 500. Ahora `{}` es «sin datos» y el JSON roto un 400. **Guardados vacíos que borraban:** `POST workspace/board-month` y `PUT workspace/productos` sin datos reemplazaban la configuración del mes y el catálogo; ahora 422. Prueba: `tests/errores-cobertura.py`.

@@ -15,7 +15,7 @@ try:
     # ---------- API: plantillas de WhatsApp de la subcuenta ----------
     st,r=duena.call('agency/accounts/whatsapp','PUT',{'accountId':2,'numberId':None,'wabaId':None})
     ok(st==200 and r['numberId'] is None,'se puede dejar la subcuenta sin número')
-    st,r=duena.call('agency/accounts/whatsapp','POST',{'accountId':2});ok(st==409 and 'Escríbelo y guarda' in r.get('error',''),'comprobar sin número explica qué falta')
+    st,r=duena.call('agency/accounts/whatsapp','POST',{'accountId':2});ok(st==200 and len(r.get('plantillas',[]))==2,'desde 2.26.0, comprobar no necesita el número (se piden con el identificador de la subcuenta)')
     ok(duena.call('agency/accounts/whatsapp','PUT',{'accountId':2,'numberId':'abc'})[0]==422,'el identificador del número solo admite cifras')
     st,r=duena.call('agency/accounts/whatsapp','PUT',{'accountId':2,'numberId':'1234567890','wabaId':None});ok(st==200 and r['numberId']=='1234567890','se guarda el número en la conexión de la subcuenta')
     st,r=duena.call('agency/accounts/whatsapp','POST',{'accountId':2})

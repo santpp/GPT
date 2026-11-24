@@ -7,7 +7,7 @@ como administración, ejecutivo, dueña y sin sesión, y exige:
 - ningún error interno (5xx) salvo los dos avisos de «no habilitado» (devices/test y workspace/sync);
 - un guardado vacío no borra las cifras del mes ni el catálogo de productos; un JSON roto es un 400 con código.
 Se salta «olvidar el token de Consumos» (DELETE admin/consumption/token), que sí borra. Requiere la API local y la cuenta simulada."""
-import os,json,subprocess,urllib.request
+import time,os,json,subprocess,urllib.request
 src=open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'acceso-correo.py'),encoding='utf-8').read()
 exec(src[src.index('import sys'):src.index("limpiar();duena=C()")])
 RAIZ=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..')
@@ -43,7 +43,14 @@ desc=subprocess.run(['php','-r',php,json.dumps(cods),RAIZ],capture_output=True,t
 ok(not desc,f'los {len(cods)} códigos distintos están en el diccionario, con su razón {desc[:5]}')
 g=[x[:4] for x in errores if x[3]>=500 and x[1] not in AVISOS]
 ok(not g,f'ningún error interno con datos vacíos {g[:5]}')
-ok(adm.call('workspace/board-month?period=2026-11')[1].get('settings')==antes_mes,'un guardado vacío no tocó las cifras del mes')
+def leer_mes():
+    # Tras cientos de llamadas la cuenta puede pedir esperar (429 con retryAfter, tope de llamadas por segundo): se espera y se vuelve a leer.
+    for _ in range(8):
+        st,d=adm.call('workspace/board-month?period=2026-11')
+        if st!=429:return d
+        time.sleep(min(10,int(d.get('retryAfter') or 2)+1))
+    return d
+ok(leer_mes().get('settings')==antes_mes,'un guardado vacío no tocó las cifras del mes')
 p2=adm.call('workspace/productos')[1];ok(p2.get('productos')==antes_prod.get('productos') and p2.get('rubros')==antes_prod.get('rubros'),'un guardado vacío no tocó el catálogo de productos')
 st,d=adm.call('workspace/board-month?period=2026-11','POST',{'period':'2026-11'});ok(st==422 and d.get('codigo')=='AG-GES-422','cifras del mes vacías: 422 con su código')
 st,d=adm.call('workspace/productos','PUT',{});ok(st==422 and d.get('codigo')=='AG-GES-422','productos sin listas: 422 con su código')

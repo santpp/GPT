@@ -47,3 +47,5 @@ oportunidades, embudos, ventas ganadas, tablero y consumos de la agencia.
 - **2.24.0 · Ficha del contacto:** `agora-modulos.js` (Agora New App): cabecera de la ficha de la Bandeja con avatar y nombre (`.lp-quien`, sin «Contexto del contacto»), «Correo» en vez de «Email», «Embudo» en vez de «Pipeline», campos vacíos «Sin campos con valor» en Contactos. El estilo, en `agora-new.css`.
 
 - **2.25.0 · Ayuda y WhatsApp:** `agora-modulos.js` (Agora New App): `renderHelp` lee `manual/erp.html` (el manual del ERP) en vez de `manual/vendedores.html` y sin fila de botones propia. Las plantillas de WhatsApp se guardan y comprueban desde el ERP con `MotorMobile::whatsapp()` (usa `WhatsappTemplates` del motor sin cambios).
+
+- **2.26.0 · Plantillas de WhatsApp:** `GhlClient::whatsappTemplates()` usa `originId` = Location ID (antes el número; la cuenta real no devolvía nada) y admite `type` vacío; `WhatsappTemplates::list()` ya no exige el número, guarda en caché por Location ID y, si no llega ninguna, cuenta las plantillas sin filtro (`otras`); `payload()` agrega `templateId` y `fromNumberId` solo si hay número; `MessageSender` ya no exige el número. Distinto de Mobile.

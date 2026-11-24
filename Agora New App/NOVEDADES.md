@@ -1,5 +1,12 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.26.0 · Plantillas de WhatsApp como dice la documentación de la cuenta (24 nov):**
+- **No llegaban las plantillas** con la cuenta real. Ágora las pedía con el identificador del número de WhatsApp, pero la cuenta las pide con el **identificador de la subcuenta** (Location ID): lo confirma la documentación local (`originId` obligatorio; su ejemplo es el Location ID). Corregido.
+- **El número de WhatsApp ya no hace falta** para ver ni para enviar plantillas. Queda como «Número que envía (opcional)», solo si la subcuenta tiene más de un número. Se quitó el campo de la cuenta de WhatsApp Business (ya no se usa).
+- **Si no llega ninguna de WhatsApp**, «Comprobar plantillas» pide todas sin filtro y explica: si la conexión lee plantillas de SMS o correo (el token y la subcuenta están bien, falta WhatsApp conectado o plantillas aprobadas) o si no lee ninguna (token de otra subcuenta o sin el permiso de plantillas).
+- **Enviar una plantilla** desde la Bandeja manda ahora el campo documentado `templateId`.
+- Prueba: `tests/fixes-2260.py` (8). No probado con la cuenta real: se confirma con «Comprobar plantillas».
+
 **Novedades 2.25.0 · Ayuda con el manual del ERP, ícono de ayuda y plantillas de WhatsApp en la subcuenta (24 nov):**
 - **Ícono de Ayuda** (signo de interrogación) en la cabecera, junto a la campana: «Ver el tutorial de esta pantalla» (donde lo hay; si no, lo dice), «Ver el manual» y «Descargar el manual (PDF)».
 - **Ayuda** muestra ahora el manual del ERP («Agora Digital App - ERP»), con sus capturas, en vez de la guía vieja de vendedores. El «Descargar» de la cabecera baja el PDF, que ya va en el paquete.
