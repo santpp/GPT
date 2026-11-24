@@ -4362,12 +4362,13 @@
     container.agoraViewInstance = instance;
     container.innerHTML = '<div class="manual-wrap"><p class="empty">Abriendo el manual…</p></div>';
     try {
-      const r = await fetch(BASE + "manual/vendedores.html", { cache: "no-cache" });
+      const r = await fetch(BASE + "manual/erp.html", { cache: "no-cache" }); // Agora New App 2.25.0: el manual del ERP (lo genera tools/make-manual.py)
       if (!r.ok) throw new Error("missing");
       const html = await r.text();
       if (container.agoraViewInstance !== instance) return;
       const version = (document.querySelector("#app-version")?.textContent.match(/v(\d+\.\d+\.\d+)/) || [])[1] || "";
-      container.innerHTML = `<div class="manual-wrap"><div class="manual-actions"><button class="secondary" type="button" onclick="window.print()">Imprimir / guardar PDF</button></div><article class="manual" id="manual">${html.replace(/\{\{version\}\}/g, esc13(version)).replace(/(src=")\/assets\//g, "$1" + BASE)}</article></div>`;
+      container.innerHTML = `<div class="manual-wrap"><article class="manual" id="manual">${html.replace(/\{\{version\}\}/g, esc13(version)).replace(/(src=")\/assets\//g, "$1" + BASE)}</article></div>`;
+      container.querySelector("[data-ayuda-tutorial]")?.addEventListener("click", () => container.querySelector("#tutoriales")?.scrollIntoView({ behavior: "smooth", block: "start" }));
       container.querySelectorAll('.manual a[href^="#"]').forEach((a) => a.addEventListener("click", (e) => {
         e.preventDefault();
         container.querySelector(a.getAttribute("href"))?.scrollIntoView({ behavior: "smooth", block: "start" });

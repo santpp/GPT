@@ -230,6 +230,7 @@ Comprueba también que `https://TU-DOMINIO/servidor/config/config.php` **no** ab
      - `locations.readonly`, `users.readonly` y **`users.write`** (desde 2.22.0: para crear a las personas en la cuenta con su rol al invitarlas)
      - `contacts.readonly`, `contacts.write`, `locations/tags.readonly`, `locations/customFields.readonly`
      - `conversations.readonly`, `conversations.write`, `conversations/message.readonly`, `conversations/message.write`
+     - `locations/templates.readonly` (plantillas de WhatsApp; desde 2.25.0 se comprueban en Agencia → subcuenta → Editar datos)
      - `opportunities.readonly`, `opportunities.write`
      - `calendars.readonly`, `calendars/events.readonly`
      - Para **Redes y anuncios** (solo lectura): `socialplanner/account.readonly`, `socialplanner/post.readonly`, `socialplanner/statistics.readonly` y, para las campañas de Meta, `adPublishing.readonly`

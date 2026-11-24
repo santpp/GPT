@@ -54,6 +54,13 @@ class H(BaseHTTPRequestHandler):
             tx+=[{'amount':-0.5,'chargeType':'conversation_ai','description':'IA','entity':{'type':'location','id':LOC},'settlementTime':'2026-11-13T10:00:00Z'}]
             return self.out(201,{'transactions':tx if b.get('skip',0)==0 else [],'total':len(tx)})
         if p.startswith('/locations/'+LOC+'/tags'):return self.out(200,{'tags':[{'name':'cliente'}]})
+        # 2.25.0 · plantillas de WhatsApp: con originId '1234567890' (o la cuenta '9876543210') hay dos aprobadas y una rechazada
+        if p==f'/locations/{LOC}/templates' and q.get('type')=='whatsapp':
+            if q.get('originId') not in('1234567890','9876543210'):return self.out(200,{'templates':[],'totalCount':0})
+            return self.out(200,{'templates':[
+             {'name':'bienvenida','status':'APPROVED','language':'es','category':'MARKETING','components':[{'type':'BODY','text':'Hola {{1}}, gracias por escribirnos.'}]},
+             {'name':'seguimiento_cita','status':'APPROVED','language':'es','category':'UTILITY','components':[{'type':'BODY','text':'Te recordamos tu cita del {{1}}.'}]},
+             {'name':'promo_vieja','status':'REJECTED','language':'es','category':'MARKETING','components':[{'type':'BODY','text':'Promo'}]}],'totalCount':3})
         if p.startswith('/locations/'+LOC+'/customFields') or p.startswith('/custom-fields'):return self.out(200,{'customFields':[],'fields':[]})
         if p.startswith('/locations/'):return self.out(404,{'message':'Location not found'})
         # 2.22.0 · alta y cambio de personas (CreateUserDto / UpdateUserDto)

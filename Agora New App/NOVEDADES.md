@@ -1,5 +1,13 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.25.0 · Ayuda con el manual del ERP, ícono de ayuda y plantillas de WhatsApp en la subcuenta (24 nov):**
+- **Ícono de Ayuda** (signo de interrogación) en la cabecera, junto a la campana: «Ver el tutorial de esta pantalla» (donde lo hay; si no, lo dice), «Ver el manual» y «Descargar el manual (PDF)».
+- **Ayuda** muestra ahora el manual del ERP («Agora Digital App - ERP»), con sus capturas, en vez de la guía vieja de vendedores. El «Descargar» de la cabecera baja el PDF, que ya va en el paquete.
+- **Plantillas de WhatsApp en la subcuenta** (Agencia → subcuenta → Editar datos): identificador del número y, si hace falta, de la cuenta de WhatsApp Business; **«Comprobar plantillas»** pide la lista a la cuenta y dice cuántas llegaron, cuáles se pueden usar y cuáles quedaron fuera (rechazadas, en revisión). Sirve para verificar la conexión. Es lo mismo que usa la Bandeja para escribir pasadas 24 horas. En Ajustes de la subcuenta, guardar y comprobar ahora también llegan a la cuenta (antes solo se anotaba en Ágora).
+- La integración de la subcuenta necesita el permiso `locations/templates.readonly` (guía actualizada).
+- **La «falla intermitente» de `fixes-2190`** era del entorno de pruebas (el cron corrido a mano sin la cuenta simulada), no del producto. Explicada en `CLAUDE.md`.
+- Prueba: `tests/fixes-2250.py` (33).
+
 **Novedades 2.24.0 · Sin claves puestas por nadie; ficha del contacto con el diseño del ERP (23 nov):**
 - **Sin botón para crear usuarios de agencia.** Los dueños (Master y Superadmin) se crean solo por terminal (`crear-dueno.php`).
 - **Ágora nunca pone ni genera claves.** Desde Agencia también se **invita** (Gestión de usuarios y Subcuentas → «Invitar persona»): le llega el correo y crea su clave con un código. Donde antes se generaba una «contraseña temporal», ahora se manda **«Enviar enlace para crear una clave nueva»**: la persona crea la suya con un código y su clave actual sigue sirviendo hasta entonces. Se quitó «Darle una clave temporal». Las claves de los dueños, solo por terminal.

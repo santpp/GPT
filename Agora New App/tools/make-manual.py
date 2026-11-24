@@ -70,9 +70,18 @@ with sync_playwright() as pw:
     rotas=pg.evaluate("[...document.images].filter(i=>!i.naturalWidth).map(i=>i.getAttribute('src'))")
     if rotas:sys.exit(f'Imágenes que no cargan: {rotas}')
     if PROHIBIDO.search(pg.inner_text('body')):sys.exit('El manual nombra al proveedor')
-    salida=os.path.join(RAIZ,'manual-erp.pdf')
+    salida=os.path.join(RAIZ,'public_html','assets','manual-erp.pdf') # 2.25.0: va en el paquete (Ayuda → Descargar el manual)
     pg.pdf(path=salida,format='A4',print_background=True,prefer_css_page_size=True,display_header_footer=True,header_template='<span></span>',
            footer_template='<div style="font:8px system-ui,sans-serif;color:#8a8f9c;width:100%;text-align:center">Agora Digital App - ERP · <span class="pageNumber"></span> de <span class="totalPages"></span></div>')
     os.remove(tmp);br.close()
+    # 2.25.0 · El mismo manual dentro de la app (Ayuda): el artículo, con las capturas servidas desde assets/manual/erp/.
+    import shutil
+    dest=os.path.join(RAIZ,'public_html','assets','manual');os.makedirs(os.path.join(dest,'erp'),exist_ok=True)
+    for f in os.listdir(IMG):
+        if f.endswith('.png'):shutil.copy(os.path.join(IMG,f),os.path.join(dest,'erp',f))
+    art=re.search(r'<article class="manual">(.*)</article>',html,re.S).group(1)
+    art=art.replace('src="img/','src="/assets/manual/erp/').replace('src="../../public_html/assets/','src="/assets/')
+    open(os.path.join(dest,'erp.html'),'w',encoding='utf-8').write('<!-- © 2026-2027 Santiago Rafael Pérez Pérez · Ágora Digital App (Agora New App). Todos los derechos reservados. Software propietario: ver LICENSE.txt. -->\n<!-- Generado por tools/make-manual.py: no lo edites a mano, edita tools/manual/manual-erp.html. -->\n'+art.strip()+'\n')
+    print('Manual en la app: public_html/assets/manual/erp.html')
     print('PDF listo:',salida,os.path.getsize(salida)//1024,'KB · versión',VER)
     if errs:print('Errores de pantalla durante las capturas:',errs[:3])
