@@ -13,7 +13,7 @@
 <meta name="description" content="Agora Digital App · operación comercial, convenios y trazabilidad">
 <title>Agora Digital App</title>
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" href="/assets/favicon.ico?v=2.26.0" sizes="any">
+<link rel="icon" href="/assets/favicon.ico?v=2.27.0" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="48x48" href="/assets/icons/favicon-48.png">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
@@ -34,12 +34,12 @@
 /* El tema, antes de pintar, para que no parpadee. */
 (function(){var r=document.documentElement,g=function(k,d){try{return JSON.parse(localStorage.getItem('agora_'+k)||JSON.stringify(d))}catch(e){return d}};try{var t=g('tema','auto');var d=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);r.setAttribute('data-theme',d?'dark':'light');r.setAttribute('data-accent',g('acento','vino'))}catch(e){}if(/Mac|iPhone|iPad|iPod/.test(navigator.platform||navigator.userAgent))document.documentElement.classList.add('is-apple')})();
 </script>
-<link rel="stylesheet" href="/assets/sistema.css?v=2.26.0">
-<link rel="stylesheet" href="/assets/modulos.css?v=2.26.0">
-<link rel="stylesheet" href="/assets/marca.css?v=2.26.0">
-<link rel="stylesheet" href="/assets/diseno.css?v=2.26.0">
-<link rel="stylesheet" href="/assets/ecosistema.css?v=2.26.0">
-<link rel="stylesheet" href="/assets/agora-new.css?v=2.26.0">
+<link rel="stylesheet" href="/assets/sistema.css?v=2.27.0">
+<link rel="stylesheet" href="/assets/modulos.css?v=2.27.0">
+<link rel="stylesheet" href="/assets/marca.css?v=2.27.0">
+<link rel="stylesheet" href="/assets/diseno.css?v=2.27.0">
+<link rel="stylesheet" href="/assets/ecosistema.css?v=2.27.0">
+<link rel="stylesheet" href="/assets/agora-new.css?v=2.27.0">
 <style id="ag-entrada-css">
 /* 2.18.9 · Pantalla de entrada (ver el comentario junto al marcado) */
 #ag-entrada{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;gap:clamp(8px,1.4vw,18px);pointer-events:auto}
@@ -116,17 +116,17 @@
 <div id="won-banner" class="won-banner" role="alert" hidden></div>
 <dialog id="action-dialog"><form method="dialog"><button class="dialog-close" aria-label="Cerrar">×</button></form><div id="dialog-content"></div></dialog>
 
-<script src="/assets/diagnostico.js?v=2.26.0"></script>
-<script src="/assets/config.js?v=2.26.0"></script>
-<script src="/assets/backend-client.js?v=2.26.0"></script>
-<script src="/assets/tutorial.js?v=2.26.0"></script>
-<script src="/assets/agora-modulos.js?v=2.26.0"></script>
-<script src="/assets/agora-app.js?v=2.26.0" defer></script>
-<script src="/assets/widgets.js?v=2.26.0" defer></script>
+<script src="/assets/diagnostico.js?v=2.27.0"></script>
+<script src="/assets/config.js?v=2.27.0"></script>
+<script src="/assets/backend-client.js?v=2.27.0"></script>
+<script src="/assets/tutorial.js?v=2.27.0"></script>
+<script src="/assets/agora-modulos.js?v=2.27.0"></script>
+<script src="/assets/agora-app.js?v=2.27.0" defer></script>
+<script src="/assets/widgets.js?v=2.27.0" defer></script>
 <script>
 /* 2.20.0 · Que la caché nunca deje una versión vieja: si el navegador abrió una página guardada de otra versión,
    se borran las copias guardadas y se recarga una sola vez con la nueva. */
-(function(){var V='2.26.0';try{fetch('/version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(d){
+(function(){var V='2.27.0';try{fetch('/version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(d){
   if(!d||!d.version||d.version===V)return;var k='agora.recarga.'+d.version;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){return}
   var borrar=window.caches?caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}):Promise.resolve();
   var sw=navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update().catch(function(){})}))}):Promise.resolve();

@@ -11,7 +11,7 @@ require_once __DIR__.'/ExternalAuth.php';
 require_once __DIR__.'/AccessChannel.php';
 Installation::assertReady();
 if ($path === '/api/admin/integrations' && $method === 'GET') {
-    $rows=query('SELECT c.id,c.name,c.location_id,c.currency,c.unread_reminder_minutes,c.won_alert_days,c.whatsapp_number_id,c.whatsapp_account_id,c.contracts_url,c.sync_interval_seconds,c.status,c.last_checked_at,COALESCE(s.enabled,0) AS sync_enabled,s.last_success_at,s.last_error,s.requests_today,s.quota,s.users_last_success_at,s.users_last_error FROM ghl_connections c LEFT JOIN ghl_sync_state s ON s.connection_id=c.id WHERE c.tenant_id=? ORDER BY c.id',[$u['tenant_id']])->fetchAll();
+    $rows=query('SELECT c.id,c.name,c.location_id,c.currency,c.unread_reminder_minutes,c.won_alert_days,c.whatsapp_number_id,c.whatsapp_account_id,(SELECT COUNT(*) FROM whatsapp_flows wf WHERE wf.connection_id=c.id) whatsapp_flows,c.contracts_url,c.sync_interval_seconds,c.status,c.last_checked_at,COALESCE(s.enabled,0) AS sync_enabled,s.last_success_at,s.last_error,s.requests_today,s.quota,s.users_last_success_at,s.users_last_error FROM ghl_connections c LEFT JOIN ghl_sync_state s ON s.connection_id=c.id WHERE c.tenant_id=? ORDER BY c.id',[$u['tenant_id']])->fetchAll();
     foreach($rows as &$row){$row['tokenConfigured']=true;$row['externalUsers']=(int)query('SELECT COUNT(*) FROM external_users WHERE connection_id=? AND active=TRUE',[$row['id']])->fetchColumn();}
     $channel=AccessChannel::connection((int)$u['tenant_id']);
     foreach($rows as &$row)$row['accessChannel']=$channel&&(int)$channel['id']===(int)$row['id'];
@@ -59,7 +59,7 @@ if(preg_match('~^/api/admin/integrations/(\d+)/users(?:/(sync))?$~',$path,$userM
     }
     respond(['error'=>'Not found'],404);
 }
-if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|/whatsapp/check|/fields/folders|/currency|/reminder|/won-alert|/commission|/contracts)?$~',$path,$match)) {
+if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|/whatsapp/check|/whatsapp/flows|/fields/folders|/currency|/reminder|/won-alert|/commission|/contracts)?$~',$path,$match)) {
     $row=query('SELECT * FROM ghl_connections WHERE id=? AND tenant_id=?',[$match[1],$u['tenant_id']])->fetch();
     if(!$row) respond(['error'=>'Integración no encontrada'],404);
     if((!isset($match[2]) && in_array($method,['PUT','DELETE'],true)) || (($match[2]??'')==='/schedule' && $method==='POST')) {
@@ -106,14 +106,16 @@ if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|
         query('INSERT INTO ghl_sync_state(connection_id,enabled) VALUES(?,?) ON DUPLICATE KEY UPDATE enabled=VALUES(enabled)',[$row['id'],(int)$enabled]);
         respond(['enabled'=>$enabled,'requiresServerCron'=>true]);
     }
-    if(($match[2]??'')==='/whatsapp' && $method==='PUT') {
-        require_once __DIR__.'/WhatsappTemplates.php';
-        $b=body();
-        try {$number=WhatsappTemplates::numberId($b['numberId']??null);$account=WhatsappTemplates::numberId($b['accountId']??null);}
-        catch(TemplateProblem $e){respond(['error'=>$e->getMessage()],422);}
-        query('UPDATE ghl_connections SET whatsapp_number_id=?,whatsapp_account_id=? WHERE id=? AND tenant_id=?',[$number,$number===null?null:$account,$row['id'],$u['tenant_id']]);
-        query("DELETE FROM directory_cache WHERE connection_id=? AND cache_key LIKE 'wa-templates:%'",[$row['id']]);
-        respond(['numberId'=>$number,'accountId'=>$number===null?null:$account]);
+    // 1.10.36 · Plantillas de WhatsApp por flujos de trabajo (solo el propietario): GET = elegidos; POST /whatsapp/flows {buscar} = flujos de la cuenta; PUT = guardar.
+    if(in_array($match[2]??'',['/whatsapp','/whatsapp/flows'],true)){
+        require_once __DIR__.'/WhatsappFlows.php';
+        $ver=fn():array=>['flujos'=>WhatsappFlows::chosen((int)$row['id']),'resumen'=>WhatsappFlows::summary((int)$row['id'],time()-30*86400,time()),'maximo'=>WhatsappFlows::MAX];
+        try{
+            if($match[2]==='/whatsapp'&&$method==='GET')respond($ver());
+            if($match[2]==='/whatsapp/flows'&&$method==='POST'){$q=mb_substr(trim((string)(body()['buscar']??'')),0,80);$lista=(new WhatsappFlows())->account($row,$q);respond(['cuenta'=>array_slice($lista,0,200),'total'=>count($lista),'buscar'=>$q]);}
+            if($match[2]==='/whatsapp'&&$method==='PUT'){$b=body();if(!is_array($b['flujos']??null))respond(['error'=>'Falta la lista de flujos.'],422);(new WhatsappFlows())->save($row,$b['flujos']);respond($ver());}
+        }catch(FlowProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage()],$e->httpStatus);}
+        respond(['error'=>'Método no permitido'],405);
     }
     // 1.10.21 · Página de contratos de la subcuenta: dirección https o vacía (sin botón).
     if(($match[2]??'')==='/contracts' && $method==='PUT') {
@@ -127,16 +129,8 @@ if (preg_match('~^/api/admin/integrations/(\d+)(/test|/sync|/schedule|/whatsapp|
         query('UPDATE ghl_connections SET contracts_url=? WHERE id=? AND tenant_id=?',[$url,$row['id'],$u['tenant_id']]);
         respond(['url'=>$url]);
     }
-    // Pide la lista a la cuenta en ese momento y cuenta qué llegó y qué se quedó fuera.
-    if(($match[2]??'')==='/whatsapp/check' && $method==='POST') {
-        require_once __DIR__.'/WhatsappTemplates.php';
-        try {(new WhatsappTemplates())->list($row,true);}
-        catch(TemplateProblem $e){respond(['error'=>$e->getMessage()],$e->httpStatus);}
-        catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La cuenta está en espera para respetar la cuota. Vuelve a intentarlo en unos segundos.'],429);}
-        catch(GhlApiException $e){respond(['error'=>in_array($e->status,[401,403],true)?'La clave de esta cuenta no tiene el permiso de lectura de plantillas.':'La cuenta respondió con un error al pedir las plantillas (código '.$e->status.').','status'=>$e->status],424);}
-        catch(Throwable $e){respond(['error'=>'La respuesta de la cuenta no se pudo leer.'],424);}
-        respond(['diagnosis'=>WhatsappTemplates::diagnosis((int)$row['id'])]);
-    }
+    // 1.10.36: «Comprobar plantillas» ya no existe (las plantillas son flujos de trabajo).
+    if(($match[2]??'')==='/whatsapp/check')respond(['error'=>'Las plantillas de WhatsApp ahora se eligen entre los flujos de trabajo de la cuenta.'],410);
     // Días con una venta ganada sin monto antes de que la alerta no pueda cerrarse; 0 = nunca bloquea. Sólo el propietario.
     if(($match[2]??'')==='/won-alert' && $method==='PUT') {
         $b=body();$d=$b['days']??null;

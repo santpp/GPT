@@ -1,5 +1,14 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.27.0 · Plantillas de WhatsApp por flujos de trabajo (28 nov):**
+- La cuenta no entrega las plantillas aprobadas por Meta, así que ahora **cada plantilla se envía desde un flujo de trabajo** de la cuenta («Enviar WhatsApp» con esa plantilla).
+- **Solo los dueños** las eligen, en Agencia → editar la subcuenta (donde estaba el número de WhatsApp): «Cargar flujos de la cuenta», **buscador por nombre**, se marcan **varios**, cada uno con el nombre que verá el equipo y, si se quiere, el texto para la vista previa. Los borradores se ven pero no se pueden marcar. Hasta 40 por subcuenta.
+- **Lo envían todos los que pueden escribir** en la Bandeja: «Usar plantilla» → elegir → «Enviar plantilla». Ágora mete al contacto en el flujo y avisa «pedida a la cuenta»; a los pocos segundos revisa la conversación y dice «Plantilla enviada», o avisa si no aparece.
+- Sin dobles: el doble clic no la envía dos veces y la misma plantilla no se repite al mismo contacto antes de 10 minutos. El mensaje queda a nombre de quien la pidió.
+- Agencia ve cuántas plantillas se pidieron en los últimos 30 días y cuántas ya aparecieron.
+- Se quitaron «Comprobar plantillas», el número de WhatsApp y la configuración vieja de Ajustes → Conexiones.
+- Permiso nuevo en la integración de cada subcuenta: **flujos de trabajo (lectura)**.
+
 **Novedades 2.26.0 · Plantillas de WhatsApp como dice la documentación de la cuenta (24 nov):**
 - **No llegaban las plantillas** con la cuenta real. Ágora las pedía con el identificador del número de WhatsApp, pero la cuenta las pide con el **identificador de la subcuenta** (Location ID): lo confirma la documentación local (`originId` obligatorio; su ejemplo es el Location ID). Corregido.
 - **El número de WhatsApp ya no hace falta** para ver ni para enviar plantillas. Queda como «Número que envía (opcional)», solo si la subcuenta tiene más de un número. Se quitó el campo de la cuenta de WhatsApp Business (ya no se usa).

@@ -2125,21 +2125,20 @@
           const field = v && v.fixed ? v.fixed.replace(/^\{\{\s*|\s*\}\}$/g, "") : token;
           return `<mark class="field">${esc7(FIELD_NAMES[field] || field)}</mark>`;
         });
-        if (t.preview === false) return `<p class="muted">La cuenta no envía el texto de esta plantilla, así que no hay vista previa. Se enviará «${esc7(t.name.replace(/_/g, " "))}» tal como está aprobada.</p>`;
+        if (t.preview === false) return `<p class="muted">Esta plantilla no tiene vista previa. Se enviará «${esc7(t.name.replace(/_/g, " "))}» tal como está aprobada en la cuenta.</p>`;
         return `${t.header ? `<strong>${fill(t.header, "header")}</strong>` : ""}<p>${fill(t.body, "body").replace(/\n/g, "<br>")}</p>${t.footer ? `<small>${esc7(t.footer)}</small>` : ""}${t.buttons.length ? `<div class="tpl-buttons">${t.buttons.map((b) => `<span>${esc7(b)}</span>`).join("")}</div>` : ""}`;
       }, templateMarkup = function() {
         if (!templates.open) return "";
         const close = '<button type="button" class="link-button" id="tpl-close">Volver a escribir</button>';
         if (templates.items === null) return `<div class="tpl-panel"><p class="muted">Cargando plantillas…</p>${close}</div>`;
         if (templates.error) return `<div class="tpl-panel"><p class="muted">${esc7(templates.error)}</p>${close}</div>`;
-        if (!templates.configured) return `<div class="tpl-panel"><p class="muted">Esta cuenta todavía no tiene el número de WhatsApp para plantillas. El administrador lo añade en Conexiones.</p>${close}</div>`;
-        if (!templates.items.length) return `<div class="tpl-panel"><p class="muted">La cuenta no devolvió plantillas aprobadas para este número. El administrador puede revisarlo en Conexiones → Plantillas de WhatsApp → Comprobar plantillas.</p>${close}</div>`;
+        if (!templates.configured || !templates.items.length) return `<div class="tpl-panel"><p class="muted">Esta subcuenta todavía no tiene plantillas de WhatsApp. Las eligen los dueños de la agencia en los datos de la subcuenta.</p>${close}</div>`;
         const t = chosenTemplate();
         const free = t ? ["header", "body"].flatMap((part) => (t.variables[part] || []).filter((v) => v.fixed === null).map((v) => ({ part, ...v }))) : [];
         return `<div class="tpl-panel"><label class="tpl-pick">Plantilla aprobada<select id="tpl-select"><option value="">Elige una plantilla</option>${templates.items.map((x) => `<option value="${esc7(x.id)}"${x.id === templates.chosen ? " selected" : ""}>${esc7(x.name.replace(/_/g, " "))}${x.category ? " · " + esc7(CATEGORY[x.category] || x.category) : ""}</option>`).join("")}</select></label>
     ${t ? `<div class="tpl-preview">${templatePreview(t)}</div>${t.unsupported ? '<p class="muted">Esta plantilla lleva una imagen o un enlace que cambia. Por ahora envíala desde la cuenta.</p>' : ""}
     ${free.map((v) => `<label class="tpl-var">${esc7(v.label)}<input data-tpl-part="${v.part}" data-tpl-token="${esc7(v.token)}" maxlength="200" value="${esc7((templates.values[v.part] || {})[v.token] || "")}"></label>`).join("")}
-    <p class="muted tpl-note">Los datos marcados en gris, como el nombre, los completa la cuenta con la ficha del contacto.</p>` : ""}
+    <p class="muted tpl-note">${t.flow ? "La cuenta envía la plantilla y completa sus datos, como el nombre, con la ficha del contacto." : "Los datos marcados en gris, como el nombre, los completa la cuenta con la ficha del contacto."}</p>` : ""}
     <div class="tpl-actions">${close}<button type="button" class="primary" id="tpl-send"${!t || t.unsupported || templates.sending || templateIncomplete(t) ? " disabled" : ""}>${templates.sending ? "Enviando…" : "Enviar plantilla"}</button></div>
     ${templates.notice ? `<p class="muted" role="status">${esc7(templates.notice)}</p>` : ""}</div>`;
       }, syncTemplates = function(c) {
@@ -2503,7 +2502,7 @@
           if (active()) list();
         }
       }
-      async function page(older = false, refresh = false) {
+      async function page(older = false, refresh = false, fresh = false) {
         messageBusy++;
         const current2 = chatGeneration, connection = select.value, conversation = selected.id, previous = older ? cursor : null;
         const more = $("#live-older"), retry = $("#live-retry");
@@ -2514,8 +2513,9 @@
           if (!older && !messages.size) $("#live-log").innerHTML = skeleton("chat");
         }
         try {
-          const r = await request2(`workspace/messages?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(conversation)}${previous ? "&lastMessageId=" + encodeURIComponent(previous) : ""}`);
+          const r = await request2(`workspace/messages?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(conversation)}${previous ? "&lastMessageId=" + encodeURIComponent(previous) : ""}${fresh ? "&refresh=1" : ""}`);
           if (!active() || current2 !== chatGeneration) return;
+          if (r.plantillas && flowWatch && flowWatch.generation === chatGeneration) flowStatus(r.plantillas);
           if (Array.isArray(r.channels) && r.channels.length) {
             chatChannels = r.channels;
             const d = drafts.get(connection + ":" + conversation);
@@ -2710,6 +2710,20 @@
           const result = await request2(`workspace/send?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(c.id)}`, "POST", me.csrf, { ...body, requestId });
           sessionStorage.removeItem(storageKey);
           if (version !== chatGeneration || !active()) return;
+          if (result.flow) {
+            // 2.27.0 · Plantilla por flujo: la cuenta la envía; se revisa la conversación a los pocos segundos.
+            templates.open = false;
+            templates.chosen = "";
+            templates.values = {};
+            const aviso = `Plantilla «${result.label || t.name}» pedida a la cuenta. Aparecerá en la conversación en unos segundos.`;
+            const drafted = drafts.get(key);
+            if (drafted) drafted.notice = aviso;
+            const notice = $("#live-send-status");
+            if (notice) notice.textContent = aviso;
+            flowWatch = { generation: version, tries: 0 };
+            [8e3, 2e4, 45e3].forEach((ms) => setTimeout(() => { if (active() && version === chatGeneration && selected) { flowWatch.tries++; page(false, true, true); } }, ms));
+            return;
+          }
           const shown2 = $(".tpl-preview")?.innerText || t.body;
           messages.set(result.messageId, { id: result.messageId, body: shown2, direction: "outbound", dateAdded: (/* @__PURE__ */ new Date()).toISOString(), status: result.deliveryStatus, autorLocal: true });
           renderMessages();
@@ -2725,11 +2739,19 @@
           if (notice) notice.textContent = "Plantilla aceptada por el canal.";
         } catch (error) {
           templates.notice = friendly(error);
-          if (storageKey && ["send_rejected", "template_values", "template_unknown", "template_unsupported", "needs_phone", "number_missing"].includes(error.code)) sessionStorage.removeItem(storageKey);
+          if (storageKey && ["send_rejected", "template_values", "template_unknown", "template_unsupported", "needs_phone", "number_missing", "repeat", "busy", "send_failed"].includes(error.code)) sessionStorage.removeItem(storageKey);
         } finally {
           templates.sending = false;
           if (version === chatGeneration && active()) syncTemplates(c);
         }
+      }
+      // 2.27.0 · Seguimiento de las plantillas pedidas por flujo.
+      let flowWatch = null;
+      function flowStatus(p) {
+        const n = $("#live-send-status");
+        if (!n) return;
+        if ((p.vistas || []).length) { n.textContent = `Plantilla enviada: ${p.vistas.map((v) => "«" + v.label + "»").join(", ")}.`; flowWatch = null; }
+        else if ((p.pendientes || []).length && flowWatch.tries >= 3) { n.textContent = `La plantilla «${p.pendientes[0].label}» se pidió a la cuenta, pero todavía no aparece en la conversación. Si no llega en unos minutos, avisa a la agencia para que revise el flujo.`; flowWatch = null; }
       }
       const amount2 = (value) => typeof value === "number" && isFinite(value) ? money(value) : null;
       const dayOnly = (value) => {
@@ -3936,7 +3958,7 @@
       }
       const { items, accessChannel = { connectionId: null, ready: false }, backup = null } = await api2("admin/integrations");
       if (!active()) return;
-      container.innerHTML = `<div class="integration-heading"><div><span class="eyebrow">Administración</span><h2 style="margin-top:8px">Cuentas conectadas</h2></div><div><button id="test-access-channel"${accessChannel.ready ? "" : " disabled"}>Probar canal de acceso</button> <button id="add-integration" class="primary">+ Añadir subcuenta</button></div></div><p class="settings-notice">Tu cuenta es la única administración propia de Ágora. El equipo se importa desde cada cuenta conectada con sus permisos y asignaciones; no se crean contraseñas locales para empleados.</p>${accessPanel(items, accessChannel)}<div id="integration-cards">${items.map((i) => `<article class="card integration-card"><span class="integration-status">${statusNames[i.status] || "Pendiente"}</span><h3>${esc12(i.name)}</h3><p>Identificador: ${esc12(i.location_id)}<br>Clave protegida · intervalo: ${i.sync_interval_seconds} s<br>Última comprobación: ${esc12(i.last_checked_at || "Sin comprobar")}<br>Consultas programadas: ${Number(i.sync_enabled) ? "activadas" : "desactivadas"}<br>Última lectura: ${esc12(i.last_success_at || "Sin sincronizar")}<br>Equipo importado: ${Number(i.externalUsers) || 0} · ${esc12(i.users_last_success_at || "Sin sincronizar")}${i.accessChannel ? "<br>Canal de acceso del equipo" : ""}<br>Plantillas de WhatsApp: ${i.whatsapp_number_id ? "número " + esc12(i.whatsapp_number_id) : "sin configurar"}</p><footer><button data-edit="${i.id}">Configurar conexión</button><button data-whatsapp="${i.id}">Plantillas de WhatsApp</button><button class="secondary" data-fields-check="${i.id}">Carpetas de campos</button><button data-commission="${i.id}">Comisión</button><button data-test="${i.id}">Comprobar conexión</button><button data-users="${i.id}">Equipo y permisos</button><button data-schedule="${i.id}" data-enabled="${Number(i.sync_enabled) || 0}">${Number(i.sync_enabled) ? "Pausar consultas" : "Activar consultas"}</button><button data-remove="${i.id}" class="danger">Eliminar</button></footer></article>`).join("") || '<p class="empty">Todavía no tienes cuentas conectadas.<br>Añade una cuenta para empezar.</p>'}</div><p id="integration-feedback" class="dialog-copy" role="status"></p>${backupNotice(backup)}<section id="announce-panel"></section><section id="device-panel"></section>`;
+      container.innerHTML = `<div class="integration-heading"><div><span class="eyebrow">Administración</span><h2 style="margin-top:8px">Cuentas conectadas</h2></div><div><button id="test-access-channel"${accessChannel.ready ? "" : " disabled"}>Probar canal de acceso</button> <button id="add-integration" class="primary">+ Añadir subcuenta</button></div></div><p class="settings-notice">Tu cuenta es la única administración propia de Ágora. El equipo se importa desde cada cuenta conectada con sus permisos y asignaciones; no se crean contraseñas locales para empleados.</p>${accessPanel(items, accessChannel)}<div id="integration-cards">${items.map((i) => `<article class="card integration-card"><span class="integration-status">${statusNames[i.status] || "Pendiente"}</span><h3>${esc12(i.name)}</h3><p>Identificador: ${esc12(i.location_id)}<br>Clave protegida · intervalo: ${i.sync_interval_seconds} s<br>Última comprobación: ${esc12(i.last_checked_at || "Sin comprobar")}<br>Consultas programadas: ${Number(i.sync_enabled) ? "activadas" : "desactivadas"}<br>Última lectura: ${esc12(i.last_success_at || "Sin sincronizar")}<br>Equipo importado: ${Number(i.externalUsers) || 0} · ${esc12(i.users_last_success_at || "Sin sincronizar")}${i.accessChannel ? "<br>Canal de acceso del equipo" : ""}</p><footer><button data-edit="${i.id}">Configurar conexión</button><button class="secondary" data-fields-check="${i.id}">Carpetas de campos</button><button data-commission="${i.id}">Comisión</button><button data-test="${i.id}">Comprobar conexión</button><button data-users="${i.id}">Equipo y permisos</button><button data-schedule="${i.id}" data-enabled="${Number(i.sync_enabled) || 0}">${Number(i.sync_enabled) ? "Pausar consultas" : "Activar consultas"}</button><button data-remove="${i.id}" class="danger">Eliminar</button></footer></article>`).join("") || '<p class="empty">Todavía no tienes cuentas conectadas.<br>Añade una cuenta para empezar.</p>'}</div><p id="integration-feedback" class="dialog-copy" role="status"></p>${backupNotice(backup)}<section id="announce-panel"></section><section id="device-panel"></section>`;
       devicePanel(container);
       announcePanel(container);
       container.querySelector("#add-integration").onclick = () => edit(null, container);

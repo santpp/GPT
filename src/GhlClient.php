@@ -137,6 +137,12 @@ final class GhlClient {
         if(!is_array($result))throw new RuntimeException('Invalid GHL response');
         return $result;
     }
+    /** 1.10.36 · Flujos de trabajo de la subcuenta (GET /workflows/, permiso workflows.readonly): id, nombre y estado. */
+    public function workflows(string $location):array {return $this->get('/workflows/?'.http_build_query(['locationId'=>$location]),'2021-07-28');}
+    /** 1.10.36 · Mete al contacto en un flujo (POST /contacts/{id}/workflow/{workflowId}, permiso contacts.write). */
+    public function addContactToWorkflow(string $contact,string $workflow):array {
+        return $this->get('/contacts/'.rawurlencode($contact).'/workflow/'.rawurlencode($workflow),'2021-07-28',['eventStartTime'=>gmdate('Y-m-d\\TH:i:s\\Z')]);
+    }
     private function delete(string $path,string $version,array $payload):array {return $this->get($path,$version,$payload,'DELETE');}
     /** Lo que la cuenta explica al rechazar una petición (sin contenido de mensajes ni marcas), para poder diagnosticar. */
     private function reason(string $raw):string {
@@ -167,6 +173,7 @@ final class GhlClient {
             $seconds=ctype_digit((string)$retry)?(int)$retry:max(0,(strtotime((string)$retry)?:time())-time());
             throw new GhlApiException($this->status,min(86400,$seconds),$this->reason(is_string($raw)?$raw:''));
         }
+        if(trim((string)$raw)==='')return []; // 1.10.36: hay respuestas correctas sin cuerpo (meter un contacto en un flujo)
         $result=json_decode($raw,true,64,JSON_THROW_ON_ERROR);
         if(!is_array($result))throw new RuntimeException('Invalid GHL response');
         return $result;

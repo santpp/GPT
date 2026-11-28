@@ -1,5 +1,7 @@
 # Agora New App · lista de errores
 
+- **2.27.0 · Plantillas de WhatsApp: la cuenta no devuelve las de Meta (resuelto por otro camino).** Con el permiso activo, `GET /locations/{id}/templates` no devolvió nada (ni SMS ni correo). La documentación lo describe como «GET all or email/sms templates» y su respuesta solo tiene forma de SMS y correo: son los textos rápidos de la subcuenta, no las plantillas aprobadas por Meta. Ahora cada plantilla se envía con un flujo de trabajo de la cuenta (`WhatsappFlows`).
+
 - **2.26.0 · «Activar protección» de facturación respondía 500 (arreglado).** `workspace/fiscal/proteccion` crea disparadores (DDL) dentro de la transacción de `api/index.php`; MySQL/MariaDB confirma solo y al cerrarla daba «There is no active transaction» (500), aunque la protección quedaba instalada. Encontrado por `errores-cobertura.py` cuando faltaba un disparador. La ruta va fuera de la transacción. Prueba: `tests/fixes-2260.py`.
 
 - **2.26.0 · Plantillas de WhatsApp: la cuenta no devolvía ninguna (arreglado).** `GhlClient::whatsappTemplates()` mandaba `originId` = identificador del número (o de la cuenta de WhatsApp Business); la documentación de `GET /locations/{id}/templates` pide `originId` = Location ID. Visto por el usuario con la cuenta real (2.25.0). Ahora `originId` = Location ID, el número es opcional y el envío lleva `templateId`. Prueba: `tests/fixes-2260.py`.

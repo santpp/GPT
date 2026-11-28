@@ -456,12 +456,10 @@ if(in_array($path,['/api/workspace/snippets','/api/workspace/snippets/delete'],t
 // Plantillas aprobadas de WhatsApp de esta cuenta, para escribir pasadas las 24 horas.
 if($path==='/api/workspace/templates'&&$method==='GET') {
     if(!($membership['capabilities']['sendMessages']??false))respond(['error'=>'Tu usuario no tiene permiso para responder.'],403);
-    require_once __DIR__.'/WhatsappTemplates.php';
-    try {respond(['items'=>(new WhatsappTemplates())->list($connection,($_GET['refresh']??'')==='1'),'configured'=>true]);}
-    catch(TemplateProblem $e){if($e->reason==='number_missing')respond(['items'=>[],'configured'=>false,'error'=>$e->getMessage()]);respond(['error'=>$e->getMessage(),'code'=>$e->reason],$e->httpStatus);}
-    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La lista de plantillas está en espera. Vuelve a intentarlo en unos segundos.','retryAfter'=>$e->retryAfter],429);}
-    catch(GhlApiException $e){respond(['error'=>in_array($e->status,[401,403],true)?'La clave de la cuenta no permite leer plantillas. Hay que añadirle el permiso de plantillas.':'No se pudieron leer las plantillas de la cuenta.','code'=>'templates_upstream_'.$e->status],424);}
-    catch(Throwable $e){respond(['error'=>'No se pudieron leer las plantillas de la cuenta.','code'=>'templates_failed'],424);}
+    // 1.10.36: las plantillas son los flujos de trabajo que el propietario eligió en Conexiones (la cuenta no entrega las de Meta).
+    require_once __DIR__.'/WhatsappFlows.php';
+    try {$items=WhatsappFlows::forInbox((int)$id);respond(['items'=>$items,'configured'=>(bool)$items,'flows'=>true]);}
+    catch(Throwable $e){respond(['error'=>'No se pudieron leer las plantillas de esta subcuenta.','code'=>'templates_failed'],424);}
 }
 // Asignar una conversación: pasa a ser responsable el compañero elegido, tanto del
 // contacto como de sus oportunidades abiertas. Sólo administradores de la subcuenta.
@@ -492,7 +490,18 @@ if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $met
         if(!($membership['capabilities']['sendMessages']??false))respond(['error'=>'Tu usuario tiene acceso de lectura, pero no permiso para responder.'],403);
         require_once __DIR__.'/MessageSender.php';
         $contact=$record;
-        try {respond((new MessageSender())->send($connection,$contact,body()));}
+        $entrada=body();$tpl=is_array($entrada['template']??null)?(string)($entrada['template']['id']??''):'';
+        if(str_starts_with($tpl,'flujo:')){
+            // 1.10.36: plantilla por flujo. Solo por WhatsApp y con el contacto de esta conversación.
+            require_once __DIR__.'/WhatsappFlows.php';
+            $req=$entrada['requestId']??null;$wf=substr($tpl,6);
+            if(!is_string($req)||!preg_match('/^[A-Za-z0-9_-]{16,64}$/D',$req)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$wf))respond(['error'=>'Pedido inválido.','code'=>'invalid_message'],422);
+            if(($entrada['channel']??'')!=='WhatsApp'||!in_array('WhatsApp',array_column(array_filter(MessageSender::availableChannels($connection,$contact),fn($c)=>$c['available']),'type'),true))respond(['error'=>'Este contacto no tiene WhatsApp disponible.','code'=>'unsupported_channel'],422);
+            if(!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',(string)($contact['contactId']??''))||($contact['locationId']??null)!==$connection['location_id'])respond(['error'=>'Actualiza la conversación antes de responder.','code'=>'invalid_contact'],422);
+            try{respond((new WhatsappFlows())->send($connection,$contact,$wf,$req,null));}
+            catch(FlowProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
+        }
+        try {respond((new MessageSender())->send($connection,$contact,$entrada));}
         catch(SendProblem $e){respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
     }
     try {$cursor=MessageHistory::cursor($_GET['lastMessageId']??null);}
@@ -507,6 +516,8 @@ if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $met
             require_once __DIR__.'/MessageSender.php';
             $page['channels']=MessageSender::availableChannels($connection,$record);
         }
+        // 1.10.36: plantillas pedidas por flujo en esta conversación: las que ya salieron y las que aún no aparecen.
+        if(!$cursor){try{require_once __DIR__.'/WhatsappFlows.php';$page['plantillas']=WhatsappFlows::track((int)$id,$conversation,$page['items']??[]);}catch(Throwable){$page['plantillas']=['vistas'=>[],'pendientes'=>[]];}}
         respond($page);
     } catch(GhlCooldown $e) {header('Retry-After: '.$e->retryAfter);respond(['error'=>'Consulta pausada para respetar la cuota. Vuelve a intentarlo más tarde.','retryAfter'=>$e->retryAfter],429);}
     catch(GhlApiException $e){respond(['error'=>'No se pudieron leer los mensajes. Código del canal: '.$e->status.'. Revisa los permisos de lectura.','code'=>'messages_upstream_'.$e->status],424);}

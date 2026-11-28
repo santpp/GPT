@@ -95,7 +95,7 @@ export async function renderLiveInbox(container){
   container.agoraLiveDispose=()=>{disposed=true;document.body.classList.remove('agora-focus');clearTimeout(timer);clearTimeout(chatTimer);clearTimeout(pollTimer);clearTimeout(pulseTimer);document.removeEventListener('visibilitychange',wake);window.removeEventListener('online',wake);window.removeEventListener('offline',wake)};
   document.addEventListener('visibilitychange',wake);window.addEventListener('online',wake);window.addEventListener('offline',wake);
   async function tick(){if(!canRefresh())return;if(syncBusy||messageBusy||[...drafts.values()].some(d=>d.sending)){schedule(5);return}if(pause>Date.now()/1000){schedule(pause-Date.now()/1000);return}await sync(true)}
-  let team=null, generation=0, chatGeneration=0, conversations=[], selected=null, filter='all', nextCursor=null, hasMore=false, loadingMore=false, pulseToken=null, pulseTimer=null, messages=new Map(), cursor=null, chatChannel=null, chatChannels=null, channelFilter='', searchTerm='', searchTimer=null, channelNames={}, templates={open:false,items:null,configured:true,error:'',chosen:'',values:{},sending:false,notice:'',generation:-1};
+  let flowWatch=null, team=null, generation=0, chatGeneration=0, conversations=[], selected=null, filter='all', nextCursor=null, hasMore=false, loadingMore=false, pulseToken=null, pulseTimer=null, messages=new Map(), cursor=null, chatChannel=null, chatChannels=null, channelFilter='', searchTerm='', searchTimer=null, channelNames={}, templates={open:false,items:null,configured:true,error:'',chosen:'',values:{},sending:false,notice:'',generation:-1};
   // Otra pantalla puede abrir la bandeja ya filtrada (el tablero, con «Esperando respuesta»).
   if(['waiting','unread','mine'].includes(workspace.pendingFilter)){filter=workspace.pendingFilter;workspace.pendingFilter=null;container.querySelectorAll('[data-live-filter]').forEach(n=>{const on=n.dataset.liveFilter===filter;n.classList.toggle('active',on);n.setAttribute('aria-pressed',String(on))})}
   const inboxQuery=()=>{
@@ -201,14 +201,15 @@ export async function renderLiveInbox(container){
     if(notice)notice.textContent='Revisa el texto, elige el canal y pulsa Enviar.';
    });
   }
-  async function page(older=false,refresh=false){
+  async function page(older=false,refresh=false,fresh=false){
    messageBusy++;
    const current=chatGeneration, connection=select.value, conversation=selected.id, previous=older?cursor:null;
    const more=$('#live-older'),retry=$('#live-retry');more.disabled=true;
    if(!refresh){retry.hidden=true;$('#live-chat-status').textContent=older?'Cargando mensajes anteriores…':'';if(!older&&!messages.size)$('#live-log').innerHTML=skeleton('chat')}
    try{
-    const r=await request(`workspace/messages?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(conversation)}${previous?'&lastMessageId='+encodeURIComponent(previous):''}`);
+    const r=await request(`workspace/messages?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(conversation)}${previous?'&lastMessageId='+encodeURIComponent(previous):''}${fresh?'&refresh=1':''}`);
     if(!active()||current!==chatGeneration)return;
+    if(r.plantillas&&flowWatch&&flowWatch.generation===chatGeneration)flowStatus(r.plantillas);
     // El historial dice por qué redes ha escrito el contacto: se actualizan los canales ofrecidos.
     if(Array.isArray(r.channels)&&r.channels.length){chatChannels=r.channels;const d=drafts.get(connection+':'+conversation);if(d&&$('#live-composer'))applyChannels(selected,chatChannels,d)}
     const log=$('#live-log'),height=log.scrollHeight,top=log.scrollTop,hadMessages=messages.size>0;
@@ -420,7 +421,7 @@ export async function renderLiveInbox(container){
     const field=v&&v.fixed?v.fixed.replace(/^\{\{\s*|\s*\}\}$/g,''):token;
     return `<mark class="field">${esc(FIELD_NAMES[field]||field)}</mark>`;
    });
-   if(t.preview===false)return `<p class="muted">La cuenta no envía el texto de esta plantilla, así que no hay vista previa. Se enviará «${esc(t.name.replace(/_/g,' '))}» tal como está aprobada.</p>`;
+   if(t.preview===false)return `<p class="muted">Esta plantilla no tiene vista previa. Se enviará «${esc(t.name.replace(/_/g,' '))}» tal como está aprobada en la cuenta.</p>`;
    return `${t.header?`<strong>${fill(t.header,'header')}</strong>`:''}<p>${fill(t.body,'body').replace(/\n/g,'<br>')}</p>${t.footer?`<small>${esc(t.footer)}</small>`:''}${t.buttons.length?`<div class="tpl-buttons">${t.buttons.map(b=>`<span>${esc(b)}</span>`).join('')}</div>`:''}`;
   }
   function templateMarkup(){
@@ -428,14 +429,13 @@ export async function renderLiveInbox(container){
    const close='<button type="button" class="link-button" id="tpl-close">Volver a escribir</button>';
    if(templates.items===null)return `<div class="tpl-panel"><p class="muted">Cargando plantillas…</p>${close}</div>`;
    if(templates.error)return `<div class="tpl-panel"><p class="muted">${esc(templates.error)}</p>${close}</div>`;
-   if(!templates.configured)return `<div class="tpl-panel"><p class="muted">Esta cuenta todavía no tiene el número de WhatsApp para plantillas. El administrador lo añade en Conexiones.</p>${close}</div>`;
-   if(!templates.items.length)return `<div class="tpl-panel"><p class="muted">La cuenta no devolvió plantillas aprobadas para este número. El administrador puede revisarlo en Conexiones → Plantillas de WhatsApp → Comprobar plantillas.</p>${close}</div>`;
+   if(!templates.configured||!templates.items.length)return `<div class="tpl-panel"><p class="muted">Esta subcuenta todavía no tiene plantillas de WhatsApp. Las elige el propietario en Conexiones → Plantillas de WhatsApp.</p>${close}</div>`;
    const t=chosenTemplate();
    const free=t?['header','body'].flatMap(part=>(t.variables[part]||[]).filter(v=>v.fixed===null).map(v=>({part,...v}))):[];
    return `<div class="tpl-panel"><label class="tpl-pick">Plantilla aprobada<select id="tpl-select"><option value="">Elige una plantilla</option>${templates.items.map(x=>`<option value="${esc(x.id)}"${x.id===templates.chosen?' selected':''}>${esc(x.name.replace(/_/g,' '))}${x.category?' · '+esc(CATEGORY[x.category]||x.category):''}</option>`).join('')}</select></label>
     ${t?`<div class="tpl-preview">${templatePreview(t)}</div>${t.unsupported?'<p class="muted">Esta plantilla lleva una imagen o un enlace que cambia. Por ahora envíala desde la cuenta.</p>':''}
     ${free.map(v=>`<label class="tpl-var">${esc(v.label)}<input data-tpl-part="${v.part}" data-tpl-token="${esc(v.token)}" maxlength="200" value="${esc((templates.values[v.part]||{})[v.token]||'')}"></label>`).join('')}
-    <p class="muted tpl-note">Los datos marcados en gris, como el nombre, los completa la cuenta con la ficha del contacto.</p>`:''}
+    <p class="muted tpl-note">${t.flow?'La cuenta envía la plantilla y completa sus datos, como el nombre, con la ficha del contacto.':'Los datos marcados en gris, como el nombre, los completa la cuenta con la ficha del contacto.'}</p>`:''}
     <div class="tpl-actions">${close}<button type="button" class="primary" id="tpl-send"${!t||t.unsupported||templates.sending||templateIncomplete(t)?' disabled':''}>${templates.sending?'Enviando…':'Enviar plantilla'}</button></div>
     ${templates.notice?`<p class="muted" role="status">${esc(templates.notice)}</p>`:''}</div>`;
   }
@@ -481,6 +481,16 @@ export async function renderLiveInbox(container){
     const result=await request(`workspace/send?connectionId=${encodeURIComponent(connection)}&conversationId=${encodeURIComponent(c.id)}`,'POST',me.csrf,{...body,requestId});
     sessionStorage.removeItem(storageKey);
     if(version!==chatGeneration||!active())return;
+    if(result.flow){
+     // 1.10.36 · Plantilla por flujo: la cuenta la envía; se revisa la conversación a los pocos segundos.
+     templates.open=false;templates.chosen='';templates.values={};
+     const aviso=`Plantilla «${result.label||t.name}» pedida a la cuenta. Aparecerá en la conversación en unos segundos.`;
+     const drafted=drafts.get(key);if(drafted)drafted.notice=aviso;
+     const notice=$('#live-send-status');if(notice)notice.textContent=aviso;
+     flowWatch={generation:version,tries:0};
+     [8e3,2e4,45e3].forEach(ms=>setTimeout(()=>{if(active()&&version===chatGeneration&&selected){flowWatch&&flowWatch.tries++;page(false,true,true)}},ms));
+     return;
+    }
     const shown=$('.tpl-preview')?.innerText||t.body;
     messages.set(result.messageId,{id:result.messageId,body:shown,direction:'outbound',dateAdded:new Date().toISOString(),status:result.deliveryStatus});
     renderMessages();scrollEnd($('#live-log'),true);
@@ -489,7 +499,7 @@ export async function renderLiveInbox(container){
     const notice=$('#live-send-status');if(notice)notice.textContent='Plantilla aceptada por el canal.';
    }catch(error){
     templates.notice=friendly(error);
-    if(storageKey&&['send_rejected','template_values','template_unknown','template_unsupported','needs_phone','number_missing'].includes(error.code))sessionStorage.removeItem(storageKey);
+    if(storageKey&&['send_rejected','template_values','template_unknown','template_unsupported','needs_phone','number_missing','repeat','busy','send_failed'].includes(error.code))sessionStorage.removeItem(storageKey);
    }finally{templates.sending=false;if(version===chatGeneration&&active())syncTemplates(c)}
   }
 
@@ -629,6 +639,12 @@ export async function renderLiveInbox(container){
    const toggle=$('#live-template-toggle');
    if(toggle)toggle.onclick=()=>{templates.open=true;templates.notice='';if(templates.items===null||templates.error)loadTemplates(c);else syncTemplates(c)};
    syncTemplates(c);
+  }
+  // 1.10.36 · Seguimiento de las plantillas pedidas por flujo.
+  function flowStatus(p){
+   const n=$('#live-send-status');if(!n)return;
+   if((p.vistas||[]).length){n.textContent=`Plantilla enviada: ${p.vistas.map(v=>'«'+v.label+'»').join(', ')}.`;flowWatch=null}
+   else if((p.pendientes||[]).length&&flowWatch.tries>=3){n.textContent=`La plantilla «${p.pendientes[0].label}» se pidió a la cuenta, pero todavía no aparece en la conversación. Si no llega en unos minutos, avisa al propietario para que revise el flujo.`;flowWatch=null}
   }
   const amount=value=>typeof value==='number'&&isFinite(value)?fmtMoney(value):null;
   function opportunityCard(item,canEdit=false){

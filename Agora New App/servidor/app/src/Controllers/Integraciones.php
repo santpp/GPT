@@ -45,9 +45,8 @@ final class Integraciones {
    case 'currency PUT':{$c=in_array($b['currency']??'',['USD','EUR','VES'],true)?$b['currency']:Http::fail('Moneda inválida.');$this->db->run('UPDATE agora_tenants SET currency=?,revision=revision+1 WHERE id=?',[$c,$id]);$this->auth->audit('integracion.moneda','ajuste',(string)$id,['moneda'=>$c]);return ['ok'=>true,'currency'=>$c];}
    case 'fields/folders GET':return ['items'=>array_map(fn($n)=>['name'=>$n],$cfg['carpetas']??[]),'names'=>$cfg['carpetas']??[]];
    case 'fields/folders PUT':{$l=$b['names']??[];if(!is_array($l)||count($l)>50)Http::fail('Hasta 50 carpetas.');$l=array_values(array_unique(array_filter(array_map(fn($v)=>mb_substr(trim((string)$v),0,80),$l),'strlen')));$guardar(['carpetas'=>$l],'integracion.carpetas');return ['ok'=>true,'names'=>$l];}
-   case 'whatsapp GET':return \Agora\Core\MotorMobile::whatsapp($this->db,$this->config,$id,'ver'); // 2.25.0 · con el motor de verdad
-   case 'whatsapp PUT':{$r=\Agora\Core\MotorMobile::whatsapp($this->db,$this->config,$id,'guardar',$b);$this->auth->audit('whatsapp.numero','ajuste',(string)$id,['conNumero'=>$r['numberId']!==null]);return $r;}
-   case 'whatsapp/check POST':return ['diagnosis'=>\Agora\Core\MotorMobile::whatsapp($this->db,$this->config,$id,'comprobar')['diagnostico']];
+   // 2.27.0 · Las plantillas de WhatsApp (flujos de trabajo) las configuran solo los dueños, en Agencia → subcuenta.
+   case 'whatsapp GET':case 'whatsapp PUT':case 'whatsapp/check POST':Http::fail('Las plantillas de WhatsApp las configuran los dueños en Agencia, en los datos de la subcuenta.',410);
    case 'users GET':return ['items'=>array_map(fn($u)=>['id'=>(int)$u['id'],'name'=>$u['name'],'email'=>$u['email'],'role'=>$u['role'],'active'=>(bool)$u['active']],$this->db->all('SELECT id,name,email,role,active FROM agora_users WHERE local_tenant_id=? ORDER BY name LIMIT 500',[$id])),'syncedAt'=>null,'source'=>'agora'];
    case 'users/sync POST':Http::fail(self::NO_CONECTADA.' Los usuarios de Ágora se administran en «Usuarios y roles».',503);
    case 'won-alert GET':return ['days'=>(int)($cfg['won_alert_days']??0)];

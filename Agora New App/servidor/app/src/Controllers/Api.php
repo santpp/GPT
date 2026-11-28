@@ -7,7 +7,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.26.0'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.27.0'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -74,9 +74,10 @@ final class Api {
   if($p==='agency/users'){$this->a->agency();$id=Http::integer($b['accountId']??$_GET['accountId']??0,1,PHP_INT_MAX);$this->a->authorizeTenant($id,true);$this->a->tenant=$id;if($m==='GET')return $this->u->listing(false);if($m==='POST')return $this->invitarPersona($b);/* 2.24.0: desde Agencia también por invitación, sin clave */if($m==='DELETE')return $this->u->revoke(Http::integer($b['userId']??$_GET['userId']??0,1,PHP_INT_MAX));}
   // 2.25.0 · Agencia → subcuenta: plantillas de WhatsApp (ver, guardar el número y comprobar con la cuenta).
   if($p==='agency/accounts/whatsapp'){$this->a->agency();$id=Http::integer($b['accountId']??$_GET['accountId']??0,1,PHP_INT_MAX);$this->a->authorizeTenant($id,true);
+   // 2.27.0: GET = flujos elegidos; POST {buscar} = flujos de la cuenta; PUT {flujos:[{id,nombre,texto}]} = guardar la elección.
    if($m==='GET')return \Agora\Core\MotorMobile::whatsapp($this->db,$this->config,$id,'ver');
-   if($m==='PUT'){$r=\Agora\Core\MotorMobile::whatsapp($this->db,$this->config,$id,'guardar',['numberId'=>$b['numberId']??null,'accountId'=>$b['wabaId']??null]);$this->a->tenant=$id;$this->a->audit('whatsapp.numero','agencia',(string)$id,['conNumero'=>$r['numberId']!==null]);return $r;}
-   if($m==='POST')return \Agora\Core\MotorMobile::whatsapp($this->db,$this->config,$id,'comprobar');
+   if($m==='POST')return \Agora\Core\MotorMobile::whatsapp($this->db,$this->config,$id,'buscar',$b);
+   if($m==='PUT'){$r=\Agora\Core\MotorMobile::whatsapp($this->db,$this->config,$id,'guardar',$b);$this->a->tenant=$id;$this->a->audit('whatsapp.flujos','agencia',(string)$id,['flujos'=>count($r['flujos'])]);return $r;}
    Http::fail('Método no permitido.',405);}
   if($p==='agency/studio'){$this->a->agency();$id=Http::integer($b['tenantId']??$_GET['tenantId']??$_SERVER['HTTP_X_WORKSPACE_ID']??0,1,PHP_INT_MAX);$this->a->authorizeTenant($id);$this->a->tenant=$id;if($m==='GET')return ['configured'=>false,'items'=>$this->r->page('draft')['items'],'audit'=>[]];if($m==='POST'){$prompt=Http::text($b,'prompt',8000);$uid=bin2hex(random_bytes(12));$d=['id'=>$uid,'prompt'=>$prompt,'state'=>'draft','created_at'=>gmdate('c')];$this->r->save('draft',$uid,$d,'Solicitud IA','draft');return ['ok'=>true,'item'=>$d,'executed'=>false];}}
   // Every tenant endpoint must carry a per-tab workspace identifier, including reads.

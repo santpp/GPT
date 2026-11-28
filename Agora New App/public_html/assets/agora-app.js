@@ -2691,11 +2691,12 @@ function agenciaCuentaEditar(a) {
       </fieldset>
       ${a?.conexion?.origen === 'subcuenta' ? `<fieldset class="bx bx-wide" id="bx-whatsapp">
         <legend>${icon('chat')}Plantillas de WhatsApp</legend>
-        <p class="bx-help">Pasadas 24 horas desde el último mensaje del cliente, WhatsApp solo deja escribir con una plantilla aprobada. «Comprobar plantillas» las pide a la cuenta de esta subcuenta: así verificas la conexión, y la Bandeja las ofrece.</p>
-        <div class="bx-row con-row">
-          <label class="fld"><span class="fld-l">Número que envía <small>(opcional)</small></span><input data-wa-numero inputmode="numeric" maxlength="30" autocomplete="off" spellcheck="false" placeholder="Solo cifras"><span class="fld-hint">Solo si la subcuenta tiene más de un número de WhatsApp: el identificador del número («Phone number ID»). Para ver las plantillas no hace falta.</span></label>
-        </div>
-        <div class="con-acts"><button class="btn btn-sm" type="button" data-wa-guardar>Guardar</button><button class="btn btn-sm" type="button" data-wa-comprobar>${icon('refresh')}Comprobar plantillas</button></div>
+        <p class="bx-help">Pasadas 24 horas desde el último mensaje del cliente, WhatsApp solo deja escribir con una plantilla aprobada. Cada plantilla se envía desde un <b>flujo de trabajo</b> de la cuenta: elige aquí cuáles. La Bandeja se los ofrece a todos los que pueden escribir.</p>
+        <details class="wa-guia"><summary>Cómo preparar el flujo en la cuenta</summary><ol><li>Crea un flujo con la acción «Enviar WhatsApp» y elige la plantilla aprobada.</li><li>Activa «Permitir volver a entrar», para poder enviarla más de una vez al mismo contacto.</li><li>Publícalo. No necesita disparador: Ágora mete al contacto en el flujo.</li><li>La conexión de la subcuenta necesita el permiso de flujos de trabajo (lectura).</li></ol></details>
+        <div class="wa-elegidos" data-wa-elegidos><p class="bx-help">Cargando…</p></div>
+        <div class="wa-buscar"><label class="fld"><span class="fld-l">Buscar flujo por nombre</span><input type="search" data-wa-q maxlength="80" autocomplete="off" placeholder="Escribe parte del nombre"></label><button class="btn btn-sm" type="button" data-wa-cargar>${icon('refresh')}Cargar flujos de la cuenta</button></div>
+        <div class="wa-cuenta" data-wa-cuenta role="region" aria-label="Flujos de la cuenta"></div>
+        <div class="con-acts"><button class="btn btn-sm btn-cta" type="button" data-wa-guardar>Guardar plantillas</button></div>
         <div class="wa-res" data-wa-res role="status"></div>
       </fieldset>` : ''}
       ${perfilBx(a?.perfil, true)}
@@ -2935,28 +2936,50 @@ async function agenciaUsuarios(id, accounts) {
   } catch (x) { toast(x.message); }
 }
 /* 2.24.0 · Desde Agencia también se invita (sin clave): la persona crea la suya con el correo y un código. */
-/* 2.25.0 · Plantillas de WhatsApp de la subcuenta (Agencia): guardar el identificador del número y comprobar con la cuenta. */
-const WA_FUERA = {status_rejected: 'rechazadas', status_pending: 'en revisión', status_paused: 'en pausa', status_disabled: 'desactivadas', name: 'sin nombre válido', language: 'sin idioma', unknown: 'sin datos'};
-function waResumen(r) {
-  const d = r?.diagnostico, lista = r?.plantillas;
-  if (!d && !lista) return '<p class="bx-help">Aún no se ha comprobado. Toca «Comprobar plantillas».</p>';
-  const fuera = Object.entries(d?.dropped || {}).map(([k, v]) => `${v} ${WA_FUERA[k] || k.replace(/^status_/, '')}`).join(', ');
-  const ok = (d?.shown ?? lista?.length ?? 0) > 0;
-  const nombres = lista ? lista.map(t => `${t.nombre} (${t.idioma})`) : (d?.names || []);
-  return `<p class="wa-l ${ok ? 'ok' : 'no'}"><span class="lt ${ok ? 'lt-ok' : 'lt-warn'}"><i aria-hidden="true"></i></span><span>${d?.received === 0 ? (d?.otras > 0 ? `La conexión funciona (la cuenta devolvió ${int(d.otras)} plantillas de SMS o correo), pero ninguna de WhatsApp. Revisa en la cuenta que el WhatsApp esté conectado en esta subcuenta y que haya plantillas aprobadas.` : d?.otras === 0 ? 'La cuenta no devolvió ninguna plantilla, ni de WhatsApp ni de SMS o correo. Revisa que el token sea de esta subcuenta y que tenga el permiso de plantillas.' : 'La cuenta no devolvió ninguna plantilla de WhatsApp. Revisa en la cuenta que haya plantillas aprobadas.') : `La cuenta devolvió <b>${int(d?.received ?? nombres.length)}</b>; se pueden usar <b>${int(d?.shown ?? nombres.length)}</b>${fuera ? ` (fuera: ${esc(fuera)})` : ''}.`}</span></p>${nombres.length ? `<div class="wa-chips">${nombres.slice(0, 30).map(x => `<span class="sc sc-gray">${esc(x)}</span>`).join('')}</div>` : ''}${d?.at ? `<p class="bx-help">Comprobado: ${esc(fstamp(d.at))}</p>` : ''}`;
-}
+/* 2.27.0 · Plantillas de WhatsApp por flujos de trabajo (solo dueños, en Agencia → subcuenta): elegir varios flujos, con buscador. */
+const waPliega = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 async function waSubcuenta(f, id) {
-  const caja = f.querySelector('#bx-whatsapp'), res = caja.querySelector('[data-wa-res]'), num = caja.querySelector('[data-wa-numero]');
-  try { const r = await agoraApi('agency/accounts/whatsapp?accountId=' + encodeURIComponent(id)); num.value = r.numberId || ''; res.innerHTML = waResumen(r); }
-  catch (x) { res.innerHTML = `<p class="fld-err">${esc(x.message)}</p>`; }
+  const caja = f.querySelector('#bx-whatsapp'), res = caja.querySelector('[data-wa-res]'), box = caja.querySelector('[data-wa-elegidos]'), lista = caja.querySelector('[data-wa-cuenta]'), q = caja.querySelector('[data-wa-q]');
+  let elegidos = [], cuenta = null, maximo = 40;
+  const resumen = r => r?.resumen ? `<p class="bx-help">Últimos 30 días: ${int(r.resumen.pedidas)} ${r.resumen.pedidas === 1 ? 'plantilla pedida' : 'plantillas pedidas'}, ${int(r.resumen.vistas)} ya en la conversación.</p>` : '';
+  const pintarElegidos = () => {
+    box.innerHTML = elegidos.length ? `<p class="wa-t">Plantillas que ofrece la Bandeja (${int(elegidos.length)})</p>` + elegidos.map((x, i) => `<div class="wa-fila${x.estado === 'missing' ? ' wa-mal' : ''}" data-i="${i}">
+      <div class="wa-fila-h"><span class="wa-cta">${esc(x.nombreCuenta || x.nombre)}${x.estado === 'missing' ? ' <span class="sc sc-bad">revisar: no está en la cuenta</span>' : ''}</span><button class="btn btn-sm btn-tint" type="button" data-wa-quitar="${i}" aria-label="Quitar ${esc(x.nombre)}">${icon('close')}Quitar</button></div>
+      <label class="fld"><span class="fld-l">Nombre que ve el equipo</span><input data-wa-nombre maxlength="120" value="${esc(x.nombre)}"></label>
+      <label class="fld"><span class="fld-l">Texto de la plantilla <small>(opcional, para la vista previa)</small></span><textarea data-wa-texto rows="2" maxlength="1024" placeholder="Copia aquí el texto aprobado, si quieres que el equipo lo vea antes de enviar">${esc(x.texto || '')}</textarea></label></div>`).join('')
+      : '<p class="bx-help">Todavía no hay plantillas. Carga los flujos de la cuenta y marca los que envían una plantilla.</p>';
+    box.querySelectorAll('.wa-fila').forEach(row => {
+      const x = elegidos[+row.dataset.i];
+      row.querySelector('[data-wa-nombre]').oninput = e => { x.nombre = e.target.value; };
+      row.querySelector('[data-wa-texto]').oninput = e => { x.texto = e.target.value; };
+    });
+    box.querySelectorAll('[data-wa-quitar]').forEach(b => b.onclick = () => { elegidos.splice(+b.dataset.waQuitar, 1); pintarElegidos(); pintarCuenta(); });
+  };
+  const pintarCuenta = () => {
+    if (!cuenta) { lista.innerHTML = ''; return; }
+    const t = waPliega(q.value.trim()), ver = cuenta.filter(w => !t || waPliega(w.nombre).includes(t));
+    const marcado = new Set(elegidos.map(x => x.id));
+    lista.innerHTML = `<p class="bx-help">${t ? `${int(ver.length)} de ${int(cuenta.length)} flujos` : `${int(cuenta.length)} flujos en la cuenta`}. Marca los que envían una plantilla.</p>` + (ver.length ? `<ul class="wa-lista">${ver.slice(0, 150).map(w => `<li><label class="bx-check${w.estado !== 'publicado' ? ' off' : ''}"><input type="checkbox" data-wa-id="${esc(w.id)}"${marcado.has(w.id) ? ' checked' : ''}${w.estado !== 'publicado' ? ' disabled' : ''}> <span>${esc(w.nombre)}</span>${w.estado !== 'publicado' ? ' <span class="sc sc-gray">borrador</span>' : ''}</label></li>`).join('')}</ul>${ver.length > 150 ? '<p class="bx-help">Se muestran los primeros 150: escribe más del nombre para acotar.</p>' : ''}` : '<p class="bx-help">Ningún flujo tiene ese nombre.</p>');
+    lista.querySelectorAll('[data-wa-id]').forEach(c => c.onchange = () => {
+      const w = cuenta.find(x => x.id === c.dataset.waId);
+      if (c.checked) { if (elegidos.length >= maximo) { c.checked = false; toast(`Se pueden elegir hasta ${maximo} flujos.`); return; } elegidos.push({id: w.id, nombre: w.nombre, nombreCuenta: w.nombre, texto: '', estado: 'published'}); }
+      else elegidos = elegidos.filter(x => x.id !== w.id);
+      pintarElegidos();
+    });
+  };
+  const cargar = async b => {
+    if (b) busy(b, true, 'Cargando…');
+    try { const r = await agoraApi('agency/accounts/whatsapp', {method: 'POST', body: {accountId: id, buscar: ''}}); cuenta = r.cuenta || []; pintarCuenta(); }
+    catch (x) { lista.innerHTML = `<p class="fld-err">${esc(x.message)}</p>`; } finally { if (b) busy(b, false); }
+  };
+  try { const r = await agoraApi('agency/accounts/whatsapp?accountId=' + encodeURIComponent(id)); elegidos = r.flujos || []; maximo = r.maximo || 40; pintarElegidos(); res.innerHTML = resumen(r); }
+  catch (x) { box.innerHTML = `<p class="fld-err">${esc(x.message)}</p>`; }
+  caja.querySelector('[data-wa-cargar]').onclick = e => cargar(e.currentTarget);
+  q.oninput = () => { if (cuenta) pintarCuenta(); };
+  q.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); if (!cuenta) cargar(caja.querySelector('[data-wa-cargar]')); } };
   caja.querySelector('[data-wa-guardar]').onclick = async e => {
     const b = e.currentTarget; busy(b, true, 'Guardando…');
-    try { const r = await agoraApi('agency/accounts/whatsapp', {method: 'PUT', body: {accountId: id, numberId: num.value.trim() || null}}); res.innerHTML = waResumen(r); toast(r.numberId ? 'Número de WhatsApp guardado.' : 'Sin número: se envía con el de la cuenta.'); }
-    catch (x) { res.innerHTML = `<p class="fld-err">${esc(x.message)}</p>`; } finally { busy(b, false); }
-  };
-  caja.querySelector('[data-wa-comprobar]').onclick = async e => {
-    const b = e.currentTarget; busy(b, true, 'Comprobando…');
-    try { res.innerHTML = waResumen(await agoraApi('agency/accounts/whatsapp', {method: 'POST', body: {accountId: id}})); }
+    try { const r = await agoraApi('agency/accounts/whatsapp', {method: 'PUT', body: {accountId: id, flujos: elegidos.map(x => ({id: x.id, nombre: x.nombre, texto: x.texto || ''}))}}); elegidos = r.flujos || []; pintarElegidos(); pintarCuenta(); res.innerHTML = resumen(r); toast(elegidos.length ? `Plantillas guardadas: la Bandeja ofrece ${elegidos.length}.` : 'Sin plantillas: la Bandeja no ofrece ninguna.'); }
     catch (x) { res.innerHTML = `<p class="fld-err">${esc(x.message)}</p>`; } finally { busy(b, false); }
   };
 }
@@ -4356,7 +4379,7 @@ V.agencyConsumos = {
   },
   mounted(root) {
     const box = root.querySelector('#cons-root'); if (!box) return;
-    import('/assets/motor/consumption.js?v=2.26.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
+    import('/assets/motor/consumption.js?v=2.27.0').then(m => m.renderConsumption(box)).catch(() => { box.innerHTML = '<p class="empty">No se pudo abrir Consumos. Recarga la página.</p>'; });
   },
 };
 /* 2.18.0 · Consolidado de la agencia: las mismas cifras en todas las subcuentas (lo arma assets/widgets.js). */

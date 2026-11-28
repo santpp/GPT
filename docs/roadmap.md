@@ -16,7 +16,7 @@
 
 **Otros (sin decidir):** módulos del reporte para empresas que no son ASOCIM; límite de intentos de contraseña por correo; Capacitor 6.2.3.
 
-Estado actualizado: 10 de noviembre de 2026. **Versión activa: 1.10.35 (1.10.1 + Consumos + teléfono + Embudos y búsqueda + Entrar como + listas por vendedor + menú «Más»)**, con el cambio de fuente (texto negro y más grande) y el canal de origen a la vista. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
+Estado actualizado: 10 de noviembre de 2026. **Versión activa: 1.10.36 (1.10.1 + Consumos + teléfono + Embudos y búsqueda + Entrar como + listas por vendedor + menú «Más»)**, con el cambio de fuente (texto negro y más grande) y el canal de origen a la vista. El usuario probó en el teléfono todo lo pendiente (comisión por cierre, asignación, novedades, avisos con subcuenta y destino, comentarios de Instagram/Facebook) y está bien. El usuario descartó el comentario interno por contacto y el resto de ideas de después de la v1.0.
 
 El trabajo de la 1.11.0 y la 1.11.1 (rutas de servidor para el armazón nuevo de Agora Digital App: tareas, recordatorios, auditoría, identidad del espacio, resumen, subcuenta de demostración) **queda en pausa, sin subir**, hasta que el usuario retome ese desarrollo. El código y los paquetes siguen en el repositorio por si se retoma, pero no son la versión activa. El desarrollo sigue a partir de la 1.10.1.
 
@@ -316,6 +316,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - **2.24.0 (23 de noviembre)**: sin botón de usuarios de agencia (solo terminal); Ágora no pone ni genera claves (invitación y enlace para clave nueva, también desde Agencia); ficha del contacto con el diseño del ERP.
 - **2.25.0 (24 de noviembre)**: ícono de Ayuda en la cabecera (tutorial, manual y PDF); Ayuda con el manual del ERP; plantillas de WhatsApp en la subcuenta con «Comprobar»; explicada la falla intermitente de las pruebas.
 - **2.26.0 (24 de noviembre)**: plantillas de WhatsApp pedidas con el identificador de la subcuenta (como dice la documentación); número opcional; diagnóstico sin filtro; envío con `templateId`.
+- **2.27.0 (28 de noviembre)**: plantillas de WhatsApp por flujos de trabajo: los dueños eligen varios flujos (con buscador) en Agencia; todos los que escriben los envían desde la Bandeja; seguimiento y sin dobles.
 - **2.18.9 (22 de noviembre)**: la entrada ya no se divide: cada pieza del logo vuela a su pieza del logo visible (dos salidas: antes y después de iniciar sesión).
 - **2.18.8 (22 de noviembre)**: pantalla de entrada con el logo pieza por pieza al abrir, recargar e iniciar sesión.
 - **2.18.7 (22 de noviembre)**: tarjetas siempre 4 por fila (2 en el teléfono).
@@ -410,6 +411,10 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 
 ## 1.10.4 · Consumos: movimientos de la agencia
 - Bloque «Agencia · movimientos propios», bloques para las subcuentas no conectadas, y selector «Sólo la agencia».
+
+## 1.10.36 · Plantillas de WhatsApp por flujos de trabajo
+
+El propietario elige en Conexiones qué flujos de la cuenta envían plantillas (varios, con buscador por nombre); en la Bandeja las envían todos los que pueden escribir: Ágora mete al contacto en el flujo, avisa que se pidió y, cuando el mensaje aparece, que salió. Sin dobles (10 minutos). Permiso nuevo: `workflows.readonly`. Pruebas: `tests/whatsapp-flows.php`, `tests/whatsapp-flows-ui.py`.
 
 ## 1.10.35 · Mensajes anteriores sin repetidos
 La cuenta a veces entrega el mismo mensaje dos veces con distinto identificador; al cargar los anteriores se veía doble. Ahora se muestra una vez (mismo `altId` o mismo envío exacto). Prueba en `tests/live-ui.py`.

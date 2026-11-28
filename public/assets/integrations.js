@@ -149,7 +149,7 @@ export async function renderIntegrations(container){
  const installation=await api('admin/diagnostics');if(!active())return;
  if(!installation.ready){renderSetup(container,installation);return}
  const {items,accessChannel={connectionId:null,ready:false},backup=null}=await api('admin/integrations');if(!active())return;
- container.innerHTML=`<div class="integration-heading"><div><span class="eyebrow">Administración</span><h2 style="margin-top:8px">Cuentas conectadas</h2></div><div><button id="test-access-channel"${accessChannel.ready?'':' disabled'}>Probar canal de acceso</button> <button id="add-integration" class="primary">+ Añadir subcuenta</button></div></div><p class="settings-notice">Tu cuenta es la única administración propia de Ágora. El equipo se importa desde cada cuenta conectada con sus permisos y asignaciones; no se crean contraseñas locales para empleados.</p>${accessPanel(items,accessChannel)}<div id="integration-cards">${items.map(i=>`<article class="card integration-card"><span class="integration-status">${statusNames[i.status]||'Pendiente'}</span><h3>${esc(i.name)}</h3><p>Identificador: ${esc(i.location_id)}<br>Clave protegida · intervalo: ${i.sync_interval_seconds} s<br>Última comprobación: ${esc(i.last_checked_at||'Sin comprobar')}<br>Consultas programadas: ${Number(i.sync_enabled)?'activadas':'desactivadas'}<br>Última lectura: ${esc(i.last_success_at||'Sin sincronizar')}<br>Equipo importado: ${Number(i.externalUsers)||0} · ${esc(i.users_last_success_at||'Sin sincronizar')}${i.accessChannel?'<br>Canal de acceso del equipo':''}<br>Plantillas de WhatsApp: ${i.whatsapp_number_id?'número '+esc(i.whatsapp_number_id):'sin configurar'}<br>Contratos: ${i.contracts_url?'activado · '+esc(i.contracts_url.replace(/^https:\/\//,'')):'desactivado'}</p><footer><button data-edit="${i.id}">Configurar conexión</button><button data-whatsapp="${i.id}">Plantillas de WhatsApp</button><button data-contracts="${i.id}">Contratos</button><button class="secondary" data-fields-check="${i.id}">Carpetas de campos</button><button data-commission="${i.id}">Comisión</button><button data-test="${i.id}">Comprobar conexión</button><button data-users="${i.id}">Equipo y permisos</button><button data-schedule="${i.id}" data-enabled="${Number(i.sync_enabled)||0}">${Number(i.sync_enabled)?'Pausar consultas':'Activar consultas'}</button><button data-remove="${i.id}" class="danger">Eliminar</button></footer></article>`).join('')||'<p class="empty">Todavía no tienes cuentas conectadas.<br>Añade una cuenta para empezar.</p>'}</div><p id="integration-feedback" class="dialog-copy" role="status"></p>${backupNotice(backup)}<section id="announce-panel"></section><section id="device-panel"></section>`;
+ container.innerHTML=`<div class="integration-heading"><div><span class="eyebrow">Administración</span><h2 style="margin-top:8px">Cuentas conectadas</h2></div><div><button id="test-access-channel"${accessChannel.ready?'':' disabled'}>Probar canal de acceso</button> <button id="add-integration" class="primary">+ Añadir subcuenta</button></div></div><p class="settings-notice">Tu cuenta es la única administración propia de Ágora. El equipo se importa desde cada cuenta conectada con sus permisos y asignaciones; no se crean contraseñas locales para empleados.</p>${accessPanel(items,accessChannel)}<div id="integration-cards">${items.map(i=>`<article class="card integration-card"><span class="integration-status">${statusNames[i.status]||'Pendiente'}</span><h3>${esc(i.name)}</h3><p>Identificador: ${esc(i.location_id)}<br>Clave protegida · intervalo: ${i.sync_interval_seconds} s<br>Última comprobación: ${esc(i.last_checked_at||'Sin comprobar')}<br>Consultas programadas: ${Number(i.sync_enabled)?'activadas':'desactivadas'}<br>Última lectura: ${esc(i.last_success_at||'Sin sincronizar')}<br>Equipo importado: ${Number(i.externalUsers)||0} · ${esc(i.users_last_success_at||'Sin sincronizar')}${i.accessChannel?'<br>Canal de acceso del equipo':''}<br>Plantillas de WhatsApp: ${Number(i.whatsapp_flows)>0?Number(i.whatsapp_flows)+(Number(i.whatsapp_flows)===1?' flujo':' flujos'):'sin elegir'}<br>Contratos: ${i.contracts_url?'activado · '+esc(i.contracts_url.replace(/^https:\/\//,'')):'desactivado'}</p><footer><button data-edit="${i.id}">Configurar conexión</button><button data-whatsapp="${i.id}">Plantillas de WhatsApp</button><button data-contracts="${i.id}">Contratos</button><button class="secondary" data-fields-check="${i.id}">Carpetas de campos</button><button data-commission="${i.id}">Comisión</button><button data-test="${i.id}">Comprobar conexión</button><button data-users="${i.id}">Equipo y permisos</button><button data-schedule="${i.id}" data-enabled="${Number(i.sync_enabled)||0}">${Number(i.sync_enabled)?'Pausar consultas':'Activar consultas'}</button><button data-remove="${i.id}" class="danger">Eliminar</button></footer></article>`).join('')||'<p class="empty">Todavía no tienes cuentas conectadas.<br>Añade una cuenta para empezar.</p>'}</div><p id="integration-feedback" class="dialog-copy" role="status"></p>${backupNotice(backup)}<section id="announce-panel"></section><section id="device-panel"></section>`;
  devicePanel(container);announcePanel(container);
  container.querySelector('#add-integration').onclick=()=>edit(null,container);
  container.querySelector('#test-access-channel').onclick=async e=>{e.currentTarget.disabled=true;const feedback=container.querySelector('#integration-feedback');feedback.textContent='Enviando prueba…';try{await api('admin/access-channel/test','POST');feedback.textContent='Prueba entregada al correo del administrador. Revisa la bandeja y la carpeta de spam.'}catch(error){feedback.textContent=friendly(error)}finally{e.currentTarget.disabled=false}};
@@ -283,66 +283,46 @@ async function fieldsCheck(item){
   };
  }catch(error){content.innerHTML=`<h2>Carpetas de campos</h2><p class="dialog-copy">${esc(friendly(error))}</p>`}
 }
-function diagnosisMarkup(d){
- if(!d)return '';
- const dropped=Object.entries(d.dropped||{}).map(([why,n])=>`${n} ${DROP_REASONS[why]||why.replace(/^status_/,'con estado ')}`).join(', ');
- const via=d.origin==='account'?'la cuenta de WhatsApp Business':'el número';
- const lines=d.received===0
-  ?`<p><b>La cuenta no devolvió ninguna plantilla</b> al pedirlas con ${via}. Si en la cuenta sí hay plantillas aprobadas, prueba a indicar el identificador de la cuenta de WhatsApp Business (WABA) en el segundo campo y vuelve a comprobar.</p>`
-  :`<p>La cuenta devolvió <b>${d.received}</b> plantilla${d.received===1?'':'s'}; se muestran <b>${d.shown}</b> en el chat.${dropped?` Fuera: ${esc(dropped)}.`:''}</p>${(d.names||[]).length?`<p class="muted">${(d.names||[]).map(esc).join(' · ')}</p>`:''}`;
- const fields=d.fields||{};
- return `<div class="wa-diagnosis">${lines}<details><summary>Detalle para soporte</summary><p class="muted">Campos de la respuesta: ${esc((fields.top||[]).join(', ')||'ninguno')}<br>Campos de cada plantilla: ${esc((fields.item||[]).join(', ')||'—')}${(fields.template||[]).length?`<br>Dentro de «template»: ${esc(fields.template.join(', '))}`:''}<br>Comprobado: ${esc(d.at||'')}</p></details></div>`;
-}
-// El número de WhatsApp de la cuenta, como lo nombra Meta: con él se envían las
-// plantillas aprobadas. Si se leen con la cuenta de WhatsApp Business, se indica aparte.
-// 1.10.21 · Página de contratos de la subcuenta: con ella activada, todos los de la subcuenta ven «Contratos» en «Más».
-function contractsDialog(item,container){
- const dialog=document.querySelector('#action-dialog');
- const on=!!item.contracts_url,url=(item.contracts_url||'https://contratos.agoradigital.app').replace(/^https:\/\//,'');
- document.querySelector('#dialog-content').innerHTML=`<h2>Contratos</h2><p class="dialog-copy">Con esto activado, todos los de <b>${esc(item.name)}</b> ven «Contratos» en el menú «Más» y la página se abre dentro de Ágora.</p>
-  <form id="contracts-form" class="dialog-form"><label class="contracts-switch"><input type="checkbox" name="on"${on?' checked':''}> Mostrar «Contratos» en esta subcuenta</label>
-  <label>Dirección de la página<input name="url" inputmode="url" autocomplete="off" value="${esc(url)}" placeholder="contratos.agoradigital.app"></label>
-  <p class="dialog-copy">La página tiene que permitir que Ágora la muestre por dentro (está en la guía de diseño de contratos). Si no, se abrirá con «Abrir en pantalla completa».</p>
-  <button class="primary">Guardar</button><p id="contracts-result" role="status"></p></form>`;
- if(!dialog.open)dialog.showModal();
- const form=document.querySelector('#contracts-form'),result=document.querySelector('#contracts-result');
- form.onsubmit=async e=>{
-  e.preventDefault();const button=form.querySelector('button.primary');button.disabled=true;result.textContent='Guardando…';
-  try{
-   const r=await api(`admin/integrations/${item.id}/contracts`,'PUT',{url:form.elements.on.checked?form.elements.url.value.trim():null});
-   item.contracts_url=r.url;result.textContent=r.url?'Activado. Ya aparece en «Más» para esta subcuenta.':'Desactivado en esta subcuenta.';
-   // «Más» y la barra lateral se enteran al momento.
-   const c=workspace.connections.find(x=>String(x.id)===String(item.id));if(c)c.contracts_url=r.url;
-   window.dispatchEvent(new CustomEvent('agora:contracts'));
-  }catch(error){result.textContent=friendly(error)}
-  finally{button.disabled=false}
- };
- dialog.addEventListener('close',()=>renderIntegrations(container),{once:true});
-}
+// 1.10.36 · Plantillas de WhatsApp por flujos de trabajo de la cuenta: el propietario elige varios (con buscador por nombre).
+const fold=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 function whatsappNumber(item,container){
- const dialog=document.querySelector('#action-dialog');
- document.querySelector('#dialog-content').innerHTML=`<h2>Plantillas de WhatsApp</h2><p class="dialog-copy">Para escribir a un contacto pasadas 24 horas desde su último mensaje, WhatsApp exige una plantilla aprobada. Indica los identificadores que Meta asigna a <b>${esc(item.name)}</b>; aparecen en la configuración de WhatsApp de la cuenta.</p><form id="whatsapp-form" class="dialog-form"><label>Identificador del número («Phone number ID»)<input name="numberId" inputmode="numeric" pattern="[0-9]{6,30}" value="${esc(item.whatsapp_number_id||'')}" placeholder="Ej.: 920050454518509"></label><label>Identificador de la cuenta de WhatsApp Business («WABA ID»), opcional<input name="accountId" inputmode="numeric" pattern="[0-9]{6,30}" value="${esc(item.whatsapp_account_id||'')}" placeholder="Sólo si las plantillas no aparecen con el número"></label><div class="dialog-actions"><button class="primary">Guardar</button><button type="button" id="whatsapp-check" class="secondary"${item.whatsapp_number_id?'':' disabled'}>Comprobar plantillas</button></div><p id="whatsapp-result" class="dialog-copy" role="status"></p></form><div id="whatsapp-diagnosis"></div><p class="dialog-copy">Deja el número vacío para no usar plantillas en esta cuenta.</p>`;
+ const dialog=document.querySelector('#action-dialog'),box=document.querySelector('#dialog-content');
+ box.innerHTML=`<span class="eyebrow">${esc(item.name)}</span><h2 style="margin-top:12px">Plantillas de WhatsApp</h2><p class="dialog-copy">Pasadas 24 horas desde el último mensaje del cliente, WhatsApp solo deja escribir con una plantilla aprobada. Cada plantilla se envía desde un <b>flujo de trabajo</b> de la cuenta: elige aquí cuáles. Los ofrece la Bandeja a todos los que pueden escribir.</p>
+ <details class="wa-guia"><summary>Cómo preparar el flujo en la cuenta</summary><ol><li>Crea un flujo con la acción «Enviar WhatsApp» y elige la plantilla aprobada.</li><li>Activa «Permitir volver a entrar», para poder enviarla más de una vez al mismo contacto.</li><li>Publícalo. No necesita disparador: Ágora mete al contacto en el flujo.</li><li>La clave de la cuenta necesita el permiso de flujos de trabajo (lectura).</li></ol></details>
+ <div id="wa-elegidos" class="wa-elegidos"><p class="dialog-copy">Cargando…</p></div>
+ <div class="wa-buscar"><label>Buscar flujo por nombre<input type="search" id="wa-q" maxlength="80" autocomplete="off" placeholder="Escribe parte del nombre"></label><button type="button" class="secondary" id="wa-cargar">Cargar flujos de la cuenta</button></div>
+ <div id="wa-cuenta" class="wa-cuenta"></div>
+ <div class="dialog-actions"><button type="button" class="primary" id="wa-guardar">Guardar plantillas</button></div><p id="wa-res" class="dialog-copy" role="status"></p>`;
  if(!dialog.open)dialog.showModal();
- const result=document.querySelector('#whatsapp-result');
- const check=async()=>{
-  const button=document.querySelector('#whatsapp-check');button.disabled=true;result.textContent='Pidiendo las plantillas a la cuenta…';
-  try{const {diagnosis}=await api(`admin/integrations/${item.id}/whatsapp/check`,'POST');result.textContent='';document.querySelector('#whatsapp-diagnosis').innerHTML=diagnosisMarkup(diagnosis)}
-  catch(error){result.textContent=friendly(error)}
-  finally{button.disabled=false}
+ const lista=box.querySelector('#wa-cuenta'),elegidosBox=box.querySelector('#wa-elegidos'),q=box.querySelector('#wa-q'),res=box.querySelector('#wa-res');
+ let elegidos=[],cuenta=null,maximo=40;
+ const resumen=r=>r&&r.resumen?`Últimos 30 días: ${r.resumen.pedidas} ${r.resumen.pedidas===1?'plantilla pedida':'plantillas pedidas'}, ${r.resumen.vistas} ya en la conversación.`:'';
+ const pintarElegidos=()=>{
+  elegidosBox.innerHTML=elegidos.length?`<p class="wa-t">Plantillas que ofrece la Bandeja (${elegidos.length})</p>`+elegidos.map((x,i)=>`<div class="wa-fila${x.estado==='missing'?' wa-mal':''}" data-i="${i}"><div class="wa-fila-h"><span class="wa-cta">${esc(x.nombreCuenta||x.nombre)}${x.estado==='missing'?' · revisar: no está en la cuenta':''}</span><button type="button" class="secondary" data-wa-quitar="${i}">Quitar</button></div><label>Nombre que ve el equipo<input data-wa-nombre maxlength="120" value="${esc(x.nombre)}"></label><label>Texto de la plantilla (opcional, para la vista previa)<textarea data-wa-texto rows="2" maxlength="1024" placeholder="Copia aquí el texto aprobado, si quieres que el equipo lo vea antes de enviar">${esc(x.texto||'')}</textarea></label></div>`).join('')
+   :'<p class="dialog-copy">Todavía no hay plantillas. Carga los flujos de la cuenta y marca los que envían una plantilla.</p>';
+  elegidosBox.querySelectorAll('.wa-fila').forEach(row=>{const x=elegidos[+row.dataset.i];row.querySelector('[data-wa-nombre]').oninput=e=>{x.nombre=e.target.value};row.querySelector('[data-wa-texto]').oninput=e=>{x.texto=e.target.value}});
+  elegidosBox.querySelectorAll('[data-wa-quitar]').forEach(b=>b.onclick=()=>{elegidos.splice(+b.dataset.waQuitar,1);pintarElegidos();pintarCuenta()});
  };
- document.querySelector('#whatsapp-check').onclick=check;
- document.querySelector('#whatsapp-form').onsubmit=async e=>{
-  e.preventDefault();const button=e.target.querySelector('button.primary');button.disabled=true;
-  try{
-   const value=e.target.elements.numberId.value.trim(),account=e.target.elements.accountId.value.trim();
-   await api(`admin/integrations/${item.id}/whatsapp`,'PUT',{numberId:value||null,accountId:account||null});
-   item.whatsapp_number_id=value||null;item.whatsapp_account_id=value?(account||null):null;
-   result.textContent=value?'Guardado.':'Plantillas desactivadas en esta cuenta.';
-   document.querySelector('#whatsapp-check').disabled=!value;
-   if(value)await check();
-  }catch(error){result.textContent=friendly(error)}
-  finally{button.disabled=false}
+ const pintarCuenta=()=>{
+  if(!cuenta){lista.innerHTML='';return}
+  const t=fold(q.value.trim()),ver=cuenta.filter(w=>!t||fold(w.nombre).includes(t)),marcado=new Set(elegidos.map(x=>x.id));
+  lista.innerHTML=`<p class="dialog-copy">${t?`${ver.length} de ${cuenta.length} flujos`:`${cuenta.length} flujos en la cuenta`}. Marca los que envían una plantilla.</p>`+(ver.length?`<ul class="wa-lista">${ver.slice(0,150).map(w=>`<li><label class="wa-check${w.estado!=='publicado'?' off':''}"><input type="checkbox" data-wa-id="${esc(w.id)}"${marcado.has(w.id)?' checked':''}${w.estado!=='publicado'?' disabled':''}> <span>${esc(w.nombre)}${w.estado!=='publicado'?' · borrador':''}</span></label></li>`).join('')}</ul>${ver.length>150?'<p class="dialog-copy">Se muestran los primeros 150: escribe más del nombre para acotar.</p>':''}`:'<p class="dialog-copy">Ningún flujo tiene ese nombre.</p>');
+  lista.querySelectorAll('[data-wa-id]').forEach(c=>c.onchange=()=>{
+   const w=cuenta.find(x=>x.id===c.dataset.waId);
+   if(c.checked){if(elegidos.length>=maximo){c.checked=false;res.textContent=`Se pueden elegir hasta ${maximo} flujos.`;return}elegidos.push({id:w.id,nombre:w.nombre,nombreCuenta:w.nombre,texto:'',estado:'published'})}
+   else elegidos=elegidos.filter(x=>x.id!==w.id);
+   pintarElegidos();
+  });
  };
+ const cargar=async()=>{const b=box.querySelector('#wa-cargar');b.disabled=true;lista.innerHTML='<p class="dialog-copy">Pidiendo los flujos a la cuenta…</p>';
+  try{const r=await api(`admin/integrations/${item.id}/whatsapp/flows`,'POST',{buscar:''});cuenta=r.cuenta||[];pintarCuenta()}catch(error){lista.innerHTML=`<p class="dialog-copy">${esc(friendly(error))}</p>`}finally{b.disabled=false}};
+ (async()=>{try{const r=await api(`admin/integrations/${item.id}/whatsapp`);elegidos=r.flujos||[];maximo=r.maximo||40;pintarElegidos();res.textContent=resumen(r)}catch(error){elegidosBox.innerHTML=`<p class="dialog-copy">${esc(friendly(error))}</p>`}})();
+ box.querySelector('#wa-cargar').onclick=cargar;
+ q.oninput=()=>{if(cuenta)pintarCuenta()};
+ q.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();if(!cuenta)cargar()}};
+ box.querySelector('#wa-guardar').onclick=async e=>{const b=e.currentTarget;b.disabled=true;
+  try{const r=await api(`admin/integrations/${item.id}/whatsapp`,'PUT',{flujos:elegidos.map(x=>({id:x.id,nombre:x.nombre,texto:x.texto||''}))});elegidos=r.flujos||[];item.whatsapp_flows=elegidos.length;pintarElegidos();pintarCuenta();res.textContent=(elegidos.length?`Guardado: la Bandeja ofrece ${elegidos.length} ${elegidos.length===1?'plantilla':'plantillas'}. `:'Guardado: la Bandeja no ofrece plantillas. ')+resumen(r)}
+  catch(error){res.textContent=friendly(error)}finally{b.disabled=false}};
  dialog.addEventListener('close',()=>renderIntegrations(container),{once:true});
 }
 async function team(id,item,container){

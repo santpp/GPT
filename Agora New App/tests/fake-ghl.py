@@ -80,6 +80,27 @@ class H(BaseHTTPRequestHandler):
             if 'permissions' in b:x['permissions']=b['permissions']
             if 'role' in b:x['roles']={**x.get('roles',{}),'role':b['role'],'type':b.get('type','account')}
             return self.out(200,x)
+        # 2.27.0 · flujos de trabajo: dos publicados que envían plantillas, un borrador y muchos de relleno (para el buscador).
+        # Meter a un contacto en «wf-bienvenida» deja un WhatsApp saliente en su conversación; «wf-cita» no deja nada (para el «aún no aparece»).
+        if p=='/workflows/' and m=='GET':
+            if q.get('locationId')!=LOC:return self.out(422,{'message':'locationId required'})
+            if getattr(H,'sin_flujos',False):return self.out(401,{'message':'The token is not authorized for this scope.'})
+            wf=[{'id':'wf-bienvenida','name':'Ágora · Bienvenida WhatsApp','status':'published','version':3,'locationId':LOC},
+                {'id':'wf-cita','name':'Ágora · Recordatorio de cita','status':'published','version':1,'locationId':LOC},
+                {'id':'wf-borrador','name':'Ágora · Promoción (borrador)','status':'draft','version':1,'locationId':LOC}]
+            wf+=[{'id':f'wf-relleno-{i:03d}','name':f'Seguimiento automático {i:03d}','status':'published','version':1,'locationId':LOC} for i in range(1,61)]
+            return self.out(200,{'workflows':wf})
+        m3=re.match(r'^/contacts/([\w-]+)/workflow/([\w-]+)$',p)
+        if m3 and m=='POST':
+            if not (m3.group(2) in ('wf-bienvenida','wf-cita') or m3.group(2).startswith('wf-relleno-')):return self.out(404,{'message':'Workflow not found'})
+            H.flujos=getattr(H,'flujos',[])+[{'contactId':m3.group(1),'workflowId':m3.group(2),'body':b}]
+            if m3.group(2)=='wf-bienvenida':
+                for c in CONVS:
+                    if c['contactId']==m3.group(1):MSGS[c['id']].append({'id':f'wfmsg{len(H.flujos)}','conversationId':c['id'],'contactId':c['contactId'],'locationId':LOC,'body':'¡Hola! Gracias por escribirnos.','direction':'outbound','dateAdded':time.strftime('%Y-%m-%dT%H:%M:%S.000Z',time.gmtime(time.time()+2)),'messageType':'TYPE_WHATSAPP','status':'sent','attachments':[]})
+            return self.out(200,{'succeded':True})
+        if p=='/__flujos':
+            if m=='POST':H.sin_flujos=bool(b.get('sin_permiso'));H.flujos=[] if b.get('limpiar') else getattr(H,'flujos',[])
+            return self.out(200,{'flujos':getattr(H,'flujos',[])})
         if p=='/__usuarios':return self.out(200,{'users':USERS})
         if p=='/__sin_wa' and m=='POST':H.sin_wa=bool(b.get('on'));return self.out(200,{'sin_wa':H.sin_wa})
         if p=='/users/':return self.out(200,{'users':USERS})

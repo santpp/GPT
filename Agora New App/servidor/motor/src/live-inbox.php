@@ -431,12 +431,10 @@ if($path==='/api/workspace/read'&&$method==='POST'){
 // Plantillas aprobadas de WhatsApp de esta cuenta, para escribir pasadas las 24 horas.
 if($path==='/api/workspace/templates'&&$method==='GET') {
     if(!($membership['capabilities']['sendMessages']??false))respond(['error'=>'Tu usuario no tiene permiso para responder.'],403);
-    require_once __DIR__.'/WhatsappTemplates.php';
-    try {respond(['items'=>(new WhatsappTemplates())->list($connection,($_GET['refresh']??'')==='1'),'configured'=>true]);}
-    catch(TemplateProblem $e){if($e->reason==='number_missing')respond(['items'=>[],'configured'=>false,'error'=>$e->getMessage()]);respond(['error'=>$e->getMessage(),'code'=>$e->reason],$e->httpStatus);}
-    catch(GhlCooldown $e){header('Retry-After: '.$e->retryAfter);respond(['error'=>'La lista de plantillas está en espera. Vuelve a intentarlo en unos segundos.','retryAfter'=>$e->retryAfter],429);}
-    catch(GhlApiException $e){respond(['error'=>in_array($e->status,[401,403],true)?'La clave de la cuenta no permite leer plantillas. Hay que añadirle el permiso de plantillas.':'No se pudieron leer las plantillas de la cuenta.','code'=>'templates_upstream_'.$e->status],424);}
-    catch(Throwable $e){respond(['error'=>'No se pudieron leer las plantillas de la cuenta.','code'=>'templates_failed'],424);}
+    // Agora New App 2.27.0: las plantillas son los flujos de trabajo que el dueño eligió en Agencia (la cuenta no entrega las de Meta).
+    require_once __DIR__.'/WhatsappFlows.php';
+    try {$items=WhatsappFlows::forInbox((int)$id);respond(['items'=>$items,'configured'=>(bool)$items,'flows'=>true]);}
+    catch(Throwable $e){respond(['error'=>'No se pudieron leer las plantillas de esta subcuenta.','code'=>'templates_failed'],424);}
 }
 // Asignar una conversación: pasa a ser responsable el compañero elegido, tanto del
 // contacto como de sus oportunidades abiertas. Sólo administradores de la subcuenta.
@@ -468,7 +466,19 @@ if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $met
         require_once __DIR__.'/MessageSender.php';
         $contact=$record;
         // Agora New App 2.19.1: se anota quién de Ágora envió el mensaje (la cuenta no guarda el usuario de un envío por integración).
-        try {$enviado=(new MessageSender())->send($connection,$contact,body());
+        $entrada=body();$tpl=is_array($entrada['template']??null)?(string)($entrada['template']['id']??''):'';
+        if(str_starts_with($tpl,'flujo:')){
+            // Agora New App 2.27.0: plantilla por flujo. Solo por WhatsApp y con el contacto de esta conversación.
+            require_once __DIR__.'/WhatsappFlows.php';
+            $req=$entrada['requestId']??null;$wf=substr($tpl,6);
+            if(!is_string($req)||!preg_match('/^[A-Za-z0-9_-]{16,64}$/D',$req)||!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$wf))respond(['error'=>'Pedido inválido.','code'=>'invalid_message'],422);
+            if(($entrada['channel']??'')!=='WhatsApp'||!in_array('WhatsApp',array_column(array_filter(MessageSender::availableChannels($connection,$contact),fn($c)=>$c['available']),'type'),true))respond(['error'=>'Este contacto no tiene WhatsApp disponible.','code'=>'unsupported_channel'],422);
+            if(!preg_match('/^[A-Za-z0-9_-]{1,80}$/D',(string)($contact['contactId']??''))||($contact['locationId']??null)!==$connection['location_id'])respond(['error'=>'Actualiza la conversación antes de responder.','code'=>'invalid_contact'],422);
+            $autor=$GLOBALS['motorPuente']['autor']??null;
+            try{respond((new WhatsappFlows())->send($connection,$contact,$wf,$req,is_array($autor)?['nombre'=>(string)($autor['nombre']??''),'externo'=>$membership['self_id']??null]:null));}
+            catch(FlowProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);respond(['error'=>$e->getMessage(),'code'=>$e->reason,'retryAfter'=>$e->retryAfter],$e->httpStatus);}
+        }
+        try {$enviado=(new MessageSender())->send($connection,$contact,$entrada);
             $mid=$enviado['messageId']??null;$autor=$GLOBALS['motorPuente']['autor']??null;
             if(is_string($mid)&&$mid!==''&&is_array($autor)&&$autor['nombre']!==''){try{query('INSERT IGNORE INTO message_authors(connection_id,message_id,author_name,external_user_id,erp_user_id) VALUES(?,?,?,?,?)',[$id,$mid,mb_substr($autor['nombre'],0,120),$membership['self_id']??null,$autor['id']]);}catch(Throwable $e){error_log('Agora autores: '.get_class($e));}}
             respond($enviado);}
@@ -482,6 +492,8 @@ if((in_array($path,['/api/workspace/messages','/api/ghl/messages'],true) && $met
         // Las redes por las que escribió el contacto se recuerdan, y los canales posibles vuelven con el historial.
         require_once __DIR__.'/ConversationNetworks.php';
         ConversationNetworks::remember((int)$id,$conversation,$page['items']??[]);
+        // Agora New App 2.27.0: plantillas pedidas por flujo en esta conversación: las que ya salieron y las que aún no aparecen.
+        if(!$cursor){try{require_once __DIR__.'/WhatsappFlows.php';$page['plantillas']=WhatsappFlows::track((int)$id,$conversation,$page['items']??[]);}catch(Throwable){$page['plantillas']=['vistas'=>[],'pendientes'=>[]];}}
         // Agora New App 2.19.1: quién envió cada mensaje saliente. «autores»: los enviados desde Ágora; «equipo»: nombres de los
         // usuarios de la cuenta, para los que la cuenta sí anota con su usuario. Solo nombres, nada más.
         try{$ids=array_values(array_filter(array_map(fn($m)=>is_array($m)&&($m['direction']??'')==='outbound'?($m['id']??null):null,$page['items']??[]),'is_string'));

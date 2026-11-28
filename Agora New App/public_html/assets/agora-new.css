@@ -1356,11 +1356,24 @@ code.clave-temp { display: inline-block; margin-top: 10px; padding: 8px 12px; bo
 #view.ag .live-contact-panel .live-profile-header { justify-content: flex-start; column-gap: 8px; }
 #view.ag .live-contact-panel .live-profile-header .lp-quien { margin-right: 4px; }
 #view.ag .live-contact-panel .live-profile-header #live-profile-close { margin-left: auto; }
-/* 2.25.0 · Agencia → subcuenta: plantillas de WhatsApp */
+/* 2.27.0 · Agencia → subcuenta: plantillas de WhatsApp por flujos de trabajo */
+#bx-whatsapp .wa-guia { margin: 0 0 12px; font-size: 13.5px; color: var(--muted); }
+#bx-whatsapp .wa-guia summary { cursor: pointer; font-weight: 600; }
+#bx-whatsapp .wa-guia ol { margin: 8px 0 0; padding-left: 20px; line-height: 1.5; }
+#bx-whatsapp .wa-t { font-weight: 600; margin: 4px 0 8px; }
+#bx-whatsapp .wa-fila { border: 1px solid var(--line, #e3e5ea); border-radius: 12px; padding: 10px 12px; margin: 0 0 10px; display: grid; gap: 8px; }
+#bx-whatsapp .wa-fila.wa-mal { border-color: #d9534f; }
+#bx-whatsapp .wa-fila-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+#bx-whatsapp .wa-cta { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+#bx-whatsapp .wa-fila textarea { width: 100%; resize: vertical; min-height: 54px; }
+#bx-whatsapp .wa-buscar { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin: 6px 0 4px; }
+#bx-whatsapp .wa-buscar .fld { flex: 1 1 240px; margin: 0; }
+#bx-whatsapp .wa-lista { list-style: none; margin: 0 0 8px; padding: 0; max-height: 300px; overflow: auto; border: 1px solid var(--line, #e3e5ea); border-radius: 12px; }
+#bx-whatsapp .wa-lista li { padding: 8px 12px; border-bottom: 1px solid var(--line, #e3e5ea); }
+#bx-whatsapp .wa-lista li:last-child { border-bottom: 0; }
+#bx-whatsapp .wa-lista .bx-check { display: flex; gap: 8px; align-items: center; overflow-wrap: anywhere; }
+#bx-whatsapp .wa-lista .bx-check.off { opacity: .6; }
 #bx-whatsapp .wa-res { margin-top: 10px; }
-#bx-whatsapp .wa-l { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 8px; font-size: 14px; line-height: 1.45; }
-#bx-whatsapp .wa-l .lt { margin-top: 3px; }
-#bx-whatsapp .wa-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
 /* 2.25.0 · Ayuda en la cabecera y manual del ERP dentro de Ayuda */
 .pop.ayuda-pop { min-width: 260px; padding-bottom: 8px; }
 .pop.ayuda-pop .acct-op { text-decoration: none; }

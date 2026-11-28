@@ -15,7 +15,7 @@ use Agora\Services\GhlConnection;
  * Sin conexión guardada, el ERP sigue respondiendo con sus datos importados, como hasta ahora.
  */
 final class MotorMobile {
- public const VERSION='motor-1.10.14-dia-autores'; // 2.19.1: tabla message_authors
+ public const VERSION='motor-1.10.14-wa-flujos'; // 2.19.1: message_authors · 2.27.0: whatsapp_flows
  /** Tenant único del motor: la agencia. Cada subcuenta del ERP es una conexión con id = id de la subcuenta. */
  public const AGENCIA=1;
  /** Rutas en vivo (GET o el método indicado). */
@@ -284,26 +284,18 @@ final class MotorMobile {
   * (y, si hace falta, el de la cuenta de WhatsApp Business) en la conexión del motor, y comprobar con la cuenta en ese momento.
   * Es lo mismo que usa la Bandeja para escribir pasadas las 24 horas. Sirve para verificar que la conexión funciona.
   */
+ /** 2.27.0 · Plantillas de WhatsApp por flujos de trabajo (solo dueños, en Agencia): ver los elegidos, buscar en la cuenta y guardar. */
  public static function whatsapp(DB $erp,array $config,int $tenant,string $accion,array $b=[]):array{
   if(!self::conectada($erp,$tenant))Http::fail('Esta subcuenta todavía no está conectada con su cuenta.',409);
   $c=self::conexion($erp,$config,$tenant);
-  require_once dirname(__DIR__,3).'/motor/src/WhatsappTemplates.php';
-  $estado=fn(array $c):array=>['numberId'=>$c['whatsapp_number_id']??null,'accountId'=>$c['whatsapp_account_id']??null,'diagnostico'=>\WhatsappTemplates::diagnosis((int)$c['id'])];
-  if($accion==='ver')return $estado($c);
-  if($accion==='guardar'){
-   try{$n=\WhatsappTemplates::numberId($b['numberId']??null);$cu=\WhatsappTemplates::numberId($b['accountId']??null);}
-   catch(\TemplateProblem $e){Http::fail($e->getMessage(),422);}
-   \query('UPDATE ghl_connections SET whatsapp_number_id=?,whatsapp_account_id=? WHERE id=? AND tenant_id=?',[$n,$n===null?null:$cu,$c['id'],self::AGENCIA]);
-   \query("DELETE FROM directory_cache WHERE connection_id=? AND cache_key LIKE 'wa-templates:%'",[$c['id']]);
-   return $estado(\query('SELECT * FROM ghl_connections WHERE id=?',[$c['id']])->fetch());
-  }
-  // comprobar: pide la lista a la cuenta ahora y deja el diagnóstico (cuántas llegaron, cuáles se quedaron fuera y por qué)
-  try{$lista=(new \WhatsappTemplates())->list($c,true);}
-  catch(\TemplateProblem $e){Http::fail($e->reason==='number_missing'?'Falta el identificador del número de WhatsApp de esta subcuenta. Escríbelo y guarda antes de comprobar.':$e->getMessage(),$e->httpStatus);}
-  catch(\GhlCooldown $e){header('Retry-After: '.$e->retryAfter);Http::fail('La cuenta pidió esperar un momento. Vuelve a comprobar en unos segundos.',429);}
-  catch(\GhlApiException $e){Http::fail(in_array($e->status,[401,403],true)?'La conexión de esta subcuenta no tiene permiso para leer las plantillas. Agrega el permiso de plantillas a su integración.':'La cuenta respondió con un error al pedir las plantillas (código '.$e->status.').',424);}
-  catch(\Throwable){Http::fail('La respuesta de la cuenta no se pudo leer.',424);}
-  return $estado($c)+['plantillas'=>array_map(fn($t)=>['nombre'=>(string)($t['name']??''),'idioma'=>(string)($t['language']??''),'categoria'=>(string)($t['category']??'')],array_slice($lista,0,50))];
+  require_once dirname(__DIR__,3).'/motor/src/WhatsappFlows.php';
+  $ver=fn():array=>['flujos'=>\WhatsappFlows::chosen((int)$c['id']),'resumen'=>\WhatsappFlows::summary((int)$c['id'],time()-30*86400,time()),'maximo'=>\WhatsappFlows::MAX];
+  try{
+   if($accion==='ver')return $ver();
+   if($accion==='buscar'){$q=mb_substr(trim((string)($b['buscar']??'')),0,80);$lista=(new \WhatsappFlows())->account($c,$q);return ['cuenta'=>array_slice($lista,0,200),'total'=>count($lista),'buscar'=>$q];}
+   if($accion==='guardar'){if(!is_array($b['flujos']??null))Http::fail('Falta la lista de flujos.',422);(new \WhatsappFlows())->save($c,$b['flujos']);return $ver();}
+  }catch(\FlowProblem $e){if($e->retryAfter)header('Retry-After: '.$e->retryAfter);Http::fail($e->getMessage(),$e->httpStatus);}
+  Http::fail('Acción desconocida.',400);
  }
  private static function conexion(DB $erp,array $config,int $tenant):array{
   self::instalar($erp,$config);self::arrancar($config);
