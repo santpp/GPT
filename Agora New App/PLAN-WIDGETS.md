@@ -160,3 +160,17 @@ Cada fase se entrega como una versión con sus pruebas y no rompe lo anterior.
 - **Complejidad para el usuario:** el editor trae ejemplos («Margen», «Falta para la meta») que se agregan con un toque, y siempre se puede volver a «Restablecer».
 
 - 2.18.10: sin «copiar de otro módulo» (decisión del usuario); el editor muestra la lista de cifras predeterminadas. «Editar» de una tarjeta edita solo esa tarjeta.
+
+## 10. Etapa 2 · «tan personalizables o más que la cuenta» (plan, 28 nov 2026)
+
+Lo de las fases 1 a 6 está hecho. Comparado con los tableros de la cuenta, falta:
+
+| Fase | Qué | Prueba principal |
+|---|---|---|
+| **7 · Filtros por widget** | Vendedor, embudo, etapa, producto o rubro, canal, forma de cobro, moneda (estaban en el plan y no se hicieron) | La cifra filtrada coincide con la del módulo filtrado igual |
+| **8 · Arrastrar y soltar** | Mover y cambiar el tamaño con el ratón o el dedo (hoy se ordena con botones), con deshacer | Teléfono y escritorio; el orden se guarda |
+| **9 · Más fuentes** | Oportunidades por etapa y embudo, conversaciones (sin responder, tiempo de respuesta), citas, tareas por vendedor, campos personalizados de contactos y oportunidades, y los envíos de plantillas de WhatsApp | Cada métrica nueva coincide con su pantalla, con cada rol |
+| **10 · Tipos nuevos** | Embudo de conversión, ranking de vendedores, meta con barra de avance, mapa de calor por día y hora, tarjeta con lista | Cifras iguales a las del widget de número |
+| **11 · Constructor libre** | «Widget nuevo» sin fórmula: elegir qué contar (contactos, oportunidades, ventas…), cómo (contar, sumar, promedio, mínimo, máximo), agrupar por un campo y filtrar | Mismo resultado que la métrica equivalente del catálogo |
+
+Mismas reglas: archivos aparte (`Widgets/`, `widgets.js`), solo administración edita, los gráficos al final del módulo, tope de unos 24 widgets por tablero, caché y una sola llamada.
