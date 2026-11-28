@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/TokenVault.php';
 final class Installation {
-    public const VERSION='1.10.36';
+    public const VERSION='1.10.37';
     public static function checks(bool $autoMigrate=true):array {
         $checks=[];
         $runtime=PHP_VERSION_ID>=80300;
@@ -59,6 +59,9 @@ final class Installation {
             query('SELECT tenant_id,connection_id,identity_type,actor_id,shared,name,body,attachments,updated_at FROM quick_replies LIMIT 0');
             query('SELECT connection_id,request_id,contact_id,action,request_hash,state,result_id,error_code FROM contact_action_attempts LIMIT 0');
             query('SELECT connection_id,request_id,subject_id,action,request_hash,state,result_id,error_code FROM opportunity_action_attempts LIMIT 0');
+            // 1.10.37 · Plantillas de WhatsApp por flujos (034): sin esta revisión la migración no se aplicaba en un servidor ya instalado.
+            query('SELECT connection_id,workflow_id,label,account_name,preview,position,account_status FROM whatsapp_flows LIMIT 0');
+            query('SELECT connection_id,request_id,workflow_id,conversation_id,contact_id,label,state,requested_at,seen_at FROM whatsapp_flow_sends LIMIT 0');
             // 1.10.28 · Las tablas con texto escrito por personas deben guardar cualquier carácter (en latin1, «→» o un emoji hacían fallar el guardado).
             if(self::tablasAntiguas(self::TEXTO)&&self::tocaConvertir())throw new class('Charset pending') extends PDOException { public function __construct(string $m){parent::__construct($m);$this->code='42S22';} };
             $checks[]=['name'=>'schema','ready'=>true,'code'=>null];

@@ -5,7 +5,12 @@ declare(strict_types=1);
 require __DIR__.'/../src/bootstrap.php';
 require __DIR__.'/../src/Installation.php';
 require __DIR__.'/../src/WhatsappFlows.php';
-Installation::applyMigrations();
+// 1.10.37 · En un servidor ya instalado (sin las tablas nuevas) la revisión de arranque las crea sola.
+query('DROP TABLE IF EXISTS whatsapp_flow_sends');query('DROP TABLE IF EXISTS whatsapp_flows');
+$ready=true;foreach(Installation::checks() as $c)if(!$c['ready'])$ready=false;
+$tablas=query("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('whatsapp_flows','whatsapp_flow_sends')")->fetchColumn();
+if(!$ready||(int)$tablas!==2)throw new RuntimeException('an installed server does not create the workflow tables on its own');
+echo "PASS an installed server without the new tables creates them on its own at startup\n";
 $tenant=null;$suffix=bin2hex(random_bytes(6));$checks=0;
 function ok(bool $v,string $label):void{global $checks;if(!$v)throw new RuntimeException($label);$checks++;echo "PASS $label\n";}
 function reason(Closure $f):string{try{$f();return '';}catch(FlowProblem $e){return $e->reason;}}
