@@ -17,3 +17,7 @@ Agora New App/servidor/storage/*
 !Agora New App/servidor/storage/.gitkeep
 !Agora New App/servidor/storage/.gitignore
 Agora New App/tests/fake-ghl.log
+
+# cachés de Python de las pruebas
+__pycache__/
+*.pyc
