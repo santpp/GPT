@@ -161,7 +161,10 @@ Cada fase se entrega como una versión con sus pruebas y no rompe lo anterior.
 
 - 2.18.10: sin «copiar de otro módulo» (decisión del usuario); el editor muestra la lista de cifras predeterminadas. «Editar» de una tarjeta edita solo esa tarjeta.
 
-## 10. Etapa 2 · «tan personalizables o más que la cuenta» (plan, 28 nov 2026)
+## 10. Etapa 2 · «tan personalizables o más que la cuenta» (28 nov 2026)
+
+Estado: **hechas en 2.28.0 las fases 7, 9, 10 y 11** (aprobadas por el usuario). La 8 (arrastrar y soltar) no se aprobó. De la 9 falta «citas»: hay que leerlas de la cuenta y va con el módulo de agenda (en espera). Servidor: `Widgets/Consultas.php`; pantalla: `widgets.js` (constructor `qForm`, dibujo `dibujarQ`, detalle `detalleQ`). Prueba: `tests/widgets-etapa2.py`.
+
 
 Lo de las fases 1 a 6 está hecho. Comparado con los tableros de la cuenta, falta:
 

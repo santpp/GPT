@@ -31,6 +31,7 @@ final class Widgets {
  private function db(){return $this->api->db;}
 
  public function route(string $p,string $m,array $b):array{
+  if(str_starts_with($p,'workspace/consultas'))return (new Consultas($this->api))->route($p,$m,$b); // 2.28.0 · etapa 2
   if($p==='workspace/metricas/catalogo'&&$m==='GET')return $this->catalogo();
   if($p==='workspace/metricas'&&$m==='GET')return $this->valores();
   if($p==='workspace/metricas/serie'&&$m==='GET')return $this->serie();
@@ -184,10 +185,12 @@ final class Widgets {
    $cfg=json_decode((string)$d['config'],true);if(!is_array($cfg))continue;if(($cfg['visible']??'todos')==='administracion'&&!$edita)continue;
    foreach($cfg['widgets']??[] as $w){
     if(empty($w['alerta'])||empty($w['semaforo']['activo'])||($w['tipo']??'cifra')!=='cifra')continue;if(++$n>40)break 2;
-    $id=($w['fuente']??'')==='formula'?'f:'.(int)$w['ref']:(string)$w['ref'];$p=$this->periodoWidget($w,$periodo);$r=$this->valorDe($id,$p);if($r['valor']===null)continue;
+    $p=$this->periodoWidget($w,$periodo);
+    if(($w['fuente']??'')==='consulta'){try{$cq=new Consultas($this->api);$r=$cq->ejecutar($cq->validar($w['ref']),$p);$id='';}catch(\Throwable){continue;}}
+    else{$id=($w['fuente']??'')==='formula'?'f:'.(int)$w['ref']:(string)$w['ref'];$r=$this->valorDe($id,$p);}if($r['valor']===null)continue;
     $s=$w['semaforo'];$v=(float)$r['valor'];$menos=($s['mejor']??'mas')==='menos';
     $estado=($menos?$v<=$s['verde']:$v>=$s['verde'])?'meta':(($menos?$v<=$s['ambar']:$v>=$s['ambar'])?'cerca':'bajo');if($estado==='meta')continue;
-    $nombre=$w['titulo']?:(isset(Metricas::LISTA[$id])?Metricas::LISTA[$id][0]:($this->db()->one('SELECT nombre FROM agora_widget_formulas WHERE id=? AND tenant_id=?',[(int)$w['ref'],$this->t()])['nombre']??'Fórmula'));
+    $nombre=$w['titulo']?:(($w['fuente']??'')==='consulta'?Consultas::nombre($w['ref']):null)?:(isset(Metricas::LISTA[$id])?Metricas::LISTA[$id][0]:($this->db()->one('SELECT nombre FROM agora_widget_formulas WHERE id=? AND tenant_id=?',[(int)$w['ref'],$this->t()])['nombre']??'Fórmula'));
     $out[]=['modulo'=>$d['modulo'],'widget'=>$w['id'],'titulo'=>$nombre,'valor'=>$v,'unidad'=>($w['formato']??'auto')!=='auto'?$w['formato']:$r['unidad'],'estado'=>$estado,'verde'=>$s['verde'],'mejor'=>$menos?'menos':'mas','periodo'=>$p];
    }
   }
@@ -268,7 +271,8 @@ final class Widgets {
  }
 
  /* ---------- tableros (2.15.0 · fase 2): un tablero de widgets por módulo, el del equipo ---------- */
- private const TAM=['chico','ancho'];private const PER=['modulo','actual','anterior'];private const COMP=['','mes_anterior','ano_pasado'];private const FMT=['auto','dinero','numero','porcentaje'];private const TIPOS=['cifra','linea','barras','area','dona','tabla'];
+ private const TAM=['chico','ancho'];private const PER=['modulo','actual','anterior'];private const COMP=['','mes_anterior','ano_pasado'];private const FMT=['auto','dinero','numero','porcentaje'];private const TIPOS=['cifra','linea','barras','area','dona','tabla','ranking','embudo','meta','calor','lista']; // 2.28.0: ranking, embudo, meta, calor y lista
+ private const SOLO_CONSULTA=['ranking','embudo','calor','lista'];
  private static function modulo(string $m):string{if(!preg_match('/^[a-zA-Z][a-zA-Z_]{1,39}$/D',$m))Http::fail('Módulo no válido.');return $m;}
  private function tablero(string $modulo):array{
   $modulo=self::modulo($modulo);$r=$this->db()->one("SELECT config,version,updated_at FROM agora_dashboards WHERE tenant_id=? AND modulo=? AND alcance='equipo' AND user_id=0",[$this->t(),$modulo]);
@@ -282,9 +286,20 @@ final class Widgets {
   $id=(string)($w['id']??'');if(!preg_match('/^[a-z0-9]{6,16}$/D',$id))$id=bin2hex(random_bytes(5));
   $tipo=in_array($w['tipo']??'cifra',self::TIPOS,true)?($w['tipo']??'cifra'):'cifra';
   [$fuente,$ref]=$this->referencia($w,$i);
+  // 2.28.0 · etapa 2: tipos que solo existen con una consulta y lo que cada uno necesita.
+  if(in_array($tipo,self::SOLO_CONSULTA,true)&&$fuente!=='consulta')Http::fail('El widget '.($i+1).': ese tipo se arma con «Qué contar» (widget de datos).');
+  if($fuente==='consulta'){
+   if($tipo==='embudo'){if($ref['objeto']!=='oportunidades')Http::fail('El widget '.($i+1).': el embudo de conversión cuenta oportunidades.');$ref['agrupar']='etapa';$ref['agrupar2']='';}
+   if($tipo==='calor'){$ref['agrupar']=$ref['agrupar']!==''?$ref['agrupar']:'dia_semana';$ref['agrupar2']=$ref['agrupar2']!==''?$ref['agrupar2']:'hora';}
+   elseif($tipo!=='tabla')$ref['agrupar2']='';
+   if(in_array($tipo,['ranking','dona','tabla'],true)&&$ref['agrupar']==='')Http::fail('El widget '.($i+1).': elige por qué agrupar (por ejemplo, por vendedor).');
+   if(in_array($tipo,['cifra','meta','lista'],true)){$ref['agrupar']='';$ref['agrupar2']='';}
+  }
+  $meta=isset($w['meta'])&&is_numeric($w['meta'])&&(float)$w['meta']>0&&(float)$w['meta']<1e14?round((float)$w['meta'],2):null;
+  if($tipo==='meta'&&$meta===null)Http::fail('El widget '.($i+1).': escribe la meta (un número mayor que cero).');
   $mas=[];foreach(array_slice(is_array($w['mas']??null)?$w['mas']:[],0,in_array($tipo,['dona','tabla'],true)?9:3) as $x){if(is_array($x)){$mas[]=array_combine(['fuente','ref'],$this->referencia($x,$i));}}
-  if($tipo==='cifra')$mas=[];
-  if(in_array($tipo,['linea','barras','area'],true))foreach([['fuente'=>$fuente,'ref'=>$ref],...$mas] as $x)if($x['fuente']==='metrica'&&self::deHoy($x['ref']))Http::fail('El widget '.($i+1).': «'.Metricas::LISTA[$x['ref']][0].'» es una cifra de hoy y no tiene historia por mes para un gráfico.');
+  if($tipo==='cifra'||$fuente==='consulta'||in_array($tipo,['meta','ranking','embudo','calor','lista'],true))$mas=[];
+  if(in_array($tipo,['linea','barras','area'],true)&&$fuente!=='consulta')foreach([['fuente'=>$fuente,'ref'=>$ref],...$mas] as $x)if($x['fuente']==='metrica'&&self::deHoy($x['ref']))Http::fail('El widget '.($i+1).': «'.Metricas::LISTA[$x['ref']][0].'» es una cifra de hoy y no tiene historia por mes para un gráfico.');
   $txt=fn($k,$max)=>mb_substr(trim(strip_tags((string)($w[$k]??''))),0,$max);
   $per=(string)($w['periodo']??'modulo');if(!in_array($per,self::PER,true)&&!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/D',$per))$per='modulo';
   $sem=is_array($w['semaforo']??null)?$w['semaforo']:[];$num=fn($v)=>is_numeric($v)&&abs((float)$v)<1e14?(float)$v:null;
@@ -292,13 +307,15 @@ final class Widgets {
   return ['id'=>$id,'fuente'=>$fuente,'ref'=>$ref,'titulo'=>$txt('titulo',60),'nota'=>$txt('nota',120),
    'tamano'=>in_array($w['tamano']??'',self::TAM,true)?$w['tamano']:'chico','periodo'=>$per,
    'comparar'=>in_array($w['comparar']??'',self::COMP,true)?$w['comparar']:'','formato'=>in_array($w['formato']??'',self::FMT,true)?$w['formato']:'auto',
-   'decimales'=>isset($w['decimales'])&&is_numeric($w['decimales'])?max(0,min(4,(int)$w['decimales'])):2,'semaforo'=>$tipo==='cifra'?$semaforo:['activo'=>false],
+   'decimales'=>isset($w['decimales'])&&is_numeric($w['decimales'])?max(0,min(4,(int)$w['decimales'])):2,'semaforo'=>$tipo==='cifra'?$semaforo:['activo'=>false],'meta'=>$tipo==='meta'?$meta:null,
    'alerta'=>$tipo==='cifra'&&$semaforo['activo']&&!empty($w['alerta']),'tipo'=>$tipo,'mas'=>$mas,'meses'=>isset($w['meses'])&&is_numeric($w['meses'])?max(3,min(12,(int)$w['meses'])):6,'top'=>isset($w['top'])&&is_numeric($w['top'])?max(3,min(10,(int)$w['top'])):5];
+  // (2.28.0) un widget de datos guarda su consulta en «ref»; los demás, la cifra o fórmula.
  }
  /** [fuente, ref] de un widget o de una serie extra, comprobando que exista. */
  private function referencia(array $w,int $i):array{
   $fuente=(string)($w['fuente']??'');$ref=$w['ref']??null;
   if($fuente==='metrica'){if(!is_string($ref)||!isset(Metricas::LISTA[$ref]))Http::fail('El widget '.($i+1).' usa una cifra que no existe.');}
+  elseif($fuente==='consulta'){$ref=(new Consultas($this->api))->validar($w['consulta']??$ref,'El widget '.($i+1));}
   elseif($fuente==='formula'){$ref=is_numeric($ref)?(int)$ref:0;if(!$this->db()->one('SELECT id FROM agora_widget_formulas WHERE id=? AND tenant_id=?',[$ref,$this->t()]))Http::fail('El widget '.($i+1).' usa una fórmula que ya no existe.');}
   else Http::fail('El widget '.($i+1).' no dice qué mide.');
   return [$fuente,$ref];

@@ -7,7 +7,7 @@ final class Api {
  public Auth $a;public Users $u;public Agency $ag;public Workspace $w;public Contracts $c;public Records $r;public Metrics $metrics;public Personalizar $per;
  public function __construct(public DB $db,public array $config){$this->a=new Auth($db,$config);$this->u=new Users($db,$this->a);$this->ag=new Agency($db,$this->a);$this->w=new Workspace($db,$this->a);$this->c=new Contracts($db,$this->a);$this->r=$this->w->records;$this->metrics=new Metrics($db,$this->a);$this->per=new Personalizar($db,$this->a);}
  public function dispatch(string $p,string $m,array $b):mixed{
-  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.27.0'];
+  if($m==='GET'&&$p==='health')return ['status'=>'ok','version'=>'2.28.0'];
   if($m==='GET'&&$p==='session/csrf')return ['csrf'=>$this->a->csrf()];
   if($m==='GET'&&$p==='status')return ['maintenance'=>false];
   if($m==='POST'&&$p==='login')return $this->a->login($b);
@@ -100,7 +100,7 @@ final class Api {
   elseif(preg_match('~^workspace/plantillas(/|$)~',$p)&&$m!=='GET')$permission='datos.consultar'; // 2.18.0: quién crea o aplica se revisa en Plantillas.php // 2.14.0
   elseif($m!=='GET')$permission='conversaciones.atender';
   $this->a->permit($permission);
-  if(preg_match('~^workspace/(metricas|formulas|variables|tableros|alertas|plantillas)(/|$)~',$p))return (new \Agora\Widgets\Widgets($this))->route($p,$m,$b); // 2.14.0 · widgets
+  if(preg_match('~^workspace/(metricas|formulas|variables|tableros|alertas|plantillas|consultas)(/|$)~',$p))return (new \Agora\Widgets\Widgets($this))->route($p,$m,$b); // 2.14.0 · widgets
   if($p==='workspace/permisos'||$p==='workspace/usuarios/permisos')return $this->u->permissions($p,$m,$b);
   if($p==='workspace/branding'&&in_array($m,['GET','POST']))return $this->ag->branding($m,$b);
   // 2.9.5 · Tarjetas que cada persona elige ver en una vista (como editar los widgets de un tablero). La administración puede fijar la vista por defecto del equipo.

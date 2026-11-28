@@ -7,12 +7,16 @@
   'use strict';
   const H = () => window.AgoraHost;
   const MODULOS = ['bandeja', 'contactos', 'convenios', 'conConvenio', 'registro', 'libroVentas', 'datosFiscales', 'tasasBcv', 'inicio', 'comercial', 'oportunidades', 'tareas', 'equipo', 'publicidad', 'ventas', 'facturacion', 'costos', 'catalogo', 'tendencias', 'calidad', 'facturas', 'redes', 'productos'];
-  const GRAF = ['linea', 'barras', 'area', 'dona', 'tabla'], SERIE = ['linea', 'barras', 'area'];
-  const TIPOS = [['cifra', 'Cifra'], ['linea', 'Gráfico de línea'], ['barras', 'Gráfico de barras'], ['area', 'Gráfico de área'], ['dona', 'Dona (partes de un total)'], ['tabla', 'Tabla de los primeros']];
+  const GRAF = ['linea', 'barras', 'area', 'dona', 'tabla', 'ranking', 'embudo', 'meta', 'calor', 'lista'], SERIE = ['linea', 'barras', 'area'];
+  const TIPOS = [['cifra', 'Cifra'], ['linea', 'Gráfico de línea'], ['barras', 'Gráfico de barras'], ['area', 'Gráfico de área'], ['dona', 'Dona (partes de un total)'], ['tabla', 'Tabla de los primeros'],
+    ['ranking', 'Ranking'], ['embudo', 'Embudo de conversión'], ['meta', 'Meta con barra de avance'], ['calor', 'Mapa de calor'], ['lista', 'Tarjeta con lista']];
+  /* 2.28.0 · Widgets de datos (etapa 2): qué tipos admite cada clase de widget. */
+  const TIPOS_Q = ['cifra', 'barras', 'dona', 'tabla', 'ranking', 'embudo', 'meta', 'calor', 'lista'], TIPOS_M = ['cifra', 'linea', 'barras', 'area', 'dona', 'tabla', 'meta'];
+  const Q_NUEVA = () => ({objeto: 'ventas', op: 'contar', medida: '', fecha: '', rango: 'periodo', agrupar: '', agrupar2: '', filtros: []});
   /* Paleta categórica en orden fijo (validada para daltonismo, claro y oscuro). Más de 5 partes se juntan en «Otros». */
   const PAL = ['#AD103C', '#3D5AA8', '#B8860F', '#7A4FA8', '#C25478'], OTROS = '#8A8A93';
   const esGraf = w => GRAF.includes(w.tipo);
-  const st = {cat: null, catP: null, tab: {}, vals: {}, gen: 0};
+  const st = {cat: null, catP: null, tab: {}, vals: {}, gen: 0, qcat: null, qcatP: null};
   const esc = s => H().esc(String(s ?? ''));
   const ic = n => H().icon(n);
   const api = (p, o) => H().api(p, o);
@@ -23,12 +27,13 @@
   const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const nombreMes = p => { const [y, m] = p.split('-').map(Number); return `${MESES[m - 1]} de ${y}`; };
   const hoy = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const int = n => new Intl.NumberFormat('es-VE').format(n || 0);
   const uid = () => Math.random().toString(36).slice(2, 10).padEnd(8, '0');
 
   /* ---------- formato de valores ---------- */
-  function fmt(v, u, dec = 2) {
+  function fmt(v, u, dec = 2, mon = null) {
     if (v === null || v === undefined) return '—';
-    if (u === 'dinero') return `${SIM[H().moneda()] || H().moneda()} ${NF(2).format(v)}`;
+    if (u === 'dinero') { const m = mon || H().moneda(); return `${SIM[m] || m} ${NF(2).format(v)}`; }
     if (u === 'porcentaje') return `${NF(Math.min(dec, 2)).format(v)} %`;
     if (u === 'fecha') { const d = new Date(Math.round(v) * 86400000 + 43200000); return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}`; }
     if (u === 'bool') return v ? 'Sí' : 'No';
@@ -39,8 +44,22 @@
     if (!st.catP || fuerza) st.catP = api('workspace/metricas/catalogo').then(c => (st.cat = c)).finally(() => { st.catP = null; });
     return st.catP;
   }
-  const nombreRef = (w, cat) => w.fuente === 'formula' ? (cat?.formulas || []).find(f => f.id === +w.ref)?.nombre || 'Fórmula borrada' : (cat?.metricas || []).find(m => m.id === w.ref)?.nombre || w.ref;
-  const clave = w => w.fuente === 'formula' ? `f:${w.ref}` : w.ref;
+  async function qcatalogo() {
+    if (st.qcat) return st.qcat;
+    if (!st.qcatP) st.qcatP = api('workspace/consultas/catalogo').then(c => (st.qcat = c)).finally(() => { st.qcatP = null; });
+    return st.qcatP;
+  }
+  const qObj = q => (st.qcat?.objetos || []).find(o => o.id === q?.objeto);
+  const qCampo = (q, id) => qObj(q)?.campos.find(c => c.id === id)?.nombre || id;
+  /** Nombre de un widget de datos: «Ventas · Sumar monto · por vendedor». */
+  function nombreQ(q) {
+    const o = qObj(q); if (!o) return 'Widget de datos';
+    const med = o.medidas.find(m => m.id === q.medida)?.nombre || '';
+    const como = q.op === 'contar' ? o.nombre : `${(st.qcat.operaciones.find(x => x.id === q.op)?.nombre || '')} ${med.toLowerCase()} de ${o.nombre.toLowerCase()}`;
+    return como + (q.agrupar ? ` por ${qCampo(q, q.agrupar).toLowerCase()}` : '');
+  }
+  const nombreRef = (w, cat) => w.fuente === 'consulta' ? nombreQ(w.ref) : w.fuente === 'formula' ? (cat?.formulas || []).find(f => f.id === +w.ref)?.nombre || 'Fórmula borrada' : (cat?.metricas || []).find(m => m.id === w.ref)?.nombre || w.ref;
+  const clave = w => w.fuente === 'formula' ? `f:${w.ref}` : w.fuente === 'consulta' ? 'q:' + JSON.stringify(w.ref) : w.ref;
   const periodoDe = w => w.periodo === 'actual' ? H().mesActual() : w.periodo === 'anterior' ? mes(H().mesActual(), -1) : /^\d{4}-\d{2}$/.test(w.periodo) ? w.periodo : H().periodo();
   const compDe = (w, p) => w.comparar === 'mes_anterior' ? mes(p, -1) : w.comparar === 'ano_pasado' ? mes(p, -12) : null;
 
@@ -48,8 +67,12 @@
   async function valores(widgets) {
     const porP = new Map();
     const pedir = (p, k) => { if (!porP.has(p)) porP.set(p, new Set()); porP.get(p).add(k); };
-    widgets.forEach(w => { const p = periodoDe(w); pedir(p, clave(w)); const c = compDe(w, p); if (c) pedir(c, clave(w)); });
-    const out = {};
+    const out = {}, qs = [];
+    widgets.forEach(w => { const p = periodoDe(w), c = compDe(w, p); if (w.fuente === 'consulta') { qs.push([p, w]); if (c) qs.push([c, w]); return; } pedir(p, clave(w)); if (c) pedir(c, clave(w)); });
+    if (qs.length) {
+      try { const r = await api('workspace/consultas', {method: 'POST', body: {pedidos: qs.map(([p, w], i) => ({clave: String(i), consulta: w.ref, periodo: p}))}}); qs.forEach(([p, w], i) => { out[p + '|' + clave(w)] = r.resultados?.[i] || {valor: null, unidad: 'numero', motivo: ''}; }); }
+      catch (e) { qs.forEach(([p, w]) => { out[p + '|' + clave(w)] = {valor: null, unidad: 'numero', motivo: e.message}; }); }
+    }
     await Promise.all([...porP].map(async ([p, set]) => {
       const ids = [...set];
       for (let i = 0; i < ids.length; i += 40) {
@@ -77,7 +100,7 @@
     const motivo = r.valor === null && r.motivo ? `<span class="ag-resumen-d wg-motivo">${esc(r.motivo)}</span>` : '';
     const per = w.periodo !== 'modulo' ? `<span class="ag-resumen-d">${esc(nombreMes(p))}</span>` : '';
     const ed = edita ? `<span class="cel-acc"><button class="cel-ed" type="button" data-wg-ed="${esc(w.id)}" title="Editar ${esc(w.titulo || nombreRef(w, cat))}">Editar</button></span>` : '';
-    const tit = esc(w.titulo || nombreRef(w, cat)), val = esc(fmt(r.valor, u, w.decimales ?? 2)), nota = w.nota ? `<span class="ag-resumen-s">${esc(w.nota)}</span>` : '';
+    const tit = esc(w.titulo || nombreRef(w, cat)), val = esc(fmt(r.valor, u, w.decimales ?? 2, r.moneda)), nota = w.nota ? `<span class="ag-resumen-s">${esc(w.nota)}</span>` : '';
     // 2.18.1 · el widget toma la forma de las tarjetas que tiene al lado (mismo título, enunciado y cifra) para ser una más del tablero
     if (forma === 'micro') return `<div class="micro cel wg-cel" data-wgc data-wg-id="${esc(w.id)}"><h3>${tit}</h3>${nota}<p class="t-metric" style="margin:0">${val}</p>${semaforo(w, r.valor)}${comp ? comp.replace('ag-resumen-d', 'f ag-resumen-d') : ''}${per}${motivo}${ed}</div>`;
     return `<div class="ag-resumen cel wg-cel ${w.tamano === 'ancho' ? 'wg-ancho' : ''}" data-wgc data-wg-id="${esc(w.id)}"><span class="ag-resumen-t">${tit}</span>${nota}<b class="ag-resumen-v">${val}</b>${semaforo(w, r.valor)}${comp}${per}${motivo}${ed}</div>`;
@@ -100,6 +123,7 @@
     sec.hidden = !cifras.length;
     const cab = soloAdm ? `<div class="wg-h wg-h-min">${soloAdm}</div>` : '';
     const cat = t.widgets.length ? await catalogo().catch(() => null) : null;
+    if (t.widgets.some(w => w.fuente === 'consulta')) await qcatalogo().catch(() => null);
     if (gen !== st.gen || !sec.isConnected) return;
     st.cat = cat || st.cat;
     colocar(sec, mod, cifras, {}, cat, edita, cab);
@@ -226,7 +250,14 @@
     const nombres = refsDe(w).map(r => nombreRef(r, cat));
     try {
       let datos;
-      if (SERIE.includes(w.tipo)) {
+      if (w.fuente === 'consulta') {
+        // 2.28.0 · widget de datos: la consulta (agrupada o no) o, para «Tarjeta con lista», sus filas más recientes
+        if (w.tipo === 'lista') datos = {tipo: 'lista', periodo: p, lista: await api('workspace/consultas/filas', {method: 'POST', body: {consulta: w.ref, periodo: p, limite: w.top || 5}})};
+        else { const r = await api('workspace/consultas', {method: 'POST', body: {pedidos: [{clave: 'w', consulta: w.ref, periodo: p, top: ['ranking', 'tabla'].includes(w.tipo) ? (w.top || 5) : 0}]}}); datos = {tipo: w.tipo, periodo: p, q: r.resultados.w}; }
+      } else if (w.tipo === 'meta') {
+        const r = await api(`workspace/metricas?periodo=${p}&hoy=${hoy()}${H().zona()}&ids=${enc(clave(w))}`);
+        datos = {tipo: 'meta', periodo: p, q: r.valores[clave(w)] || {valor: null, unidad: 'numero', motivo: ''}};
+      } else if (SERIE.includes(w.tipo)) {
         const r = await api(`workspace/metricas/serie?hasta=${p}&meses=${w.meses || 6}&hoy=${hoy()}${H().zona()}&ids=${enc(ids.join(','))}`);
         datos = {tipo: w.tipo, meses: r.meses, series: ids.map((id, i) => ({nombre: nombres[i], puntos: r.series[id] || []}))};
       } else {
@@ -241,6 +272,7 @@
     const d = fig._datos, w = fig._w, caja = fig.querySelector('.wg-lienzo'); if (!d || !caja) return;
     if (SERIE.includes(d.tipo) && !fig._ro && window.ResizeObserver) { let ultimo = caja.clientWidth; fig._ro = new ResizeObserver(() => { const a = caja.clientWidth; if (Math.abs(a - ultimo) > 8) { ultimo = a; dibujar(fig); } }); fig._ro.observe(caja); }
     const fmtU = u => w.formato && w.formato !== 'auto' ? w.formato : u;
+    if (d.q || d.lista) { caja.innerHTML = dibujarQ(d, fmtU, w); tooltips(caja); return; }
     if (SERIE.includes(d.tipo)) caja.innerHTML = svgSerie(d, caja.clientWidth || 600, fmtU, w);
     else if (d.tipo === 'dona') caja.innerHTML = svgDona(d, fmtU, w);
     else caja.innerHTML = tablaTop(d, fmtU, w);
@@ -310,6 +342,37 @@
     const u0 = filas.find(x => x.valor !== null)?.unidad, mismas = filas.every(x => x.valor === null || x.unidad === u0), max = Math.max(...filas.map(x => Math.abs(x.valor || 0)), 0);
     return `<table class="wg-tabla"><thead><tr><th>#</th><th>Cifra</th><th>Valor</th></tr></thead><tbody>${filas.map((x, i) => `<tr><td>${i + 1}</td><td>${esc(x.nombre)}${mismas && max && x.valor !== null ? `<span class="wg-barra"><i style="width:${Math.abs(x.valor) / max * 100}%"></i></span>` : ''}</td><td>${esc(fmt(x.valor, fmtU(x.unidad), w.decimales ?? 2))}${x.valor === null && x.motivo ? `<small>${esc(x.motivo)}</small>` : ''}</td></tr>`).join('')}</tbody></table><p class="wg-motivo">${esc(nombreMes(d.periodo))}</p>`;
   }
+  /* ---------- 2.28.0 · tipos nuevos: ranking, embudo, meta, mapa de calor y lista (y barras, dona y tabla de un widget de datos) ---------- */
+  function dibujarQ(d, fmtU, w) {
+    const q = d.q || {}, dec = w.decimales ?? 2, u = fmtU(q.unidad || d.lista?.unidad || 'numero'), mon = q.moneda, pie = `<p class="wg-motivo">${esc(w.ref?.rango === 'todo' ? 'Todo el período' : w.ref?.rango === '12m' ? `Los 12 meses hasta ${nombreMes(d.periodo)}` : nombreMes(d.periodo))}</p>`;
+    const F = v => fmt(v, u, dec, mon);
+    if (d.tipo === 'lista') {
+      const L = d.lista; if (!L.filas.length) return `<p class="wg-motivo">No hay nada en este período.</p>${pie}`;
+      return `<ul class="wg-lista2">${L.filas.map(f => `<li><span>${esc(f.texto)}</span>${f.valor !== null && f.valor !== undefined ? `<b>${esc(fmt(f.valor, fmtU(L.unidad || 'numero'), dec, f.moneda))}</b>` : ''}<small>${f.fecha ? esc(f.fecha.slice(8, 10) + '/' + f.fecha.slice(5, 7) + '/' + f.fecha.slice(0, 4)) : ''}</small></li>`).join('')}</ul><p class="wg-motivo">${L.total > L.filas.length ? `Los ${L.filas.length} más recientes de ${L.total}.` : `${L.total} en total.`}</p>${pie}`;
+    }
+    if (q.valor === null && q.motivo && !q.grupos && !q.celdas) return `<p class="wg-motivo">${esc(q.motivo)}</p>`;
+    if (d.tipo === 'meta') {
+      const meta = +w.meta || 0, v = q.valor ?? 0, pct = meta ? v / meta * 100 : 0, falta = Math.max(0, meta - v);
+      return `<div class="wg-meta"><p class="wg-meta-v"><b>${esc(F(q.valor))}</b><span>de ${esc(F(meta))}</span></p><div class="wg-meta-b" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(Math.min(100, pct))}" aria-label="Avance de la meta"><i class="${pct >= 100 ? 'ok' : pct >= 70 ? 'cerca' : ''}" style="width:${Math.min(100, pct)}%"></i></div><p class="wg-meta-p"><b>${NF(1).format(pct)} %</b>${pct >= 100 ? '<span class="sc sc-ok">Meta cumplida</span>' : `<span>Faltan ${esc(F(falta))}</span>`}</p></div>${pie}`;
+    }
+    if (d.tipo === 'calor') {
+      if (!q.celdas?.length) return `<p class="wg-motivo">No hay datos en este período.</p>${pie}`;
+      const max = Math.max(...q.celdas.flat().map(x => x || 0), 1);
+      return `<div class="wg-calor-w"><table class="wg-calor"><thead><tr><th></th>${q.columnas.map(c => `<th scope="col">${esc(c.etiqueta)}</th>`).join('')}</tr></thead><tbody>${q.filas.map((f, i) => `<tr><th scope="row">${esc(f.etiqueta)}</th>${q.celdas[i].map((v, j) => `<td style="--a:${v ? (0.12 + 0.88 * v / max).toFixed(2) : 0}" data-tip="${esc(`${f.etiqueta} · ${q.columnas[j].etiqueta}|0~${F(v ?? 0)}`)}" class="${v && v / max > .55 ? 'osc' : ''}">${v ? esc(fmtEje(v, u)) : ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="wg-motivo">Más oscuro = más ${esc(u === 'dinero' ? 'monto' : 'cantidad')}.</p>${pie}`;
+    }
+    let g = (q.grupos || []).filter(x => !(d.tipo === 'embudo' && x.clave === '—'));
+    if (!g.length) return `<p class="wg-motivo">${esc(q.motivo || 'No hay datos en este período.')}</p>${pie}`;
+    if (d.tipo === 'dona') return svgDona({periodo: d.periodo, partes: g.map(x => ({nombre: x.etiqueta, valor: x.valor, unidad: q.unidad, motivo: ''}))}, fmtU, w).replace(/<p class="wg-motivo">[^<]*<\/p>$/, '') + pie;
+    if (d.tipo === 'embudo') {
+      const top = g[0].valor || 0;
+      return `<ol class="wg-embudo">${g.map((x, i) => { const pc = top ? x.valor / top * 100 : 0, prev = i ? g[i - 1].valor : null; return `<li><span class="wg-emb-n">${esc(x.etiqueta)}</span><span class="wg-emb-b"><i style="width:${Math.max(4, pc)}%"></i></span><b>${esc(F(x.valor))}</b><small>${i ? `${prev ? NF(0).format(x.valor / prev * 100) : 0} % de la etapa anterior` : 'Entrada'}</small></li>`; }).join('')}</ol>${g.length > 1 && top ? `<p class="wg-motivo">De la primera a la última etapa: ${NF(1).format(g.at(-1).valor / top * 100)} %.</p>` : ''}${pie}`;
+    }
+    if (d.tipo === 'tabla' && !q.celdas) return tablaTop({periodo: d.periodo, partes: g.map(x => ({nombre: x.etiqueta, valor: x.valor, unidad: q.unidad, motivo: ''}))}, fmtU, w).replace('<th>Cifra</th>', `<th>${esc(qCampo(w.ref, w.ref.agrupar))}</th>`);
+    // barras y ranking: barras horizontales (el ranking, de mayor a menor y con su puesto)
+    if (d.tipo === 'ranking') g = [...g].sort((a, b) => (b.valor ?? -Infinity) - (a.valor ?? -Infinity)).slice(0, w.top || 5);
+    const max = Math.max(...g.map(x => Math.abs(x.valor || 0)), 0);
+    return `<ol class="wg-barrash ${d.tipo === 'ranking' ? 'is-rank' : ''}">${g.slice(0, 30).map((x, i) => `<li data-tip="${esc(`${x.etiqueta}|0~${F(x.valor)}`)}">${d.tipo === 'ranking' ? `<span class="wg-pos">${i + 1}</span>` : ''}<span class="wg-bh-n">${esc(x.etiqueta)}</span><span class="wg-bh-b"><i style="width:${max ? Math.abs(x.valor || 0) / max * 100 : 0}%"></i></span><b>${esc(F(x.valor))}</b></li>`).join('')}</ol>${pie}`;
+  }
   function tooltips(caja) {
     const tip = caja.querySelector('.wg-tip'), cruz = caja.querySelector('.wg-cruz'), wrap = caja.querySelector('.wg-svgw'); if (!tip) return;
     const mostrar = (el, ev) => {
@@ -326,7 +389,41 @@
   }
 
   /* ---------- detalle de una cifra (2.16.0 · fase 5): qué mide, de qué está hecha, sus últimos meses y descarga ---------- */
+  /** 2.28.0 · Qué cuenta un widget de datos, en palabras (filtros y período incluidos). */
+  function describirQ(q) {
+    const o = qObj(q); if (!o) return '';
+    const f = (q.filtros || []).map(x => `${qCampo(q, x.campo)} ${x.excluir ? 'distinto de' : 'es'} ${x.valores.join(', ')}`);
+    const fecha = o.fechas.find(x => x.id === q.fecha)?.nombre || o.fechas[0]?.nombre || '';
+    return `${nombreQ(q)}${f.length ? `. Solo donde ${f.join(' y ')}` : ''}. Según ${fecha.toLowerCase()}.`;
+  }
+  async function detalleQ(w) {
+    const h = H(), p = periodoDe(w), titulo = w.titulo || nombreRef(w);
+    const m = h.openModal(h.modalHead(esc(titulo), 'Detalle del widget') + '<div class="wg-detalle" aria-busy="true"><p class="wg-motivo">Cargando…</p></div>', {wide: true});
+    const caja = m.querySelector('.wg-detalle');
+    try {
+      await qcatalogo();
+      const [r, L] = await Promise.all([api('workspace/consultas', {method: 'POST', body: {pedidos: [{clave: 'w', consulta: w.ref, periodo: p}]}}).then(x => x.resultados.w), api('workspace/consultas/filas', {method: 'POST', body: {consulta: w.ref, periodo: p, limite: 500}})]);
+      const u = w.formato && w.formato !== 'auto' ? w.formato : r.unidad, F = (v, mon) => fmt(v, u, w.decimales ?? 2, mon || r.moneda);
+      const fecha = f => f ? `${f.slice(8, 10)}/${f.slice(5, 7)}/${f.slice(0, 4)}` : '';
+      caja.innerHTML = `<p class="wg-det-v"><span>${esc(w.ref.rango === 'todo' ? 'Todo el período' : w.ref.rango === '12m' ? 'Últimos 12 meses' : nombreMes(p))}</span><b>${esc(F(r.valor))}</b>${r.valor === null && r.motivo ? `<small>${esc(r.motivo)}</small>` : ''}</p>
+        <dl class="wg-det-dl"><dt>Qué cuenta</dt><dd>${esc(describirQ(w.ref))}</dd><dt>De dónde sale</dt><dd>Lo que Ágora guarda: sus registros y lo que ya leyó de la cuenta. Cada persona ve solo lo que su rol le deja ver.</dd></dl>
+        ${r.grupos?.length ? `<h3>Por ${esc(qCampo(w.ref, w.ref.agrupar).toLowerCase())}</h3><table class="wg-tabla"><thead><tr><th>${esc(qCampo(w.ref, w.ref.agrupar))}</th><th>Valor</th><th>Registros</th></tr></thead><tbody>${r.grupos.map(x => `<tr><td>${esc(x.etiqueta)}</td><td>${esc(F(x.valor))}</td><td>${int(x.n)}</td></tr>`).join('')}</tbody></table>` : ''}
+        <h3>Registros (${int(L.total)})</h3>${L.filas.length ? `<table class="wg-tabla"><thead><tr><th>Registro</th><th>Fecha</th>${L.unidad ? '<th>Valor</th>' : ''}</tr></thead><tbody>${L.filas.slice(0, 20).map(f => `<tr><td>${esc(f.texto)}</td><td>${esc(fecha(f.fecha))}</td>${L.unidad ? `<td>${esc(fmt(f.valor, u, w.decimales ?? 2, f.moneda))}</td>` : ''}</tr>`).join('')}</tbody></table>${L.filas.length > 20 ? `<p class="wg-motivo">Se ven 20; «Descargar» trae ${L.filas.length}.</p>` : ''}` : '<p class="wg-motivo">No hay registros en este período.</p>'}
+        <div class="form-ft"><span class="grow"></span><button class="btn" type="button" data-close>Cerrar</button><button class="btn btn-cta" type="button" data-wg-csv>${ic('download')}Descargar</button></div>`;
+      caja.removeAttribute('aria-busy');
+      caja.querySelector('[data-wg-csv]').onclick = () => {
+        const n2 = new Intl.NumberFormat('es-VE', {minimumFractionDigits: 0, maximumFractionDigits: 2, useGrouping: false}), qq = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+        const lineas = [[titulo], ['Qué cuenta', describirQ(w.ref)], ['Resultado', r.valor === null ? '' : n2.format(r.valor), r.moneda || ''], [],
+          ...(r.grupos?.length ? [[qCampo(w.ref, w.ref.agrupar), 'Valor', 'Registros'], ...r.grupos.map(x => [x.etiqueta, x.valor === null ? '' : n2.format(x.valor), x.n]), []] : []),
+          ['Registro', 'Fecha', ...(L.unidad ? ['Valor', 'Moneda'] : [])], ...L.filas.map(f => [f.texto, fecha(f.fecha), ...(L.unidad ? [f.valor === null ? '' : n2.format(f.valor), f.moneda || r.moneda || ''] : [])])];
+        const blob = new Blob(['\ufeff' + lineas.map(l => l.map(qq).join(';')).join('\r\n')], {type: 'text/csv;charset=utf-8'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${titulo.replace(/[^\p{L}\p{N} _-]/gu, '').trim() || 'widget'} - ${p}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        api('workspace/auditoria', {method: 'POST', body: {accion: 'descargo.excel', detalle: `Widget «${titulo}» · ${L.filas.length} filas`}}).catch(() => {});
+      };
+    } catch (e) { caja.innerHTML = `<p class="wg-motivo">${esc(e.message)}</p><div class="form-ft"><span class="grow"></span><button class="btn" type="button" data-close>Cerrar</button></div>`; }
+  }
   async function detalle(w, cat) {
+    if (w.fuente === 'consulta') return detalleQ(w);
     const h = H(), id = clave(w), p = periodoDe(w), titulo = w.titulo || nombreRef(w, cat);
     const m = h.openModal(h.modalHead(esc(titulo), 'Detalle de la cifra') + '<div class="wg-detalle" aria-busy="true"><p class="wg-motivo">Cargando…</p></div>', {wide: true});
     const caja = m.querySelector('.wg-detalle');
@@ -364,9 +461,57 @@
     return `<option value="">Elige una cifra o una fórmula…</option>${Object.entries(grupos).map(([g, ms]) => `<optgroup label="${esc(g)}">${ms.map(m => `<option value="${esc(m.id)}" ${sel === m.id ? 'selected' : ''}>${esc(m.nombre)}</option>`).join('')}</optgroup>`).join('')}
       ${(cat.formulas || []).length ? `<optgroup label="Fórmulas del equipo">${cat.formulas.map(f => `<option value="f:${f.id}" ${sel === 'f:' + f.id ? 'selected' : ''}>${esc(f.nombre)}</option>`).join('')}</optgroup>` : ''}`;
   }
+  /* ---------- 2.28.0 · constructor de widgets de datos (qué contar, cómo, agrupar y filtros) ---------- */
+  const AGRUPA = ['barras', 'dona', 'tabla', 'ranking', 'calor'];
+  st.qval = {};
+  function qForm(w) {
+    const q = w.ref, o = qObj(q), cat = st.qcat; if (!o || !cat) return '<p class="wg-motivo">Cargando…</p>';
+    const ops = o.medidas.length ? cat.operaciones : cat.operaciones.filter(x => x.id === 'contar');
+    const campos = o.campos, opt = (id, l, sel) => `<option value="${esc(id)}" ${sel ? 'selected' : ''}>${esc(l)}</option>`;
+    const camposOpt = (sel, vacio) => (vacio ? opt('', vacio, !sel) : '') + `<optgroup label="Campos">${campos.filter(c => !c.tiempo).map(c => opt(c.id, c.nombre, sel === c.id)).join('')}</optgroup><optgroup label="Tiempo">${campos.filter(c => c.tiempo).map(c => opt(c.id, c.nombre, sel === c.id)).join('')}</optgroup>`;
+    const filtros = (q.filtros || []).map((f, i) => {
+      const k = q.objeto + '|' + f.campo, vals = st.qval[k];
+      return `<div class="wg-flt" data-fi="${i}"><div class="wg-flt-h"><select data-fc="${i}" aria-label="Campo del filtro">${camposOpt(f.campo)}</select><select data-fx="${i}" aria-label="Condición">${opt('', 'es', !f.excluir)}${opt('1', 'no es', f.excluir)}</select><button class="btn btn-sm" type="button" data-fq="${i}">Quitar</button></div>
+        <div class="wg-flt-v">${vals ? (vals.length ? vals.slice(0, 60).map(v => `<label class="bx-check"><input type="checkbox" data-fv="${i}" value="${esc(v.clave)}" ${f.valores.includes(v.clave) ? 'checked' : ''}> ${esc(v.etiqueta)} <small>${int(v.n)}</small></label>`).join('') : '<small>Ese campo no tiene valores todavía.</small>') : '<small>Cargando valores…</small>'}</div></div>`;
+    }).join('');
+    return `<fieldset class="wg-q"><legend>Qué medir</legend>
+      <label class="fld">Qué contar<select data-q="objeto" ${w.tipo === 'embudo' ? 'disabled' : ''}>${cat.objetos.map(x => opt(x.id, x.nombre, x.id === q.objeto)).join('')}</select></label>
+      <label class="fld">Cómo<select data-q="op">${ops.map(x => opt(x.id, x.nombre, x.id === q.op)).join('')}</select></label>
+      ${q.op !== 'contar' ? `<label class="fld">De qué<select data-q="medida">${o.medidas.map(x => opt(x.id, x.nombre, x.id === q.medida)).join('')}</select></label>` : ''}
+      ${o.fechas.length > 1 ? `<label class="fld">Según la fecha<select data-q="fecha">${o.fechas.map(x => opt(x.id, x.nombre, x.id === (q.fecha || o.fechas[0].id))).join('')}</select></label>` : ''}
+      <label class="fld">Período<select data-q="rango">${cat.rangos.map(x => opt(x.id, x.nombre, x.id === q.rango)).join('')}</select></label>
+      ${AGRUPA.includes(w.tipo) ? `<label class="fld">Agrupar por<select data-q="agrupar">${camposOpt(q.agrupar, w.tipo === 'barras' || w.tipo === 'tabla' ? 'Elige un campo' : 'Elige un campo')}</select></label>` : ''}
+      ${w.tipo === 'calor' || w.tipo === 'tabla' ? `<label class="fld">${w.tipo === 'calor' ? 'Columnas' : 'Y también por (opcional)'}<select data-q="agrupar2">${camposOpt(q.agrupar2, w.tipo === 'tabla' ? 'Nada más' : '')}</select></label>` : ''}
+      <div class="wg-filtros"><b>Filtros</b>${filtros || '<small>Sin filtros: cuenta todo.</small>'}<button class="btn btn-sm" type="button" data-f-nuevo ${(q.filtros || []).length >= 6 ? 'disabled' : ''}>${ic('plus')}Agregar filtro</button></div></fieldset>`;
+  }
+  function qBind(li, w, repintar) {
+    const q = w.ref;
+    const cargarVals = async f => { const k = q.objeto + '|' + f.campo; if (st.qval[k]) return; try { st.qval[k] = (await api(`workspace/consultas/valores?objeto=${enc(q.objeto)}&campo=${enc(f.campo)}`)).valores; } catch { st.qval[k] = []; } repintar(); };
+    (q.filtros || []).forEach(cargarVals);
+    li.querySelectorAll('[data-q]').forEach(el => el.onchange = () => {
+      const k = el.dataset.q; q[k] = el.value;
+      if (k === 'objeto') { Object.assign(q, {op: 'contar', medida: '', fecha: '', agrupar: '', agrupar2: '', filtros: []}); if (AGRUPA.includes(w.tipo)) q.agrupar = (qObj(q)?.campos.find(c => !c.tiempo)?.id) || ''; }
+      if (k === 'op' && q.op !== 'contar' && !q.medida) q.medida = qObj(q)?.medidas[0]?.id || '';
+      if (k === 'op' && q.op === 'contar') q.medida = '';
+      repintar();
+    });
+    li.querySelector('[data-f-nuevo]')?.addEventListener('click', () => { const c = qObj(q)?.campos.find(x => !x.tiempo); if (!c) return; (q.filtros ||= []).push({campo: c.id, valores: [], excluir: false}); repintar(); });
+    li.querySelectorAll('[data-fq]').forEach(b => b.onclick = () => { q.filtros.splice(+b.dataset.fq, 1); repintar(); });
+    li.querySelectorAll('[data-fc]').forEach(el => el.onchange = () => { q.filtros[+el.dataset.fc] = {campo: el.value, valores: [], excluir: false}; repintar(); });
+    li.querySelectorAll('[data-fx]').forEach(el => el.onchange = () => { q.filtros[+el.dataset.fx].excluir = el.value === '1'; });
+    li.querySelectorAll('[data-fv]').forEach(el => el.onchange = () => { const f = q.filtros[+el.dataset.fv]; f.valores = el.checked ? [...new Set([...f.valores, el.value])] : f.valores.filter(v => v !== el.value); });
+  }
+  /** Lo que exige cada tipo de un widget de datos (el servidor lo vuelve a comprobar). */
+  function qTipo(w, tipo) {
+    const q = w.ref;
+    if (tipo === 'embudo') { q.objeto = 'oportunidades'; q.agrupar = 'etapa'; q.agrupar2 = ''; q.op = 'contar'; q.medida = ''; q.filtros = (q.filtros || []).filter(f => ['embudo', 'etapa', 'estado', 'responsable'].includes(f.campo) || f.campo.startsWith('cf:')); }
+    else if (tipo === 'calor') { q.agrupar ||= 'dia_semana'; q.agrupar2 ||= 'hora'; }
+    else if (AGRUPA.includes(tipo)) { if (!q.agrupar) q.agrupar = (qObj(q)?.campos.find(c => !c.tiempo)?.id) || ''; if (tipo !== 'tabla') q.agrupar2 = ''; }
+    else { q.agrupar = ''; q.agrupar2 = ''; }
+  }
   async function editorTablero(mod, foco, estado, opc = {}) {
     const h = H();
-    let cat; try { cat = await catalogo(true); } catch (e) { h.toast(e.message); return; }
+    let cat; try { cat = await catalogo(true); await qcatalogo(); } catch (e) { h.toast(e.message); return; }
     const t = st.tab[mod] || {widgets: [], version: 0};
     const s = estado || {ws: JSON.parse(JSON.stringify(t.widgets)), version: t.version, abierto: foco || null, visible: t.visible || 'todos'};
     const solo = opc.solo && foco ? s.ws.find(w => w.id === foco) : null; if (solo) s.abierto = solo.id;
@@ -378,7 +523,7 @@
         <div class="wg-pre-l">${Object.entries((cat.metricas || []).reduce((g, x) => ((g[x.grupo] ||= []).push(x), g), {})).map(([g, ms]) => `<div class="wg-pre-g"><small>${esc(g)}</small><div>${ms.map(x => `<button type="button" class="wg-chip" data-wg-pre="${esc(x.id)}" title="${esc(x.descripcion || '')}">${ic('plus')}${esc(x.nombre)}</button>`).join('')}</div></div>`).join('')}
         ${(cat.formulas || []).length ? `<div class="wg-pre-g"><small>Fórmulas del equipo</small><div>${cat.formulas.map(f => `<button type="button" class="wg-chip" data-wg-pre="f:${f.id}">${ic('plus')}${esc(f.nombre)}</button>`).join('')}</div></div>` : ''}</div></div>
       <div class="wg-add">
-        <button class="btn" type="button" data-wg-formula>${ic('plus')}Nueva fórmula</button><button class="btn" type="button" data-wg-formulas>${ic('edit')}Fórmulas y variables</button><button class="btn" type="button" data-wg-plantillas>${ic('spark')}Plantillas</button></div>
+        <button class="btn" type="button" data-wg-datos>${ic('plus')}Widget de datos</button><button class="btn" type="button" data-wg-formula>${ic('plus')}Nueva fórmula</button><button class="btn" type="button" data-wg-formulas>${ic('edit')}Fórmulas y variables</button><button class="btn" type="button" data-wg-plantillas>${ic('spark')}Plantillas</button></div>
       <p class="fld-err" role="alert"></p>
       <div class="form-ft"><button class="btn" type="button" data-wg-restablecer>${ic('refresh')}Restablecer</button><span class="grow"></span><button class="btn" type="button" data-close>Cancelar</button><button class="btn btn-cta" type="button" data-wg-guardar>Guardar</button></div></div>`, {wide: true});
     const lista = m.querySelector('[data-wg-lista]'), err = m.querySelector('.fld-err');
@@ -386,18 +531,19 @@
     const pintarLista = () => {
       lista.innerHTML = s.ws.length ? s.ws.map((w, i) => {
         const abierto = s.abierto === w.id, p = /^\d{4}-\d{2}$/.test(w.periodo) ? w.periodo : '';
-        const tipo = w.tipo || 'cifra', graf = GRAF.includes(tipo), lim = SERIE.includes(tipo) ? 3 : 9, mas = w.mas || [];
-        return `<li class="pz-item is-on wg-item ${abierto ? 'is-open' : ''}" data-i="${i}"><div class="wg-item-h"><span><b>${esc(w.titulo || nombreRef(w, cat))}</b><small>${esc(TIPOS.find(x => x[0] === tipo)[1])} · ${esc(nombreRef(w, cat))}${mas.length ? ` y ${mas.length} más` : ''}${w.tamano === 'ancho' ? ' · ancho' : ''}</small></span>
+        const tipo = w.tipo || 'cifra', graf = GRAF.includes(tipo), q = w.fuente === 'consulta', lim = SERIE.includes(tipo) ? 3 : 9, mas = w.mas || [];
+        return `<li class="pz-item is-on wg-item ${abierto ? 'is-open' : ''}" data-i="${i}"><div class="wg-item-h"><span><b>${esc(w.titulo || nombreRef(w, cat))}</b><small>${esc(TIPOS.find(x => x[0] === tipo)?.[1] || tipo)} · ${esc(nombreRef(w, cat))}${mas.length ? ` y ${mas.length} más` : ''}${w.tamano === 'ancho' ? ' · ancho' : ''}</small></span>
           <span class="wg-item-acc"><button class="icon-btn" type="button" data-mv="-1" ${i ? '' : 'disabled'} aria-label="Subir">${ic('chev')}</button><button class="icon-btn wg-baja" type="button" data-mv="1" ${i < s.ws.length - 1 ? '' : 'disabled'} aria-label="Bajar">${ic('chev')}</button>
           <button class="btn btn-sm" type="button" data-cfg>${abierto ? 'Listo' : 'Configurar'}</button><button class="btn btn-sm" type="button" data-dup>Duplicar</button><button class="btn btn-sm" type="button" data-quitar>Quitar</button></span></div>
           ${abierto ? `<div class="wg-cfg">
-            <label class="fld">Tipo<select data-k="tipo">${TIPOS.map(([v, l]) => `<option value="${v}" ${tipo === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+            <label class="fld">Tipo<select data-k="tipo">${TIPOS.filter(([v]) => (w.fuente === 'consulta' ? TIPOS_Q : TIPOS_M).includes(v)).map(([v, l]) => `<option value="${v}" ${tipo === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
             <label class="fld">Título<input data-k="titulo" maxlength="60" value="${esc(w.titulo)}" placeholder="${esc(nombreRef(w, cat))}"></label>
             <label class="fld">Nota (opcional)<input data-k="nota" maxlength="120" value="${esc(w.nota)}"></label>
-            <label class="fld">${graf ? (SERIE.includes(tipo) ? 'Serie 1' : 'Parte 1') : 'Mide'}<select data-k="ref">${opcionesRef(cat, w)}</select></label>
-            ${graf ? mas.map((x, j) => `<label class="fld wg-mas">${SERIE.includes(tipo) ? 'Serie' : 'Parte'} ${j + 2}<span class="wg-mas-f"><select data-mas="${j}">${opcionesRef(cat, x)}</select><button class="btn btn-sm" type="button" data-mas-quitar="${j}" aria-label="Quitar">Quitar</button></span></label>`).join('') + (mas.length < lim ? `<label class="fld">${SERIE.includes(tipo) ? 'Agregar una serie' : 'Agregar una parte'}<select data-mas-nueva>${opcionesRef(cat)}</select></label>` : '') : ''}
-            ${SERIE.includes(tipo) ? `<label class="fld">Meses<select data-k="meses">${[3, 6, 9, 12].map(n => `<option value="${n}" ${(w.meses || 6) === n ? 'selected' : ''}>Últimos ${n}</option>`).join('')}</select></label>` : ''}
-            ${tipo === 'tabla' ? `<label class="fld">Mostrar<select data-k="top">${[3, 5, 7, 10].map(n => `<option value="${n}" ${(w.top || 5) === n ? 'selected' : ''}>Los primeros ${n}</option>`).join('')}</select></label>` : ''}
+            ${q ? qForm(w) : `<label class="fld">${graf && tipo !== 'meta' ? (SERIE.includes(tipo) ? 'Serie 1' : 'Parte 1') : 'Mide'}<select data-k="ref">${opcionesRef(cat, w)}</select></label>`}
+            ${tipo === 'meta' ? `<label class="fld">Meta<input type="number" step="any" min="0" data-k="meta" value="${w.meta ?? ''}" placeholder="Por ejemplo, 10000"></label>` : ''}
+            ${graf && !q && tipo !== 'meta' ? mas.map((x, j) => `<label class="fld wg-mas">${SERIE.includes(tipo) ? 'Serie' : 'Parte'} ${j + 2}<span class="wg-mas-f"><select data-mas="${j}">${opcionesRef(cat, x)}</select><button class="btn btn-sm" type="button" data-mas-quitar="${j}" aria-label="Quitar">Quitar</button></span></label>`).join('') + (mas.length < lim ? `<label class="fld">${SERIE.includes(tipo) ? 'Agregar una serie' : 'Agregar una parte'}<select data-mas-nueva>${opcionesRef(cat)}</select></label>` : '') : ''}
+            ${SERIE.includes(tipo) && !q ? `<label class="fld">Meses<select data-k="meses">${[3, 6, 9, 12].map(n => `<option value="${n}" ${(w.meses || 6) === n ? 'selected' : ''}>Últimos ${n}</option>`).join('')}</select></label>` : ''}
+            ${['tabla', 'ranking', 'lista'].includes(tipo) ? `<label class="fld">Mostrar<select data-k="top">${[3, 5, 7, 10].map(n => `<option value="${n}" ${(w.top || 5) === n ? 'selected' : ''}>Los primeros ${n}</option>`).join('')}</select></label>` : ''}
             <label class="fld">Tamaño<select data-k="tamano"><option value="chico" ${w.tamano !== 'ancho' ? 'selected' : ''}>Chico (1 columna)</option><option value="ancho" ${w.tamano === 'ancho' ? 'selected' : ''}>Ancho (2 columnas)</option></select></label>
             <label class="fld">${SERIE.includes(tipo) ? 'Hasta' : 'Período'}<select data-k="periodo"><option value="modulo" ${w.periodo === 'modulo' ? 'selected' : ''}>El elegido en el módulo</option><option value="actual" ${w.periodo === 'actual' ? 'selected' : ''}>Siempre el mes en curso</option><option value="anterior" ${w.periodo === 'anterior' ? 'selected' : ''}>Siempre el mes anterior</option><option value="fijo" ${p ? 'selected' : ''}>Un mes fijo</option></select></label>
             ${p ? `<label class="fld">Mes<input type="month" data-k="mes" value="${p}"></label>` : ''}
@@ -417,6 +563,7 @@
         li.querySelector('[data-dup]').onclick = () => { if (s.ws.length >= 24) { err.textContent = 'Un tablero lleva hasta 24 widgets.'; return; } s.ws.splice(i + 1, 0, {...JSON.parse(JSON.stringify(w)), id: uid()}); pintarLista(); };
         li.querySelector('[data-quitar]').onclick = () => { s.ws.splice(i, 1); pintarLista(); };
         const aRef = v => v.startsWith('f:') ? {fuente: 'formula', ref: +v.slice(2)} : {fuente: 'metrica', ref: v};
+        if (w.fuente === 'consulta' && s.abierto === w.id) qBind(li, w, pintarLista);
         li.querySelectorAll('[data-mas]').forEach(el => el.onchange = () => { if (el.value) w.mas[+el.dataset.mas] = aRef(el.value); pintarLista(); });
         li.querySelectorAll('[data-mas-quitar]').forEach(b => b.onclick = () => { w.mas.splice(+b.dataset.masQuitar, 1); pintarLista(); });
         li.querySelector('[data-mas-nueva]')?.addEventListener('change', e => { if (e.target.value) { (w.mas ||= []).push(aRef(e.target.value)); pintarLista(); } });
@@ -426,7 +573,8 @@
           if (k === 'periodo') { w.periodo = v === 'fijo' ? H().periodo() : v; pintarLista(); return; }
           if (k === 'mes') { if (/^\d{4}-\d{2}$/.test(v)) w.periodo = v; return; }
           if (k === 'decimales') { w.decimales = +v; return; }
-          if (k === 'tipo') { const antes = GRAF.includes(w.tipo); w.tipo = v; w.mas = (w.mas || []).slice(0, SERIE.includes(v) ? 3 : 9); if (GRAF.includes(v)) { w.comparar = ''; w.semaforo = {activo: false}; if (!antes) w.tamano = 'ancho'; } pintarLista(); return; }
+          if (k === 'meta') { w.meta = v === '' ? null : +v; return; }
+          if (k === 'tipo') { const antes = GRAF.includes(w.tipo); w.tipo = v; if (w.fuente === 'consulta') qTipo(w, v); w.mas = (w.mas || []).slice(0, SERIE.includes(v) ? 3 : 9); if (GRAF.includes(v)) { w.comparar = ''; w.semaforo = {activo: false}; if (!antes) w.tamano = 'ancho'; } pintarLista(); return; }
           if (k === 'meses' || k === 'top') { w[k] = +v; return; }
           if (k === 'sem') { w.semaforo = v ? {activo: true, verde: w.semaforo?.verde ?? 100, ambar: w.semaforo?.ambar ?? 70, mejor: 'mas'} : {activo: false}; pintarLista(); return; }
           if (['verde', 'ambar'].includes(k)) { w.semaforo[k] = v === '' ? null : +v; return; }
@@ -446,6 +594,11 @@
     m.querySelectorAll('[data-wg-pre]').forEach(b => b.onclick = () => agregar(b.dataset.wgPre));
     m.querySelector('[data-wg-buscar]').oninput = e => { const q = e.target.value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
       m.querySelectorAll('.wg-pre-g').forEach(g => { let n = 0; g.querySelectorAll('[data-wg-pre]').forEach(b => { const v = !q || b.textContent.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(q); b.hidden = !v; n += v; }); g.hidden = !n; }); };
+    m.querySelector('[data-wg-datos]').onclick = () => {
+      if (s.ws.length >= 24) { err.textContent = 'Un tablero lleva hasta 24 widgets.'; return; }
+      const w = {id: uid(), tipo: 'cifra', fuente: 'consulta', ref: Q_NUEVA(), titulo: '', nota: '', tamano: 'chico', periodo: 'modulo', comparar: '', formato: 'auto', decimales: 2, semaforo: {activo: false}, mas: [], meses: 6, top: 5, meta: null};
+      s.ws.push(w); s.abierto = w.id; pintarLista(); lista.lastElementChild?.scrollIntoView({block: 'nearest'});
+    };
     m.querySelector('[data-wg-formula]').onclick = () => editorFormula(null, () => editorTablero(mod, null, s), f => { s.ws.push({id: uid(), fuente: 'formula', ref: f.id, titulo: '', nota: '', tamano: 'chico', periodo: 'modulo', comparar: '', formato: 'auto', decimales: 2, semaforo: {activo: false}}); s.abierto = s.ws.at(-1).id; });
     m.querySelector('[data-wg-formulas]').onclick = () => gestor(() => editorTablero(mod, null, s));
     m.querySelector('[data-wg-plantillas]').onclick = () => plantillas(mod, () => { delete st.tab[mod]; api(`workspace/tableros?modulo=${enc(mod)}`).then(t => { st.tab[mod] = t; editorTablero(mod); }).catch(() => H().closeModal()); });

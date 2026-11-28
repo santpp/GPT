@@ -1,5 +1,13 @@
 # Agora New App · novedades por versión
 
+**Novedades 2.28.0 · Widgets, etapa 2 (28 nov; fases 7, 9, 10 y 11 aprobadas):**
+- **Widget de datos (constructor libre, sin fórmulas):** en «Editar Dashboard» → «Widget de datos» se elige qué contar (ventas, cuotas de cobro, oportunidades, contactos, tareas, conversaciones, plantillas de WhatsApp pedidas), cómo (contar, sumar, promedio, mínimo, máximo), el período (el mes del widget, los últimos 12 meses o todo) y por qué agrupar (vendedor, producto, forma de cobro, moneda, embudo, etapa, responsable, canal, etiqueta, campos personalizados, día, semana, mes, día de la semana u hora).
+- **Filtros por widget:** hasta 6, con «es» o «no es» y los valores reales para marcar.
+- **Más fuentes:** oportunidades por embudo y etapa, conversaciones (canal, sin leer, esperando respuesta), tareas por responsable, cuotas de cobro (pagadas, pendientes, vencidas), campos personalizados de contactos y oportunidades, y las plantillas de WhatsApp pedidas.
+- **Tipos nuevos:** ranking, embudo de conversión (con el paso de una etapa a otra), meta con barra de avance, mapa de calor (día de la semana × hora) y tarjeta con lista (los registros más recientes). Cada uno con «Ver detalle y descargar».
+- Las cifras coinciden con las de cada módulo (lo comprueba la prueba), cada persona ve solo lo que su rol le deja ver y nunca se suman bolívares con dólares: pide filtrar o agrupar por moneda.
+- Pendiente de esta etapa: **citas** (hay que leerlas de la cuenta; va con el módulo de agenda, en espera).
+
 **Novedades 2.27.0 · Plantillas de WhatsApp por flujos de trabajo (28 nov):**
 - La cuenta no entrega las plantillas aprobadas por Meta, así que ahora **cada plantilla se envía desde un flujo de trabajo** de la cuenta («Enviar WhatsApp» con esa plantilla).
 - **Solo los dueños** las eligen, en Agencia → editar la subcuenta (donde estaba el número de WhatsApp): «Cargar flujos de la cuenta», **buscador por nombre**, se marcan **varios**, cada uno con el nombre que verá el equipo y, si se quiere, el texto para la vista previa. Los borradores se ven pero no se pueden marcar. Hasta 40 por subcuenta.

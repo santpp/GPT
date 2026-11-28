@@ -316,6 +316,7 @@ Sin webhooks, “tiempo real” significa consulta frecuente: el chat visible pu
 - **2.24.0 (23 de noviembre)**: sin botón de usuarios de agencia (solo terminal); Ágora no pone ni genera claves (invitación y enlace para clave nueva, también desde Agencia); ficha del contacto con el diseño del ERP.
 - **2.25.0 (24 de noviembre)**: ícono de Ayuda en la cabecera (tutorial, manual y PDF); Ayuda con el manual del ERP; plantillas de WhatsApp en la subcuenta con «Comprobar»; explicada la falla intermitente de las pruebas.
 - **2.26.0 (24 de noviembre)**: plantillas de WhatsApp pedidas con el identificador de la subcuenta (como dice la documentación); número opcional; diagnóstico sin filtro; envío con `templateId`.
+- **2.28.0 (28 de noviembre)**: widgets, etapa 2: «Widget de datos» (qué contar, cómo, agrupar y filtrar), fuentes nuevas, ranking, embudo de conversión, meta con barra, mapa de calor y tarjeta con lista.
 - **2.27.0 (28 de noviembre)**: plantillas de WhatsApp por flujos de trabajo: los dueños eligen varios flujos (con buscador) en Agencia; todos los que escriben los envían desde la Bandeja; seguimiento y sin dobles.
 - **2.18.9 (22 de noviembre)**: la entrada ya no se divide: cada pieza del logo vuela a su pieza del logo visible (dos salidas: antes y después de iniciar sesión).
 - **2.18.8 (22 de noviembre)**: pantalla de entrada con el logo pieza por pieza al abrir, recargar e iniciar sesión.
