@@ -28,3 +28,10 @@ SIN PROBAR (no se puede desde el entorno de desarrollo)
 - Todo contra la cuenta real (escrituras, campañas, cifras de redes). Ver ERRORES.md, punto 11.
 - Firma por enlace de convenios (en local está desactivada: signing_enabled = false).
 - tests/venta-cuenta.py no es repetible: hace falta reiniciar la base de pruebas.
+
+- [Menor · visto el 28 nov, en 2.28.0 y también con 2.27.0] tests/tipografia.py: en escritorio encuentra cifras con tamaños fuera de la escala
+  (30, 32, 36, 46, 64 y 84 px) en Inicio, Dashboard, Ventas, Cobros, Facturas y Libro de ventas.
+  Por qué importa: la escala única de tipografía (26 px para cifras) es una regla del lenguaje visual.
+  Cómo verlo: python3 tests/tipografia.py con la API local. Pasa igual con los estilos y widgets de 2.27.0, así que no lo trajo 2.28.0.
+  Idea: revisar qué elementos marca como «cifra» la prueba (84 px parece el logo de la entrada o un número ajustado por tamaño) y
+  decidir si es la prueba o la pantalla la que hay que ajustar.
